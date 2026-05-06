@@ -1,0 +1,15 @@
+include_guard()
+
+function(ego_setup_output_dir BIN_DIR)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  "${BIN_DIR}" PARENT_SCOPE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  "${BIN_DIR}" PARENT_SCOPE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY  "${BIN_DIR}" PARENT_SCOPE)
+endfunction()
+
+function(ego_setup_global_properties)
+    set(CMAKE_CXX_STANDARD 20 PARENT_SCOPE)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON PARENT_SCOPE)
+    set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
+
+    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+endfunction()

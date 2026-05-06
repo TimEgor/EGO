@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="Edge::BaseVector2&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_y}</DisplayString>
+      </Synthetic>
+    </Expand>
+	</Type>
+  <Type Name="Edge::BaseVector2&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="z">
+        <DisplayString>{m_z}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::BaseVector2&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="z">
+        <DisplayString>{m_z}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="w">
+        <DisplayString>{m_w}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeVector2Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_vector.m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_vector.m_y}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeVector3Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_vector.m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_vector.m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="z">
+        <DisplayString>{m_vector.m_z}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeVector4Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_vector.m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_vector.m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="z">
+        <DisplayString>{m_vector.m_z}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="w">
+        <DisplayString>{m_vector.m_w}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeMatrix2x2Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="row 0">
+        <DisplayString>{m_matrix.m_m11}, {m_matrix.m_m21}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 1">
+        <DisplayString>{m_matrix.m_m12}, {m_matrix.m_m22}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeMatrix3x3Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="row 0">
+        <DisplayString>{m_matrix.m_m11}, {m_matrix.m_m21}, {m_matrix.m_m31}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 1">
+        <DisplayString>{m_matrix.m_m12}, {m_matrix.m_m22}, {m_matrix.m_m32}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 2">
+        <DisplayString>{m_matrix.m_m13}, {m_matrix.m_m23}, {m_matrix.m_m33}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeMatrix4x4Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="row 0">
+        <DisplayString>{m_matrix.m_m11}, {m_matrix.m_m21}, {m_matrix.m_m31}, {m_matrix.m_m41}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 1">
+        <DisplayString>{m_matrix.m_m12}, {m_matrix.m_m22}, {m_matrix.m_m32}, {m_matrix.m_m42}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 2">
+        <DisplayString>{m_matrix.m_m13}, {m_matrix.m_m23}, {m_matrix.m_m33}, {m_matrix.m_m43}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 3">
+        <DisplayString>{m_matrix.m_m14}, {m_matrix.m_m24}, {m_matrix.m_m34}, {m_matrix.m_m44}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="Edge::ComputeQuaternionBase&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="x">
+        <DisplayString>{m_quaternion.m_elements.m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="y">
+        <DisplayString>{m_quaternion.m_elements.m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="z">
+        <DisplayString>{m_quaternion.m_elements.m_z}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="w">
+        <DisplayString>{m_quaternion.m_elements.m_w}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+</AutoVisualizer>

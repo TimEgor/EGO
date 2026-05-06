@@ -1,0 +1,22 @@
+#pragma once
+
+#include "EgoEngine/Platform/Window/MainWindowProvider.h"
+
+namespace ego::win32
+{
+    class Win32MainWindowProvider final : public MainWindowProvider
+    {
+    public:
+        Win32MainWindowProvider() = default;
+
+        virtual bool prepareMainWindow(const char* _title, const WindowSize& _size) override;
+
+        virtual bool isWindowPlatformProvided() const override;
+        virtual WindowPointer getMainWindow() const override;
+
+        EGO_RTTI_VIRTUAL(Win32MainWindowProvider, MainWindowProvider);
+
+    private:
+        WindowPointer m_mainWindow;
+    };  
+}

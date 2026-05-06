@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="Edge::ObjectPool&lt;*&gt;::Page">
+		<DisplayString>{{Size = {m_size}}}</DisplayString>
+		<Expand>
+			<Item Name="Capacity">m_capacity</Item>
+      <Synthetic Name="Values">
+        <Expand>
+          <ArrayItems>
+	          <Size>m_capacity</Size>
+	          <ValuePointer>m_valsMem</ValuePointer>
+	        </ArrayItems>
+        </Expand>
+      </Synthetic>
+      <Synthetic Name="Version">
+        <Expand>
+          <ArrayItems>
+	          <Size>m_capacity</Size>
+	          <ValuePointer>m_versionMem</ValuePointer>
+	        </ArrayItems>
+        </Expand>
+      </Synthetic>
+      <Synthetic Name="Alive">
+        <Expand>
+          <ArrayItems>
+	          <Size>m_capacity</Size>
+	          <ValuePointer>m_aliveMem</ValuePointer>
+	        </ArrayItems>
+        </Expand>
+      </Synthetic>
+		</Expand>
+	</Type>
+</AutoVisualizer>

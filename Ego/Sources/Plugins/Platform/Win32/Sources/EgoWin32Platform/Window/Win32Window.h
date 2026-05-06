@@ -1,0 +1,72 @@
+#pragma once
+
+#include <shared_mutex>
+
+
+#include "EgoCore/PlatformMacros.h"
+#include "EgoCore/Patterns/NonInstanceable.h"
+
+#include "EgoEngine/Platform/Window/Window.h"
+
+#define EGO_WIN32_WND_CLASS_NAME "EgoWindowCLS"
+
+namespace ego::win32
+{
+    class Win32Window final : public Window, public EnableSharedFromThis<Win32Window>
+    {
+    public:
+        class Accessor final : public NonInstanceable
+        {
+            friend class Win32WindowEventController;
+
+            static void OnWindowDestroying(Win32Window& _window);
+            static void OnWindowTransformationStart(Win32Window& _window);
+            static void OnWindowTransformationEnd(Win32Window& _window);
+            static void OnWindowSizeUpdate(Win32Window& _window);
+        };
+
+        Win32Window() = default;
+        ~Win32Window();
+
+        virtual bool init(const char* _title, const WindowSize& _size) override;
+        virtual void release() override;
+
+        virtual bool isValid() const override;
+
+        virtual void show() override;
+        virtual void hide() override;
+        virtual bool isShown() const override;
+
+        virtual void* getNativeHandle() const override;
+
+        virtual bool isStable() const override;
+
+        virtual const WindowSize& getWindowSize() const override;
+        virtual const WindowSize& getClientAreaSize() const override;
+        virtual const WindowArea& getCutoutsArea() const override;
+
+        HWND getHandle() const;
+
+        EGO_RTTI_VIRTUAL(Win32Window, Window);
+
+    private:
+        void updateSizes();
+
+        void invalidate();
+        void setSizeStabilization(bool _state);
+
+        mutable std::shared_mutex m_mutex;
+
+        WindowSize m_windowSize = DefaultWindowSize;
+        WindowSize m_clientAreaSize = DefaultWindowSize;
+        WindowArea m_cutoutsArea = DefaultWindowArea;
+
+        HWND m_handle = nullptr;
+
+        bool m_isShown = false;
+        bool m_isSizeStable = false;
+    };
+
+    EGO_POINTER(Win32Window);
+    EGO_WEAK_POINTER(Win32Window);
+}

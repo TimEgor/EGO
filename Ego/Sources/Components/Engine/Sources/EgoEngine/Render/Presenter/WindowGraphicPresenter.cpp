@@ -1,0 +1,34 @@
+#include "WindowGraphicPresenter.h"
+
+#include "EgoEngine/Engine.h"
+
+ego::WindowGraphicPresenter::~WindowGraphicPresenter()
+{
+    release();
+}
+
+bool ego::WindowGraphicPresenter::init(const Window& _window, const gpu::SwapChainDesc& _swapChainDesc)
+{
+	m_swapChain = engine::GetEngine().getGraphicDevice().createSwapChain(_swapChainDesc, _window);
+	EGO_CHECK_RETURN_FALSE(m_swapChain);
+
+	return true;
+}
+
+void ego::WindowGraphicPresenter::release()
+{
+    m_swapChain.reset();
+}
+
+ego::gpu::Texture2DPointer ego::WindowGraphicPresenter::getTargetTexture()
+{
+    return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DPointer();
+}
+
+void ego::WindowGraphicPresenter::present()
+{
+    if (m_swapChain)
+    {
+        m_swapChain->present();
+    }
+}
