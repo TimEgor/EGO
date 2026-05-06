@@ -9,13 +9,3 @@ const ego::gpu::BindingLayoutDesc& ego::gpu::BindingLayout::getDesc() const
 {
     return m_desc;
 }
-
-ego::gpu::BindingSet::BindingSet(const BindingSetDesc& _desc)
-    : m_desc(_desc)
-{
-}
-
-const ego::gpu::BindingSetDesc& ego::gpu::BindingSet::getDesc() const
-{
-    return m_desc;
-}

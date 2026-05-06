@@ -19,6 +19,7 @@ namespace ego::gpu
         ResourceView(const GraphicResourcePointer& _resource);
 
         const GraphicResourceWeakPointer& getResource() const;
+        virtual uint32_t getBindlessIndex() const;
 
         virtual GraphicResourceViewType getViewType() const = 0;
 

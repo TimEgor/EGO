@@ -8,3 +8,8 @@ const ego::gpu::GraphicResourceWeakPointer& ego::gpu::ResourceView::getResource(
 {
     return m_resource;
 }
+
+uint32_t ego::gpu::ResourceView::getBindlessIndex() const
+{
+    return InvalidBindlessIndex;
+}

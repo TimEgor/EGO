@@ -90,32 +90,6 @@ namespace ego::gpu::d3d12
         return D3D12_SHADER_VISIBILITY_ALL;
     }
 
-    inline D3D12_DESCRIPTOR_RANGE_TYPE ToD3D12DescriptorRangeType(BindingResourceType _type)
-    {
-        switch (_type)
-        {
-        case BindingResourceType::ConstantBuffer:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-        case BindingResourceType::Texture:
-        case BindingResourceType::StructuredBuffer:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        case BindingResourceType::StorageTexture:
-        case BindingResourceType::StorageBuffer:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-        case BindingResourceType::Sampler:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-        default:
-            break;
-        }
-
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    }
-
-    inline bool IsSamplerBindingType(BindingResourceType _type)
-    {
-        return _type == BindingResourceType::Sampler;
-    }
-
     inline D3D12_RESOURCE_STATES ToD3D12ResourceState(GraphicResourceState _state)
     {
         switch (_state)

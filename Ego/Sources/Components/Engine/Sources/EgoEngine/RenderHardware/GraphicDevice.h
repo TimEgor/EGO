@@ -60,11 +60,10 @@ namespace ego::gpu
             const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
         ) = 0;
 
-        virtual ShaderPointer createVertexShader(const ShaderCodePointer& _code) = 0;
-        virtual ShaderPointer createPixelShader(const ShaderCodePointer& _code) = 0;
-        virtual ShaderPointer createComputeShader(const ShaderCodePointer& _code) = 0;
+        virtual VertexShaderPointer createVertexShader(const ShaderCodePointer& _code) = 0;
+        virtual PixelShaderPointer createPixelShader(const ShaderCodePointer& _code) = 0;
+        virtual ComputeShaderPointer createComputeShader(const ShaderCodePointer& _code) = 0;
         virtual BindingLayoutPointer createBindingLayout(const BindingLayoutDesc& _desc) = 0;
-        virtual BindingSetPointer createBindingSet(const BindingSetDesc& _desc) = 0;
         virtual SamplerPointer createSampler(const SamplerDesc& _desc) = 0;
 
         virtual BufferViewPointer createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc) = 0;

@@ -5,36 +5,19 @@
 #include "EgoEngine/Platform/Window/Window.h"
 
 #include "Objects/D3D12Buffer.h"
-#include "Objects/D3D12CommandObjects.h"
+#include "Objects/D3D12CommandList.h"
+#include "Objects/D3D12CommandQueue.h"
+#include "Objects/D3D12Fence.h"
 #include "Objects/D3D12Pipeline.h"
-#include "Objects/D3D12Resources.h"
 #include "Objects/D3D12Sampler.h"
+#include "Objects/D3D12Shader.h"
 #include "Objects/D3D12SwapChain.h"
 #include "Objects/D3D12Texture.h"
 
 namespace
 {
-    constexpr uint32_t BindlessResourceDescriptorCapacity = 1u << 20;
-    constexpr uint32_t BindlessSamplerDescriptorCapacity = 2048;
-
-    bool FindBindingItem(
-        const ego::gpu::BindingSetDesc& _desc,
-        uint32_t _binding,
-        const ego::gpu::BindingSetItemDesc*& _item
-    )
-    {
-        for (const ego::gpu::BindingSetItemDesc& item : _desc.m_items)
-        {
-            if (item.m_binding == _binding)
-            {
-                _item = &item;
-                return true;
-            }
-        }
-
-        _item = nullptr;
-        return false;
-    }
+    constexpr uint32_t BindlessResourceDescriptorCapacity = 1024;
+    constexpr uint32_t BindlessSamplerDescriptorCapacity = 128;
 
     template <typename TCommandListPointer, typename TCommandListObject>
     TCommandListPointer CreateCommandList(
@@ -888,7 +871,9 @@ ego::gpu::TextureViewPointer ego::gpu::d3d12::D3D12GraphicDevice::createTextureV
 
     const D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = allocator->getCpuHandle(descriptorIndex);
     const D3D12_RESOURCE_DESC& resourceDesc = texture->getD3D12Resource()->GetDesc();
-    const DXGI_FORMAT format = _desc.m_format == GraphicResourceFormat::Undefined ? resourceDesc.Format : ToDXGIFormat(_desc.m_format);
+    const DXGI_FORMAT format = _desc.m_format == GraphicResourceFormat::Undefined ?
+                                   resourceDesc.Format :
+                                   ToDXGIFormat(_desc.m_format);
     const UINT mipLevels = resourceDesc.MipLevels ? resourceDesc.MipLevels : 1;
     const UINT arrayLayers = resourceDesc.DepthOrArraySize ? resourceDesc.DepthOrArraySize : 1;
 
@@ -979,6 +964,244 @@ ego::gpu::TextureViewPointer ego::gpu::d3d12::D3D12GraphicDevice::createTextureV
     return TextureViewPointer(new D3D12TextureView(_texture, _desc, descriptorIndex, allocator));
 }
 
+ego::gpu::VertexShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createVertexShader(const ShaderCodePointer& _code)
+{
+    if (!_code || !_code->getCode() || !_code->getCodeSize())
+    {
+        return VertexShaderPointer();
+    }
+
+    return VertexShaderPointer(new D3D12VertexShader(_code));
+}
+
+ego::gpu::PixelShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createPixelShader(const ShaderCodePointer& _code)
+{
+    if (!_code || !_code->getCode() || !_code->getCodeSize())
+    {
+        return PixelShaderPointer();
+    }
+
+    return PixelShaderPointer(new D3D12PixelShader(_code));
+}
+
+ego::gpu::ComputeShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createComputeShader(const ShaderCodePointer& _code)
+{
+    if (!_code || !_code->getCode() || !_code->getCodeSize())
+    {
+        return ComputeShaderPointer();
+    }
+
+    return ComputeShaderPointer(new D3D12ComputeShader(_code));
+}
+
+ego::gpu::GraphicPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createGraphicPipeline(
+    const GraphicPipelineDesc& _desc
+)
+{
+    const bool hasValidVertexShader =
+        !_desc.m_vertexShader || _desc.m_vertexShader->getShaderType() == ShaderStage::Vertex;
+    const bool hasValidPixelShader =
+        !_desc.m_pixelShader || _desc.m_pixelShader->getShaderType() == ShaderStage::Pixel;
+
+    D3D12BindingLayout* layout = _desc.m_bindingLayout ?
+                                     static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.get()) :
+                                     nullptr;
+    D3D12VertexShader* vertexShader = _desc.m_vertexShader && hasValidVertexShader ?
+                                          static_cast<D3D12VertexShader*>(_desc.m_vertexShader.get()) :
+                                          nullptr;
+    D3D12PixelShader* pixelShader = _desc.m_pixelShader && hasValidPixelShader ?
+                                        static_cast<D3D12PixelShader*>(_desc.m_pixelShader.get()) :
+                                        nullptr;
+
+    EGO_ASSERT_MESSAGE(!_desc.m_bindingLayout || layout, "BindingLayout must be created by D3D12 device");
+    EGO_ASSERT_MESSAGE(!_desc.m_vertexShader || vertexShader, "Vertex shader must be created by D3D12 device");
+    EGO_ASSERT_MESSAGE(!_desc.m_pixelShader || pixelShader, "Pixel shader must be created by D3D12 device");
+    EGO_ASSERT_MESSAGE(hasValidVertexShader, "Graphic pipeline vertex shader has invalid shader stage");
+    EGO_ASSERT_MESSAGE(hasValidPixelShader, "Graphic pipeline pixel shader has invalid shader stage");
+
+    if ((_desc.m_bindingLayout && !layout) ||
+        (_desc.m_vertexShader && !vertexShader) ||
+        (_desc.m_pixelShader && !pixelShader) ||
+        !hasValidVertexShader ||
+        !hasValidPixelShader)
+    {
+        return GraphicPipelinePointer();
+    }
+
+    std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+    inputElements.reserve(_desc.m_inputLayoutDesc.m_elements.size());
+
+    for (const InputLayoutElementDesc& element : _desc.m_inputLayoutDesc.m_elements)
+    {
+        D3D12_INPUT_ELEMENT_DESC inputElement = {};
+        inputElement.SemanticName = element.m_semanticName ? element.m_semanticName : "TEXCOORD";
+        inputElement.SemanticIndex = element.m_index;
+        inputElement.Format = ToDXGIFormat(element.m_type, element.m_componentsCount);
+        inputElement.InputSlot = element.m_slot;
+        inputElement.AlignedByteOffset = element.m_offset;
+        inputElement.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        inputElement.InstanceDataStepRate = 0;
+
+        for (const InputLayoutBindingDesc& binding : _desc.m_inputLayoutDesc.m_bindings)
+        {
+            if (binding.m_slot == element.m_slot)
+            {
+                inputElement.InputSlotClass = binding.m_type == InputLayoutBindingType::InstanceBinding ?
+                                                  D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA :
+                                                  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                inputElement.InstanceDataStepRate = binding.m_type == InputLayoutBindingType::InstanceBinding ?
+                                                        binding.m_instanceStepRate :
+                                                        0;
+                break;
+            }
+        }
+
+        inputElements.push_back(inputElement);
+    }
+
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.pRootSignature = layout ? layout->getRootSignature() : nullptr;
+    psoDesc.VS = vertexShader ? vertexShader->getD3D12ByteCode() : D3D12_SHADER_BYTECODE{};
+    psoDesc.PS = pixelShader ? pixelShader->getD3D12ByteCode() : D3D12_SHADER_BYTECODE{};
+    psoDesc.BlendState.AlphaToCoverageEnable = _desc.m_blendStateDesc.m_alphaToCoverageEnable;
+    psoDesc.BlendState.IndependentBlendEnable = _desc.m_blendStateDesc.m_renderTargets.size() > 1;
+
+    for (D3D12_RENDER_TARGET_BLEND_DESC& renderTargetBlend : psoDesc.BlendState.RenderTarget)
+    {
+        renderTargetBlend.BlendEnable = FALSE;
+        renderTargetBlend.LogicOpEnable = FALSE;
+        renderTargetBlend.SrcBlend = D3D12_BLEND_ONE;
+        renderTargetBlend.DestBlend = D3D12_BLEND_ZERO;
+        renderTargetBlend.BlendOp = D3D12_BLEND_OP_ADD;
+        renderTargetBlend.SrcBlendAlpha = D3D12_BLEND_ONE;
+        renderTargetBlend.DestBlendAlpha = D3D12_BLEND_ZERO;
+        renderTargetBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        renderTargetBlend.LogicOp = D3D12_LOGIC_OP_NOOP;
+        renderTargetBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    }
+
+    const size_t blendTargetCount = (std::min<size_t>)(
+        _desc.m_blendStateDesc.m_renderTargets.size(),
+        D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT
+    );
+    for (size_t renderTargetIndex = 0; renderTargetIndex < blendTargetCount; ++renderTargetIndex)
+    {
+        const RenderTargetBlendDesc& blendDesc = _desc.m_blendStateDesc.m_renderTargets[renderTargetIndex];
+        D3D12_RENDER_TARGET_BLEND_DESC& targetDesc = psoDesc.BlendState.RenderTarget[renderTargetIndex];
+        targetDesc.BlendEnable = blendDesc.m_blendEnable;
+        targetDesc.SrcBlend = ToD3D12Blend(blendDesc.m_srcColorFactor);
+        targetDesc.DestBlend = ToD3D12Blend(blendDesc.m_dstColorFactor);
+        targetDesc.BlendOp = ToD3D12BlendOperation(blendDesc.m_colorOperation);
+        targetDesc.SrcBlendAlpha = ToD3D12Blend(blendDesc.m_srcAlphaFactor);
+        targetDesc.DestBlendAlpha = ToD3D12Blend(blendDesc.m_dstAlphaFactor);
+        targetDesc.BlendOpAlpha = ToD3D12BlendOperation(blendDesc.m_alphaOperation);
+        targetDesc.RenderTargetWriteMask = blendDesc.m_colorWriteMask;
+    }
+
+    const UINT sampleCount = static_cast<UINT>((std::max)(_desc.m_multisampleCount, 1));
+
+    psoDesc.SampleMask = 0xffffffffu;
+    psoDesc.RasterizerState.FillMode = ToD3D12FillMode(_desc.m_rasterizationStateDesc.m_fillMode);
+    psoDesc.RasterizerState.CullMode = ToD3D12CullMode(_desc.m_rasterizationStateDesc.m_cullMode);
+    psoDesc.RasterizerState.FrontCounterClockwise = _desc.m_rasterizationStateDesc.m_frontCounterClockwise;
+    psoDesc.RasterizerState.DepthBias = _desc.m_rasterizationStateDesc.m_depthBiasEnable ?
+                                            _desc.m_rasterizationStateDesc.m_depthBias :
+                                            0;
+    psoDesc.RasterizerState.DepthBiasClamp = _desc.m_rasterizationStateDesc.m_depthBiasClamp;
+    psoDesc.RasterizerState.SlopeScaledDepthBias = _desc.m_rasterizationStateDesc.m_depthBiasSlopeScale;
+    psoDesc.RasterizerState.DepthClipEnable = _desc.m_rasterizationStateDesc.m_depthClip;
+    psoDesc.RasterizerState.MultisampleEnable = sampleCount > 1;
+    psoDesc.RasterizerState.AntialiasedLineEnable = FALSE;
+    psoDesc.RasterizerState.ForcedSampleCount = 0;
+    psoDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+    const bool hasDepth = _desc.m_depthFormat != GraphicResourceFormat::Undefined;
+    psoDesc.DepthStencilState.DepthEnable = hasDepth && _desc.m_depthStencilStateDesc.m_depthTestEnable;
+    psoDesc.DepthStencilState.DepthWriteMask = hasDepth && _desc.m_depthStencilStateDesc.m_depthWrite ?
+                                                   D3D12_DEPTH_WRITE_MASK_ALL :
+                                                   D3D12_DEPTH_WRITE_MASK_ZERO;
+    psoDesc.DepthStencilState.DepthFunc = ToD3D12ComparisonFunc(_desc.m_depthStencilStateDesc.m_depthCompareOperation);
+    psoDesc.DepthStencilState.StencilEnable = hasDepth && _desc.m_depthStencilStateDesc.m_stencilEnable;
+    psoDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+    psoDesc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+    psoDesc.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    psoDesc.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+    psoDesc.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+    psoDesc.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+    psoDesc.DepthStencilState.BackFace = psoDesc.DepthStencilState.FrontFace;
+
+    psoDesc.InputLayout.NumElements = static_cast<UINT>(inputElements.size());
+    psoDesc.InputLayout.pInputElementDescs = inputElements.empty() ? nullptr : inputElements.data();
+    psoDesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+    psoDesc.PrimitiveTopologyType = ToD3D12PrimitiveTopologyType(_desc.m_topology);
+
+    const size_t colorFormatCount = (std::min<size_t>)(
+        _desc.m_colorFormats.size(),
+        D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT
+    );
+    psoDesc.NumRenderTargets = static_cast<UINT>(colorFormatCount);
+    for (size_t i = 0; i < colorFormatCount; ++i)
+    {
+        psoDesc.RTVFormats[i] = ToDXGIFormat(_desc.m_colorFormats[i]);
+    }
+
+    psoDesc.DSVFormat = ToDXGIFormat(_desc.m_depthFormat);
+    psoDesc.SampleDesc.Count = sampleCount;
+    psoDesc.SampleDesc.Quality = 0;
+    psoDesc.NodeMask = 0;
+    psoDesc.CachedPSO = {};
+    psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+    if (FAILED(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
+    {
+        return GraphicPipelinePointer();
+    }
+
+    return GraphicPipelinePointer(new D3D12GraphicPipeline(_desc, std::move(pipelineState), layout));
+}
+
+ego::gpu::ComputePipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createComputePipeline(
+    const ComputePipelineDesc& _desc
+)
+{
+    const bool hasValidComputeShader =
+        !_desc.m_computeShader || _desc.m_computeShader->getShaderType() == ShaderStage::Compute;
+
+    D3D12BindingLayout* layout = _desc.m_bindingLayout ?
+                                     static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.get()) :
+                                     nullptr;
+    D3D12ComputeShader* computeShader = _desc.m_computeShader && hasValidComputeShader ?
+                                            static_cast<D3D12ComputeShader*>(_desc.m_computeShader.get()) :
+                                            nullptr;
+
+    EGO_ASSERT_MESSAGE(!_desc.m_bindingLayout || layout, "BindingLayout must be created by D3D12 device");
+    EGO_ASSERT_MESSAGE(!_desc.m_computeShader || computeShader, "Compute shader must be created by D3D12 device");
+    EGO_ASSERT_MESSAGE(hasValidComputeShader, "Compute pipeline shader has invalid shader stage");
+
+    if ((_desc.m_bindingLayout && !layout) ||
+        (_desc.m_computeShader && !computeShader) ||
+        !hasValidComputeShader)
+    {
+        return ComputePipelinePointer();
+    }
+
+    D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.pRootSignature = layout ? layout->getRootSignature() : nullptr;
+    psoDesc.CS = computeShader ? computeShader->getD3D12ByteCode() : D3D12_SHADER_BYTECODE{};
+    psoDesc.NodeMask = 0;
+    psoDesc.CachedPSO = {};
+    psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+    if (FAILED(m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
+    {
+        return ComputePipelinePointer();
+    }
+
+    return ComputePipelinePointer(new D3D12ComputePipeline(_desc, std::move(pipelineState), layout));
+}
+
 ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(
     const BindingLayoutDesc& _desc
 )
@@ -987,61 +1210,10 @@ ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindin
         m_capabilities.m_supportsBindlessResources,
         "D3D12 bindless binding model requires Resource Binding Tier 2 or higher"
     );
+
     if (!m_capabilities.m_supportsBindlessResources)
     {
         return BindingLayoutPointer();
-    }
-
-    std::vector<uint32_t> setIndices;
-    setIndices.reserve(_desc.m_bindings.size());
-
-    for (const BindingElementDesc& binding : _desc.m_bindings)
-    {
-        if (std::find(setIndices.begin(), setIndices.end(), binding.m_set) == setIndices.end())
-        {
-            setIndices.push_back(binding.m_set);
-        }
-    }
-
-    std::sort(setIndices.begin(), setIndices.end());
-
-    std::vector<D3D12BindingLayout::SetInfo> setInfos;
-
-    for (uint32_t setIndex : setIndices)
-    {
-        D3D12BindingLayout::SetInfo setInfo;
-        setInfo.m_set = setIndex;
-
-        uint32_t resourceOffset = 0;
-        uint32_t samplerOffset = 0;
-
-        for (const BindingElementDesc& binding : _desc.m_bindings)
-        {
-            if (binding.m_set != setIndex)
-            {
-                continue;
-            }
-
-            D3D12BindingLayout::DescriptorRangeInfo rangeInfo;
-            rangeInfo.m_binding = binding.m_binding;
-            rangeInfo.m_descriptorCount = binding.m_count;
-            rangeInfo.m_type = binding.m_type;
-
-            if (IsSamplerBindingType(binding.m_type))
-            {
-                rangeInfo.m_baseOffset = samplerOffset;
-                samplerOffset += binding.m_count;
-                setInfo.m_samplerRanges.push_back(rangeInfo);
-            }
-            else
-            {
-                rangeInfo.m_baseOffset = resourceOffset;
-                resourceOffset += binding.m_count;
-                setInfo.m_resourceRanges.push_back(rangeInfo);
-            }
-        }
-
-        setInfos.push_back(std::move(setInfo));
     }
 
     std::vector<D3D12_ROOT_PARAMETER1> rootParameters;
@@ -1109,32 +1281,7 @@ ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindin
     }
 
     return BindingLayoutPointer(
-        new D3D12BindingLayout(_desc, std::move(rootSignature), std::move(setInfos), std::move(pushConstants))
-    );
-}
-
-ego::gpu::BindingSetPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindingSet(const BindingSetDesc& _desc)
-{
-    D3D12BindingLayout* layout = static_cast<D3D12BindingLayout*>(_desc.m_layout.get());
-    EGO_ASSERT_MESSAGE(layout, "BindingLayout must be created by D3D12 device");
-    if (!layout)
-    {
-        return BindingSetPointer();
-    }
-
-    const D3D12BindingLayout::SetInfo* setInfo = layout->findSetInfo(_desc.m_set);
-    EGO_ASSERT_MESSAGE(setInfo, "Binding set index is not present in layout");
-    if (!setInfo)
-    {
-        return BindingSetPointer();
-    }
-
-    return BindingSetPointer(
-        new D3D12BindingSet(
-            _desc,
-            layout,
-            setInfo
-        )
+        new D3D12BindingLayout(_desc, std::move(rootSignature), std::move(pushConstants))
     );
 }
 
@@ -1151,7 +1298,7 @@ ego::gpu::FencePointer ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence::F
         return FencePointer();
     }
 
-    return FencePointer(new D3D12Fence(this, _initialValue, std::move(fence)));
+    return FencePointer(new D3D12Fence(_initialValue, std::move(fence)));
 }
 
 ego::gpu::SwapChainPointer ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
@@ -1477,12 +1624,22 @@ void ego::gpu::d3d12::D3D12GraphicDevice::initializeCapabilities()
     m_capabilities.m_bindlessResourceDescriptorCount = BindlessResourceDescriptorCapacity;
     m_capabilities.m_bindlessSamplerDescriptorCount = BindlessSamplerDescriptorCapacity;
 
+    bool supportsResourceBindingTier = false;
     D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
     if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))))
     {
-        m_capabilities.m_supportsBindlessResources =
-            options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_2;
+        supportsResourceBindingTier = options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_2;
     }
+
+    bool supportsDirectHeapIndexing = false;
+    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {};
+    shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_6;
+    if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+    {
+        supportsDirectHeapIndexing = shaderModel.HighestShaderModel >= D3D_SHADER_MODEL_6_6;
+    }
+
+    m_capabilities.m_supportsBindlessResources = supportsResourceBindingTier && supportsDirectHeapIndexing;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
     if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))))

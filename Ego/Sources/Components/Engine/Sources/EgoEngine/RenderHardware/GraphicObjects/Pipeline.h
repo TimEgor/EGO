@@ -7,6 +7,7 @@
 #include "Format.h"
 #include "GraphicResource.h"
 #include "InputLayout.h"
+#include "Sampler.h"
 #include "Shader.h"
 
 namespace ego::gpu

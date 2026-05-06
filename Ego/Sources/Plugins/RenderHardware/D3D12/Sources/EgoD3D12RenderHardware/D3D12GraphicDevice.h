@@ -37,11 +37,10 @@ namespace ego::gpu::d3d12
             const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
         ) override;
 
-        virtual ShaderPointer createVertexShader(const ShaderCodePointer& _code) override;
-        virtual ShaderPointer createPixelShader(const ShaderCodePointer& _code) override;
-        virtual ShaderPointer createComputeShader(const ShaderCodePointer& _code) override;
+        virtual VertexShaderPointer createVertexShader(const ShaderCodePointer& _code) override;
+        virtual PixelShaderPointer createPixelShader(const ShaderCodePointer& _code) override;
+        virtual ComputeShaderPointer createComputeShader(const ShaderCodePointer& _code) override;
         virtual BindingLayoutPointer createBindingLayout(const BindingLayoutDesc& _desc) override;
-        virtual BindingSetPointer createBindingSet(const BindingSetDesc& _desc) override;
         virtual SamplerPointer createSampler(const SamplerDesc& _desc) override;
 
         virtual BufferViewPointer createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc) override;

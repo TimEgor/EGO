@@ -20,6 +20,9 @@ namespace ego::gpu::d3d12
         void setName(const char* _name) override;
 
         D3D12DescriptorIndex getDescriptorIndex() const override;
+        D3D12_CPU_DESCRIPTOR_HANDLE getCpuDescriptorHandle() const override;
+        D3D12_GPU_DESCRIPTOR_HANDLE getGpuDescriptorHandle() const override;
+        uint32_t getBindlessIndex() const override;
 
     private:
         D3D12DescriptorAllocatorWeakPointer m_allocator = nullptr;

@@ -1,5 +1,7 @@
 #include "D3D12Pipeline.h"
 
+#include <utility>
+
 #include "../Common/D3D12Utils.h"
 
 namespace
@@ -16,37 +18,13 @@ namespace
     }
 }
 
-uint32_t ego::gpu::d3d12::D3D12BindingLayout::SetInfo::getResourceDescriptorCount() const
-{
-    uint32_t result = 0;
-    for (const DescriptorRangeInfo& rangeInfo : m_resourceRanges)
-    {
-        result += rangeInfo.m_descriptorCount;
-    }
-
-    return result;
-}
-
-uint32_t ego::gpu::d3d12::D3D12BindingLayout::SetInfo::getSamplerDescriptorCount() const
-{
-    uint32_t result = 0;
-    for (const DescriptorRangeInfo& rangeInfo : m_samplerRanges)
-    {
-        result += rangeInfo.m_descriptorCount;
-    }
-
-    return result;
-}
-
 ego::gpu::d3d12::D3D12BindingLayout::D3D12BindingLayout(
     const BindingLayoutDesc& _desc,
     Microsoft::WRL::ComPtr<ID3D12RootSignature>&& _rootSignature,
-    std::vector<SetInfo>&& _setInfos,
     std::vector<PushConstantInfo>&& _pushConstants
 )
     : BindingLayout(_desc),
       m_rootSignature(std::move(_rootSignature)),
-      m_setInfos(std::move(_setInfos)),
       m_pushConstants(std::move(_pushConstants))
 {}
 
@@ -63,21 +41,6 @@ void ego::gpu::d3d12::D3D12BindingLayout::setName(const char* _name)
 ID3D12RootSignature* ego::gpu::d3d12::D3D12BindingLayout::getRootSignature() const
 {
     return m_rootSignature.Get();
-}
-
-const ego::gpu::d3d12::D3D12BindingLayout::SetInfo* ego::gpu::d3d12::D3D12BindingLayout::findSetInfo(
-    uint32_t _set
-) const
-{
-    for (const SetInfo& setInfo : m_setInfos)
-    {
-        if (setInfo.m_set == _set)
-        {
-            return &setInfo;
-        }
-    }
-
-    return nullptr;
 }
 
 const ego::gpu::d3d12::D3D12BindingLayout::PushConstantInfo* ego::gpu::d3d12::D3D12BindingLayout::findPushConstantRange(
@@ -100,57 +63,6 @@ const ego::gpu::d3d12::D3D12BindingLayout::PushConstantInfo* ego::gpu::d3d12::D3
     }
 
     return nullptr;
-}
-
-ego::gpu::d3d12::D3D12BindingSet::D3D12BindingSet(
-    const BindingSetDesc& _desc,
-    const D3D12BindingLayout* _layout,
-    const D3D12BindingLayout::SetInfo* _setInfo
-)
-    : BindingSet(_desc),
-      m_layout(_layout),
-      m_setInfo(_setInfo)
-{}
-
-ego::gpu::d3d12::D3D12BindingSet::~D3D12BindingSet()
-{}
-
-void* ego::gpu::d3d12::D3D12BindingSet::getNativeHandle() const
-{
-    return nullptr;
-}
-
-void ego::gpu::d3d12::D3D12BindingSet::setName(const char* _name)
-{}
-
-const ego::gpu::d3d12::D3D12BindingLayout* ego::gpu::d3d12::D3D12BindingSet::getD3D12Layout() const
-{
-    return m_layout;
-}
-
-const ego::gpu::d3d12::D3D12BindingLayout::SetInfo* ego::gpu::d3d12::D3D12BindingSet::getSetInfo() const
-{
-    return m_setInfo;
-}
-
-bool ego::gpu::d3d12::D3D12BindingSet::hasResourceDescriptors() const
-{
-    return m_setInfo && m_setInfo->getResourceDescriptorCount() != 0;
-}
-
-bool ego::gpu::d3d12::D3D12BindingSet::hasSamplerDescriptors() const
-{
-    return m_setInfo && m_setInfo->getSamplerDescriptorCount() != 0;
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12BindingSet::getResourceGpuHandle() const
-{
-    return D3D12_GPU_DESCRIPTOR_HANDLE{};
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12BindingSet::getSamplerGpuHandle() const
-{
-    return D3D12_GPU_DESCRIPTOR_HANDLE{};
 }
 
 ego::gpu::d3d12::D3D12GraphicPipeline::D3D12GraphicPipeline(
