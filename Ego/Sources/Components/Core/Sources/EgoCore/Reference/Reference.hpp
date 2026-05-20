@@ -4,8 +4,19 @@ ego::Reference<T>::Reference(nullptr_t)
 {}
 
 template<typename T>
+void ego::Reference<T>::validateReferenceType()
+{
+	static_assert(
+		std::is_base_of_v<MTCountable, T>,
+		"ego::Reference<T> requires T to derive from ego::MTCountable"
+	);
+}
+
+template<typename T>
 ego::Reference<T>::Reference(T* _object)
 {
+	validateReferenceType();
+
 	if (_object)
 	{
 		const_cast<T*>(_object)->addReference();
@@ -16,6 +27,8 @@ ego::Reference<T>::Reference(T* _object)
 template<typename T>
 ego::Reference<T>::Reference(const Reference<T>& _reference)
 {
+	validateReferenceType();
+
 	if (_reference.m_object)
 	{
 		const_cast<T*>(_reference.m_object)->addReference();
@@ -62,6 +75,8 @@ void ego::Reference<T>::reset()
 template<typename T>
 void ego::Reference<T>::release()
 {
+	validateReferenceType();
+
 	if (m_object)
 	{
 		const_cast<T*>(m_object)->releaseReference();

@@ -3,6 +3,7 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 
 #include "Plugin.h"
@@ -22,10 +23,9 @@ namespace ego
     public:
         class PluginControllerAccessor final : public NonInstanceable
         {
-            friend PluginModule;
-            friend Plugin;
+            friend struct PluginModuleDeleter;
+            friend struct PluginDeleter;
 
-        public:
             static void ReleasePluginModule(PluginModule* _pluginModule);
             static void ReleasePlugin(Plugin* _plugin);
         };
@@ -36,15 +36,36 @@ namespace ego
         bool init();
         void release();
 
+        FileName selectPluginModule(const char* _pluginTypeName);
+
+        template <typename TPlugin>
+        FileName selectPluginModule()
+        {
+            static_assert(std::is_base_of_v<Plugin, TPlugin>);
+            return selectPluginModule(TPlugin::GetPluginTypeName());
+        }
+
         template <typename TPlugin = Plugin>
         SharedPointer<TPlugin> loadPlugin(const FileName& _moduleName)
         {
             static_assert(std::is_base_of_v<Plugin, TPlugin>);
             PluginPointer plugin = loadPlugin(_moduleName, TPlugin::GetPluginType(), TPlugin::GetPluginTypeName());
+            EGO_CHECK_RETURN_NULL(plugin);
 
             EGO_ASSERT((rtti::IsObjectBasedOn<TPlugin>(*plugin)));
 
             return StaticPointerCast<TPlugin>(plugin);
+        }
+
+        template <typename TPlugin>
+        SharedPointer<TPlugin> loadPlugin()
+        {
+            static_assert(std::is_base_of_v<Plugin, TPlugin>);
+
+            const FileName moduleName = selectPluginModule<TPlugin>();
+            EGO_CHECK_RETURN_NULL(moduleName);
+
+            return loadPlugin<TPlugin>(moduleName);
         }
 
         const PluginModuleBindingBridge& getBindingBridge() const;
@@ -69,15 +90,19 @@ namespace ego
         PluginLoaderReference m_loader;
     };
 
+    EGO_POINTER(PluginController);
+    EGO_WEAK_POINTER(PluginController);
+
     class PluginControllerCore final : public Singleton<PluginControllerCore>
     {
     public:
         PluginControllerCore() = default;
 
-        bool init(PluginController* _pluginController);
-        PluginController& getPluginController();
+        bool init(const PluginControllerPointer& _pluginController);
+        void release();
+        PluginControllerPointer getPluginController() const;
 
     private:
-        PluginController* m_pluginController = nullptr;
+        PluginControllerPointer m_pluginController = nullptr;
     };
 }

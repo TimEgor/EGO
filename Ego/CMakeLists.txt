@@ -2,10 +2,15 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Ego)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Common.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Configurations.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Target.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/TargetSources.cmake)
+if (NOT DEFINED EGO_ROOT_PATH)
+    set(EGO_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/..)
+endif()
+
+include(${EGO_ROOT_PATH}/CMake/Common.cmake)
+include(${EGO_ROOT_PATH}/CMake/Configurations.cmake)
+include(${EGO_ROOT_PATH}/CMake/Target.cmake)
+include(${EGO_ROOT_PATH}/CMake/TargetSources.cmake)
+include(${EGO_ROOT_PATH}/CMake/ExternalModule.cmake)
 
 ego_setup_global_properties()
 

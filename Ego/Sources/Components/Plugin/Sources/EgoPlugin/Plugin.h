@@ -23,7 +23,7 @@ namespace ego
         : public NonCopyable
     {
     public:
-        Plugin(const PluginModulePointer& _module);
+        Plugin(const PluginModulePointer& _module, PluginType _pluginType);
 
         virtual ~Plugin();
 
@@ -39,7 +39,13 @@ namespace ego
         EGO_RTTI_VIRTUAL_BASE(Plugin);
 
     private:
-        const PluginModulePointer m_module;
+        PluginModulePointer m_module;
+        PluginType m_loadedType;
+    };
+
+    struct PluginDeleter final
+    {
+        void operator()(Plugin* _plugin) const;
     };
 
     EGO_POINTER(Plugin);

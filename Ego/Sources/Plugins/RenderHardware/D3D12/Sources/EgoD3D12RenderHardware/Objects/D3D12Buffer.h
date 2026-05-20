@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/RenderHardware/GraphicObjects/Buffer.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Buffer.h"
 
 #include "D3D12Resource.h"
 

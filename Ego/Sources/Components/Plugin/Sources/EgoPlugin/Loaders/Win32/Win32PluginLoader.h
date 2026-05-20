@@ -11,6 +11,7 @@ namespace ego
 	public:
 		Win32PluginLoader() = default;
 
+		virtual FileName selectPluginModule(const char* _typeName) override;
 		virtual PluginPointer loadPlugin(const PluginModulePointer& _module, const char* _typeName) override;
 
 	protected:

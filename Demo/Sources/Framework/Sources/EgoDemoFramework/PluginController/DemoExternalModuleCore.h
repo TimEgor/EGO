@@ -4,13 +4,13 @@
 
 #include "EgoDemoFramework/DemoController.h"
 
-#define EGO_ENGINE_MODULE()                                                                     \
+#define EGO_DEMO_MODULE()                                                                       \
 namespace ego::demo                                                                             \
 {                                                                                               \
     static void InitDemoModule(const PluginModuleBindingBridge& _bindings)                      \
     {                                                                                           \
-        DemoControllerCore::GetInstance().setController(_bindings.getBinding<DemoController>());\
+        DemoControllerCore::GetInstance().init(_bindings.getBinding<DemoController>());         \
     }                                                                                           \
                                                                                                 \
-    EGO_MODULE(InitDemoModule, nullptr)                                                         \
+    EGO_MODULE(Demo, InitDemoModule, nullptr)                                                   \
 }

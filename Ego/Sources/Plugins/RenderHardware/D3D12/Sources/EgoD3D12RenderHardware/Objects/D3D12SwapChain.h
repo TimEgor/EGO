@@ -5,8 +5,8 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
-#include "EgoEngine/RenderHardware/GraphicObjects/CommandQueue.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/SwapChain.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandQueue.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/SwapChain.h"
 
 namespace ego::gpu::d3d12
 {

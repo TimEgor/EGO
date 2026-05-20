@@ -19,4 +19,6 @@ namespace ego::win32
     private:
         WindowPointer m_mainWindow;
     };  
+
+    EGO_POINTER(Win32MainWindowProvider);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/RenderHardware/GraphicObjects/Sampler.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Sampler.h"
 
 #include "D3D12Resource.h"
 

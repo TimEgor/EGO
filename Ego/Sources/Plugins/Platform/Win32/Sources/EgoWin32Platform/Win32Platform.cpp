@@ -8,6 +8,9 @@ ego::win32::Win32Platform::Win32Platform(HINSTANCE _instance)
 
 bool ego::win32::Win32Platform::init()
 {
+    m_fileSystem = new Win32FileSystem();
+    EGO_CHECK_INITIALIZATION(m_fileSystem && m_fileSystem->init());
+
 	EGO_CHECK_INITIALIZATION(initWindowClass());
 
     m_mainWindowProvider = new Win32MainWindowProvider();
@@ -21,8 +24,9 @@ bool ego::win32::Win32Platform::init()
 
 void ego::win32::Win32Platform::release()
 {
-	EGO_SAFE_DESTROY(m_platformEventController);
-	EGO_SAFE_DESTROY(m_mainWindowProvider);
+    m_platformEventController = nullptr;
+    m_mainWindowProvider = nullptr;
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_fileSystem);
 }
 
 ego::MainWindowProvider& ego::win32::Win32Platform::getMainWindowProvider()
@@ -55,6 +59,11 @@ ego::PlatformEventController& ego::win32::Win32Platform::getPlatformEventControl
 {
 	EGO_ASSERT(m_platformEventController);
 	return *m_platformEventController;
+}
+
+ego::FileSystemPointer ego::win32::Win32Platform::getFileSystem()
+{
+    return m_fileSystem;
 }
 
 HINSTANCE ego::win32::Win32Platform::getInstanceHandle() const

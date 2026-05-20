@@ -2,7 +2,7 @@
 
 #include <wrl/client.h>
 
-#include "EgoEngine/RenderHardware/GraphicObjects/Fence.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Fence.h"
 
 #include "EgoD3D12RenderHardware/Common/D3D12Utils.h"
 

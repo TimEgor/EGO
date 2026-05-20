@@ -2,15 +2,22 @@
 
 #include "PluginController.h"
 
-ego::Plugin::Plugin(const PluginModulePointer& _module)
-    : m_module(_module)
-{
-    
-}
+ego::Plugin::Plugin(const PluginModulePointer& _module, PluginType _pluginType)
+    : m_module(_module),
+      m_loadedType(_pluginType)
+{}
 
-ego::Plugin::~Plugin()
+ego::Plugin::~Plugin() = default;
+
+void ego::PluginDeleter::operator()(Plugin* _plugin) const
 {
-    PluginController::PluginControllerAccessor::ReleasePlugin(this);
+    if (!_plugin)
+    {
+        return;
+    }
+
+    PluginController::PluginControllerAccessor::ReleasePlugin(_plugin);
+    delete _plugin;
 }
 
 ego::PluginModulePointer ego::Plugin::getModule() const
@@ -20,5 +27,5 @@ ego::PluginModulePointer ego::Plugin::getModule() const
 
 ego::PluginID ego::Plugin::getPluginID() const
 {
-    return CalcPluginID(m_module->getInfo().m_moduleId, getType());
+    return CalcPluginID(m_module->getInfo().m_moduleId, m_loadedType);
 }

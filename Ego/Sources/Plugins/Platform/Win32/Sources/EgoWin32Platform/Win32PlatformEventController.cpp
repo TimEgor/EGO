@@ -1,12 +1,14 @@
 #include "Win32PlatformEventController.h"
 
 #include "EgoEngine/Engine.h"
+#include "EgoEngine/Platform/Platform.h"
 
 #include "EgoWin32Platform/Window/Win32Window.h"
 
 void ego::win32::Win32WindowEventController::updateNativeEvents()
 {
     UpdateNativeWindowEvents(nullptr);
+    engine::GetEngine().getPlatform().getFileSystem()->updateDirectoryWatches();
 }
 
 LRESULT ego::win32::Win32WindowEventController::WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam)

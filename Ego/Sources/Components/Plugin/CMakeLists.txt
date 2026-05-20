@@ -16,6 +16,10 @@ target_include_directories(EgoPlugin PUBLIC "${PLUGIN_SOURCES_PATH}")
 
 target_link_libraries(EgoPlugin PUBLIC EgoCore)
 
+if(WIN32)
+    target_link_libraries(EgoPlugin PUBLIC Comdlg32)
+endif()
+
 ego_setup_target_common(
     EgoPlugin
     "Ego/Components"

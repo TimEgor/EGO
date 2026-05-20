@@ -2,6 +2,7 @@
 
 #include "EgoCore/RTTI/RTTI.h"
 
+#include "FileSystem/FileSystem.h"
 #include "Window/MainWindowProvider.h"
 #include "PlatformEventController.h"
 
@@ -26,6 +27,10 @@ namespace ego
         virtual const PlatformEventController& getPlatformEventController() const = 0;
         virtual PlatformEventController& getPlatformEventController() = 0;
 
+        virtual FileSystemPointer getFileSystem() = 0;
+
         EGO_RTTI_VIRTUAL_BASE(Platform);
     };
+
+    EGO_POINTER(Platform);
 }

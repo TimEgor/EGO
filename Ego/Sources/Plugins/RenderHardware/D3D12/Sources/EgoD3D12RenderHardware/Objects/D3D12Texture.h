@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/RenderHardware/GraphicObjects/Texture.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Texture.h"
 
 #include "D3D12Resource.h"
 

@@ -32,6 +32,11 @@ namespace ego
         PluginModuleInfo m_info;
     };
 
+    struct PluginModuleDeleter final
+    {
+        void operator()(PluginModule* _pluginModule) const;
+    };
+
     EGO_POINTER(PluginModule);
     EGO_WEAK_POINTER(PluginModule);
 

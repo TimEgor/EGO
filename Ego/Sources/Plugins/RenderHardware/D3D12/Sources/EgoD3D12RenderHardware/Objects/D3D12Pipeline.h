@@ -5,9 +5,9 @@
 
 #include <wrl/client.h>
 
-#include "EgoEngine/RenderHardware/GraphicObjects/BindingLayout.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/Pipeline.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/Shader.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/BindingLayout.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Pipeline.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
 
 #include "../Common/D3D12Utils.h"
 

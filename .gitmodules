@@ -1,3 +1,6 @@
 [submodule "Externals/volk"]
 	path = Externals/volk
 	url = git@github.com:zeux/volk.git
+[submodule "ThirtParty/pugixml"]
+	path = ThirtParty/pugixml
+	url = https://github.com/zeux/pugixml

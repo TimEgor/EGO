@@ -8,14 +8,14 @@
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
-#include "EgoEngine/RenderHardware/GraphicObjects/BindingLayout.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/CommandList.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/Format.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/GraphicResource.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/InputLayout.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/Pipeline.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/Sampler.h"
-#include "EgoEngine/RenderHardware/GraphicObjects/Texture.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/BindingLayout.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandList.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Format.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/GraphicResource.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/InputLayout.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Pipeline.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Sampler.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Texture.h"
 
 namespace ego::gpu::d3d12
 {

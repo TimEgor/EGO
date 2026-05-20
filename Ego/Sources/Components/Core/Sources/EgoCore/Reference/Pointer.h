@@ -51,16 +51,13 @@ namespace ego
         template <typename U>
         friend class EnableSharedFromThis;
 
-        template <typename To, typename From>
-        friend SharedPointer<To> StaticPointerCast(const SharedPointer<From>& _pointer);
-
     public:
         using ObjectType = T;
 
         SharedPointer();
         SharedPointer(std::nullptr_t);
 
-        explicit SharedPointer(T* _object);
+        SharedPointer(T* _object);
 
         template <typename TDeleter>
         SharedPointer(T* _object, TDeleter _deleter);
@@ -76,6 +73,8 @@ namespace ego
 
         ~SharedPointer();
 
+        SharedPointer& operator=(std::nullptr_t);
+        SharedPointer& operator=(T* _object);
         SharedPointer& operator=(const SharedPointer& _pointer);
         SharedPointer& operator=(SharedPointer&& _pointer);
 
@@ -100,6 +99,9 @@ namespace ego
         void reset(T* _object, TDeleter _deleter);
 
         void swap(SharedPointer& _pointer);
+
+        template <typename To, typename From>
+        friend SharedPointer<To> StaticPointerCast(const SharedPointer<From>& _pointer);
 
     private:
         SharedPointer(T* _object, ControlBlockBase* _controlBlock, bool _incrementReference);

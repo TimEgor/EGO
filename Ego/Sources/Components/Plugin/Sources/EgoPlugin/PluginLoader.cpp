@@ -1,5 +1,10 @@
 #include "PluginLoader.h"
 
+ego::FileName ego::PluginLoader::selectPluginModule(const char* _typeName)
+{
+    return FileName();
+}
+
 ego::PluginModulePointer ego::PluginLoader::loadModule(
     PluginModuleID _moduleID,
     const FileName& _moduleName,
@@ -19,7 +24,7 @@ ego::PluginModulePointer ego::PluginLoader::loadModule(
 
     initModule(moduleHandle, moduleInfo, _bindings);
 
-    return PluginModulePointer(new PluginModule(moduleInfo));
+    return PluginModulePointer(new PluginModule(moduleInfo), PluginModuleDeleter{});
 }
 
 void ego::PluginLoader::unloadModule(void* _moduleHandle, const FileName& _moduleName)

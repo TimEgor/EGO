@@ -6,7 +6,7 @@
 
 #include "Common/D3D12DescriptorAllocator.h"
 
-#include "EgoEngine/RenderHardware/GraphicDevice.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
 
 namespace ego::gpu::d3d12
 {

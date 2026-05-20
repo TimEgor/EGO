@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EgoCore/Reference/Pointer.h"
+
 #include <cstdint>
 
 namespace ego
@@ -12,4 +14,6 @@ namespace ego
 
 		virtual void generateError(const char* _message, const char* _file, uint32_t _line) = 0;
 	};
+
+	EGO_POINTER(AssertGenerator);
 }

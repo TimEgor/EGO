@@ -9,10 +9,10 @@ namespace ego
     class PlatformPlugin : public engine::EnginePlugin
     {
     public:
-        PlatformPlugin(const PluginModulePointer& _module)
-            : EnginePlugin(_module) {}
+        PlatformPlugin(const PluginModulePointer& _module, PluginType _pluginType)
+            : EnginePlugin(_module, _pluginType) {}
 
-        virtual Platform* createPlatform(void* _platformNativeInstance) = 0;
+        virtual PlatformPointer createPlatform(void* _platformNativeInstance) = 0;
 
         EGO_PLUGIN(PlatformPlugin, engine::EnginePlugin);
     };

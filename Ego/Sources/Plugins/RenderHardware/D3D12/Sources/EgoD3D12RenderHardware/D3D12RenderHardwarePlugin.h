@@ -1,15 +1,15 @@
 #pragma once
 
-#include "EgoEngine/RenderHardware/RenderHardwarePlugin.h"
+#include "EgoEngine/Graphic/RenderHardware/RenderHardwarePlugin.h"
 
 namespace ego::gpu::d3d12
 {
     class D3D12RenderHardwarePlugin final : public RenderHardwarePlugin
     {
     public:
-        D3D12RenderHardwarePlugin(const PluginModulePointer& _module);
+        D3D12RenderHardwarePlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        virtual GraphicDevice* createGraphicDevice() override;
+        virtual GraphicDevicePointer createGraphicDevice() override;
 
         EGO_PLUGIN(D3D12RenderHardwarePlugin, RenderHardwarePlugin);
     };

@@ -4,10 +4,12 @@
 
 int EgoAndroidMain(android_app* _app)
 {
-	ego::Engine* engine = new ego::Engine();
-	ego::EngineCore::GetInstance().setEngine(engine);
+	ego::engine::EnginePointer engine(new ego::engine::Engine());
+	ego::engine::EngineCore::GetInstance().init(engine);
 
-	engine->init();
+	ego::engine::EngineInitData initData;
+	initData.m_nativeInstanceHandle = _app;
+	engine->init(initData);
 
 	return 0;
 }

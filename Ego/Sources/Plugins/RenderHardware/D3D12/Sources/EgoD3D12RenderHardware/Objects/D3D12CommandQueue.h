@@ -2,7 +2,7 @@
 
 #include <wrl/client.h>
 
-#include "EgoEngine/RenderHardware/GraphicObjects/CommandQueue.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandQueue.h"
 
 #include "EgoD3D12RenderHardware/Common/D3D12Utils.h"
 

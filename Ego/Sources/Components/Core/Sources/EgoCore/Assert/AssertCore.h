@@ -14,20 +14,20 @@ namespace ego
 	public:
 		AssertCore() = default;
 
-		void setGenerator(AssertGenerator* _generator);
-		AssertGenerator* getGenerator() const;
+		void setGenerator(const AssertGeneratorPointer& _generator);
+		AssertGeneratorPointer getGenerator() const;
 
 	private:
-		AssertGenerator* m_generator = nullptr;
+		AssertGeneratorPointer m_generator = nullptr;
 	};
 
-	inline AssertGenerator* GetAssertGenerator() { return AssertCore::GetInstance().getGenerator(); }
+	inline AssertGeneratorPointer GetAssertGenerator() { return AssertCore::GetInstance().getGenerator(); }
 }
 
 #if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE)
 #define EGO_ASSERT(_CONDITION)														\
 	if (!(_CONDITION)) {															\
-		ego::AssertGenerator* generator = ego::GetAssertGenerator();				\
+		ego::AssertGeneratorPointer generator = ego::GetAssertGenerator();			\
 		if (generator)																\
 		{																			\
 			generator->generateError(EGO_TO_STRING(_CONDITION), EGO_FILE, EGO_LINE);\
@@ -41,7 +41,7 @@ namespace ego
 
 #define EGO_ASSERT_MESSAGE(_CONDITION, _MESSAGE)									\
 	if (!(_CONDITION)) {															\
-		ego::AssertGenerator* generator = ego::GetAssertGenerator();				\
+		ego::AssertGeneratorPointer generator = ego::GetAssertGenerator();			\
 		if (generator)																\
 		{																			\
 			generator->generateError(_MESSAGE, EGO_FILE, EGO_LINE);					\
@@ -53,7 +53,7 @@ namespace ego
 	}																				
 																					
 #define EGO_ASSERT_FAIL()															\
-	ego::AssertGenerator* generator = ego::GetAssertGenerator();					\
+	ego::AssertGeneratorPointer generator = ego::GetAssertGenerator();				\
 	if (generator)																	\
 	{																				\
 		generator->generateError("FAIL", EGO_FILE, EGO_LINE);						\
@@ -64,7 +64,7 @@ namespace ego
 	}																				
 																					
 #define EGO_ASSERT_FAIL_MESSAGE(_MESSAGE)											\
-	ego::AssertGenerator* generator = ego::GetAssertGenerator();					\
+	ego::AssertGeneratorPointer generator = ego::GetAssertGenerator();				\
 	if (generator)																	\
 	{																				\
 		generator->generateError(_MESSAGE, EGO_FILE, EGO_LINE);						\

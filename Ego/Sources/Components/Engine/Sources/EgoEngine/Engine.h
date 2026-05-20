@@ -1,16 +1,27 @@
 #pragma once
 
 #include "EgoCore/Clock.h"
+#include "EgoCore/Job/JobController.h"
 #include "EgoCore/Patterns/Singleton.h"
 
+#include "EgoPlugin/PluginController.h"
+
+#include "Event/EventController.h"
 #include "Platform/PlatformPlugin.h"
-#include "RenderHardware/RenderHardwarePlugin.h"
+#include "Plugin/EnginePluginController.h"
+#include "Graphic/Presenter/WindowGraphicPresenter.h"
+#include "Graphic/Render/DefaultRender.h"
+#include "Graphic/RenderHardware/RenderHardwarePlugin.h"
+#include "Resources/Resource/ResourceController.h"
 
 namespace ego
 {
     class PluginController;
     class EventController;
     class Platform;
+    class JobController;
+    class FileSystem;
+    class ResourceController;
 
     namespace gpu
     {
@@ -58,20 +69,34 @@ namespace ego::engine
         const EventController& getEventController() const;
         EventController& getEventController();
 
+        const JobController& getJobController() const;
+        JobController& getJobController();
+
+        const ResourceController& getResourceController() const;
+        ResourceController& getResourceController();
+
+        const DefaultRender& getRender() const;
+        DefaultRender& getRender();
+
         const EnginePluginController& getPluginController() const;
         EnginePluginController& getPluginController();
 
     private:
         void beginFrame();
         void endFrame();
+        bool prepareMainWindowPresenter();
+        void renderFrame();
 
-        PluginController* m_pluginController = nullptr;
-        EnginePluginController* m_enginePluginController = nullptr;
+        EnginePluginControllerPointer m_enginePluginController = nullptr;
 
-        EventController* m_eventController = nullptr;
+        EventControllerPointer m_eventController = nullptr;
+        JobControllerPointer m_jobController = nullptr;
+        ResourceControllerPointer m_resourceController = nullptr;
 
-        Platform* m_platform = nullptr;
-        gpu::GraphicDevice* m_graphicDevice = nullptr;
+        PlatformPointer m_platform = nullptr;
+        gpu::GraphicDevicePointer m_graphicDevice = nullptr;
+        WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
+        DefaultRenderPointer m_render = nullptr;
 
         PlatformPluginPointer m_platformPlugin = nullptr;
         RenderHardwarePluginPointer m_renderHardwarePlugin = nullptr;
@@ -89,16 +114,20 @@ namespace ego::engine
         bool m_isPaused = false;
     };
 
+    EGO_POINTER(Engine);
+    EGO_WEAK_POINTER(Engine);
+
     class EngineCore final : public Singleton<EngineCore>
     {
     public:
         EngineCore() = default;
 
-        Engine& getEngine() const;
-        void init(Engine* _engine);
+        EnginePointer getEngine() const;
+        void init(const EnginePointer& _engine);
+        void release();
 
     private:
-        Engine* m_engine;
+        EnginePointer m_engine = nullptr;
     };
 
     Engine& GetEngine();

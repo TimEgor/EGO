@@ -2,6 +2,7 @@
 
 #include "MTCountable.h"
 
+#include <type_traits>
 #include <utility>
 
 namespace ego
@@ -9,8 +10,6 @@ namespace ego
 	template <typename T>
 	class Reference
 	{
-		static_assert(std::is_base_of_v<MTCountable, T>);
-
 	public:
 		Reference() = default;
 		Reference(nullptr_t);
@@ -43,6 +42,8 @@ namespace ego
 		void reset();
 
 	protected:
+		static void validateReferenceType();
+
 		void release();
 		void assign(T* _object);
 

@@ -137,6 +137,24 @@ ego::SharedPointer<T>::~SharedPointer()
 }
 
 template <typename T>
+ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(std::nullptr_t)
+{
+    reset();
+    return *this;
+}
+
+template <typename T>
+ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(T* _object)
+{
+    if (m_object != _object)
+    {
+        reset(_object);
+    }
+
+    return *this;
+}
+
+template <typename T>
 ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(const SharedPointer& _pointer)
 {
     if (this != &_pointer)

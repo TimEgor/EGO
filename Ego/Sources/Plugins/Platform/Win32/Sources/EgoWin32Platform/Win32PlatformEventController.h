@@ -23,4 +23,6 @@ namespace ego::win32
 		static LRESULT CALLBACK WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam);
 		static void UpdateNativeWindowEvents(HWND _hwnd);
 	};
+
+	EGO_POINTER(Win32WindowEventController);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/RenderHardware/GraphicObjects/Shader.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
 
 #include "EgoD3D12RenderHardware/Common/D3D12Utils.h"
 

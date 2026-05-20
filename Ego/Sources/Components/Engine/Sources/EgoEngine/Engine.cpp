@@ -1,24 +1,29 @@
 #include "Engine.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Job/JobController.h"
 
 #include "EgoPlugin/PluginController.h"
 
 #include "Event/EventController.h"
+#include "Graphic/Presenter/WindowGraphicPresenter.h"
+#include "Graphic/Render/DefaultRender.h"
 #include "Platform/Platform.h"
 #include "Plugin/EnginePluginController.h"
+#include "Resources/Resource/ResourceController.h"
 
 bool ego::engine::Engine::init(const EngineInitData& _initData)
 {
-    m_pluginController = new PluginController;
-    EGO_CHECK_INITIALIZATION(PluginControllerCore::GetInstance().init(m_pluginController))
-    EGO_CHECK_INITIALIZATION(m_pluginController && m_pluginController->init());
-
     m_enginePluginController = new EnginePluginController();
     EGO_CHECK_INITIALIZATION(m_enginePluginController && m_enginePluginController->init());
 
     m_eventController = new EventController();
     EGO_CHECK_INITIALIZATION(m_eventController && m_eventController->init());
+
+    m_jobController = new JobController();
+
+    const uint32_t jobThreadCount = JobController::GetHardwareThreadCount();
+    EGO_CHECK_INITIALIZATION(m_jobController && m_jobController->init(jobThreadCount ? jobThreadCount : 1));
 
     m_platformPlugin = m_enginePluginController->loadEnginePlugin<PlatformPlugin>(_initData.m_platformPluginModuleName);
     EGO_CHECK_INITIALIZATION(m_platformPlugin);
@@ -26,21 +31,37 @@ bool ego::engine::Engine::init(const EngineInitData& _initData)
     m_platform = m_platformPlugin->createPlatform(_initData.m_nativeInstanceHandle);
     EGO_CHECK_INITIALIZATION(m_platform && m_platform->init());
 
+    m_resourceController = new ResourceController();
+    EGO_CHECK_INITIALIZATION(m_resourceController && m_resourceController->init());
+    m_resourceController->addFileSystem(m_platform->getFileSystem());
+
     m_renderHardwarePlugin = m_enginePluginController->loadEnginePlugin<RenderHardwarePlugin>(_initData.m_renderHardwarePluginModuleName);
     EGO_CHECK_INITIALIZATION(m_renderHardwarePlugin);
 
     m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();
     EGO_CHECK_INITIALIZATION(m_graphicDevice && m_graphicDevice->init(gpu::GraphicDeviceInitParams()));
 
+    m_render = new DefaultRender();
+    EGO_CHECK_INITIALIZATION(m_render && m_render->init());
+
     return true;
 }
 
 void ego::engine::Engine::release()
 {
-    EGO_SAFE_DESTROY_WITH_RELEASING(m_platform);
-    EGO_SAFE_DESTROY_WITH_RELEASING(m_eventController);
-    EGO_SAFE_DESTROY(m_enginePluginController);
-    EGO_SAFE_DESTROY_WITH_RELEASING(m_pluginController);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_resourceController);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_platform);
+
+    m_renderHardwarePlugin = nullptr;
+    m_platformPlugin = nullptr;
+
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
+
+    m_enginePluginController = nullptr;
 }
 
 void ego::engine::Engine::run()
@@ -50,8 +71,13 @@ void ego::engine::Engine::run()
         m_platform->getMainWindowProvider().prepareMainWindow("EGO", WindowSize(500, 500));
     }
 
+    if (!prepareMainWindowPresenter())
+    {
+        return;
+    }
+
     beginFrame();
-    endFrame();
+    endFrame();  
 
     while (!m_isStopped)
     {
@@ -67,6 +93,8 @@ void ego::engine::Engine::run()
 
         m_platform->getPlatformEventController().updateNativeEvents();
         //m_inputDeviceController->update();
+
+        renderFrame();
 
         //JobGraphReference mailLoopJobGraph = getMainLoopJobGraph();
         //m_jobController->addJobGraph(mailLoopJobGraph);
@@ -155,6 +183,42 @@ ego::EventController& ego::engine::Engine::getEventController()
     return *m_eventController;
 }
 
+const ego::JobController& ego::engine::Engine::getJobController() const
+{
+    EGO_ASSERT(m_jobController);
+    return *m_jobController;
+}
+
+ego::JobController& ego::engine::Engine::getJobController()
+{
+    EGO_ASSERT(m_jobController);
+    return *m_jobController;
+}
+
+const ego::ResourceController& ego::engine::Engine::getResourceController() const
+{
+    EGO_ASSERT(m_resourceController);
+    return *m_resourceController;
+}
+
+ego::ResourceController& ego::engine::Engine::getResourceController()
+{
+    EGO_ASSERT(m_resourceController);
+    return *m_resourceController;
+}
+
+const ego::DefaultRender& ego::engine::Engine::getRender() const
+{
+    EGO_ASSERT(m_render);
+    return *m_render;
+}
+
+ego::DefaultRender& ego::engine::Engine::getRender()
+{
+    EGO_ASSERT(m_render);
+    return *m_render;
+}
+
 const ego::engine::EnginePluginController& ego::engine::Engine::getPluginController() const
 {
     EGO_ASSERT(m_enginePluginController);
@@ -178,19 +242,58 @@ void ego::engine::Engine::endFrame()
     m_prevFrameStartTime = m_currentFrameTime;
 }
 
-ego::engine::Engine& ego::engine::EngineCore::getEngine() const
+bool ego::engine::Engine::prepareMainWindowPresenter()
 {
-    EGO_ASSERT(m_engine);
-    return *m_engine;
+    if (m_graphicPresenter)
+    {
+        return true;
+    }
+
+    const WindowPointer mainWindow = m_platform->getMainWindowProvider().getMainWindow();
+    EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
+
+    gpu::SwapChainDesc swapChainDesc;
+    swapChainDesc.m_format = gpu::GraphicResourceFormat::B8G8R8A8UNorm;
+    swapChainDesc.m_bufferCount = 2;
+
+    m_graphicPresenter = new WindowGraphicPresenter();
+    EGO_CHECK_RETURN_FALSE(m_graphicPresenter && m_graphicPresenter->init(*mainWindow, swapChainDesc));
+
+    return true;
 }
 
-void ego::engine::EngineCore::init(Engine* _engine)
+void ego::engine::Engine::renderFrame()
 {
-    EGO_ASSERT(!m_engine);
+    if (!m_render || !m_graphicPresenter)
+    {
+        return;
+    }
+
+    m_render->render(*m_graphicPresenter);
+    m_render->wait();
+    m_render->present(*m_graphicPresenter);
+}
+
+ego::engine::EnginePointer ego::engine::EngineCore::getEngine() const
+{
+    return m_engine;
+}
+
+void ego::engine::EngineCore::init(const EnginePointer& _engine)
+{
+    EGO_ASSERT(!m_engine || !_engine);
     m_engine = _engine;
+}
+
+void ego::engine::EngineCore::release()
+{
+    m_engine = nullptr;
 }
 
 ego::engine::Engine& ego::engine::GetEngine()
 {
-    return EngineCore::GetInstance().getEngine();
+    const EnginePointer engine = EngineCore::GetInstance().getEngine();
+
+    EGO_ASSERT(engine);
+    return *engine.get();
 }

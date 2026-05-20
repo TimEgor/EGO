@@ -4,7 +4,7 @@
 
 #include <wrl/client.h>
 
-#include "EgoEngine/RenderHardware/GraphicObjects/CommandList.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandList.h"
 
 #include "EgoD3D12RenderHardware/Common/D3D12Utils.h"
 

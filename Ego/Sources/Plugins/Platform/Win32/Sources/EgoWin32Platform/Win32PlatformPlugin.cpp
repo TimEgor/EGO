@@ -7,15 +7,15 @@
 EGO_CORE_MODULE();
 EGO_ENGINE_MODULE();
 
-EGO_PLUGIN_CREATE(ego::win32::Win32PlatformPlugin, PlatformPlugin);
+EGO_PLUGIN_CREATE(ego::win32::Win32PlatformPlugin, PlatformPlugin, ego::PlatformPlugin);
 
-ego::win32::Win32PlatformPlugin::Win32PlatformPlugin(const PluginModulePointer& _module)
-    : PlatformPlugin(_module)
+ego::win32::Win32PlatformPlugin::Win32PlatformPlugin(const PluginModulePointer& _module, PluginType _pluginType)
+    : PlatformPlugin(_module, _pluginType)
 {
     
 }
 
-ego::Platform* ego::win32::Win32PlatformPlugin::createPlatform(void* _platformNativeInstance)
+ego::PlatformPointer ego::win32::Win32PlatformPlugin::createPlatform(void* _platformNativeInstance)
 {
-    return new Win32Platform(static_cast<HINSTANCE>(_platformNativeInstance));
+    return PlatformPointer(new Win32Platform(static_cast<HINSTANCE>(_platformNativeInstance)));
 }

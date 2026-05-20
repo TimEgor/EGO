@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Reference/Reference.h"
 
 #include "Plugin.h"
@@ -16,6 +17,8 @@ namespace ego
     {
     public:
         PluginLoader() = default;
+
+        virtual FileName selectPluginModule(const char* _typeName);
 
         PluginModulePointer loadModule(PluginModuleID _moduleID, const FileName& _moduleName, PluginModuleBindingBridge& _bindings);
         void unloadModule(void* _moduleHandle, const FileName& _moduleName);

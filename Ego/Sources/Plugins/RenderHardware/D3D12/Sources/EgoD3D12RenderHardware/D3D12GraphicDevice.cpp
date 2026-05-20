@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <d3dcompiler.h>
+
 #include "EgoEngine/Platform/Window/Window.h"
 
 #include "Objects/D3D12Buffer.h"
@@ -18,6 +20,47 @@ namespace
 {
     constexpr uint32_t BindlessResourceDescriptorCapacity = 1024;
     constexpr uint32_t BindlessSamplerDescriptorCapacity = 128;
+
+    ego::gpu::ShaderCodePointer CompileShaderCode(
+        const ego::gpu::ShaderCodePointer& _code,
+        const char* _entryPoint,
+        const char* _target
+    )
+    {
+        if (!_code || !_code->getCode() || !_code->getCodeSize())
+        {
+            return nullptr;
+        }
+
+        Microsoft::WRL::ComPtr<ID3DBlob> compiledShader;
+        Microsoft::WRL::ComPtr<ID3DBlob> errors;
+
+        const HRESULT result = D3DCompile(
+            _code->getCode(),
+            _code->getCodeSize(),
+            nullptr,
+            nullptr,
+            nullptr,
+            _entryPoint,
+            _target,
+            D3DCOMPILE_ENABLE_STRICTNESS,
+            0,
+            &compiledShader,
+            &errors
+        );
+
+        if (FAILED(result) || !compiledShader)
+        {
+            return _code;
+        }
+
+        return ego::gpu::ShaderCodePointer(
+            new ego::gpu::ShaderCode(
+                compiledShader->GetBufferPointer(),
+                static_cast<uint32_t>(compiledShader->GetBufferSize())
+            )
+        );
+    }
 
     template <typename TCommandListPointer, typename TCommandListObject>
     TCommandListPointer CreateCommandList(
@@ -971,7 +1014,7 @@ ego::gpu::VertexShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createVertexS
         return VertexShaderPointer();
     }
 
-    return VertexShaderPointer(new D3D12VertexShader(_code));
+    return VertexShaderPointer(new D3D12VertexShader(CompileShaderCode(_code, "VSMain", "vs_5_0")));
 }
 
 ego::gpu::PixelShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createPixelShader(const ShaderCodePointer& _code)
@@ -981,7 +1024,7 @@ ego::gpu::PixelShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createPixelSha
         return PixelShaderPointer();
     }
 
-    return PixelShaderPointer(new D3D12PixelShader(_code));
+    return PixelShaderPointer(new D3D12PixelShader(CompileShaderCode(_code, "PSMain", "ps_5_0")));
 }
 
 ego::gpu::ComputeShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createComputeShader(const ShaderCodePointer& _code)
@@ -991,7 +1034,7 @@ ego::gpu::ComputeShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createComput
         return ComputeShaderPointer();
     }
 
-    return ComputeShaderPointer(new D3D12ComputeShader(_code));
+    return ComputeShaderPointer(new D3D12ComputeShader(CompileShaderCode(_code, "CSMain", "cs_5_0")));
 }
 
 ego::gpu::GraphicPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createGraphicPipeline(
@@ -1206,16 +1249,6 @@ ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindin
     const BindingLayoutDesc& _desc
 )
 {
-    EGO_ASSERT_MESSAGE(
-        m_capabilities.m_supportsBindlessResources,
-        "D3D12 bindless binding model requires Resource Binding Tier 2 or higher"
-    );
-
-    if (!m_capabilities.m_supportsBindlessResources)
-    {
-        return BindingLayoutPointer();
-    }
-
     std::vector<D3D12_ROOT_PARAMETER1> rootParameters;
     std::vector<D3D12BindingLayout::PushConstantInfo> pushConstants;
     pushConstants.reserve(_desc.m_pushConstants.size());
@@ -1255,10 +1288,14 @@ ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindin
     rootSignatureDesc.Desc_1_1.pParameters = rootParameters.empty() ? nullptr : rootParameters.data();
     rootSignatureDesc.Desc_1_1.NumStaticSamplers = 0;
     rootSignatureDesc.Desc_1_1.pStaticSamplers = nullptr;
-    rootSignatureDesc.Desc_1_1.Flags =
-        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-        D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
-        D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+    rootSignatureDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    if (m_capabilities.m_supportsBindlessResources)
+    {
+        rootSignatureDesc.Desc_1_1.Flags |=
+            D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
+            D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+    }
 
     Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSignature;
     Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;

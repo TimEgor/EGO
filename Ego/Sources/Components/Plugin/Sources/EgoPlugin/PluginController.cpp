@@ -15,14 +15,14 @@ void ego::PluginController::PluginControllerAccessor::ReleasePluginModule(Plugin
 {
     EGO_ASSERT(_pluginModule);
 
-    PluginControllerCore().GetInstance().getPluginController().unloadModule(_pluginModule);
+    PluginControllerCore().GetInstance().getPluginController()->unloadModule(_pluginModule);
 }
 
 void ego::PluginController::PluginControllerAccessor::ReleasePlugin(Plugin* _plugin)
 {
     EGO_ASSERT(_plugin);
 
-    PluginControllerCore().GetInstance().getPluginController().unloadPlugin(_plugin);
+    PluginControllerCore().GetInstance().getPluginController()->unloadPlugin(_plugin);
 }
 
 bool ego::PluginController::init()
@@ -32,8 +32,11 @@ bool ego::PluginController::init()
     m_loader = CreatePluginLoader();
     EGO_CHECK_INITIALIZATION(m_loader);
 
+    const PluginControllerPointer pluginController = PluginControllerCore::GetInstance().getPluginController();
+    EGO_CHECK_INITIALIZATION(pluginController);
+
     m_bindingBridge.addBinding(AssertCore::GetInstance().getGenerator());
-    m_bindingBridge.addBinding(&PluginControllerCore::GetInstance().getPluginController());
+    m_bindingBridge.addBinding(pluginController);
 
     return true;
 }
@@ -44,6 +47,9 @@ void ego::PluginController::release()
 
     EGO_ASSERT(m_modules.empty());
     EGO_ASSERT(m_plugins.empty());
+
+    m_bindingBridge.removeBinding<AssertGenerator>();
+    m_bindingBridge.removeBinding<PluginController>();
 
     m_modules = ModuleContainer();
     m_plugins = PluginContainer();
@@ -59,6 +65,23 @@ const ego::PluginModuleBindingBridge& ego::PluginController::getBindingBridge() 
 ego::PluginModuleBindingBridge& ego::PluginController::getBindingBridge()
 {
     return m_bindingBridge;
+}
+
+ego::FileName ego::PluginController::selectPluginModule(const char* _pluginTypeName)
+{
+    PluginLoaderReference loader;
+    {
+        std::lock_guard lock(m_mutex);
+        EGO_ASSERT(m_loader);
+        loader = m_loader;
+    }
+
+    if (!loader)
+    {
+        return FileName();
+    }
+
+    return loader->selectPluginModule(_pluginTypeName);
 }
 
 ego::PluginPointer ego::PluginController::loadPlugin(
@@ -159,7 +182,7 @@ void ego::PluginController::unloadPlugin(Plugin* _plugin)
     _plugin->onUnloaded();
 }
 
-bool ego::PluginControllerCore::init(PluginController* _pluginController)
+bool ego::PluginControllerCore::init(const PluginControllerPointer& _pluginController)
 {
     EGO_ASSERT(_pluginController);
 
@@ -171,12 +194,15 @@ bool ego::PluginControllerCore::init(PluginController* _pluginController)
 
     m_pluginController = _pluginController;
 
-    return m_pluginController;
+    return static_cast<bool>(m_pluginController);
 }
 
-ego::PluginController& ego::PluginControllerCore::getPluginController()
+void ego::PluginControllerCore::release()
 {
-    EGO_ASSERT_MESSAGE(m_pluginController, "Plugin controller hasn't been inited.")
+    m_pluginController.reset();
+}
 
-    return *m_pluginController;
+ego::PluginControllerPointer ego::PluginControllerCore::getPluginController() const
+{
+    return m_pluginController;
 }

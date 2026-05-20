@@ -7,9 +7,17 @@
 ego::PluginModule::PluginModule(const PluginModuleInfo& _info)
     : m_info(_info) {}
 
-ego::PluginModule::~PluginModule()
+ego::PluginModule::~PluginModule() = default;
+
+void ego::PluginModuleDeleter::operator()(PluginModule* _pluginModule) const
 {
-    PluginController::PluginControllerAccessor::ReleasePluginModule(this);
+    if (!_pluginModule)
+    {
+        return;
+    }
+
+    PluginController::PluginControllerAccessor::ReleasePluginModule(_pluginModule);
+    delete _pluginModule;
 }
 
 void ego::PluginModuleCore::init(const PluginModuleBindingBridge& _bindings)

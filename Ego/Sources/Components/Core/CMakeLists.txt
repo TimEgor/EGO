@@ -14,6 +14,14 @@ source_group(TREE "${CORE_SOURCES_PATH}/EgoCore" FILES ${CORE_SOURCES})
 
 target_include_directories(EgoCore PUBLIC "${CORE_SOURCES_PATH}")
 
+ego_import_third_party_module(PugiXML)
+
+target_link_libraries(
+    EgoCore
+        PUBLIC
+            pugixml::pugixml
+)
+
 ego_setup_target_common(
     EgoCore
     "Ego/Components"

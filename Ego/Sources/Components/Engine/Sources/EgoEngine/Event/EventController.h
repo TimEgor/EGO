@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "EgoCore/Containers/ObjectPool/ObjectPool.h"
+#include "EgoCore/Reference/Pointer.h"
 
 #include "Event.h"
 
@@ -193,4 +194,6 @@ namespace ego
         InstancedCallbackPool m_instancedCallbacks;
         InstancedCallbackOrdersCollection m_instancedCallbackOrders;
     };
+
+    EGO_POINTER(EventController);
 }
