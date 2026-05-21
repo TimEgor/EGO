@@ -37,7 +37,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(Texture, GraphicResource);
     };
 
-    EGO_POINTER(Texture);
+    EGO_REFERENCE(Texture);
 
     using Texture2DSize = UInt32Vector2;
 
@@ -65,7 +65,7 @@ namespace ego::gpu
         Texture2DDesc m_desc;
     };
 
-    EGO_POINTER(Texture2D);
+    EGO_REFERENCE(Texture2D);
 
     enum class TextureViewDimension
     {
@@ -84,7 +84,7 @@ namespace ego::gpu
     class TextureView : public ResourceView
     {
     public:
-        TextureView(const TexturePointer& _texture, const TextureViewDesc& _desc);
+        TextureView(const TextureReference& _texture, const TextureViewDesc& _desc);
 
         const TextureViewDesc& getDesc() const;
         GraphicResourceViewType getViewType() const override;
@@ -93,5 +93,5 @@ namespace ego::gpu
         TextureViewDesc m_desc;
     };
 
-    EGO_POINTER(TextureView);
+    EGO_REFERENCE(TextureView);
 }

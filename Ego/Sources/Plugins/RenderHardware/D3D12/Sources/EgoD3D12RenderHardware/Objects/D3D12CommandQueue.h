@@ -23,11 +23,11 @@ namespace ego::gpu::d3d12
         virtual void* getNativeHandle() const override;
         virtual void setName(const char* _name) override;
 
-        virtual void execute(const CommandListPointer& _commandList) override;
-        virtual void execute(const std::vector<CommandListPointer>& _commandLists) override;
+        virtual void execute(const CommandListReference& _commandList) override;
+        virtual void execute(const std::vector<CommandListReference>& _commandLists) override;
 
-        virtual void signal(const FencePointer& _fence, Fence::FenceValue _value) override;
-        virtual void wait(const FencePointer& _fence, Fence::FenceValue _value) override;
+        virtual void signal(const FenceReference& _fence, Fence::FenceValue _value) override;
+        virtual void wait(const FenceReference& _fence, Fence::FenceValue _value) override;
         virtual void waitIdle() override;
 
         ID3D12CommandQueue* getQueue() const;

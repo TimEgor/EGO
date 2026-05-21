@@ -86,8 +86,7 @@ namespace ego::gpu
         EGO_RTTI_VIRTUAL_BASE(GraphicResource);
     };
 
-    EGO_POINTER(GraphicResource);
-    EGO_WEAK_POINTER(GraphicResource);
+    EGO_REFERENCE(GraphicResource);
 }
 
 #define EGO_GRAPHIC_RESOURCE_TYPE_INFO()                           \

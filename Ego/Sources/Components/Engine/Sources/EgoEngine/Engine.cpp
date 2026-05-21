@@ -40,6 +40,7 @@ bool ego::engine::Engine::init(const EngineInitData& _initData)
 
     m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();
     EGO_CHECK_INITIALIZATION(m_graphicDevice && m_graphicDevice->init(gpu::GraphicDeviceInitParams()));
+    m_renderHardwarePlugin->registerResourceProviders(*m_resourceController);
 
     m_render = new DefaultRender();
     EGO_CHECK_INITIALIZATION(m_render && m_render->init());

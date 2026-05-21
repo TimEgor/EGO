@@ -16,12 +16,12 @@ namespace ego
         bool init(const Window& _window, const gpu::SwapChainDesc& _swapChainDesc);
         void release();
 
-        virtual gpu::Texture2DPointer getTargetTexture() override;
+        virtual gpu::Texture2DReference getTargetTexture() override;
 
         virtual void present() override;
 
     private:
-        gpu::SwapChainPointer m_swapChain;
+        gpu::SwapChainReference m_swapChain;
     };
 
     EGO_POINTER(WindowGraphicPresenter);

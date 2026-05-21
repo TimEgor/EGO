@@ -46,40 +46,40 @@ namespace ego::gpu
         virtual bool init(const GraphicDeviceInitParams& _params) = 0;
         virtual void release() = 0;
 
-        virtual CommandQueuePointer createCommandQueue(const CommandQueueDesc& _desc) = 0;
-        virtual GraphicCommandListPointer createGraphicCommandList() = 0;
-        virtual ComputeCommandListPointer createComputeCommandList() = 0;
-        virtual CopyCommandListPointer createCopyCommandList() = 0;
+        virtual CommandQueueReference createCommandQueue(const CommandQueueDesc& _desc) = 0;
+        virtual GraphicCommandListReference createGraphicCommandList() = 0;
+        virtual ComputeCommandListReference createComputeCommandList() = 0;
+        virtual CopyCommandListReference createCopyCommandList() = 0;
 
-        virtual BufferPointer createBuffer(
+        virtual BufferReference createBuffer(
             const BufferDesc& _desc,
             const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
         ) = 0;
-        virtual Texture2DPointer createTexture2D(
+        virtual Texture2DReference createTexture2D(
             const Texture2DDesc& _desc,
             const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
         ) = 0;
 
-        virtual VertexShaderPointer createVertexShader(const ShaderCodePointer& _code) = 0;
-        virtual PixelShaderPointer createPixelShader(const ShaderCodePointer& _code) = 0;
-        virtual ComputeShaderPointer createComputeShader(const ShaderCodePointer& _code) = 0;
-        virtual BindingLayoutPointer createBindingLayout(const BindingLayoutDesc& _desc) = 0;
-        virtual SamplerPointer createSampler(const SamplerDesc& _desc) = 0;
+        virtual VertexShaderReference createVertexShader(const ShaderCodeReference& _code) = 0;
+        virtual PixelShaderReference createPixelShader(const ShaderCodeReference& _code) = 0;
+        virtual ComputeShaderReference createComputeShader(const ShaderCodeReference& _code) = 0;
+        virtual BindingLayoutReference createBindingLayout(const BindingLayoutDesc& _desc) = 0;
+        virtual SamplerReference createSampler(const SamplerDesc& _desc) = 0;
 
-        virtual BufferViewPointer createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc) = 0;
-        virtual TextureViewPointer createTextureView(const TexturePointer& _texture, const TextureViewDesc& _desc) = 0;
+        virtual BufferViewReference createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc) = 0;
+        virtual TextureViewReference createTextureView(const TextureReference& _texture, const TextureViewDesc& _desc) = 0;
 
-        virtual GraphicPipelinePointer createGraphicPipeline(const GraphicPipelineDesc& _desc) = 0;
-        virtual ComputePipelinePointer createComputePipeline(const ComputePipelineDesc& _desc) = 0;
+        virtual GraphicPipelineReference createGraphicPipeline(const GraphicPipelineDesc& _desc) = 0;
+        virtual ComputePipelineReference createComputePipeline(const ComputePipelineDesc& _desc) = 0;
 
-        virtual FencePointer createFence(Fence::FenceValue _initialValue = 0) = 0;
+        virtual FenceReference createFence(Fence::FenceValue _initialValue = 0) = 0;
 
-        virtual SwapChainPointer createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) = 0;
+        virtual SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) = 0;
 
         virtual const GraphicDeviceCapabilities& getCapabilities() const = 0;
 
         virtual void waitIdle() = 0;
     };
 
-    EGO_POINTER(GraphicDevice);
+    EGO_REFERENCE(GraphicDevice);
 }

@@ -13,17 +13,17 @@
 
 namespace
 {
-    ego::gpu::d3d12::D3D12Buffer* GetD3D12Buffer(const ego::gpu::BufferPointer& _buffer)
+    ego::gpu::d3d12::D3D12Buffer* GetD3D12Buffer(const ego::gpu::BufferReference& _buffer)
     {
-        return _buffer ? static_cast<ego::gpu::d3d12::D3D12Buffer*>(_buffer.get()) : nullptr;
+        return _buffer ? static_cast<ego::gpu::d3d12::D3D12Buffer*>(_buffer.getObject()) : nullptr;
     }
 
-    ego::gpu::d3d12::D3D12Texture2D* GetD3D12Texture2D(const ego::gpu::TexturePointer& _texture)
+    ego::gpu::d3d12::D3D12Texture2D* GetD3D12Texture2D(const ego::gpu::TextureReference& _texture)
     {
-        return _texture ? static_cast<ego::gpu::d3d12::D3D12Texture2D*>(_texture.get()) : nullptr;
+        return _texture ? static_cast<ego::gpu::d3d12::D3D12Texture2D*>(_texture.getObject()) : nullptr;
     }
 
-    ego::gpu::d3d12::D3D12Resource* GetD3D12Resource(const ego::gpu::GraphicResourcePointer& _resource)
+    ego::gpu::d3d12::D3D12Resource* GetD3D12Resource(const ego::gpu::GraphicResourceReference& _resource)
     {
         if (!_resource)
         {
@@ -33,12 +33,12 @@ namespace
         const ego::gpu::GraphicResourceType resourceType = _resource->getType();
         if (resourceType == ego::gpu::Buffer::GetGraphicResourceType())
         {
-            return static_cast<ego::gpu::d3d12::D3D12Buffer*>(_resource.get());
+            return static_cast<ego::gpu::d3d12::D3D12Buffer*>(_resource.getObject());
         }
 
         if (resourceType == ego::gpu::Texture2D::GetGraphicResourceType())
         {
-            return static_cast<ego::gpu::d3d12::D3D12Texture2D*>(_resource.get());
+            return static_cast<ego::gpu::d3d12::D3D12Texture2D*>(_resource.getObject());
         }
 
         EGO_ASSERT_FAIL_MESSAGE("D3D12 resource operation supports only buffers and Texture2D resources");
@@ -183,7 +183,7 @@ void ego::gpu::d3d12::D3D12CommandListBase::bindBindlessDescriptorHeapsInternal(
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::resourceBarrierInternal(
-    const GraphicResourcePointer& _resource,
+    const GraphicResourceReference& _resource,
     GraphicResourceState _prevState,
     GraphicResourceState _nextState
 )
@@ -207,7 +207,7 @@ void ego::gpu::d3d12::D3D12CommandListBase::resourceBarrierInternal(
 
 void ego::gpu::d3d12::D3D12CommandListBase::bindResourceViewInternal(
     uint32_t _slot,
-    const ResourceViewPointer& _resourceView
+    const ResourceViewReference& _resourceView
 )
 {
     EGO_ASSERT_MESSAGE(
@@ -231,7 +231,7 @@ void ego::gpu::d3d12::D3D12CommandListBase::bindResourceViewInternal(
 
 void ego::gpu::d3d12::D3D12CommandListBase::bindSamplerInternal(
     uint32_t _slot,
-    const SamplerPointer& _sampler
+    const SamplerReference& _sampler
 )
 {
     EGO_ASSERT_MESSAGE(
@@ -317,8 +317,8 @@ void ego::gpu::d3d12::D3D12CommandListBase::pushConstantsInternal(
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::copyBufferInternal(
-    const BufferPointer& _srcBuffer,
-    const BufferPointer& _dstBuffer,
+    const BufferReference& _srcBuffer,
+    const BufferReference& _dstBuffer,
     const BufferCopyRegionDesc& _region
 )
 {
@@ -339,8 +339,8 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyBufferInternal(
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::copyTextureInternal(
-    const TexturePointer& _srcTexture,
-    const TexturePointer& _dstTexture,
+    const TextureReference& _srcTexture,
+    const TextureReference& _dstTexture,
     const TextureCopyRegionDesc& _region
 )
 {
@@ -381,8 +381,8 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyTextureInternal(
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::copyBufferToTextureInternal(
-    const BufferPointer& _srcBuffer,
-    const TexturePointer& _dstTexture,
+    const BufferReference& _srcBuffer,
+    const TextureReference& _dstTexture,
     const BufferTextureCopyRegionDesc& _region
 )
 {
@@ -438,8 +438,8 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyBufferToTextureInternal(
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::copyTextureToBufferInternal(
-    const TexturePointer& _srcTexture,
-    const BufferPointer& _dstBuffer,
+    const TextureReference& _srcTexture,
+    const BufferReference& _dstBuffer,
     const BufferTextureCopyRegionDesc& _region
 )
 {
@@ -521,7 +521,7 @@ void ego::gpu::d3d12::D3D12CopyCommandList::end()
 }
 
 void ego::gpu::d3d12::D3D12CopyCommandList::resourceBarrier(
-    const GraphicResourcePointer& _resource,
+    const GraphicResourceReference& _resource,
     GraphicResourceState _prevState,
     GraphicResourceState _nextState
 )
@@ -529,12 +529,12 @@ void ego::gpu::d3d12::D3D12CopyCommandList::resourceBarrier(
     resourceBarrierInternal(_resource, _prevState, _nextState);
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::bindResourceView(uint32_t, const ResourceViewPointer&)
+void ego::gpu::d3d12::D3D12CopyCommandList::bindResourceView(uint32_t, const ResourceViewReference&)
 {
     EGO_ASSERT_FAIL_MESSAGE("Copy command list does not support resource bindings");
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::bindSampler(uint32_t, const SamplerPointer&)
+void ego::gpu::d3d12::D3D12CopyCommandList::bindSampler(uint32_t, const SamplerReference&)
 {
     EGO_ASSERT_FAIL_MESSAGE("Copy command list does not support sampler bindings");
 }
@@ -555,8 +555,8 @@ void ego::gpu::d3d12::D3D12CopyCommandList::pushConstants(ShaderStageFlags, uint
 }
 
 void ego::gpu::d3d12::D3D12CopyCommandList::copyBuffer(
-    const BufferPointer& _srcBuffer,
-    const BufferPointer& _dstBuffer,
+    const BufferReference& _srcBuffer,
+    const BufferReference& _dstBuffer,
     const BufferCopyRegionDesc& _region
 )
 {
@@ -564,8 +564,8 @@ void ego::gpu::d3d12::D3D12CopyCommandList::copyBuffer(
 }
 
 void ego::gpu::d3d12::D3D12CopyCommandList::copyTexture(
-    const TexturePointer& _srcTexture,
-    const TexturePointer& _dstTexture,
+    const TextureReference& _srcTexture,
+    const TextureReference& _dstTexture,
     const TextureCopyRegionDesc& _region
 )
 {
@@ -573,8 +573,8 @@ void ego::gpu::d3d12::D3D12CopyCommandList::copyTexture(
 }
 
 void ego::gpu::d3d12::D3D12CopyCommandList::copyBufferToTexture(
-    const BufferPointer& _srcBuffer,
-    const TexturePointer& _dstTexture,
+    const BufferReference& _srcBuffer,
+    const TextureReference& _dstTexture,
     const BufferTextureCopyRegionDesc& _region
 )
 {
@@ -582,8 +582,8 @@ void ego::gpu::d3d12::D3D12CopyCommandList::copyBufferToTexture(
 }
 
 void ego::gpu::d3d12::D3D12CopyCommandList::copyTextureToBuffer(
-    const TexturePointer& _srcTexture,
-    const BufferPointer& _dstBuffer,
+    const TextureReference& _srcTexture,
+    const BufferReference& _dstBuffer,
     const BufferTextureCopyRegionDesc& _region
 )
 {
@@ -624,7 +624,7 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::end()
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::resourceBarrier(
-    const GraphicResourcePointer& _resource,
+    const GraphicResourceReference& _resource,
     GraphicResourceState _prevState,
     GraphicResourceState _nextState
 )
@@ -634,7 +634,7 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::resourceBarrier(
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::bindResourceView(
     uint32_t _slot,
-    const ResourceViewPointer& _resourceView
+    const ResourceViewReference& _resourceView
 )
 {
     bindResourceViewInternal(_slot, _resourceView);
@@ -642,7 +642,7 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::bindResourceView(
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::bindSampler(
     uint32_t _slot,
-    const SamplerPointer& _sampler
+    const SamplerReference& _sampler
 )
 {
     bindSamplerInternal(_slot, _sampler);
@@ -669,8 +669,8 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::pushConstants(
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::copyBuffer(
-    const BufferPointer& _srcBuffer,
-    const BufferPointer& _dstBuffer,
+    const BufferReference& _srcBuffer,
+    const BufferReference& _dstBuffer,
     const BufferCopyRegionDesc& _region
 )
 {
@@ -678,8 +678,8 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::copyBuffer(
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::copyTexture(
-    const TexturePointer& _srcTexture,
-    const TexturePointer& _dstTexture,
+    const TextureReference& _srcTexture,
+    const TextureReference& _dstTexture,
     const TextureCopyRegionDesc& _region
 )
 {
@@ -687,8 +687,8 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::copyTexture(
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::copyBufferToTexture(
-    const BufferPointer& _srcBuffer,
-    const TexturePointer& _dstTexture,
+    const BufferReference& _srcBuffer,
+    const TextureReference& _dstTexture,
     const BufferTextureCopyRegionDesc& _region
 )
 {
@@ -696,17 +696,17 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::copyBufferToTexture(
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::copyTextureToBuffer(
-    const TexturePointer& _srcTexture,
-    const BufferPointer& _dstBuffer,
+    const TextureReference& _srcTexture,
+    const BufferReference& _dstBuffer,
     const BufferTextureCopyRegionDesc& _region
 )
 {
     copyTextureToBufferInternal(_srcTexture, _dstBuffer, _region);
 }
 
-void ego::gpu::d3d12::D3D12ComputeCommandList::setPipeline(const ComputePipelinePointer& _pipeline)
+void ego::gpu::d3d12::D3D12ComputeCommandList::setPipeline(const ComputePipelineReference& _pipeline)
 {
-    D3D12ComputePipeline* pipeline = _pipeline ? static_cast<D3D12ComputePipeline*>(_pipeline.get()) : nullptr;
+    D3D12ComputePipeline* pipeline = _pipeline ? static_cast<D3D12ComputePipeline*>(_pipeline.getObject()) : nullptr;
     EGO_ASSERT_MESSAGE(pipeline, "Compute pipeline must be created by D3D12 device");
     if (!pipeline)
     {
@@ -765,7 +765,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::end()
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::resourceBarrier(
-    const GraphicResourcePointer& _resource,
+    const GraphicResourceReference& _resource,
     GraphicResourceState _prevState,
     GraphicResourceState _nextState
 )
@@ -775,7 +775,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::resourceBarrier(
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::bindResourceView(
     uint32_t _slot,
-    const ResourceViewPointer& _resourceView
+    const ResourceViewReference& _resourceView
 )
 {
     bindResourceViewInternal(_slot, _resourceView);
@@ -783,7 +783,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::bindResourceView(
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::bindSampler(
     uint32_t _slot,
-    const SamplerPointer& _sampler
+    const SamplerReference& _sampler
 )
 {
     bindSamplerInternal(_slot, _sampler);
@@ -810,8 +810,8 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::pushConstants(
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::copyBuffer(
-    const BufferPointer& _srcBuffer,
-    const BufferPointer& _dstBuffer,
+    const BufferReference& _srcBuffer,
+    const BufferReference& _dstBuffer,
     const BufferCopyRegionDesc& _region
 )
 {
@@ -819,8 +819,8 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::copyBuffer(
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::copyTexture(
-    const TexturePointer& _srcTexture,
-    const TexturePointer& _dstTexture,
+    const TextureReference& _srcTexture,
+    const TextureReference& _dstTexture,
     const TextureCopyRegionDesc& _region
 )
 {
@@ -828,8 +828,8 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::copyTexture(
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::copyBufferToTexture(
-    const BufferPointer& _srcBuffer,
-    const TexturePointer& _dstTexture,
+    const BufferReference& _srcBuffer,
+    const TextureReference& _dstTexture,
     const BufferTextureCopyRegionDesc& _region
 )
 {
@@ -837,17 +837,17 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::copyBufferToTexture(
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::copyTextureToBuffer(
-    const TexturePointer& _srcTexture,
-    const BufferPointer& _dstBuffer,
+    const TextureReference& _srcTexture,
+    const BufferReference& _dstBuffer,
     const BufferTextureCopyRegionDesc& _region
 )
 {
     copyTextureToBufferInternal(_srcTexture, _dstBuffer, _region);
 }
 
-void ego::gpu::d3d12::D3D12GraphicCommandList::setPipeline(const ComputePipelinePointer& _pipeline)
+void ego::gpu::d3d12::D3D12GraphicCommandList::setPipeline(const ComputePipelineReference& _pipeline)
 {
-    D3D12ComputePipeline* pipeline = _pipeline ? static_cast<D3D12ComputePipeline*>(_pipeline.get()) : nullptr;
+    D3D12ComputePipeline* pipeline = _pipeline ? static_cast<D3D12ComputePipeline*>(_pipeline.getObject()) : nullptr;
     EGO_ASSERT_MESSAGE(pipeline, "Compute pipeline must be created by D3D12 device");
     if (!pipeline)
     {
@@ -880,7 +880,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::beginRendering(const RenderingDes
     for (const ColorAttachmentDesc& colorAttachment : _desc.m_colorAttachments)
     {
         D3D12TextureView* textureView = colorAttachment.m_view ?
-                                            static_cast<D3D12TextureView*>(colorAttachment.m_view.get()) :
+                                            static_cast<D3D12TextureView*>(colorAttachment.m_view.getObject()) :
                                             nullptr;
         EGO_ASSERT_MESSAGE(textureView, "Render target view must be created by D3D12 device");
         if (!textureView)
@@ -899,7 +899,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::beginRendering(const RenderingDes
 
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = {};
     D3D12TextureView* depthView = _desc.m_depthStencilAttachment.m_view ?
-                                      static_cast<D3D12TextureView*>(_desc.m_depthStencilAttachment.m_view.get()) :
+                                      static_cast<D3D12TextureView*>(_desc.m_depthStencilAttachment.m_view.getObject()) :
                                       nullptr;
     if (depthView)
     {
@@ -940,9 +940,9 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::beginRendering(const RenderingDes
 void ego::gpu::d3d12::D3D12GraphicCommandList::endRendering()
 {}
 
-void ego::gpu::d3d12::D3D12GraphicCommandList::setPipeline(const GraphicPipelinePointer& _pipeline)
+void ego::gpu::d3d12::D3D12GraphicCommandList::setPipeline(const GraphicPipelineReference& _pipeline)
 {
-    D3D12GraphicPipeline* pipeline = _pipeline ? static_cast<D3D12GraphicPipeline*>(_pipeline.get()) : nullptr;
+    D3D12GraphicPipeline* pipeline = _pipeline ? static_cast<D3D12GraphicPipeline*>(_pipeline.getObject()) : nullptr;
     EGO_ASSERT_MESSAGE(pipeline, "Graphic pipeline must be created by D3D12 device");
     if (!pipeline)
     {
@@ -983,7 +983,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::setScissorRect(const ScissorRectD
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::setVertexBuffer(
     uint32_t _slot,
-    const BufferPointer& _buffer,
+    const BufferReference& _buffer,
     uint32_t _stride,
     uint32_t _offset
 )
@@ -1003,7 +1003,7 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::setVertexBuffer(
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::setIndexBuffer(
-    const BufferPointer& _buffer,
+    const BufferReference& _buffer,
     GraphicResourceFormat _format,
     uint32_t _offset
 )

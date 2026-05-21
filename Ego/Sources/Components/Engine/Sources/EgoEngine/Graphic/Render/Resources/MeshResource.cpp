@@ -42,66 +42,14 @@ namespace
     }
 }
 
-const ego::VertexBufferBinding& ego::MeshResource::getVertexBuffer() const
+const ego::MeshReference& ego::MeshResource::getMesh() const
 {
-    return m_vertexBuffer;
+    return m_mesh;
 }
 
-void ego::MeshResource::setVertexBuffer(
-    const gpu::BufferPointer& _buffer,
-    uint32_t _stride,
-    uint32_t _offset
-)
+void ego::MeshResource::setMesh(const MeshReference& _mesh)
 {
-    m_vertexBuffer.m_buffer = _buffer;
-    m_vertexBuffer.m_stride = _stride;
-    m_vertexBuffer.m_offset = _offset;
-}
-
-const ego::gpu::BufferPointer& ego::MeshResource::getIndexBuffer() const
-{
-    return m_indexBuffer;
-}
-
-ego::gpu::GraphicResourceFormat ego::MeshResource::getIndexFormat() const
-{
-    return m_indexFormat;
-}
-
-uint32_t ego::MeshResource::getIndexOffset() const
-{
-    return m_indexOffset;
-}
-
-void ego::MeshResource::setIndexBuffer(
-    const gpu::BufferPointer& _buffer,
-    gpu::GraphicResourceFormat _format,
-    uint32_t _offset
-)
-{
-    m_indexBuffer = _buffer;
-    m_indexFormat = _format;
-    m_indexOffset = _offset;
-}
-
-uint32_t ego::MeshResource::getVertexCount() const
-{
-    return m_vertexCount;
-}
-
-void ego::MeshResource::setVertexCount(uint32_t _count)
-{
-    m_vertexCount = _count;
-}
-
-uint32_t ego::MeshResource::getIndexCount() const
-{
-    return m_indexCount;
-}
-
-void ego::MeshResource::setIndexCount(uint32_t _count)
-{
-    m_indexCount = _count;
+    m_mesh = _mesh;
 }
 
 bool ego::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
@@ -121,28 +69,21 @@ bool ego::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
 
     EGO_CHECK_RETURN_FALSE(!vertices.empty());
 
-    gpu::BufferDesc vertexBufferDesc;
-    vertexBufferDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageVertexBuffer);
-    vertexBufferDesc.m_access = gpu::GraphicResourceAccessCpuWrite;
-    vertexBufferDesc.m_size = static_cast<uint32_t>(vertices.size() * sizeof(MeshVertex));
-    vertexBufferDesc.m_stride = sizeof(MeshVertex);
+    MeshRawData rawData;
+    rawData.m_vertexData = vertices.data();
+    rawData.m_vertexDataSize = static_cast<uint32_t>(vertices.size() * sizeof(MeshVertex));
+    rawData.m_vertexStride = sizeof(MeshVertex);
+    rawData.m_vertexCount = static_cast<uint32_t>(vertices.size());
 
-    const gpu::InitialGraphicResourceData vertexData(vertices.data(), vertexBufferDesc.m_size);
-    gpu::BufferPointer vertexBuffer = engine::GetEngine().getGraphicDevice().createBuffer(vertexBufferDesc, vertexData);
-    EGO_CHECK_RETURN_FALSE(vertexBuffer);
+    const MeshReference mesh = CreateMeshFromRawData(engine::GetEngine().getGraphicDevice(), rawData);
+    EGO_CHECK_RETURN_FALSE(mesh);
 
-    setVertexBuffer(vertexBuffer, sizeof(MeshVertex));
-    setVertexCount(static_cast<uint32_t>(vertices.size()));
+    setMesh(mesh);
 
     return true;
 }
 
 void ego::MeshResource::onUnload()
 {
-    m_vertexBuffer = VertexBufferBinding();
-    m_indexBuffer = nullptr;
-    m_indexFormat = gpu::GraphicResourceFormat::Undefined;
-    m_indexOffset = 0;
-    m_vertexCount = 0;
-    m_indexCount = 0;
+    m_mesh = nullptr;
 }

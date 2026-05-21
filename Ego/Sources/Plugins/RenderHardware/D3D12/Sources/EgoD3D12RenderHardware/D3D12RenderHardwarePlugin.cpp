@@ -1,8 +1,10 @@
 #include "D3D12RenderHardwarePlugin.h"
 
 #include "EgoEngine/Plugin/EngineExternalModuleCore.h"
+#include "EgoEngine/Resources/Resource/ResourceController.h"
 
 #include "D3D12GraphicDevice.h"
+#include "DXCShaderResourceProvider.h"
 
 EGO_CORE_MODULE();
 EGO_ENGINE_MODULE();
@@ -15,7 +17,13 @@ ego::gpu::d3d12::D3D12RenderHardwarePlugin::D3D12RenderHardwarePlugin(const Plug
     
 }
 
-ego::gpu::GraphicDevicePointer ego::gpu::d3d12::D3D12RenderHardwarePlugin::createGraphicDevice()
+ego::gpu::GraphicDeviceReference ego::gpu::d3d12::D3D12RenderHardwarePlugin::createGraphicDevice()
 {
-    return GraphicDevicePointer(new D3D12GraphicDevice());
+    return GraphicDeviceReference(new D3D12GraphicDevice());
+}
+
+void ego::gpu::d3d12::D3D12RenderHardwarePlugin::registerResourceProviders(ResourceController& _resourceController)
+{
+    const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
+    _resourceController.addResourceProvider(".shader", shaderProvider);
 }

@@ -41,17 +41,17 @@ void ego::gpu::d3d12::D3D12CommandQueue::setName(const char* _name)
     SetD3D12ObjectName(m_queue.Get(), _name);
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::execute(const CommandListPointer& _commandList)
+void ego::gpu::d3d12::D3D12CommandQueue::execute(const CommandListReference& _commandList)
 {
-    execute(std::vector<CommandListPointer>{_commandList});
+    execute(std::vector<CommandListReference>{_commandList});
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListPointer>& _commandLists)
+void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListReference>& _commandLists)
 {
     std::vector<ID3D12CommandList*> nativeCommandLists;
     nativeCommandLists.reserve(_commandLists.size());
 
-    for (const CommandListPointer& commandList : _commandLists)
+    for (const CommandListReference& commandList : _commandLists)
     {
         ID3D12GraphicsCommandList* nativeCommandList =
             commandList ? commandList->getNativeHandle<ID3D12GraphicsCommandList>() : nullptr;
@@ -68,7 +68,7 @@ void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListPo
     }
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::signal(const FencePointer& _fence, Fence::FenceValue _value)
+void ego::gpu::d3d12::D3D12CommandQueue::signal(const FenceReference& _fence, Fence::FenceValue _value)
 {
     ID3D12Fence* nativeFence = _fence ? _fence->getNativeHandle<ID3D12Fence>() : nullptr;
     EGO_ASSERT_MESSAGE(nativeFence, "Fence must be created by D3D12 device");
@@ -78,7 +78,7 @@ void ego::gpu::d3d12::D3D12CommandQueue::signal(const FencePointer& _fence, Fenc
     }
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::wait(const FencePointer& _fence, Fence::FenceValue _value)
+void ego::gpu::d3d12::D3D12CommandQueue::wait(const FenceReference& _fence, Fence::FenceValue _value)
 {
     ID3D12Fence* nativeFence = _fence ? _fence->getNativeHandle<ID3D12Fence>() : nullptr;
     EGO_ASSERT_MESSAGE(nativeFence, "Fence must be created by D3D12 device");

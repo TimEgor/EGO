@@ -1,10 +1,6 @@
 #pragma once
 
-#include <vector>
-
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Pipeline.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ResourceView.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Sampler.h"
+#include "EgoEngine/Graphic/Render/Material.h"
 #include "EgoEngine/Resources/Resource/Resource.h"
 
 namespace ego
@@ -14,16 +10,8 @@ namespace ego
     public:
         MaterialResource() = default;
 
-        const gpu::GraphicPipelinePointer& getPipeline() const;
-        void setPipeline(const gpu::GraphicPipelinePointer& _pipeline);
-
-        const std::vector<gpu::ResourceViewPointer>& getResourceViews() const;
-        void addResourceView(const gpu::ResourceViewPointer& _resourceView);
-        void clearResourceViews();
-
-        const std::vector<gpu::SamplerPointer>& getSamplers() const;
-        void addSampler(const gpu::SamplerPointer& _sampler);
-        void clearSamplers();
+        const MaterialReference& getMaterial() const;
+        void setMaterial(const MaterialReference& _material);
 
         EGO_RESOURCE(MaterialResource, Resource);
 
@@ -32,9 +20,7 @@ namespace ego
         virtual void onUnload() override;
 
     private:
-        gpu::GraphicPipelinePointer m_pipeline = nullptr;
-        std::vector<gpu::ResourceViewPointer> m_resourceViews;
-        std::vector<gpu::SamplerPointer> m_samplers;
+        MaterialReference m_material = nullptr;
     };
 
     EGO_POINTER(MaterialResource);

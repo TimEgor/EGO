@@ -5,6 +5,7 @@
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/String/Format.h"
+#include "EgoCore/String/StringConverter.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoPlugin/ExternalPluginCore.h"
@@ -15,34 +16,36 @@
 
 void OutputError(const ego::FileName& _name)
 {
-    LPVOID lpMsgBuf;
-    DWORD dw = GetLastError();
+    LPWSTR message = nullptr;
+    const DWORD error = GetLastError();
 
-    FormatMessage(
+    FormatMessageW(
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
+        nullptr,
+        error,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        reinterpret_cast<LPTSTR>(&lpMsgBuf),
+        reinterpret_cast<LPWSTR>(&message),
         0,
-        NULL
+        nullptr
     );
 
 #ifdef _MSC_VER
-    OutputDebugStringA(
-        ego::StringFormat(
-            "Plugin issue (\"{}\") error message:\n {}\n",
-            _name.c_str(),
-            reinterpret_cast<LPTSTR>(&lpMsgBuf)
-        ).c_str()
-    );
+    const std::wstring output = L"Plugin issue (\"" +
+        ego::ConvertStringToWString(_name.c_str()) +
+        L"\") error " +
+        std::to_wstring(error) +
+        L":\n " +
+        (message != nullptr ? message : L"Unknown error") +
+        L"\n";
+
+    OutputDebugStringW(output.c_str());
 #endif // _MSC_VER
 
-    if (lpMsgBuf)
+    if (message != nullptr)
     {
-        LocalFree(lpMsgBuf);
+        LocalFree(message);
     }
 }
 

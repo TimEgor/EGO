@@ -34,7 +34,7 @@ namespace ego::gpu::d3d12
     {
     public:
         D3D12BufferView(
-            const BufferPointer& _buffer,
+            const BufferReference& _buffer,
             const BufferViewDesc& _desc,
             D3D12DescriptorIndex _descriptorIndex,
             D3D12DescriptorAllocatorPointer& _allocator

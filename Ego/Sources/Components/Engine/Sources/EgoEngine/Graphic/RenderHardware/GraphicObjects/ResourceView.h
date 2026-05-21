@@ -16,16 +16,16 @@ namespace ego::gpu
     class ResourceView : public GraphicObject
     {
     public:
-        ResourceView(const GraphicResourcePointer& _resource);
+        ResourceView(const GraphicResourceReference& _resource);
 
-        const GraphicResourceWeakPointer& getResource() const;
+        const GraphicResourceReference& getResource() const;
         virtual uint32_t getBindlessIndex() const;
 
         virtual GraphicResourceViewType getViewType() const = 0;
 
     private:
-        GraphicResourceWeakPointer m_resource;
+        GraphicResourceReference m_resource;
     };
 
-    EGO_POINTER(ResourceView);
+    EGO_REFERENCE(ResourceView);
 }

@@ -1,7 +1,7 @@
 #include "D3D12Shader.h"
 
 template<typename TBaseShader>
-ego::gpu::d3d12::D3D12Shader<TBaseShader>::D3D12Shader(const ShaderCodePointer& _code)
+ego::gpu::d3d12::D3D12Shader<TBaseShader>::D3D12Shader(const ShaderCodeReference& _code)
     : TBaseShader(_code)
 {
 }

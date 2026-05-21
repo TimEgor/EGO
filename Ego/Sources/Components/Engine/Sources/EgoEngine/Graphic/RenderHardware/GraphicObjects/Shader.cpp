@@ -31,16 +31,16 @@ uint32_t ego::gpu::ShaderCode::getCodeSize() const
     return m_codeSize;
 }
 
-ego::gpu::Shader::Shader(const ShaderCodePointer& _code)
+ego::gpu::Shader::Shader(const ShaderCodeReference& _code)
     : m_code(_code)
 {}
 
-ego::gpu::ShaderCodePointer ego::gpu::Shader::getCode() const
+ego::gpu::ShaderCodeReference ego::gpu::Shader::getCode() const
 {
     return m_code;
 }
 
-ego::gpu::VertexShader::VertexShader(const ShaderCodePointer& _code)
+ego::gpu::VertexShader::VertexShader(const ShaderCodeReference& _code)
     : Shader(_code)
 {}
 
@@ -49,7 +49,7 @@ ego::gpu::ShaderStage ego::gpu::VertexShader::getShaderType() const
     return ShaderStage::Vertex;
 }
 
-ego::gpu::PixelShader::PixelShader(const ShaderCodePointer& _code)
+ego::gpu::PixelShader::PixelShader(const ShaderCodeReference& _code)
     : Shader(_code)
 {}
 
@@ -58,7 +58,7 @@ ego::gpu::ShaderStage ego::gpu::PixelShader::getShaderType() const
     return ShaderStage::Pixel;
 }
 
-ego::gpu::ComputeShader::ComputeShader(const ShaderCodePointer& _code)
+ego::gpu::ComputeShader::ComputeShader(const ShaderCodeReference& _code)
     : Shader(_code)
 {}
 

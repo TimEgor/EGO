@@ -20,7 +20,7 @@ namespace ego::gpu::d3d12
                               public D3D12ShaderAccess
     {
     public:
-        D3D12Shader(const ShaderCodePointer& _code);
+        D3D12Shader(const ShaderCodeReference& _code);
 
         virtual void* getNativeHandle() const override;
         virtual void setName(const char* _name) override;

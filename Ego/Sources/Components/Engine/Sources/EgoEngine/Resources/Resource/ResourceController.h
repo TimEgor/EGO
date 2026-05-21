@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Resource.h"
+#include "ResourceProvider.h"
 
 #include "EgoCore/Job/Job.h"
 #include "EgoCore/Job/JobController.h"
 
 #include <functional>
 #include <mutex>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -16,6 +18,8 @@ namespace ego
 {
     class ResourceController final : public EnableSharedFromThis<ResourceController>
     {
+        friend class ResourceLoadingContext;
+
     public:
         using ResourceFactory = ego::ResourceFactory;
 
@@ -31,6 +35,10 @@ namespace ego
         bool removeFileSystem(const FileSystemPointer& _fileSystem);
         void clearFileSystems();
 
+        bool addResourceProvider(const FileName& _extension, const ResourceProviderPointer& _provider);
+        bool removeResourceProvider(const FileName& _extension);
+        void clearResourceProviders();
+
         template <typename TResource>
         SharedPointer<TResource> load(const FileName& _path)
         {
@@ -44,12 +52,6 @@ namespace ego
                 )
             );
         }
-
-        ResourcePointer loadResource(
-            ResourceType _type,
-            const FileName& _path,
-            const ResourceFactory& _factory
-        );
 
         template <typename TResource>
         SharedPointer<TResource> loadAsync(const FileName& _path, JobReference* _job = nullptr)
@@ -65,13 +67,6 @@ namespace ego
                 )
             );
         }
-
-        ResourcePointer loadResourceAsync(
-            ResourceType _type,
-            const FileName& _path,
-            const ResourceFactory& _factory,
-            JobReference* _job = nullptr
-        );
 
         template <typename TResource>
         SharedPointer<TResource> getResource(const FileName& _path) const
@@ -124,6 +119,20 @@ namespace ego
 
         using FileSystemCollection = std::vector<FileSystemPointer>;
         using ResourceCollection = std::unordered_map<ResourceID, ResourceEntry>;
+        using ResourceProviderCollection = std::unordered_map<std::string, ResourceProviderPointer>;
+
+        ResourcePointer loadResource(
+            ResourceType _type,
+            const FileName& _path,
+            const ResourceFactory& _factory
+        );
+
+        ResourcePointer loadResourceAsync(
+            ResourceType _type,
+            const FileName& _path,
+            const ResourceFactory& _factory,
+            JobReference* _job = nullptr
+        );
 
         ResourcePointer getOrCreateResource(
             ResourceType _type,
@@ -134,6 +143,7 @@ namespace ego
         );
 
         bool loadResourceContent(const FileName& _path, FileContent& _content) const;
+        ResourceProviderPointer getResourceProvider(const FileName& _path) const;
         bool loadResourceData(
             const ResourcePointer& _resource,
             const FileName& _path,
@@ -151,6 +161,7 @@ namespace ego
         mutable std::recursive_mutex m_mutex;
         FileSystemCollection m_fileSystems;
         ResourceCollection m_resources;
+        ResourceProviderCollection m_resourceProviders;
         JobControllerPointer m_jobController = nullptr;
         bool m_isInitialized = false;
     };

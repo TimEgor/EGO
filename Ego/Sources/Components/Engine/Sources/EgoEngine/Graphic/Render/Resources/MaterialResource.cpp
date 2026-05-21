@@ -51,54 +51,14 @@ namespace
     }
 }
 
-const ego::gpu::GraphicPipelinePointer& ego::MaterialResource::getPipeline() const
+const ego::MaterialReference& ego::MaterialResource::getMaterial() const
 {
-    return m_pipeline;
+    return m_material;
 }
 
-void ego::MaterialResource::setPipeline(const gpu::GraphicPipelinePointer& _pipeline)
+void ego::MaterialResource::setMaterial(const MaterialReference& _material)
 {
-    m_pipeline = _pipeline;
-}
-
-const std::vector<ego::gpu::ResourceViewPointer>& ego::MaterialResource::getResourceViews() const
-{
-    return m_resourceViews;
-}
-
-void ego::MaterialResource::addResourceView(const gpu::ResourceViewPointer& _resourceView)
-{
-    if (!_resourceView)
-    {
-        return;
-    }
-
-    m_resourceViews.push_back(_resourceView);
-}
-
-void ego::MaterialResource::clearResourceViews()
-{
-    m_resourceViews.clear();
-}
-
-const std::vector<ego::gpu::SamplerPointer>& ego::MaterialResource::getSamplers() const
-{
-    return m_samplers;
-}
-
-void ego::MaterialResource::addSampler(const gpu::SamplerPointer& _sampler)
-{
-    if (!_sampler)
-    {
-        return;
-    }
-
-    m_samplers.push_back(_sampler);
-}
-
-void ego::MaterialResource::clearSamplers()
-{
-    m_samplers.clear();
+    m_material = _material;
 }
 
 bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext)
@@ -125,7 +85,7 @@ bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContex
     gpu::GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
 
     gpu::BindingLayoutDesc bindingLayoutDesc;
-    gpu::BindingLayoutPointer bindingLayout = graphicDevice.createBindingLayout(bindingLayoutDesc);
+    gpu::BindingLayoutReference bindingLayout = graphicDevice.createBindingLayout(bindingLayoutDesc);
     EGO_CHECK_RETURN_FALSE(bindingLayout);
 
     gpu::GraphicPipelineDesc pipelineDesc;
@@ -138,16 +98,16 @@ bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContex
     pipelineDesc.m_depthFormat = gpu::GraphicResourceFormat::Undefined;
     pipelineDesc.m_colorFormats.push_back(gpu::GraphicResourceFormat::B8G8R8A8UNorm);
 
-    gpu::GraphicPipelinePointer pipeline = graphicDevice.createGraphicPipeline(pipelineDesc);
+    gpu::GraphicPipelineReference pipeline = graphicDevice.createGraphicPipeline(pipelineDesc);
     EGO_CHECK_RETURN_FALSE(pipeline);
 
-    setPipeline(pipeline);
+    MaterialReference material = new Material(pipeline);
+
+    setMaterial(material);
     return true;
 }
 
 void ego::MaterialResource::onUnload()
 {
-    m_pipeline = nullptr;
-    m_resourceViews.clear();
-    m_samplers.clear();
+    m_material = nullptr;
 }

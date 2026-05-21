@@ -18,19 +18,19 @@ namespace ego::gpu::d3d12
         D3D12SwapChain(
             const SwapChainDesc& _desc,
             Microsoft::WRL::ComPtr<IDXGISwapChain3>&& _swapChain,
-            std::vector<Texture2DPointer>&& _targetTextures,
-            CommandQueuePointer&& _ownedPresentationQueue
+            std::vector<Texture2DReference>&& _targetTextures,
+            CommandQueueReference&& _ownedPresentationQueue
         );
 
         virtual void* getNativeHandle() const override;
         virtual void setName(const char* _name) override;
 
-        virtual Texture2DPointer getTargetTexture() override;
+        virtual Texture2DReference getTargetTexture() override;
         virtual void present() override;
 
     private:
         Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
-        std::vector<Texture2DPointer> m_targetTextures;
-        CommandQueuePointer m_ownedPresentationQueue;
+        std::vector<Texture2DReference> m_targetTextures;
+        CommandQueueReference m_ownedPresentationQueue;
     };
 }

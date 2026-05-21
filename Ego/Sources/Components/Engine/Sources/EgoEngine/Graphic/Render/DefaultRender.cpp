@@ -63,7 +63,7 @@ void ego::DefaultRender::render(GraphicPresenter& _presenter)
         return;
     }
 
-    const gpu::Texture2DPointer targetTexture = _presenter.getTargetTexture();
+    const gpu::Texture2DReference targetTexture = _presenter.getTargetTexture();
     if (!prepareRenderTarget(targetTexture))
     {
         return;
@@ -138,8 +138,8 @@ bool ego::DefaultRender::isClearEnabled() const
 }
 
 void ego::DefaultRender::addRenderItem(
-    const MeshResourcePointer& _mesh,
-    const MaterialResourcePointer& _material
+    const MeshReference& _mesh,
+    const MaterialReference& _material
 )
 {
     if (!_mesh || !_material)
@@ -160,7 +160,7 @@ const std::vector<ego::DefaultRenderItem>& ego::DefaultRender::getRenderItems() 
     return m_renderItems;
 }
 
-bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DPointer& _targetTexture)
+bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DReference& _targetTexture)
 {
     if (!_targetTexture)
     {
@@ -173,7 +173,7 @@ bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DPointer& _targe
         return false;
     }
 
-    if (m_renderTargetTexture.get() == _targetTexture.get() && m_renderTargetView)
+    if (m_renderTargetTexture.getObject() == _targetTexture.getObject() && m_renderTargetView)
     {
         return true;
     }
@@ -189,7 +189,7 @@ bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DPointer& _targe
     return static_cast<bool>(m_renderTargetView);
 }
 
-void ego::DefaultRender::setupTargetViewport(const gpu::Texture2DPointer& _targetTexture)
+void ego::DefaultRender::setupTargetViewport(const gpu::Texture2DReference& _targetTexture)
 {
     EGO_ASSERT(_targetTexture);
     if (!_targetTexture)
@@ -219,7 +219,7 @@ void ego::DefaultRender::renderItem(const DefaultRenderItem& _item)
         return;
     }
 
-    const gpu::GraphicPipelinePointer& pipeline = _item.m_material->getPipeline();
+    const gpu::GraphicPipelineReference& pipeline = _item.m_material->getPipeline();
     if (!pipeline)
     {
         return;
@@ -227,30 +227,31 @@ void ego::DefaultRender::renderItem(const DefaultRenderItem& _item)
 
     m_commandList->setPipeline(pipeline);
 
-    const std::vector<gpu::ResourceViewPointer>& resourceViews = _item.m_material->getResourceViews();
+    const Material::ResourceViewCollection& resourceViews = _item.m_material->getResourceViews();
     for (uint32_t resourceViewIndex = 0; resourceViewIndex < resourceViews.size(); ++resourceViewIndex)
     {
         m_commandList->bindResourceView(resourceViewIndex, resourceViews[resourceViewIndex]);
     }
 
-    const std::vector<gpu::SamplerPointer>& samplers = _item.m_material->getSamplers();
+    const Material::SamplerCollection& samplers = _item.m_material->getSamplers();
     for (uint32_t samplerIndex = 0; samplerIndex < samplers.size(); ++samplerIndex)
     {
         m_commandList->bindSampler(samplerIndex, samplers[samplerIndex]);
     }
 
-    const VertexBufferBinding& vertexBuffer = _item.m_mesh->getVertexBuffer();
+    const Mesh::VertexBufferBinding& vertexBuffer = _item.m_mesh->getVertexBuffer();
     if (vertexBuffer.m_buffer && vertexBuffer.m_stride != 0)
     {
         m_commandList->setVertexBuffer(0, vertexBuffer.m_buffer, vertexBuffer.m_stride, vertexBuffer.m_offset);
     }
 
-    if (_item.m_mesh->getIndexBuffer() && _item.m_mesh->getIndexCount() != 0)
+    const Mesh::IndexBufferBinding& indexBuffer = _item.m_mesh->getIndexBuffer();
+    if (indexBuffer.m_buffer && _item.m_mesh->getIndexCount() != 0)
     {
         m_commandList->setIndexBuffer(
-            _item.m_mesh->getIndexBuffer(),
-            _item.m_mesh->getIndexFormat(),
-            _item.m_mesh->getIndexOffset()
+            indexBuffer.m_buffer,
+            indexBuffer.m_format,
+            indexBuffer.m_offset
         );
         m_commandList->drawIndexed(_item.m_mesh->getIndexCount());
         return;

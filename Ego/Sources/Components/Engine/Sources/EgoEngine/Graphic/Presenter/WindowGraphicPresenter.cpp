@@ -20,9 +20,9 @@ void ego::WindowGraphicPresenter::release()
     m_swapChain.reset();
 }
 
-ego::gpu::Texture2DPointer ego::WindowGraphicPresenter::getTargetTexture()
+ego::gpu::Texture2DReference ego::WindowGraphicPresenter::getTargetTexture()
 {
-    return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DPointer();
+    return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DReference();
 }
 
 void ego::WindowGraphicPresenter::present()

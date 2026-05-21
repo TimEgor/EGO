@@ -57,7 +57,7 @@ bool ego::demo::TestDemo::init()
     m_triangleMaterial = resourceController.load<MaterialResource>("TestTriangle.material.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMaterial && m_triangleMaterial->isLoaded());
 
-    engine.getRender().addRenderItem(m_triangleMesh, m_triangleMaterial);
+    engine.getRender().addRenderItem(m_triangleMesh->getMesh(), m_triangleMaterial->getMaterial());
     return true;
 }
 

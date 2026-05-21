@@ -33,5 +33,5 @@ namespace ego::gpu
         BindingLayoutDesc m_desc;
     };
 
-    EGO_POINTER(BindingLayout);
+    EGO_REFERENCE(BindingLayout);
 }

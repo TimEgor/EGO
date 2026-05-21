@@ -29,3 +29,8 @@ ego::ResourcePointer ego::ResourceLoadingContext::loadResource(
 
     return resource;
 }
+
+bool ego::ResourceLoadingContext::loadContent(const FileName& _path, FileContent& _content) const
+{
+    return m_controller.loadResourceContent(_path, _content);
+}

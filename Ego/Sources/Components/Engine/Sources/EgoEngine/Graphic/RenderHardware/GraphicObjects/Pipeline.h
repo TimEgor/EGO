@@ -113,10 +113,10 @@ namespace ego::gpu
 
     struct GraphicPipelineDesc final
     {
-        BindingLayoutPointer m_bindingLayout = nullptr;
+        BindingLayoutReference m_bindingLayout = nullptr;
 
-        ShaderPointer m_vertexShader = nullptr;
-        ShaderPointer m_pixelShader = nullptr;
+        ShaderReference m_vertexShader = nullptr;
+        ShaderReference m_pixelShader = nullptr;
 
         InputLayoutDesc m_inputLayoutDesc;
 
@@ -133,8 +133,8 @@ namespace ego::gpu
 
     struct ComputePipelineDesc final
     {
-        BindingLayoutPointer m_bindingLayout = nullptr;
-        ShaderPointer m_computeShader = nullptr;
+        BindingLayoutReference m_bindingLayout = nullptr;
+        ShaderReference m_computeShader = nullptr;
     };
 
     enum class PipelineType
@@ -153,6 +153,8 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(Pipeline, GraphicResource);
     };
 
+    EGO_REFERENCE(Pipeline);
+
     class GraphicPipeline : public Pipeline
     {
     public:
@@ -168,7 +170,7 @@ namespace ego::gpu
         GraphicPipelineDesc m_desc;
     };
 
-    EGO_POINTER(GraphicPipeline);
+    EGO_REFERENCE(GraphicPipeline);
 
     class ComputePipeline : public Pipeline
     {
@@ -185,5 +187,5 @@ namespace ego::gpu
         ComputePipelineDesc m_desc;
     };
 
-    EGO_POINTER(ComputePipeline);
+    EGO_REFERENCE(ComputePipeline);
 }

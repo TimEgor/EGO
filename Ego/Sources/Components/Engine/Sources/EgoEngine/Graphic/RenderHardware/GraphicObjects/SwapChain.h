@@ -15,7 +15,7 @@ namespace ego::gpu
 	public:
 		SwapChain(const SwapChainDesc& _desc);
 
-		virtual Texture2DPointer getTargetTexture() = 0;
+		virtual Texture2DReference getTargetTexture() = 0;
 
 		virtual void present() = 0;
 
@@ -25,5 +25,5 @@ namespace ego::gpu
 		const SwapChainDesc m_desc;
 	};
 
-	EGO_POINTER(SwapChain);
+	EGO_REFERENCE(SwapChain);
 }

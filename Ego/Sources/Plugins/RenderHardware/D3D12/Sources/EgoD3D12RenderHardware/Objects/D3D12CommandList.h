@@ -33,35 +33,35 @@ namespace ego::gpu::d3d12
 
         void bindBindlessDescriptorHeapsInternal();
         void resourceBarrierInternal(
-            const GraphicResourcePointer& _resource,
+            const GraphicResourceReference& _resource,
             GraphicResourceState _prevState,
             GraphicResourceState _nextState
         );
 
-        void bindResourceViewInternal(uint32_t _slot, const ResourceViewPointer& _resourceView);
-        void bindSamplerInternal(uint32_t _slot, const SamplerPointer& _sampler);
+        void bindResourceViewInternal(uint32_t _slot, const ResourceViewReference& _resourceView);
+        void bindSamplerInternal(uint32_t _slot, const SamplerReference& _sampler);
         uint32_t getResourceViewBindlessIndexInternal(uint32_t _slot) const;
         uint32_t getSamplerBindlessIndexInternal(uint32_t _slot) const;
         void pushConstantsInternal(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data);
 
         void copyBufferInternal(
-            const BufferPointer& _srcBuffer,
-            const BufferPointer& _dstBuffer,
+            const BufferReference& _srcBuffer,
+            const BufferReference& _dstBuffer,
             const BufferCopyRegionDesc& _region
         );
         void copyTextureInternal(
-            const TexturePointer& _srcTexture,
-            const TexturePointer& _dstTexture,
+            const TextureReference& _srcTexture,
+            const TextureReference& _dstTexture,
             const TextureCopyRegionDesc& _region
         );
         void copyBufferToTextureInternal(
-            const BufferPointer& _srcBuffer,
-            const TexturePointer& _dstTexture,
+            const BufferReference& _srcBuffer,
+            const TextureReference& _dstTexture,
             const BufferTextureCopyRegionDesc& _region
         );
         void copyTextureToBufferInternal(
-            const TexturePointer& _srcTexture,
-            const BufferPointer& _dstBuffer,
+            const TextureReference& _srcTexture,
+            const BufferReference& _dstBuffer,
             const BufferTextureCopyRegionDesc& _region
         );
 
@@ -71,8 +71,8 @@ namespace ego::gpu::d3d12
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
         const D3D12BindingLayout* m_currentBindingLayout = nullptr;
         PipelineType m_currentPipelineType = PipelineType::Graphic;
-        std::vector<ResourceViewPointer> m_boundResourceViews;
-        std::vector<SamplerPointer> m_boundSamplers;
+        std::vector<ResourceViewReference> m_boundResourceViews;
+        std::vector<SamplerReference> m_boundSamplers;
     };
 
     class D3D12CopyCommandList final : public CopyCommandList,
@@ -93,13 +93,13 @@ namespace ego::gpu::d3d12
         virtual void end() override;
 
         virtual void resourceBarrier(
-            const GraphicResourcePointer& _resource,
+            const GraphicResourceReference& _resource,
             GraphicResourceState _prevState,
             GraphicResourceState _nextState
         ) override;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewPointer& _resourceView) override;
-        virtual void bindSampler(uint32_t _slot, const SamplerPointer& _sampler) override;
+        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) override;
+        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) override;
         virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const override;
         virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const override;
         virtual void pushConstants(
@@ -110,26 +110,26 @@ namespace ego::gpu::d3d12
         ) override;
 
         virtual void copyBuffer(
-            const BufferPointer& _srcBuffer,
-            const BufferPointer& _dstBuffer,
+            const BufferReference& _srcBuffer,
+            const BufferReference& _dstBuffer,
             const BufferCopyRegionDesc& _region
         ) override;
 
         virtual void copyTexture(
-            const TexturePointer& _srcTexture,
-            const TexturePointer& _dstTexture,
+            const TextureReference& _srcTexture,
+            const TextureReference& _dstTexture,
             const TextureCopyRegionDesc& _region
         ) override;
 
         virtual void copyBufferToTexture(
-            const BufferPointer& _srcBuffer,
-            const TexturePointer& _dstTexture,
+            const BufferReference& _srcBuffer,
+            const TextureReference& _dstTexture,
             const BufferTextureCopyRegionDesc& _region
         ) override;
 
         virtual void copyTextureToBuffer(
-            const TexturePointer& _srcTexture,
-            const BufferPointer& _dstBuffer,
+            const TextureReference& _srcTexture,
+            const BufferReference& _dstBuffer,
             const BufferTextureCopyRegionDesc& _region
         ) override;
     };
@@ -152,13 +152,13 @@ namespace ego::gpu::d3d12
         virtual void end() override;
 
         virtual void resourceBarrier(
-            const GraphicResourcePointer& _resource,
+            const GraphicResourceReference& _resource,
             GraphicResourceState _prevState,
             GraphicResourceState _nextState
         ) override;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewPointer& _resourceView) override;
-        virtual void bindSampler(uint32_t _slot, const SamplerPointer& _sampler) override;
+        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) override;
+        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) override;
         virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const override;
         virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const override;
         virtual void pushConstants(
@@ -169,30 +169,30 @@ namespace ego::gpu::d3d12
         ) override;
 
         virtual void copyBuffer(
-            const BufferPointer& _srcBuffer,
-            const BufferPointer& _dstBuffer,
+            const BufferReference& _srcBuffer,
+            const BufferReference& _dstBuffer,
             const BufferCopyRegionDesc& _region
         ) override;
 
         virtual void copyTexture(
-            const TexturePointer& _srcTexture,
-            const TexturePointer& _dstTexture,
+            const TextureReference& _srcTexture,
+            const TextureReference& _dstTexture,
             const TextureCopyRegionDesc& _region
         ) override;
 
         virtual void copyBufferToTexture(
-            const BufferPointer& _srcBuffer,
-            const TexturePointer& _dstTexture,
+            const BufferReference& _srcBuffer,
+            const TextureReference& _dstTexture,
             const BufferTextureCopyRegionDesc& _region
         ) override;
 
         virtual void copyTextureToBuffer(
-            const TexturePointer& _srcTexture,
-            const BufferPointer& _dstBuffer,
+            const TextureReference& _srcTexture,
+            const BufferReference& _dstBuffer,
             const BufferTextureCopyRegionDesc& _region
         ) override;
 
-        virtual void setPipeline(const ComputePipelinePointer& _pipeline) override;
+        virtual void setPipeline(const ComputePipelineReference& _pipeline) override;
         virtual void dispatch(uint32_t _threadGroupsX, uint32_t _threadGroupsY, uint32_t _threadGroupsZ) override;
     };
 
@@ -214,13 +214,13 @@ namespace ego::gpu::d3d12
         virtual void end() override;
 
         virtual void resourceBarrier(
-            const GraphicResourcePointer& _resource,
+            const GraphicResourceReference& _resource,
             GraphicResourceState _prevState,
             GraphicResourceState _nextState
         ) override;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewPointer& _resourceView) override;
-        virtual void bindSampler(uint32_t _slot, const SamplerPointer& _sampler) override;
+        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) override;
+        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) override;
         virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const override;
         virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const override;
         virtual void pushConstants(
@@ -231,46 +231,46 @@ namespace ego::gpu::d3d12
         ) override;
 
         virtual void copyBuffer(
-            const BufferPointer& _srcBuffer,
-            const BufferPointer& _dstBuffer,
+            const BufferReference& _srcBuffer,
+            const BufferReference& _dstBuffer,
             const BufferCopyRegionDesc& _region
         ) override;
 
         virtual void copyTexture(
-            const TexturePointer& _srcTexture,
-            const TexturePointer& _dstTexture,
+            const TextureReference& _srcTexture,
+            const TextureReference& _dstTexture,
             const TextureCopyRegionDesc& _region
         ) override;
 
         virtual void copyBufferToTexture(
-            const BufferPointer& _srcBuffer,
-            const TexturePointer& _dstTexture,
+            const BufferReference& _srcBuffer,
+            const TextureReference& _dstTexture,
             const BufferTextureCopyRegionDesc& _region
         ) override;
 
         virtual void copyTextureToBuffer(
-            const TexturePointer& _srcTexture,
-            const BufferPointer& _dstBuffer,
+            const TextureReference& _srcTexture,
+            const BufferReference& _dstBuffer,
             const BufferTextureCopyRegionDesc& _region
         ) override;
 
-        virtual void setPipeline(const ComputePipelinePointer& _pipeline) override;
+        virtual void setPipeline(const ComputePipelineReference& _pipeline) override;
         virtual void dispatch(uint32_t _threadGroupsX, uint32_t _threadGroupsY, uint32_t _threadGroupsZ) override;
 
         virtual void beginRendering(const RenderingDesc& _desc) override;
         virtual void endRendering() override;
 
-        virtual void setPipeline(const GraphicPipelinePointer& _pipeline) override;
+        virtual void setPipeline(const GraphicPipelineReference& _pipeline) override;
         virtual void setViewport(const ViewportDesc& _viewportDesc) override;
         virtual void setScissorRect(const ScissorRectDesc& _scissorRect) override;
         virtual void setVertexBuffer(
             uint32_t _slot,
-            const BufferPointer& _buffer,
+            const BufferReference& _buffer,
             uint32_t _stride,
             uint32_t _offset
         ) override;
         virtual void setIndexBuffer(
-            const BufferPointer& _buffer,
+            const BufferReference& _buffer,
             GraphicResourceFormat _format,
             uint32_t _offset
         ) override;

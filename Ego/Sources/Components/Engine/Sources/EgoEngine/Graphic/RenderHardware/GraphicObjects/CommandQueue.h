@@ -22,16 +22,16 @@ namespace ego::gpu
         CommandType getCommandType() const;
         const CommandQueueDesc& getDesc() const;
 
-        virtual void execute(const CommandListPointer& _commandList) = 0;
-        virtual void execute(const std::vector<CommandListPointer>& _commandLists) = 0;
+        virtual void execute(const CommandListReference& _commandList) = 0;
+        virtual void execute(const std::vector<CommandListReference>& _commandLists) = 0;
 
-        virtual void signal(const FencePointer& _fence, Fence::FenceValue _value) = 0;
-        virtual void wait(const FencePointer& _fence, Fence::FenceValue _value) = 0;
+        virtual void signal(const FenceReference& _fence, Fence::FenceValue _value) = 0;
+        virtual void wait(const FenceReference& _fence, Fence::FenceValue _value) = 0;
         virtual void waitIdle() = 0;
 
     private:
         CommandQueueDesc m_desc;
     };
 
-    EGO_POINTER(CommandQueue);
+    EGO_REFERENCE(CommandQueue);
 }

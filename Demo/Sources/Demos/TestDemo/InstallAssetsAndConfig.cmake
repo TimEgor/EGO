@@ -20,14 +20,11 @@ function(ego_test_demo_install_assets_and_config)
     endif()
 
     install(CODE
-        "
-        set(TPL_TEST_DEMO_ASSETS_PATH \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo/Assets\")
-
+        "set(TPL_TEST_DEMO_ASSETS_PATH \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo/Assets\")
         configure_file(
             \"${EGO_TEST_DEMO_DIR}/TestDemoConfig.xml.tpl\"
-            \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemoConfig.xml\"
-        )
-        "
+            \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo/TestDemoConfig.xml\"
+        )"
     )
 
     install(DIRECTORY "${EGO_TEST_DEMO_DIR}/Assets" DESTINATION "Demo/Demos/TestDemo" OPTIONAL)

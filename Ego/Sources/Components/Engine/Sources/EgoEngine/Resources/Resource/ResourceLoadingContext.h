@@ -29,6 +29,8 @@ namespace ego
             const ResourceFactory& _factory
         );
 
+        bool loadContent(const FileName& _path, FileContent& _content) const;
+
     private:
         ResourceController& m_controller;
         Resource& m_ownerResource;

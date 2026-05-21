@@ -24,7 +24,7 @@ ID3D12Resource* ego::gpu::d3d12::D3D12Texture2D::getD3D12Resource() const
 }
 
 ego::gpu::d3d12::D3D12TextureView::D3D12TextureView(
-    const TexturePointer& _texture,
+    const TextureReference& _texture,
     const TextureViewDesc& _desc,
     D3D12DescriptorIndex _descriptorIndex,
     D3D12DescriptorAllocatorPointer& _allocator

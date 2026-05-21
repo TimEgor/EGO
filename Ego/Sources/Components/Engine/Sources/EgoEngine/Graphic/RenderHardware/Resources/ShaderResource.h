@@ -10,7 +10,9 @@ namespace ego::gpu
     public:
         ShaderResource() = default;
 
-        ShaderPointer getShader() const;
+        ShaderReference getShader() const;
+
+        virtual ShaderStage getShaderStage() const = 0;
 
         EGO_RESOURCE(ShaderResource, Resource);
 
@@ -18,9 +20,9 @@ namespace ego::gpu
         virtual bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
         virtual void onUnload() override;
 
-        virtual ShaderPointer createShader(const ShaderCodePointer& _code) = 0;
+        virtual ShaderReference createShader(const ShaderCodeReference& _code) = 0;
 
-        ShaderPointer m_shader = nullptr;
+        ShaderReference m_shader = nullptr;
     };
 
     EGO_POINTER(ShaderResource);
@@ -30,12 +32,13 @@ namespace ego::gpu
     public:
         VertexShaderResource() = default;
 
-        VertexShaderPointer getVertexShader() const;
+        VertexShaderReference getVertexShader() const;
+        virtual ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(VertexShaderResource, ShaderResource);
 
     protected:
-        virtual ShaderPointer createShader(const ShaderCodePointer& _code) override;
+        virtual ShaderReference createShader(const ShaderCodeReference& _code) override;
     };
 
     EGO_POINTER(VertexShaderResource);
@@ -45,12 +48,13 @@ namespace ego::gpu
     public:
         PixelShaderResource() = default;
 
-        PixelShaderPointer getPixelShader() const;
+        PixelShaderReference getPixelShader() const;
+        virtual ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(PixelShaderResource, ShaderResource);
 
     protected:
-        virtual ShaderPointer createShader(const ShaderCodePointer& _code) override;
+        virtual ShaderReference createShader(const ShaderCodeReference& _code) override;
     };
 
     EGO_POINTER(PixelShaderResource);
@@ -60,12 +64,13 @@ namespace ego::gpu
     public:
         ComputeShaderResource() = default;
 
-        ComputeShaderPointer getComputeShader() const;
+        ComputeShaderReference getComputeShader() const;
+        virtual ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(ComputeShaderResource, ShaderResource);
 
     protected:
-        virtual ShaderPointer createShader(const ShaderCodePointer& _code) override;
+        virtual ShaderReference createShader(const ShaderCodeReference& _code) override;
     };
 
     EGO_POINTER(ComputeShaderResource);

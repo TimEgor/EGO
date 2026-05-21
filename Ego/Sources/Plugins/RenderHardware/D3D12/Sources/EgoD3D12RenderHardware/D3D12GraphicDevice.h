@@ -23,38 +23,38 @@ namespace ego::gpu::d3d12
         virtual void* getNativeHandle() const override;
         virtual void setName(const char* _name) override;
 
-        virtual CommandQueuePointer createCommandQueue(const CommandQueueDesc& _desc) override;
-        virtual GraphicCommandListPointer createGraphicCommandList() override;
-        virtual ComputeCommandListPointer createComputeCommandList() override;
-        virtual CopyCommandListPointer createCopyCommandList() override;
+        virtual CommandQueueReference createCommandQueue(const CommandQueueDesc& _desc) override;
+        virtual GraphicCommandListReference createGraphicCommandList() override;
+        virtual ComputeCommandListReference createComputeCommandList() override;
+        virtual CopyCommandListReference createCopyCommandList() override;
 
-        virtual BufferPointer createBuffer(
+        virtual BufferReference createBuffer(
             const BufferDesc& _desc,
             const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
         ) override;
-        virtual Texture2DPointer createTexture2D(
+        virtual Texture2DReference createTexture2D(
             const Texture2DDesc& _desc,
             const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
         ) override;
 
-        virtual VertexShaderPointer createVertexShader(const ShaderCodePointer& _code) override;
-        virtual PixelShaderPointer createPixelShader(const ShaderCodePointer& _code) override;
-        virtual ComputeShaderPointer createComputeShader(const ShaderCodePointer& _code) override;
-        virtual BindingLayoutPointer createBindingLayout(const BindingLayoutDesc& _desc) override;
-        virtual SamplerPointer createSampler(const SamplerDesc& _desc) override;
+        virtual VertexShaderReference createVertexShader(const ShaderCodeReference& _code) override;
+        virtual PixelShaderReference createPixelShader(const ShaderCodeReference& _code) override;
+        virtual ComputeShaderReference createComputeShader(const ShaderCodeReference& _code) override;
+        virtual BindingLayoutReference createBindingLayout(const BindingLayoutDesc& _desc) override;
+        virtual SamplerReference createSampler(const SamplerDesc& _desc) override;
 
-        virtual BufferViewPointer createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc) override;
-        virtual TextureViewPointer createTextureView(
-            const TexturePointer& _texture,
+        virtual BufferViewReference createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc) override;
+        virtual TextureViewReference createTextureView(
+            const TextureReference& _texture,
             const TextureViewDesc& _desc
         ) override;
 
-        virtual GraphicPipelinePointer createGraphicPipeline(const GraphicPipelineDesc& _desc) override;
-        virtual ComputePipelinePointer createComputePipeline(const ComputePipelineDesc& _desc) override;
+        virtual GraphicPipelineReference createGraphicPipeline(const GraphicPipelineDesc& _desc) override;
+        virtual ComputePipelineReference createComputePipeline(const ComputePipelineDesc& _desc) override;
 
-        virtual FencePointer createFence(Fence::FenceValue _initialValue = 0) override;
+        virtual FenceReference createFence(Fence::FenceValue _initialValue = 0) override;
 
-        virtual SwapChainPointer createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) override;
+        virtual SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) override;
 
         virtual const GraphicDeviceCapabilities& getCapabilities() const override;
 

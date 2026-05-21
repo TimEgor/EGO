@@ -2,13 +2,13 @@
 
 #include <cstdint>
 
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Reference/Reference.h"
 
 namespace ego::gpu
 {
 	inline constexpr uint32_t InvalidBindlessIndex = 0xffffffffu;
 
-	class GraphicObject
+	class GraphicObject : public STDDestroyMTCountable
 	{
 	public:
 		GraphicObject() = default;
@@ -22,5 +22,5 @@ namespace ego::gpu
 		virtual void setName(const char* _name) = 0;
 	};
 
-	EGO_POINTER(GraphicObject);
+	EGO_REFERENCE(GraphicObject);
 }

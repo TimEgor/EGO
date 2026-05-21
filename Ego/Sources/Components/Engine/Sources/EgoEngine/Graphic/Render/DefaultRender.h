@@ -5,8 +5,8 @@
 #include "EgoMath/Vector.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
-#include "EgoEngine/Graphic/Render/Resources/MaterialResource.h"
-#include "EgoEngine/Graphic/Render/Resources/MeshResource.h"
+#include "EgoEngine/Graphic/Render/Material.h"
+#include "EgoEngine/Graphic/Render/Mesh.h"
 
 #include "Render.h"
 
@@ -14,8 +14,8 @@ namespace ego
 {
     struct DefaultRenderItem final
     {
-        MeshResourcePointer m_mesh = nullptr;
-        MaterialResourcePointer m_material = nullptr;
+        MeshReference m_mesh = nullptr;
+        MaterialReference m_material = nullptr;
     };
 
     class DefaultRender : public Render
@@ -39,21 +39,21 @@ namespace ego
         void setClearEnabled(bool _enabled);
         bool isClearEnabled() const;
 
-        void addRenderItem(const MeshResourcePointer& _mesh, const MaterialResourcePointer& _material);
+        void addRenderItem(const MeshReference& _mesh, const MaterialReference& _material);
         void clearRenderItems();
         const std::vector<DefaultRenderItem>& getRenderItems() const;
 
         EGO_RENDER(DefaultRender, Render);
 
     private:
-        bool prepareRenderTarget(const gpu::Texture2DPointer& _targetTexture);
-        void setupTargetViewport(const gpu::Texture2DPointer& _targetTexture);
+        bool prepareRenderTarget(const gpu::Texture2DReference& _targetTexture);
+        void setupTargetViewport(const gpu::Texture2DReference& _targetTexture);
         void renderItem(const DefaultRenderItem& _item);
 
-        gpu::CommandQueuePointer m_commandQueue = nullptr;
-        gpu::GraphicCommandListPointer m_commandList = nullptr;
-        gpu::Texture2DPointer m_renderTargetTexture = nullptr;
-        gpu::TextureViewPointer m_renderTargetView = nullptr;
+        gpu::CommandQueueReference m_commandQueue = nullptr;
+        gpu::GraphicCommandListReference m_commandList = nullptr;
+        gpu::Texture2DReference m_renderTargetTexture = nullptr;
+        gpu::TextureViewReference m_renderTargetView = nullptr;
 
         std::vector<DefaultRenderItem> m_renderItems;
         FloatVector4 m_clearColor = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);

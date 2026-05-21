@@ -3,10 +3,46 @@
 #include "ResourceLoadingContext.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include <algorithm>
+#include <cctype>
+#include <string>
 #include <utility>
+
+namespace
+{
+    std::string NormalizeProviderExtension(const ego::FileName& _extension)
+    {
+        std::string extension = _extension.c_str();
+        if (extension.empty())
+        {
+            return extension;
+        }
+
+        if (extension.front() != '.')
+        {
+            extension.insert(extension.begin(), '.');
+        }
+
+        std::transform(
+            extension.begin(),
+            extension.end(),
+            extension.begin(),
+            [](unsigned char _ch)
+            {
+                return static_cast<char>(std::tolower(_ch));
+            }
+        );
+        return extension;
+    }
+
+    std::string GetProviderExtension(const ego::FileName& _path)
+    {
+        return NormalizeProviderExtension(ego::file_name_utils::GetFileExtension(_path));
+    }
+}
 
 ego::ResourceController::~ResourceController()
 {
@@ -44,6 +80,7 @@ void ego::ResourceController::release()
     std::lock_guard locker(m_mutex);
     m_resources.clear();
     m_fileSystems.clear();
+    m_resourceProviders.clear();
     m_isInitialized = false;
 }
 
@@ -107,6 +144,46 @@ void ego::ResourceController::clearFileSystems()
 {
     std::lock_guard locker(m_mutex);
     m_fileSystems.clear();
+}
+
+bool ego::ResourceController::addResourceProvider(
+    const FileName& _extension,
+    const ResourceProviderPointer& _provider
+)
+{
+    const std::string extension = NormalizeProviderExtension(_extension);
+    if (extension.empty() || !_provider)
+    {
+        return false;
+    }
+
+    std::lock_guard locker(m_mutex);
+
+    auto [providerIt, added] = m_resourceProviders.emplace(extension, _provider);
+    if (!added)
+    {
+        providerIt->second = _provider;
+    }
+
+    return true;
+}
+
+bool ego::ResourceController::removeResourceProvider(const FileName& _extension)
+{
+    const std::string extension = NormalizeProviderExtension(_extension);
+    if (extension.empty())
+    {
+        return false;
+    }
+
+    std::lock_guard locker(m_mutex);
+    return m_resourceProviders.erase(extension) != 0;
+}
+
+void ego::ResourceController::clearResourceProviders()
+{
+    std::lock_guard locker(m_mutex);
+    m_resourceProviders.clear();
 }
 
 ego::ResourcePointer ego::ResourceController::loadResource(
@@ -379,6 +456,20 @@ bool ego::ResourceController::loadResourceContent(const FileName& _path, FileCon
     return false;
 }
 
+ego::ResourceProviderPointer ego::ResourceController::getResourceProvider(const FileName& _path) const
+{
+    const std::string extension = GetProviderExtension(_path);
+    if (extension.empty())
+    {
+        return nullptr;
+    }
+
+    std::lock_guard locker(m_mutex);
+
+    const auto providerIt = m_resourceProviders.find(extension);
+    return providerIt != m_resourceProviders.end() ? providerIt->second : nullptr;
+}
+
 bool ego::ResourceController::loadResourceData(
     const ResourcePointer& _resource,
     const FileName& _path,
@@ -390,14 +481,24 @@ bool ego::ResourceController::loadResourceData(
         return false;
     }
 
+    ResourceLoadingContext loadingContext(*this, *_resource, _asyncChildLoading);
     FileContent content;
-    if (!loadResourceContent(_path, content))
+
+    const ResourceProviderPointer provider = getResourceProvider(_path);
+    if (provider)
+    {
+        if (!provider->provideContent(*_resource, _path, loadingContext, content))
+        {
+            Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
+            return false;
+        }
+    }
+    else if (!loadResourceContent(_path, content))
     {
         Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
         return false;
     }
 
-    ResourceLoadingContext loadingContext(*this, *_resource, _asyncChildLoading);
     if (!_resource->load(_path, std::move(content), loadingContext))
     {
         return false;

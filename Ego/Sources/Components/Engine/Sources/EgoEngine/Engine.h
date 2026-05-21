@@ -94,7 +94,7 @@ namespace ego::engine
         ResourceControllerPointer m_resourceController = nullptr;
 
         PlatformPointer m_platform = nullptr;
-        gpu::GraphicDevicePointer m_graphicDevice = nullptr;
+        gpu::GraphicDeviceReference m_graphicDevice = nullptr;
         WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
         DefaultRenderPointer m_render = nullptr;
 

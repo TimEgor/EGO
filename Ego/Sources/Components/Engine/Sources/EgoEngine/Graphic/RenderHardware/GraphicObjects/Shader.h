@@ -25,7 +25,7 @@ namespace ego::gpu
 
     using ShaderStageFlags = uint32_t;
 
-    class ShaderCode final
+    class ShaderCode final : public STDDestroyMTCountable
     {
     public:
         ShaderCode(const void* _code, uint32_t _codeSize);
@@ -39,58 +39,58 @@ namespace ego::gpu
         uint32_t m_codeSize = 0;
     };
 
-    EGO_POINTER(ShaderCode);
+    EGO_REFERENCE(ShaderCode);
 
     class Shader : public GraphicResource
     {
     public:
-        Shader(const ShaderCodePointer& _code);
+        Shader(const ShaderCodeReference& _code);
 
-        ShaderCodePointer getCode() const;
+        ShaderCodeReference getCode() const;
 
         virtual ShaderStage getShaderType() const = 0;
 
         EGO_GRAPHIC_RESOURCE(Shader, GraphicResource);
 
     protected:
-        ShaderCodePointer m_code;
+        ShaderCodeReference m_code;
     };
 
-    EGO_POINTER(Shader);
+    EGO_REFERENCE(Shader);
 
     class VertexShader : public Shader
     {
     public:
-        VertexShader(const ShaderCodePointer& _code);
+        VertexShader(const ShaderCodeReference& _code);
 
         virtual ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(VertexShader, Shader);
     };
 
-    EGO_POINTER(VertexShader);
+    EGO_REFERENCE(VertexShader);
 
     class PixelShader : public Shader
     {
     public:
-        PixelShader(const ShaderCodePointer& _code);
+        PixelShader(const ShaderCodeReference& _code);
 
         virtual ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(PixelShader, Shader);
     };
 
-    EGO_POINTER(PixelShader);
+    EGO_REFERENCE(PixelShader);
 
     class ComputeShader : public Shader
     {
     public:
-        ComputeShader(const ShaderCodePointer& _code);
+        ComputeShader(const ShaderCodeReference& _code);
 
         virtual ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(ComputeShader, Shader);
     };
 
-    EGO_POINTER(ComputeShader);
+    EGO_REFERENCE(ComputeShader);
 }

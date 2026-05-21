@@ -1,4 +1,4 @@
 <Material>
-    <VertexShader>Shaders/TestTriangleVS.hlsl</VertexShader>
-    <PixelShader>Shaders/TestTrianglePS.hlsl</PixelShader>
+    <VertexShader>Shaders/TestTriangleVS.shader</VertexShader>
+    <PixelShader>Shaders/TestTrianglePS.shader</PixelShader>
 </Material>

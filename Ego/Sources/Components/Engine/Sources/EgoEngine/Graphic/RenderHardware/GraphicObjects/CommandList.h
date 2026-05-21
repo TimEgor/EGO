@@ -75,7 +75,7 @@ namespace ego::gpu
 
     struct ColorAttachmentDesc final
     {
-        TextureViewPointer m_view = nullptr;
+        TextureViewReference m_view = nullptr;
         AttachmentLoadOperation m_loadOperation = AttachmentLoadOperation::Load;
         AttachmentStoreOperation m_storeOperation = AttachmentStoreOperation::Store;
         FloatVector4 m_clearValue = FloatVector4Zero;
@@ -83,7 +83,7 @@ namespace ego::gpu
 
     struct DepthStencilAttachmentDesc final
     {
-        TextureViewPointer m_view = nullptr;
+        TextureViewReference m_view = nullptr;
         AttachmentLoadOperation m_depthLoadOperation = AttachmentLoadOperation::Load;
         AttachmentStoreOperation m_depthStoreOperation = AttachmentStoreOperation::Store;
         AttachmentLoadOperation m_stencilLoadOperation = AttachmentLoadOperation::Load;
@@ -118,13 +118,13 @@ namespace ego::gpu
         virtual CommandType getCommandType() const = 0;
 
         virtual void resourceBarrier(
-            const GraphicResourcePointer& _resource,
+            const GraphicResourceReference& _resource,
             GraphicResourceState _prevState,
             GraphicResourceState _nextState
         ) = 0;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewPointer& _resourceView) = 0;
-        virtual void bindSampler(uint32_t _slot, const SamplerPointer& _sampler) = 0;
+        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) = 0;
+        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) = 0;
         virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const = 0;
         virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const = 0;
 
@@ -136,28 +136,28 @@ namespace ego::gpu
         ) = 0;
 
         virtual void copyBuffer(
-            const BufferPointer& _srcBuffer,
-            const BufferPointer& _dstBuffer,
+            const BufferReference& _srcBuffer,
+            const BufferReference& _dstBuffer,
             const BufferCopyRegionDesc& _region
         ) = 0;
         virtual void copyTexture(
-            const TexturePointer& _srcTexture,
-            const TexturePointer& _dstTexture,
+            const TextureReference& _srcTexture,
+            const TextureReference& _dstTexture,
             const TextureCopyRegionDesc& _region
         ) = 0;
         virtual void copyBufferToTexture(
-            const BufferPointer& _srcBuffer,
-            const TexturePointer& _dstTexture,
+            const BufferReference& _srcBuffer,
+            const TextureReference& _dstTexture,
             const BufferTextureCopyRegionDesc& _region
         ) = 0;
         virtual void copyTextureToBuffer(
-            const TexturePointer& _srcTexture,
-            const BufferPointer& _dstBuffer,
+            const TextureReference& _srcTexture,
+            const BufferReference& _dstBuffer,
             const BufferTextureCopyRegionDesc& _region
         ) = 0;
     };
 
-    EGO_POINTER(CommandList);
+    EGO_REFERENCE(CommandList);
 
     class CopyCommandList : public CommandList
     {
@@ -167,20 +167,20 @@ namespace ego::gpu
         CommandType getCommandType() const override;
     };
 
-    EGO_POINTER(CopyCommandList);
+    EGO_REFERENCE(CopyCommandList);
 
     class ComputeCommandList : public CopyCommandList
     {
     public:
         ComputeCommandList() = default;
 
-        virtual void setPipeline(const ComputePipelinePointer& _pipeline) = 0;
+        virtual void setPipeline(const ComputePipelineReference& _pipeline) = 0;
         virtual void dispatch(uint32_t _threadGroupsX, uint32_t _threadGroupsY, uint32_t _threadGroupsZ) = 0;
 
         CommandType getCommandType() const override;
     };
 
-    EGO_POINTER(ComputeCommandList);
+    EGO_REFERENCE(ComputeCommandList);
 
     class GraphicCommandList : public ComputeCommandList
     {
@@ -190,16 +190,16 @@ namespace ego::gpu
         virtual void beginRendering(const RenderingDesc& _desc) = 0;
         virtual void endRendering() = 0;
 
-        virtual void setPipeline(const GraphicPipelinePointer& _pipeline) = 0;
+        virtual void setPipeline(const GraphicPipelineReference& _pipeline) = 0;
         virtual void setViewport(const ViewportDesc& _viewportDesc) = 0;
         virtual void setScissorRect(const ScissorRectDesc& _scissorRect) = 0;
         virtual void setVertexBuffer(
             uint32_t _slot,
-            const BufferPointer& _buffer,
+            const BufferReference& _buffer,
             uint32_t _stride,
             uint32_t _offset
         ) = 0;
-        virtual void setIndexBuffer(const BufferPointer& _buffer, GraphicResourceFormat _format, uint32_t _offset) = 0;
+        virtual void setIndexBuffer(const BufferReference& _buffer, GraphicResourceFormat _format, uint32_t _offset) = 0;
 
         virtual void draw(
             uint32_t _vertexCount,
@@ -219,5 +219,5 @@ namespace ego::gpu
         CommandType getCommandType() const override;
     };
 
-    EGO_POINTER(GraphicCommandList);
+    EGO_REFERENCE(GraphicCommandList);
 }

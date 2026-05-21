@@ -6,7 +6,7 @@
 
 namespace
 {
-    std::vector<uint8_t> CopyShaderCode(const ego::gpu::ShaderCodePointer& _code)
+    std::vector<uint8_t> CopyShaderCode(const ego::gpu::ShaderCodeReference& _code)
     {
         if (!_code || !_code->getCode() || !_code->getCodeSize())
         {

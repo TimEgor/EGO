@@ -26,7 +26,7 @@ ego_setup_target_common(
 
 ego_install_target(
     EgoTestDemo
-    "Demo/Demos"
+    "Demo/Demos/TestDemo"
 )
 
 include(${CMAKE_CURRENT_LIST_DIR}/InstallAssetsAndConfig.cmake)

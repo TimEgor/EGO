@@ -14,7 +14,7 @@ ego::gpu::TextureDimension ego::gpu::Texture2D::getDimension() const
     return TextureDimension::D2;
 }
 
-ego::gpu::TextureView::TextureView(const TexturePointer& _texture, const TextureViewDesc& _desc)
+ego::gpu::TextureView::TextureView(const TextureReference& _texture, const TextureViewDesc& _desc)
     : ResourceView(_texture),
       m_desc(_desc)
 {}
