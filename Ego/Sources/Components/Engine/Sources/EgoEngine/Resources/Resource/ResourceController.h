@@ -19,6 +19,7 @@ namespace ego
     class ResourceController final : public EnableSharedFromThis<ResourceController>
     {
         friend class ResourceLoadingContext;
+        friend class Resource::ResourceAccessor;
 
     public:
         using ResourceFactory = ego::ResourceFactory;
@@ -114,6 +115,7 @@ namespace ego
             FileName m_path;
             ResourceFactory m_factory;
             ResourceWeakPointer m_resource;
+            Resource* m_resourcePtr = nullptr;
             JobWeakReference m_loadingJob;
         };
 
@@ -133,6 +135,8 @@ namespace ego
             const ResourceFactory& _factory,
             JobReference* _job = nullptr
         );
+
+        bool removeResource(Resource* _resource);
 
         ResourcePointer getOrCreateResource(
             ResourceType _type,

@@ -325,6 +325,37 @@ ego::ResourcePointer ego::ResourceController::getResource(FileNameID _id) const
     return resourceIt->second.m_resource.lock();
 }
 
+bool ego::ResourceController::removeResource(Resource* _resource)
+{
+    if (!_resource)
+    {
+        return false;
+    }
+
+    const FileName resourcePath = _resource->getPath();
+    if (!resourcePath)
+    {
+        return false;
+    }
+
+    const ResourceID resourceID = resourcePath.hash();
+    if (resourceID == InvalidResourceID)
+    {
+        return false;
+    }
+
+    std::lock_guard locker(m_mutex);
+
+    const auto resourceIt = m_resources.find(resourceID);
+    if (resourceIt == m_resources.end() || resourceIt->second.m_resourcePtr != _resource)
+    {
+        return false;
+    }
+
+    m_resources.erase(resourceIt);
+    return true;
+}
+
 bool ego::ResourceController::isChildResourcesLoaded(const FileName& _path) const
 {
     return isChildResourcesLoaded(getResource(_path));
@@ -428,8 +459,9 @@ ego::ResourcePointer ego::ResourceController::getOrCreateResource(
     }
 
     Resource::ResourceAccessor::PrepareLoading(resource.get(), _path);
+    Resource::ResourceAccessor::SetController(resource.get(), weakFromThis());
 
-    m_resources.emplace(_id, ResourceEntry{_type, _path, _factory, resource, nullptr});
+    m_resources.emplace(_id, ResourceEntry{_type, _path, _factory, resource, resource.get(), nullptr});
     _needLoading = true;
 
     return resource;

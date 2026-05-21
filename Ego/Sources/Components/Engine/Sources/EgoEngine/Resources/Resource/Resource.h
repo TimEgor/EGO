@@ -56,6 +56,7 @@ namespace ego
 
             static void PrepareLoading(Resource* _resource, const FileName& _path);
             static void SetState(Resource* _resource, ResourceState _state);
+            static void SetController(Resource* _resource, const WeakPointer<ResourceController>& _controller);
             static void Unload(Resource* _resource);
             static void AddChildDependency(Resource* _resource, const ResourcePointer& _childResource);
             static void GetChildDependencies(const Resource* _resource, ChildDependencyCollection& _dependencies);
@@ -88,12 +89,15 @@ namespace ego
 
         void prepareLoading(const FileName& _path);
         void setState(ResourceState _state);
+        void setController(const WeakPointer<ResourceController>& _controller);
+        WeakPointer<ResourceController> getController() const;
         void unload();
 
         mutable std::mutex m_mutex;
 
         FileName m_path;
         ChildDependencyCollection m_childDependencies;
+        WeakPointer<ResourceController> m_controller;
         std::atomic<ResourceState> m_state = ResourceState::Undefined;
     };
 

@@ -155,7 +155,7 @@ void ego::PluginController::unloadModule(PluginModule* _module)
         EGO_ASSERT_FAIL_MESSAGE("Module isn't stored in controller.");
     }
 
-    m_loader->unloadModule(_module, moduleInfo.m_modulePath);
+    m_loader->unloadModule(moduleInfo.m_handle, moduleInfo.m_modulePath);
 }
 
 void ego::PluginController::unloadPlugin(Plugin* _plugin)
