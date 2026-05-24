@@ -1,18 +1,17 @@
 #pragma once
 
-#include "EgoEngine/Graphic/RenderHardware/Resources/ShaderResourceProvider.h"
+#include "EgoEngine/Resources/Resource/ResourceProvider.h"
 
-namespace ego::gpu::d3d12
+namespace ego::resources::dxc
 {
-    class DXCShaderResourceProvider final : public ShaderResourceProvider
+    class DXCShaderResourceProvider final : public ResourceProvider
     {
     public:
         DXCShaderResourceProvider() = default;
 
-    protected:
-        virtual bool provideShaderContent(
+        virtual bool provideContent(
+            const Resource& _resource,
             const FileName& _path,
-            ShaderStage _stage,
             ResourceLoadingContext& _loadingContext,
             FileContent& _content
         ) override;

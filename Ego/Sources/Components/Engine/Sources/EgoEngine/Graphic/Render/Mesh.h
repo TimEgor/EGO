@@ -8,10 +8,7 @@
 
 namespace ego
 {
-    namespace gpu
-    {
-        class GraphicDevice;
-    }
+    class GraphicDevice;
 
     struct MeshRawData final
     {
@@ -67,5 +64,5 @@ namespace ego
 
     EGO_REFERENCE(Mesh);
 
-    MeshReference CreateMeshFromRawData(gpu::GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
+    MeshReference CreateMeshFromRawData(GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
 }

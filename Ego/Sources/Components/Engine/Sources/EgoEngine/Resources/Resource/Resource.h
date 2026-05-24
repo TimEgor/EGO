@@ -46,7 +46,7 @@ namespace ego
     class Resource
     {
     public:
-        using ChildDependencyCollection = std::vector<ResourcePointer>;
+        using DependencyCollection = std::vector<ResourcePointer>;
 
         class ResourceAccessor final : public NonInstanceable
         {
@@ -56,10 +56,9 @@ namespace ego
 
             static void PrepareLoading(Resource* _resource, const FileName& _path);
             static void SetState(Resource* _resource, ResourceState _state);
-            static void SetController(Resource* _resource, const WeakPointer<ResourceController>& _controller);
             static void Unload(Resource* _resource);
-            static void AddChildDependency(Resource* _resource, const ResourcePointer& _childResource);
-            static void GetChildDependencies(const Resource* _resource, ChildDependencyCollection& _dependencies);
+            static void AddDependency(Resource* _resource, const ResourcePointer& _dependency);
+            static void GetDependencies(const Resource* _resource, DependencyCollection& _dependencies);
         };
 
         Resource() = default;
@@ -83,21 +82,18 @@ namespace ego
         virtual void onUnload();
 
     private:
-        void clearChildDependencies();
-        void addChildDependency(const ResourcePointer& _resource);
-        void getChildDependencies(ChildDependencyCollection& _dependencies) const;
+        void clearDependencies();
+        void addDependency(const ResourcePointer& _resource);
+        void getDependencies(DependencyCollection& _dependencies) const;
 
         void prepareLoading(const FileName& _path);
         void setState(ResourceState _state);
-        void setController(const WeakPointer<ResourceController>& _controller);
-        WeakPointer<ResourceController> getController() const;
         void unload();
 
         mutable std::mutex m_mutex;
 
         FileName m_path;
-        ChildDependencyCollection m_childDependencies;
-        WeakPointer<ResourceController> m_controller;
+        DependencyCollection m_dependencies;
         std::atomic<ResourceState> m_state = ResourceState::Undefined;
     };
 

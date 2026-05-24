@@ -129,6 +129,16 @@ bool ego::XmlNode::setName(const char* _name)
 	return m_xmlNode.set_name(_name);
 }
 
+bool ego::XmlNode::hasAttribute(const char* _name) const
+{
+	return m_xmlNode.attribute(_name);
+}
+
+const char* ego::XmlNode::getAttributeValue(const char* _name) const
+{
+	return m_xmlNode.attribute(_name).value();
+}
+
 ego::XmlNodeValue ego::XmlNode::getValue() const
 {
 	return m_xmlNode.text();

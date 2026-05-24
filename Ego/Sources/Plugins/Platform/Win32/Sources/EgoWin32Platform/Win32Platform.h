@@ -37,5 +37,6 @@ namespace ego::win32
         Win32FileSystemPointer m_fileSystem;
 
         HINSTANCE m_instance;
+        bool m_isInitialized = false;
     };
 }

@@ -56,6 +56,11 @@ namespace ego::rtti
         return T::GetMetaInfoID();
     }
 
+    constexpr TypeMetaInfoID GetTypeMetaInfoID(const char* _typeName)
+    {
+        return _typeName ? Crc32(_typeName) : InvalidTypeMetaInfoID;
+    }
+
     template <typename T>
     const TypeMetaInfo& GetTypeMetaInfo()
     {
@@ -113,23 +118,23 @@ namespace ego::rtti
     }
 }
 
-#define EGO_RTTI(_TYPE, ...)													            \
-	static const char* GetMetaInfoTypeName()									            \
-	{																			            \
-		return #_TYPE;															            \
-	}																			            \
-																				            \
-	static ego::rtti::TypeMetaInfoID GetMetaInfoID()										\
-	{																			            \
-		static constexpr ego::rtti::TypeMetaInfoID ID = ego::Crc32(#_TYPE);		            \
-		return ID;																            \
-	}																			            \
-																				            \
-	static const ego::rtti::TypeMetaInfo& GetMetaInfo()							            \
-	{																			            \
-		static const ego::rtti::TypeMetaInfo TypeMetaInfo =						            \
-			std::move(ego::rtti::RegistryTypeMetaInfo<_TYPE __VA_OPT__(,) __VA_ARGS__>());	\
-		return TypeMetaInfo;																\
+#define EGO_RTTI(_TYPE, ...)													                \
+	static const char* GetMetaInfoTypeName()									                \
+	{																			                \
+		return #_TYPE;															                \
+	}																			                \
+																				                \
+	static ego::rtti::TypeMetaInfoID GetMetaInfoID()										    \
+	{																			                \
+		static constexpr ego::rtti::TypeMetaInfoID ID = ego::rtti::GetTypeMetaInfoID(#_TYPE);   \
+		return ID;																                \
+	}																			                \
+																				                \
+	static const ego::rtti::TypeMetaInfo& GetMetaInfo()							                \
+	{																			                \
+		static const ego::rtti::TypeMetaInfo TypeMetaInfo =						                \
+			std::move(ego::rtti::RegistryTypeMetaInfo<_TYPE __VA_OPT__(,) __VA_ARGS__>());	    \
+		return TypeMetaInfo;																    \
 	}
 
 #define EGO_RTTI_OBJECT(_PRE_MODIFICATOR, _POST_MODIFICATOR)											\

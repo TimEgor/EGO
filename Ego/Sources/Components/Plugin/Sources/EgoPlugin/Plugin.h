@@ -14,6 +14,11 @@ namespace ego
 
     using PluginType = rtti::TypeMetaInfoID;
 
+    inline PluginType GetPluginType(const char* _pluginTypeName)
+    {
+        return rtti::GetTypeMetaInfoID(_pluginTypeName);
+    }
+
     static constexpr PluginID CalcPluginID(PluginModuleID _moduleId, PluginType _pluginType)
     {
         return static_cast<PluginID>(_moduleId) << 32 | _pluginType;

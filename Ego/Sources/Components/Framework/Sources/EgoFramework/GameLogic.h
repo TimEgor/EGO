@@ -3,18 +3,19 @@
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Reference/Pointer.h"
 
-namespace ego::demo
+namespace ego::framework
 {
-    class Demo : public NonCopyable
+    class GameLogic : public NonCopyable
     {
     public:
-        Demo() = default;
-        virtual ~Demo() = default;
+        GameLogic() = default;
+        virtual ~GameLogic() = default;
 
         virtual bool init() { return true; }
         virtual void release() {}
     };
 
-    EGO_POINTER(Demo);
-    EGO_WEAK_POINTER(Demo);
+    EGO_POINTER(GameLogic);
+    EGO_WEAK_POINTER(GameLogic);
 }
+

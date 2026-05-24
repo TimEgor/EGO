@@ -9,8 +9,7 @@ namespace ego::gpu::d3d12
     public:
         D3D12RenderHardwarePlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        virtual GraphicDeviceReference createGraphicDevice() override;
-        virtual void registerResourceProviders(ResourceController& _resourceController) override;
+        virtual GraphicDevicePointer createGraphicDevice() override;
 
         EGO_PLUGIN(D3D12RenderHardwarePlugin, RenderHardwarePlugin);
     };

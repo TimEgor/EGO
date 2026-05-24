@@ -1,55 +1,58 @@
-#include "EgoCore/FileName/FileNameUtils.h"
-
 #include "EgoCore/Parsers/ArgParser/Parser.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoPlugin/PluginController.h"
+#include "EgoFramework/Framework.h"
+#include "EgoFramework/ProjectReader.h"
 
-#include "EgoDemoFramework/DemoController.h"
+#include <string>
+
+namespace
+{
+	bool LoadProject(const ego::FileName& _fileName, ego::framework::ProjectPointer& _project)
+	{
+		_project = nullptr;
+		EGO_CHECK_RETURN_FALSE(_fileName);
+
+		_project = new ego::framework::Project();
+		EGO_CHECK_RETURN_FALSE(_project);
+		EGO_CHECK_RETURN_FALSE(ego::framework::ProjectReader::ReadFromFile(_fileName, *_project));
+
+		return true;
+	}
+}
 
 int WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, int _nShowCmd)
 {
-	ego::demo::DemoControllerInitData initData;
+	ego::framework::Framework::InitData initData;
 	initData.m_engineInitData.m_nativeInstanceHandle = _hInstance;
+	std::string platformPluginModuleName;
+	std::string renderHardwarePluginModuleName;
+	std::string projectFilePath;
 
 	ego::ArgParser argParser;
-	argParser.addOptionValue("--platform", initData.m_engineInitData.m_platformPluginModuleName);
-	argParser.addOptionValue("--renderHardware", initData.m_engineInitData.m_renderHardwarePluginModuleName);
-	argParser.addOptionValue("--demo", initData.m_demoPluginModuleName);
+	argParser.addOptionValue("--platform", platformPluginModuleName);
+	argParser.addOptionValue("--renderHardware", renderHardwarePluginModuleName);
+	argParser.addOptionValue("--project", projectFilePath);
 
 	argParser.parse(__argc, __argv);
 
-    ego::PluginControllerPointer pluginController = new ego::PluginController();
-    EGO_CHECK_RETURN_VALUE(ego::PluginControllerCore::GetInstance().init(pluginController), 1)
-    EGO_CHECK_RETURN_VALUE(pluginController && pluginController->init(), 1);
+	initData.m_engineInitData.m_platformPluginModuleName = platformPluginModuleName;
+	initData.m_engineInitData.m_renderHardwarePluginModuleName = renderHardwarePluginModuleName;
 
-	if (initData.m_engineInitData.m_platformPluginModuleName.empty())
+	const ego::FileName projectFileName(projectFilePath);
+	if (projectFileName)
 	{
-		initData.m_engineInitData.m_platformPluginModuleName = pluginController->selectPluginModule("platform");
+		EGO_CHECK_RETURN_VALUE(LoadProject(projectFileName, initData.m_project), 2);
 	}
 
-	if (initData.m_engineInitData.m_renderHardwarePluginModuleName.empty())
-	{
-		initData.m_engineInitData.m_renderHardwarePluginModuleName = pluginController->selectPluginModule("RHI");
-	}
+	ego::framework::FrameworkPointer framework = new ego::framework::Framework();
+	EGO_CHECK_RETURN_VALUE(ego::framework::FrameworkCore::GetInstance().init(framework), 1);
+	EGO_CHECK_RETURN_VALUE(framework->init(initData), 10);
 
-	if (initData.m_demoPluginModuleName.empty())
-	{
-		initData.m_demoPluginModuleName = pluginController->selectPluginModule("demo");
-	}
+	framework->run();
 
-	ego::demo::DemoControllerPointer demoController = new ego::demo::DemoController();
-	ego::demo::DemoControllerCore::GetInstance().init(demoController);
-
-	EGO_CHECK_RETURN_VALUE(demoController->init(initData), 10);
-
-	demoController->run();
-
-	ego::demo::DemoControllerCore::GetInstance().release();
-	EGO_SAFE_RESET_POINTER_WITH_RELEASING(demoController);
-
-    ego::PluginControllerCore::GetInstance().release();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(pluginController);
+	ego::framework::FrameworkCore::GetInstance().release();
+	EGO_SAFE_RESET_POINTER_WITH_RELEASING(framework);
 
 	return 0;
 }

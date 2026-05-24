@@ -8,6 +8,11 @@ ego::win32::Win32Platform::Win32Platform(HINSTANCE _instance)
 
 bool ego::win32::Win32Platform::init()
 {
+    if (m_isInitialized)
+    {
+        return true;
+    }
+
     m_fileSystem = new Win32FileSystem();
     EGO_CHECK_INITIALIZATION(m_fileSystem && m_fileSystem->init());
 
@@ -19,14 +24,22 @@ bool ego::win32::Win32Platform::init()
 	m_platformEventController = new Win32WindowEventController();
 	EGO_CHECK_INITIALIZATION(m_platformEventController);
 
+    m_isInitialized = true;
+
     return true;
 }
 
 void ego::win32::Win32Platform::release()
 {
+    if (!m_isInitialized)
+    {
+        return;
+    }
+
     m_platformEventController = nullptr;
     m_mainWindowProvider = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_fileSystem);
+    m_isInitialized = false;
 }
 
 ego::MainWindowProvider& ego::win32::Win32Platform::getMainWindowProvider()

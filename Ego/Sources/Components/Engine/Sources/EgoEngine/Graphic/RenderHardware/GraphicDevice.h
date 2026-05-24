@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EgoCore/Reference/Pointer.h"
+
 #include "GraphicObjects/BindingLayout.h"
 #include "GraphicObjects/Buffer.h"
 #include "GraphicObjects/CommandList.h"
@@ -17,69 +19,78 @@ namespace ego
     class Window;
 }
 
-namespace ego::gpu
+namespace ego
 {
-    struct GraphicDeviceInitParams final
-    {
-        bool m_debugEnable = false;
-        bool m_gpuValidation = false;
-    };
-
-    struct GraphicDeviceCapabilities final
-    {
-        uint32_t m_maxColorAttachments = 0;
-        bool m_supportsPresentation = true;
-        bool m_supportsIndependentComputeQueue = false;
-        bool m_supportsMeshShaders = false;
-        bool m_supportsRayTracing = false;
-        bool m_supportsSamplerAnisotropy = false;
-        bool m_supportsBindlessResources = false;
-        uint32_t m_bindlessResourceDescriptorCount = 0;
-        uint32_t m_bindlessSamplerDescriptorCount = 0;
-    };
-
-    class GraphicDevice : public GraphicObject
+    class GraphicDevice : public gpu::GraphicObject
     {
     public:
+        struct InitParams final
+        {
+            bool m_debugEnable = false;
+            bool m_gpuValidation = false;
+        };
+
+        struct Capabilities final
+        {
+            uint32_t m_maxColorAttachments = 0;
+            bool m_supportsPresentation = true;
+            bool m_supportsIndependentComputeQueue = false;
+            bool m_supportsMeshShaders = false;
+            bool m_supportsRayTracing = false;
+            bool m_supportsSamplerAnisotropy = false;
+            bool m_supportsBindlessResources = false;
+            uint32_t m_bindlessResourceDescriptorCount = 0;
+            uint32_t m_bindlessSamplerDescriptorCount = 0;
+        };
+
         GraphicDevice() = default;
 
-        virtual bool init(const GraphicDeviceInitParams& _params) = 0;
+        virtual bool init(const InitParams& _params) = 0;
         virtual void release() = 0;
 
-        virtual CommandQueueReference createCommandQueue(const CommandQueueDesc& _desc) = 0;
-        virtual GraphicCommandListReference createGraphicCommandList() = 0;
-        virtual ComputeCommandListReference createComputeCommandList() = 0;
-        virtual CopyCommandListReference createCopyCommandList() = 0;
+        virtual gpu::CommandQueueReference createCommandQueue(const gpu::CommandQueueDesc& _desc) = 0;
+        virtual gpu::GraphicCommandListReference createGraphicCommandList() = 0;
+        virtual gpu::ComputeCommandListReference createComputeCommandList() = 0;
+        virtual gpu::CopyCommandListReference createCopyCommandList() = 0;
 
-        virtual BufferReference createBuffer(
-            const BufferDesc& _desc,
-            const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
+        virtual gpu::BufferReference createBuffer(
+            const gpu::BufferDesc& _desc,
+            const gpu::InitialGraphicResourceData& _initialData = gpu::InitialGraphicResourceData()
         ) = 0;
-        virtual Texture2DReference createTexture2D(
-            const Texture2DDesc& _desc,
-            const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
+        virtual gpu::Texture2DReference createTexture2D(
+            const gpu::Texture2DDesc& _desc,
+            const gpu::InitialGraphicResourceData& _initialData = gpu::InitialGraphicResourceData()
         ) = 0;
 
-        virtual VertexShaderReference createVertexShader(const ShaderCodeReference& _code) = 0;
-        virtual PixelShaderReference createPixelShader(const ShaderCodeReference& _code) = 0;
-        virtual ComputeShaderReference createComputeShader(const ShaderCodeReference& _code) = 0;
-        virtual BindingLayoutReference createBindingLayout(const BindingLayoutDesc& _desc) = 0;
-        virtual SamplerReference createSampler(const SamplerDesc& _desc) = 0;
+        virtual gpu::VertexShaderReference createVertexShader(const gpu::ShaderCodeReference& _code) = 0;
+        virtual gpu::PixelShaderReference createPixelShader(const gpu::ShaderCodeReference& _code) = 0;
+        virtual gpu::ComputeShaderReference createComputeShader(const gpu::ShaderCodeReference& _code) = 0;
+        virtual gpu::BindingLayoutReference createBindingLayout(const gpu::BindingLayoutDesc& _desc) = 0;
+        virtual gpu::SamplerReference createSampler(const gpu::SamplerDesc& _desc) = 0;
 
-        virtual BufferViewReference createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc) = 0;
-        virtual TextureViewReference createTextureView(const TextureReference& _texture, const TextureViewDesc& _desc) = 0;
+        virtual gpu::BufferViewReference createBufferView(
+            const gpu::BufferReference& _buffer,
+            const gpu::BufferViewDesc& _desc
+        ) = 0;
+        virtual gpu::TextureViewReference createTextureView(
+            const gpu::TextureReference& _texture,
+            const gpu::TextureViewDesc& _desc
+        ) = 0;
 
-        virtual GraphicPipelineReference createGraphicPipeline(const GraphicPipelineDesc& _desc) = 0;
-        virtual ComputePipelineReference createComputePipeline(const ComputePipelineDesc& _desc) = 0;
+        virtual gpu::GraphicPipelineReference createGraphicPipeline(const gpu::GraphicPipelineDesc& _desc) = 0;
+        virtual gpu::ComputePipelineReference createComputePipeline(const gpu::ComputePipelineDesc& _desc) = 0;
 
-        virtual FenceReference createFence(Fence::FenceValue _initialValue = 0) = 0;
+        virtual gpu::FenceReference createFence(gpu::Fence::FenceValue _initialValue = 0) = 0;
 
-        virtual SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) = 0;
+        virtual gpu::SwapChainReference createSwapChain(
+            const gpu::SwapChainDesc& _swapChainDesc,
+            const Window& _window
+        ) = 0;
 
-        virtual const GraphicDeviceCapabilities& getCapabilities() const = 0;
+        virtual const Capabilities& getCapabilities() const = 0;
 
         virtual void waitIdle() = 0;
     };
 
-    EGO_REFERENCE(GraphicDevice);
+    EGO_POINTER(GraphicDevice);
 }

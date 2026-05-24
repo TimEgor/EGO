@@ -27,3 +27,10 @@ ego_install_target(
     EgoWin32Platform
     "Plugins/Platform"
 )
+
+ego_setup_plugin_manifest(
+    EgoWin32Platform
+    "Plugins/Platform"
+    "PlatformPlugin"
+    "Win32"
+)

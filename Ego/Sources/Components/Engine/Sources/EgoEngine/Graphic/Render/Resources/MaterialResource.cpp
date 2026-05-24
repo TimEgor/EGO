@@ -75,14 +75,14 @@ bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContex
     EGO_CHECK_RETURN_FALSE(pixelShaderPath && pixelShaderPath[0]);
 
     gpu::VertexShaderResourcePointer vertexShaderResource =
-        _loadingContext.load<gpu::VertexShaderResource>(vertexShaderPath);
+        _loadingContext.loadResource<gpu::VertexShaderResource>(vertexShaderPath);
     gpu::PixelShaderResourcePointer pixelShaderResource =
-        _loadingContext.load<gpu::PixelShaderResource>(pixelShaderPath);
+        _loadingContext.loadResource<gpu::PixelShaderResource>(pixelShaderPath);
 
     EGO_CHECK_RETURN_FALSE(vertexShaderResource && vertexShaderResource->isLoaded());
     EGO_CHECK_RETURN_FALSE(pixelShaderResource && pixelShaderResource->isLoaded());
 
-    gpu::GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
 
     gpu::BindingLayoutDesc bindingLayoutDesc;
     gpu::BindingLayoutReference bindingLayout = graphicDevice.createBindingLayout(bindingLayoutDesc);

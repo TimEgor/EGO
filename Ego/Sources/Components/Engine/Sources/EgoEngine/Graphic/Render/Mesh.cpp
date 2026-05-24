@@ -60,7 +60,7 @@ uint32_t ego::Mesh::getIndexCount() const
     return m_indexCount;
 }
 
-ego::MeshReference ego::CreateMeshFromRawData(gpu::GraphicDevice& _graphicDevice, const MeshRawData& _rawData)
+ego::MeshReference ego::CreateMeshFromRawData(GraphicDevice& _graphicDevice, const MeshRawData& _rawData)
 {
     if (!_rawData.m_vertexData || _rawData.m_vertexDataSize == 0 || _rawData.m_vertexStride == 0)
     {

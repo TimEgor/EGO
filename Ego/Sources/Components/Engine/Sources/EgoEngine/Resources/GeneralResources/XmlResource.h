@@ -10,7 +10,9 @@ namespace ego
     {
     public:
         XmlResource() = default;
+        explicit XmlResource(const SharedPointer<XmlDocument>& _document);
 
+        bool init(const SharedPointer<XmlDocument>& _document);
         const XmlDocument* getDocument() const;
         XmlNode getRootNode() const;
 

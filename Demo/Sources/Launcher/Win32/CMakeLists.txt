@@ -11,7 +11,11 @@ ego_collect_sources(LAUNCHER_SOURCES "${LAUNCHER_SOURCES_PATH}")
 target_sources(EgoDemoLauncherWin32 PRIVATE ${LAUNCHER_SOURCES})
 source_group(TREE "${LAUNCHER_SOURCES_PATH}" FILES ${LAUNCHER_SOURCES})
 
-target_link_libraries(EgoDemoLauncherWin32 PRIVATE EgoDemoFramework)
+target_link_libraries(EgoDemoLauncherWin32 PRIVATE EgoFramework)
+
+if (TARGET EgoTestDemo)
+    add_dependencies(EgoDemoLauncherWin32 EgoTestDemo)
+endif()
 
 ego_setup_target_common(
     EgoDemoLauncherWin32

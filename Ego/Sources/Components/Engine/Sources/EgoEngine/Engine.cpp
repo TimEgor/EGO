@@ -3,19 +3,19 @@
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/Job/JobController.h"
 
-#include "EgoPlugin/PluginController.h"
-
 #include "Event/EventController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
 #include "Graphic/Render/DefaultRender.h"
+#include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Platform/Platform.h"
+#include "Platform/PlatformPlugin.h"
 #include "Plugin/EnginePluginController.h"
+#include "Plugin/PluginCatalogBuilder.h"
 #include "Resources/Resource/ResourceController.h"
 
-bool ego::engine::Engine::init(const EngineInitData& _initData)
+bool ego::engine::Engine::init(const Engine::InitData& _initData)
 {
-    m_enginePluginController = new EnginePluginController();
-    EGO_CHECK_INITIALIZATION(m_enginePluginController && m_enginePluginController->init());
+    EGO_CHECK_INITIALIZATION(initPluginController());
 
     m_eventController = new EventController();
     EGO_CHECK_INITIALIZATION(m_eventController && m_eventController->init());
@@ -25,22 +25,14 @@ bool ego::engine::Engine::init(const EngineInitData& _initData)
     const uint32_t jobThreadCount = JobController::GetHardwareThreadCount();
     EGO_CHECK_INITIALIZATION(m_jobController && m_jobController->init(jobThreadCount ? jobThreadCount : 1));
 
-    m_platformPlugin = m_enginePluginController->loadEnginePlugin<PlatformPlugin>(_initData.m_platformPluginModuleName);
-    EGO_CHECK_INITIALIZATION(m_platformPlugin);
-
-    m_platform = m_platformPlugin->createPlatform(_initData.m_nativeInstanceHandle);
-    EGO_CHECK_INITIALIZATION(m_platform && m_platform->init());
+    EGO_CHECK_INITIALIZATION(initPlatform(_initData));
 
     m_resourceController = new ResourceController();
     EGO_CHECK_INITIALIZATION(m_resourceController && m_resourceController->init());
     m_resourceController->addFileSystem(m_platform->getFileSystem());
 
-    m_renderHardwarePlugin = m_enginePluginController->loadEnginePlugin<RenderHardwarePlugin>(_initData.m_renderHardwarePluginModuleName);
-    EGO_CHECK_INITIALIZATION(m_renderHardwarePlugin);
-
-    m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();
-    EGO_CHECK_INITIALIZATION(m_graphicDevice && m_graphicDevice->init(gpu::GraphicDeviceInitParams()));
-    m_renderHardwarePlugin->registerResourceProviders(*m_resourceController);
+    EGO_CHECK_INITIALIZATION(initPluginCatalog(_initData));
+    EGO_CHECK_INITIALIZATION(initGraphicDevice(_initData));
 
     m_render = new DefaultRender();
     EGO_CHECK_INITIALIZATION(m_render && m_render->init());
@@ -53,16 +45,18 @@ void ego::engine::Engine::release()
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
+
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_resourceController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_platform);
-
-    m_renderHardwarePlugin = nullptr;
-    m_platformPlugin = nullptr;
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
 
-    m_enginePluginController = nullptr;
+    m_renderHardwarePlugin = nullptr;
+    m_platformPlugin = nullptr;
+
+    m_pluginCatalog.clear();
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_enginePluginController);
 }
 
 void ego::engine::Engine::run()
@@ -160,13 +154,13 @@ ego::Platform& ego::engine::Engine::getPlatform()
     return *m_platform;
 }
 
-const ego::gpu::GraphicDevice& ego::engine::Engine::getGraphicDevice() const
+const ego::GraphicDevice& ego::engine::Engine::getGraphicDevice() const
 {
     EGO_ASSERT(m_graphicDevice);
     return *m_graphicDevice;
 }
 
-ego::gpu::GraphicDevice& ego::engine::Engine::getGraphicDevice()
+ego::GraphicDevice& ego::engine::Engine::getGraphicDevice()
 {
     EGO_ASSERT(m_graphicDevice);
     return *m_graphicDevice;
@@ -220,16 +214,82 @@ ego::DefaultRender& ego::engine::Engine::getRender()
     return *m_render;
 }
 
-const ego::engine::EnginePluginController& ego::engine::Engine::getPluginController() const
+const ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog() const
 {
-    EGO_ASSERT(m_enginePluginController);
-    return *m_enginePluginController;
+    return m_pluginCatalog;
 }
 
-ego::engine::EnginePluginController& ego::engine::Engine::getPluginController()
+ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog()
+{
+    return m_pluginCatalog;
+}
+
+bool ego::engine::Engine::initPluginController()
+{
+    m_enginePluginController = new EnginePluginController();
+    EGO_CHECK_RETURN_FALSE(m_enginePluginController && m_enginePluginController->init());
+
+    return true;
+}
+
+bool ego::engine::Engine::initPlatform(const InitData& _initData)
 {
     EGO_ASSERT(m_enginePluginController);
-    return *m_enginePluginController;
+
+    FileName platformPluginModuleName = _initData.m_platformPluginModuleName;
+    if (!platformPluginModuleName)
+    {
+        platformPluginModuleName = m_enginePluginController->selectEnginePluginModule<PlatformPlugin>();
+    }
+
+    EGO_CHECK_RETURN_FALSE(platformPluginModuleName);
+
+    m_platformPlugin = m_enginePluginController->loadEnginePlugin<PlatformPlugin>(platformPluginModuleName);
+    EGO_CHECK_RETURN_FALSE(m_platformPlugin);
+
+    m_platform = m_platformPlugin->createPlatform(_initData.m_nativeInstanceHandle);
+    EGO_CHECK_RETURN_FALSE(m_platform && m_platform->init());
+
+    return true;
+}
+
+bool ego::engine::Engine::initPluginCatalog(const InitData& _initData)
+{
+    EGO_CHECK_RETURN_FALSE(m_platform);
+
+    m_pluginCatalog.clear();
+
+    const FileSystemPointer fileSystem = m_platform->getFileSystem();
+    EGO_CHECK_RETURN_FALSE(fileSystem);
+
+    for (const FileName& pluginDirectory : _initData.m_pluginDirectories)
+    {
+        PluginCatalogBuilder::AddPluginsFromPath(m_pluginCatalog, *fileSystem, pluginDirectory);
+    }
+
+    return true;
+}
+
+bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
+{
+    EGO_ASSERT(m_enginePluginController);
+
+    FileName renderHardwarePluginModuleName = _initData.m_renderHardwarePluginModuleName;
+    if (!renderHardwarePluginModuleName)
+    {
+        renderHardwarePluginModuleName = m_enginePluginController->selectEnginePluginModule<RenderHardwarePlugin>();
+    }
+
+    EGO_CHECK_RETURN_FALSE(renderHardwarePluginModuleName);
+
+    m_renderHardwarePlugin =
+        m_enginePluginController->loadEnginePlugin<RenderHardwarePlugin>(renderHardwarePluginModuleName);
+    EGO_CHECK_RETURN_FALSE(m_renderHardwarePlugin);
+
+    m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();
+    EGO_CHECK_RETURN_FALSE(m_graphicDevice && m_graphicDevice->init(GraphicDevice::InitParams()));
+
+    return true;
 }
 
 void ego::engine::Engine::beginFrame()

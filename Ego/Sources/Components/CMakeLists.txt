@@ -4,6 +4,7 @@ project(EgoComponents)
 
 add_subdirectory(Core)
 add_subdirectory(Engine)
+add_subdirectory(Framework)
 add_subdirectory(Math)
 add_subdirectory(Plugin)
 
@@ -14,6 +15,7 @@ target_link_libraries(EgoComponents
     INTERFACE
         EgoCore
         EgoEngine
+        EgoFramework
         EgoMath
         EgoPlugin
 )

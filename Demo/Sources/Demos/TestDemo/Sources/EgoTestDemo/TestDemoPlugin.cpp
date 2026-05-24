@@ -4,23 +4,23 @@
 
 #include "EgoEngine/Plugin/EngineExternalModuleCore.h"
 
-#include "EgoDemoFramework/PluginController/DemoExternalModuleCore.h"
+#include "EgoFramework/Plugin/FrameworkExternalModuleCore.h"
 
 #include "TestDemo.h"
 
 EGO_CORE_MODULE();
 EGO_ENGINE_MODULE();
-EGO_DEMO_MODULE();
+EGO_FRAMEWORK_MODULE();
 
-EGO_PLUGIN_CREATE(ego::demo::TestDemoPlugin, DemoPlugin, ego::demo::DemoPlugin);
+EGO_PLUGIN_CREATE(ego::demo::TestDemoPlugin, GameLogicPlugin, ego::framework::GameLogicPlugin);
 
 ego::demo::TestDemoPlugin::TestDemoPlugin(const PluginModulePointer& _module, PluginType _pluginType)
-    : DemoPlugin(_module, _pluginType)
+    : framework::GameLogicPlugin(_module, _pluginType)
 {
 }
 
-ego::demo::DemoPointer ego::demo::TestDemoPlugin::createDemo()
+ego::framework::GameLogicPointer ego::demo::TestDemoPlugin::createGameLogic()
 {
     const FileName moduleDirPath = file_name_utils::GetFileDirPath(getModule()->getInfo().m_modulePath);
-    return DemoPointer(new TestDemo(moduleDirPath + "/TestDemoConfig.xml"));
+    return ego::framework::GameLogicPointer(new TestDemo(moduleDirPath + "/TestDemoProject.xml"));
 }

@@ -1,5 +1,6 @@
 #include "Resource.h"
 
+#include "EgoEngine/Engine.h"
 #include "ResourceController.h"
 
 #include "EgoCore/Assert/AssertCore.h"
@@ -15,6 +16,8 @@ void ego::ResourceDeleter::operator()(Resource* _resource) const
         return;
     }
 
+    ResourceController& resourceController = engine::GetEngine().getResourceController();
+    ResourceController::ResourceControllerAccessor::RemoveResource(&resourceController, _resource);
     Resource::ResourceAccessor::Unload(_resource);
     delete _resource;
 }
@@ -31,44 +34,28 @@ void ego::Resource::ResourceAccessor::SetState(Resource* _resource, ResourceStat
     _resource->setState(_state);
 }
 
-void ego::Resource::ResourceAccessor::SetController(
-    Resource* _resource,
-    const WeakPointer<ResourceController>& _controller
-)
-{
-    EGO_ASSERT(_resource);
-    _resource->setController(_controller);
-}
-
 void ego::Resource::ResourceAccessor::Unload(Resource* _resource)
 {
     EGO_ASSERT(_resource);
-
-    ResourceControllerPointer controller = _resource->getController().lock();
-    if (controller)
-    {
-        controller->removeResource(_resource);
-    }
-
     _resource->unload();
 }
 
-void ego::Resource::ResourceAccessor::AddChildDependency(
+void ego::Resource::ResourceAccessor::AddDependency(
     Resource* _resource,
-    const ResourcePointer& _childResource
+    const ResourcePointer& _dependency
 )
 {
     EGO_ASSERT(_resource);
-    _resource->addChildDependency(_childResource);
+    _resource->addDependency(_dependency);
 }
 
-void ego::Resource::ResourceAccessor::GetChildDependencies(
+void ego::Resource::ResourceAccessor::GetDependencies(
     const Resource* _resource,
-    ChildDependencyCollection& _dependencies
+    DependencyCollection& _dependencies
 )
 {
     EGO_ASSERT(_resource);
-    _resource->getChildDependencies(_dependencies);
+    _resource->getDependencies(_dependencies);
 }
 
 ego::FileName ego::Resource::getPath() const
@@ -122,8 +109,7 @@ void ego::Resource::unload()
 
     std::lock_guard locker(m_mutex);
     m_path.clear();
-    m_childDependencies.clear();
-    m_controller.reset();
+    m_dependencies.clear();
     setState(ResourceState::Undefined);
 }
 
@@ -134,7 +120,7 @@ void ego::Resource::prepareLoading(const FileName& _path)
 {
     std::lock_guard locker(m_mutex);
     m_path = _path;
-    m_childDependencies.clear();
+    m_dependencies.clear();
     setState(ResourceState::Loading);
 }
 
@@ -143,19 +129,7 @@ void ego::Resource::setState(ResourceState _state)
     m_state.store(_state, std::memory_order_release);
 }
 
-void ego::Resource::setController(const WeakPointer<ResourceController>& _controller)
-{
-    std::lock_guard locker(m_mutex);
-    m_controller = _controller;
-}
-
-ego::WeakPointer<ego::ResourceController> ego::Resource::getController() const
-{
-    std::lock_guard locker(m_mutex);
-    return m_controller;
-}
-
-void ego::Resource::addChildDependency(const ResourcePointer& _resource)
+void ego::Resource::addDependency(const ResourcePointer& _resource)
 {
     if (!_resource)
     {
@@ -163,17 +137,17 @@ void ego::Resource::addChildDependency(const ResourcePointer& _resource)
     }
 
     std::lock_guard locker(m_mutex);
-    m_childDependencies.push_back(_resource);
+    m_dependencies.push_back(_resource);
 }
 
-void ego::Resource::clearChildDependencies()
+void ego::Resource::clearDependencies()
 {
     std::lock_guard locker(m_mutex);
-    m_childDependencies.clear();
+    m_dependencies.clear();
 }
 
-void ego::Resource::getChildDependencies(ChildDependencyCollection& _dependencies) const
+void ego::Resource::getDependencies(DependencyCollection& _dependencies) const
 {
     std::lock_guard locker(m_mutex);
-    _dependencies = m_childDependencies;
+    _dependencies = m_dependencies;
 }

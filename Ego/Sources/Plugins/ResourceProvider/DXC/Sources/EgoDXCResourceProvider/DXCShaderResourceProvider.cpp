@@ -1,6 +1,8 @@
 #include "DXCShaderResourceProvider.h"
 
 #include "EgoCore/FileName/FileNameUtils.h"
+
+#include "EgoEngine/Graphic/RenderHardware/Resources/ShaderResource.h"
 #include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
 
 #include <algorithm>
@@ -234,13 +236,20 @@ namespace
     }
 }
 
-bool ego::gpu::d3d12::DXCShaderResourceProvider::provideShaderContent(
+bool ego::resources::dxc::DXCShaderResourceProvider::provideContent(
+    const Resource& _resource,
     const FileName& _path,
-    ShaderStage _stage,
     ResourceLoadingContext& _loadingContext,
     FileContent& _content
 )
 {
+    if (!ego::rtti::IsObjectBasedOn<gpu::ShaderResource>(_resource))
+    {
+        _content.clear();
+        return false;
+    }
+
+    const gpu::ShaderResource& shaderResource = static_cast<const gpu::ShaderResource&>(_resource);
     FileName sourcePath = _path;
     FileContent sourceContent;
 
@@ -289,5 +298,5 @@ bool ego::gpu::d3d12::DXCShaderResourceProvider::provideShaderContent(
         return !_content.empty();
     }
 
-    return CompileHlslContent(sourceContent, _stage, _content);
+    return CompileHlslContent(sourceContent, shaderResource.getShaderStage(), _content);
 }

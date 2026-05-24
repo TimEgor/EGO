@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Resource.h"
+#include "ResourceController.h"
 
 namespace ego
 {
@@ -10,24 +10,21 @@ namespace ego
         ResourceLoadingContext(ResourceController& _controller, Resource& _ownerResource, bool _asyncLoading);
 
         template <typename TResource>
-        SharedPointer<TResource> load(const FileName& _path)
+        SharedPointer<TResource> loadResource(const FileName& _path)
         {
             static_assert(std::is_base_of_v<Resource, TResource>);
 
-            return StaticPointerCast<TResource>(
-                loadResource(
-                    EGO_RESOURCE_TYPE(TResource),
-                    _path,
-                    []() { return CreateResource<TResource>(); }
-                )
-            );
-        }
+            SharedPointer<TResource> resource = m_asyncLoading
+                ? m_controller.loadAsync<TResource>(_path)
+                : m_controller.load<TResource>(_path);
 
-        ResourcePointer loadResource(
-            ResourceType _type,
-            const FileName& _path,
-            const ResourceFactory& _factory
-        );
+            if (resource)
+            {
+                Resource::ResourceAccessor::AddDependency(&m_ownerResource, resource);
+            }
+
+            return resource;
+        }
 
         bool loadContent(const FileName& _path, FileContent& _content) const;
 

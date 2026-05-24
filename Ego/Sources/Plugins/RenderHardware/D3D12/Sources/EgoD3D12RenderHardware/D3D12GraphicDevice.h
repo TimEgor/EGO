@@ -7,6 +7,7 @@
 #include "Common/D3D12DescriptorAllocator.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoEngine/Resources/Resource/ResourceProviderPlugin.h"
 
 namespace ego::gpu::d3d12
 {
@@ -17,7 +18,7 @@ namespace ego::gpu::d3d12
     public:
         D3D12GraphicDevice() = default;
 
-        virtual bool init(const GraphicDeviceInitParams& _params) override;
+        virtual bool init(const GraphicDevice::InitParams& _params) override;
         virtual void release() override;
 
         virtual void* getNativeHandle() const override;
@@ -56,7 +57,7 @@ namespace ego::gpu::d3d12
 
         virtual SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) override;
 
-        virtual const GraphicDeviceCapabilities& getCapabilities() const override;
+        virtual const GraphicDevice::Capabilities& getCapabilities() const override;
 
         virtual void waitIdle() override;
 
@@ -72,11 +73,13 @@ namespace ego::gpu::d3d12
         void unregisterQueue(D3D12CommandQueue* _queue);
 
     private:
-        bool initializeFactory(const GraphicDeviceInitParams& _params);
+        bool initializeFactory(const GraphicDevice::InitParams& _params);
         bool initializeAdapter();
         bool initializeDevice();
         bool initializeDescriptorAllocators();
         void initializeCapabilities();
+        bool registerResourceProviders();
+        void unregisterResourceProviders();
 
         Microsoft::WRL::ComPtr<IDXGIFactory6> m_factory;
         Microsoft::WRL::ComPtr<IDXGIAdapter1> m_adapter;
@@ -87,8 +90,9 @@ namespace ego::gpu::d3d12
         D3D12DescriptorAllocatorPointer m_rtvDescriptorAllocator;
         D3D12DescriptorAllocatorPointer m_dsvDescriptorAllocator;
 
-        GraphicDeviceCapabilities m_capabilities;
+        GraphicDevice::Capabilities m_capabilities;
 
         std::vector<D3D12CommandQueue*> m_queues;
+        ResourceProviderPluginPointer m_resourceProviderPlugin = nullptr;
     };
 }

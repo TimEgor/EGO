@@ -5,6 +5,7 @@
 
 #include "EgoCore/Job/Job.h"
 #include "EgoCore/Job/JobController.h"
+#include "EgoCore/Patterns/NonInstanceable.h"
 
 #include <functional>
 #include <mutex>
@@ -16,13 +17,23 @@
 
 namespace ego
 {
-    class ResourceController final : public EnableSharedFromThis<ResourceController>
+    class ResourceController final
     {
-        friend class ResourceLoadingContext;
-        friend class Resource::ResourceAccessor;
-
     public:
         using ResourceFactory = ego::ResourceFactory;
+
+        class ResourceControllerAccessor final : public NonInstanceable
+        {
+            friend struct ResourceDeleter;
+            friend class ResourceLoadingContext;
+
+            static bool RemoveResource(ResourceController* _controller, Resource* _resource);
+            static bool LoadResourceContent(
+                const ResourceController* _controller,
+                const FileName& _path,
+                FileContent& _content
+            );
+        };
 
         ResourceController() = default;
         ~ResourceController();

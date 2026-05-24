@@ -1,5 +1,22 @@
 #include "XmlResource.h"
 
+ego::XmlResource::XmlResource(const SharedPointer<XmlDocument>& _document)
+{
+    init(_document);
+}
+
+bool ego::XmlResource::init(const SharedPointer<XmlDocument>& _document)
+{
+    if (!_document)
+    {
+        m_document.reset();
+        return false;
+    }
+
+    m_document = _document;
+    return true;
+}
+
 const ego::XmlDocument* ego::XmlResource::getDocument() const
 {
     return m_document.get();

@@ -49,6 +49,25 @@ ego::ResourceController::~ResourceController()
     release();
 }
 
+bool ego::ResourceController::ResourceControllerAccessor::RemoveResource(
+    ResourceController* _controller,
+    Resource* _resource
+)
+{
+    EGO_ASSERT(_controller);
+    return _controller->removeResource(_resource);
+}
+
+bool ego::ResourceController::ResourceControllerAccessor::LoadResourceContent(
+    const ResourceController* _controller,
+    const FileName& _path,
+    FileContent& _content
+)
+{
+    EGO_ASSERT(_controller);
+    return _controller->loadResourceContent(_path, _content);
+}
+
 bool ego::ResourceController::init(uint32_t _threadCount, const char* _jobThreadName)
 {
     if (m_isInitialized)
@@ -459,7 +478,6 @@ ego::ResourcePointer ego::ResourceController::getOrCreateResource(
     }
 
     Resource::ResourceAccessor::PrepareLoading(resource.get(), _path);
-    Resource::ResourceAccessor::SetController(resource.get(), weakFromThis());
 
     m_resources.emplace(_id, ResourceEntry{_type, _path, _factory, resource, resource.get(), nullptr});
     _needLoading = true;
@@ -549,22 +567,22 @@ bool ego::ResourceController::isChildResourcesLoaded(
         return false;
     }
 
-    Resource::ChildDependencyCollection dependencies;
-    Resource::ResourceAccessor::GetChildDependencies(_resource.get(), dependencies);
+    Resource::DependencyCollection dependencies;
+    Resource::ResourceAccessor::GetDependencies(_resource.get(), dependencies);
 
-    for (const ResourcePointer& childResource : dependencies)
+    for (const ResourcePointer& dependency : dependencies)
     {
-        if (!childResource || !childResource->isLoaded())
+        if (!dependency || !dependency->isLoaded())
         {
             return false;
         }
 
-        if (!_checkedResources.insert(childResource.get()).second)
+        if (!_checkedResources.insert(dependency.get()).second)
         {
             continue;
         }
 
-        if (!isChildResourcesLoaded(childResource, _checkedResources))
+        if (!isChildResourcesLoaded(dependency, _checkedResources))
         {
             return false;
         }

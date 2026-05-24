@@ -12,15 +12,15 @@
 
 namespace ego
 {
-    struct DefaultRenderItem final
-    {
-        MeshReference m_mesh = nullptr;
-        MaterialReference m_material = nullptr;
-    };
-
     class DefaultRender : public Render
     {
     public:
+        struct Item final
+        {
+            MeshReference m_mesh = nullptr;
+            MaterialReference m_material = nullptr;
+        };
+
         DefaultRender() = default;
         ~DefaultRender() override = default;
 
@@ -41,21 +41,21 @@ namespace ego
 
         void addRenderItem(const MeshReference& _mesh, const MaterialReference& _material);
         void clearRenderItems();
-        const std::vector<DefaultRenderItem>& getRenderItems() const;
+        const std::vector<Item>& getRenderItems() const;
 
         EGO_RENDER(DefaultRender, Render);
 
     private:
         bool prepareRenderTarget(const gpu::Texture2DReference& _targetTexture);
         void setupTargetViewport(const gpu::Texture2DReference& _targetTexture);
-        void renderItem(const DefaultRenderItem& _item);
+        void renderItem(const Item& _item);
 
         gpu::CommandQueueReference m_commandQueue = nullptr;
         gpu::GraphicCommandListReference m_commandList = nullptr;
         gpu::Texture2DReference m_renderTargetTexture = nullptr;
         gpu::TextureViewReference m_renderTargetView = nullptr;
 
-        std::vector<DefaultRenderItem> m_renderItems;
+        std::vector<Item> m_renderItems;
         FloatVector4 m_clearColor = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);
         bool m_isInitialized = false;
         bool m_clearEnabled = true;

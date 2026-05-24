@@ -7,10 +7,12 @@ add_library(Ego::Components::Plugins ALIAS EgoComponentsPlugins)
 
 add_subdirectory(Platform)
 add_subdirectory(RenderHardware)
+add_subdirectory(ResourceProvider)
 
 target_link_libraries(
     EgoComponentsPlugins
         INTERFACE
             EgoComponentsPluginsPlatform
             EgoPluginsRenderHardware
+            EgoPluginsResourceProvider
 )

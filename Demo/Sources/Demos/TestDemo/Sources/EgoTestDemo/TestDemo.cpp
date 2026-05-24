@@ -1,50 +1,67 @@
 #include "TestDemo.h"
 
-#include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/Platform/Platform.h"
 #include "EgoEngine/Resources/Resource/ResourceController.h"
+#include "EgoFramework/Framework.h"
+#include "EgoFramework/Project.h"
+#include "EgoFramework/ProjectReader.h"
 
 namespace
 {
-    bool ReadAssetsRootPath(const ego::FileName& _configPath, ego::FileName& _assetsRootPath)
+    bool ReadAssetDirectoriesFromActiveProject(ego::framework::Project::DirectoryCollection& _directories)
     {
-        ego::XmlDocument configDocument;
-        EGO_CHECK_RETURN_FALSE(configDocument.loadFromFile(_configPath));
+        const ego::framework::FrameworkPointer framework = ego::framework::FrameworkCore::GetInstance().getFramework();
+        EGO_CHECK_RETURN_FALSE(framework);
 
-        const ego::XmlNode rootNode = configDocument
-                                      .getRootNode()
-                                      .getChild("CommonConfig")
-                                      .getChild("Assets")
-                                      .getChild("AssetsPath")
-                                      .getChild("RootPath");
+        const ego::framework::ProjectPointer project = framework->getProject();
+        EGO_CHECK_RETURN_FALSE(project);
 
-        const char* assetsRootPath = rootNode.getValue().get<const char*>();
-        EGO_CHECK_RETURN_FALSE(assetsRootPath && assetsRootPath[0]);
+        _directories = project->getAssetDirectories();
+        return !_directories.empty();
+    }
 
-        _assetsRootPath = assetsRootPath;
-        return true;
+    bool ReadAssetDirectories(
+        const ego::FileName& _projectPath,
+        ego::framework::Project::DirectoryCollection& _directories
+    )
+    {
+        if (ReadAssetDirectoriesFromActiveProject(_directories))
+        {
+            return true;
+        }
+
+        ego::framework::Project project;
+        EGO_CHECK_RETURN_FALSE(ego::framework::ProjectReader::ReadFromFile(_projectPath, project));
+
+        _directories = project.getAssetDirectories();
+        return !_directories.empty();
     }
 }
 
-ego::demo::TestDemo::TestDemo(const FileName& _configPath)
-    : m_configPath(_configPath)
+ego::demo::TestDemo::TestDemo(const FileName& _projectPath)
+    : m_projectPath(_projectPath)
 {}
 
 bool ego::demo::TestDemo::init()
 {
-    FileName assetsRootPath;
-    EGO_CHECK_RETURN_FALSE(ReadAssetsRootPath(m_configPath, assetsRootPath));
+    framework::Project::DirectoryCollection assetDirectories;
+    EGO_CHECK_RETURN_FALSE(ReadAssetDirectories(m_projectPath, assetDirectories));
 
     engine::Engine& engine = engine::GetEngine();
     ResourceController& resourceController = engine.getResourceController();
 
-    m_assetsFileSystem = new RootedFileSystem(engine.getPlatform().getFileSystem(), assetsRootPath);
-    EGO_CHECK_INITIALIZATION(m_assetsFileSystem && m_assetsFileSystem->init());
+    for (const FileName& assetDirectory : assetDirectories)
+    {
+        RootedFileSystemPointer assetFileSystem =
+            new RootedFileSystem(engine.getPlatform().getFileSystem(), assetDirectory);
+        EGO_CHECK_INITIALIZATION(assetFileSystem && assetFileSystem->init());
 
-    resourceController.addFileSystem(m_assetsFileSystem);
+        resourceController.addFileSystem(assetFileSystem);
+        m_assetFileSystems.push_back(assetFileSystem);
+    }
 
     m_textResource = resourceController.load<TextResource>("TestDemoText.txt");
     EGO_CHECK_INITIALIZATION(m_textResource && m_textResource->isLoaded());
@@ -75,15 +92,19 @@ void ego::demo::TestDemo::release()
     m_loadedText.clear();
     m_textResource = nullptr;
 
-    if (m_assetsFileSystem)
+    for (const RootedFileSystemPointer& assetFileSystem : m_assetFileSystems)
     {
-        if (engine)
+        if (assetFileSystem)
         {
-            engine->getResourceController().removeFileSystem(m_assetsFileSystem);
-        }
+            if (engine)
+            {
+                engine->getResourceController().removeFileSystem(assetFileSystem);
+            }
 
-        EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_assetsFileSystem);
+            assetFileSystem->release();
+        }
     }
+    m_assetFileSystems.clear();
 }
 
 const std::string& ego::demo::TestDemo::getLoadedText() const

@@ -16,7 +16,7 @@ target_include_directories(EgoTestDemo PRIVATE "${DEMO_SOURCES_PATH}")
 target_link_libraries(
     EgoTestDemo
         PRIVATE
-            EgoDemoFramework
+            EgoFramework
 )
 
 ego_setup_target_common(
@@ -29,5 +29,12 @@ ego_install_target(
     "Demo/Demos/TestDemo"
 )
 
+ego_setup_plugin_manifest(
+    EgoTestDemo
+    "Demo/Demos/TestDemo"
+    "GameLogicPlugin"
+    "TestDemo"
+)
+
 include(${CMAKE_CURRENT_LIST_DIR}/InstallAssetsAndConfig.cmake)
-ego_test_demo_install_assets_and_config()
+ego_test_demo_install_assets_and_project()

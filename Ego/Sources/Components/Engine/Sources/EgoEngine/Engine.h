@@ -1,51 +1,50 @@
 #pragma once
 
 #include "EgoCore/Clock.h"
+#include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Job/JobController.h"
 #include "EgoCore/Patterns/Singleton.h"
 
-#include "EgoPlugin/PluginController.h"
-
 #include "Event/EventController.h"
-#include "Platform/PlatformPlugin.h"
-#include "Plugin/EnginePluginController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
 #include "Graphic/Render/DefaultRender.h"
+#include "Graphic/RenderHardware/GraphicDevice.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
+#include "Platform/Platform.h"
+#include "Platform/PlatformPlugin.h"
+#include "Plugin/EnginePluginController.h"
+#include "Plugin/PluginCatalog.h"
 #include "Resources/Resource/ResourceController.h"
+
+#include <vector>
 
 namespace ego
 {
-    class PluginController;
     class EventController;
     class Platform;
     class JobController;
-    class FileSystem;
     class ResourceController;
-
-    namespace gpu
-    {
-        class GraphicDevice;
-    }
+    class GraphicDevice;
 }
 
 namespace ego::engine
 {
-    class EnginePluginController;
-
-    struct EngineInitData final
-    {
-        void* m_nativeInstanceHandle = nullptr;
-        FileName m_platformPluginModuleName;
-        FileName m_renderHardwarePluginModuleName;
-    };
-
     class Engine final
     {
     public:
+        struct InitData final
+        {
+            using PluginDirectoryCollection = std::vector<FileName>;
+
+            void* m_nativeInstanceHandle = nullptr;
+            FileName m_platformPluginModuleName;
+            FileName m_renderHardwarePluginModuleName;
+            PluginDirectoryCollection m_pluginDirectories;
+        };
+
         Engine() = default;
 
-        bool init(const EngineInitData& _initData);
+        bool init(const InitData& _initData);
         void release();
 
         void run();
@@ -63,8 +62,8 @@ namespace ego::engine
 
         const Platform& getPlatform() const;
         Platform& getPlatform();
-        const gpu::GraphicDevice& getGraphicDevice() const;
-        gpu::GraphicDevice& getGraphicDevice();
+        const GraphicDevice& getGraphicDevice() const;
+        GraphicDevice& getGraphicDevice();
 
         const EventController& getEventController() const;
         EventController& getEventController();
@@ -78,10 +77,15 @@ namespace ego::engine
         const DefaultRender& getRender() const;
         DefaultRender& getRender();
 
-        const EnginePluginController& getPluginController() const;
-        EnginePluginController& getPluginController();
+        const PluginCatalog& getPluginCatalog() const;
+        PluginCatalog& getPluginCatalog();
 
     private:
+        bool initPluginController();
+        bool initPlatform(const InitData& _initData);
+        bool initPluginCatalog(const InitData& _initData);
+        bool initGraphicDevice(const InitData& _initData);
+
         void beginFrame();
         void endFrame();
         bool prepareMainWindowPresenter();
@@ -93,8 +97,10 @@ namespace ego::engine
         JobControllerPointer m_jobController = nullptr;
         ResourceControllerPointer m_resourceController = nullptr;
 
+        PluginCatalog m_pluginCatalog;
+
         PlatformPointer m_platform = nullptr;
-        gpu::GraphicDeviceReference m_graphicDevice = nullptr;
+        GraphicDevicePointer m_graphicDevice = nullptr;
         WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
         DefaultRenderPointer m_render = nullptr;
 

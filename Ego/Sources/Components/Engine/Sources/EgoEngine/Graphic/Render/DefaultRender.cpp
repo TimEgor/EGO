@@ -13,7 +13,7 @@ bool ego::DefaultRender::init()
         return true;
     }
 
-    gpu::GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
 
     gpu::CommandQueueDesc queueDesc;
     queueDesc.m_type = gpu::CommandType::Graphic;
@@ -87,7 +87,7 @@ void ego::DefaultRender::render(GraphicPresenter& _presenter)
     m_commandList->beginRendering(renderingDesc);
     setupTargetViewport(targetTexture);
 
-    for (const DefaultRenderItem& item : m_renderItems)
+    for (const DefaultRender::Item& item : m_renderItems)
     {
         renderItem(item);
     }
@@ -147,7 +147,7 @@ void ego::DefaultRender::addRenderItem(
         return;
     }
 
-    m_renderItems.push_back(DefaultRenderItem{_mesh, _material});
+    m_renderItems.push_back(DefaultRender::Item{_mesh, _material});
 }
 
 void ego::DefaultRender::clearRenderItems()
@@ -155,7 +155,7 @@ void ego::DefaultRender::clearRenderItems()
     m_renderItems.clear();
 }
 
-const std::vector<ego::DefaultRenderItem>& ego::DefaultRender::getRenderItems() const
+const std::vector<ego::DefaultRender::Item>& ego::DefaultRender::getRenderItems() const
 {
     return m_renderItems;
 }
@@ -212,7 +212,7 @@ void ego::DefaultRender::setupTargetViewport(const gpu::Texture2DReference& _tar
     m_commandList->setScissorRect(scissorRectDesc);
 }
 
-void ego::DefaultRender::renderItem(const DefaultRenderItem& _item)
+void ego::DefaultRender::renderItem(const DefaultRender::Item& _item)
 {
     if (!_item.m_mesh || !_item.m_material)
     {

@@ -91,6 +91,9 @@ namespace ego
 
 		const char* getName() const;
 		bool setName(const char* _name);
+
+		bool hasAttribute(const char* _name) const;
+		const char* getAttributeValue(const char* _name) const;
 		
 		XmlNodeValue getValue() const;
 	};

@@ -1,10 +1,12 @@
-#include "DemoPluginController.h"
+#include "GameLogicPluginController.h"
+
+#include "EgoCore/UtilsMacros.h"
 
 #include "EgoPlugin/PluginController.h"
 
-#include "EgoDemoFramework/DemoController.h"
+#include "EgoFramework/Framework.h"
 
-bool ego::demo::DemoPluginController::init()
+bool ego::framework::GameLogicPluginController::init()
 {
     if (m_isInitialized)
     {
@@ -14,7 +16,10 @@ bool ego::demo::DemoPluginController::init()
     const PluginControllerPointer pluginController = PluginControllerCore::GetInstance().getPluginController();
     if (pluginController)
     {
-        pluginController->getBindingBridge().addBinding(DemoControllerCore::GetInstance().getController());
+        const FrameworkPointer framework = FrameworkCore::GetInstance().getFramework();
+        EGO_CHECK_RETURN_FALSE(framework);
+
+        pluginController->getBindingBridge().addBinding(framework);
     }
 
     m_isInitialized = true;
@@ -22,7 +27,7 @@ bool ego::demo::DemoPluginController::init()
     return true;
 }
 
-void ego::demo::DemoPluginController::release()
+void ego::framework::GameLogicPluginController::release()
 {
     if (!m_isInitialized)
     {
@@ -32,7 +37,7 @@ void ego::demo::DemoPluginController::release()
     const PluginControllerPointer pluginController = PluginControllerCore::GetInstance().getPluginController();
     if (pluginController)
     {
-        pluginController->getBindingBridge().removeBinding<DemoController>();
+        pluginController->getBindingBridge().removeBinding<Framework>();
     }
 
     m_isInitialized = false;
