@@ -4,9 +4,9 @@
     </AssetDirectories>
     <PluginDirectories>
         <PluginDirectory Path="@TPL_TEST_DEMO_PLUGINS_PATH@" />
+        <PluginDirectory Path="@TPL_TEST_DEMO_GAME_PLUGINS_PATH@" />
     </PluginDirectories>
-    <GameLogicPlugins>
-        <GameLogicPlugin Name="TestDemo" Module="@TPL_TEST_DEMO_GAME_PLUGIN_PATH@" />
-    </GameLogicPlugins>
+    <GameLogic>
+        <Plugin Name="TestDemo" />
+    </GameLogic>
 </Project>
-

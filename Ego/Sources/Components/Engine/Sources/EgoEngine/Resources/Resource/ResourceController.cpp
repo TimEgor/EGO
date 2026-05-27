@@ -50,22 +50,20 @@ ego::ResourceController::~ResourceController()
 }
 
 bool ego::ResourceController::ResourceControllerAccessor::RemoveResource(
-    ResourceController* _controller,
+    ResourceController& _controller,
     Resource* _resource
 )
 {
-    EGO_ASSERT(_controller);
-    return _controller->removeResource(_resource);
+    return _controller.removeResource(_resource);
 }
 
 bool ego::ResourceController::ResourceControllerAccessor::LoadResourceContent(
-    const ResourceController* _controller,
+    const ResourceController& _controller,
     const FileName& _path,
     FileContent& _content
 )
 {
-    EGO_ASSERT(_controller);
-    return _controller->loadResourceContent(_path, _content);
+    return _controller.loadResourceContent(_path, _content);
 }
 
 bool ego::ResourceController::init(uint32_t _threadCount, const char* _jobThreadName)

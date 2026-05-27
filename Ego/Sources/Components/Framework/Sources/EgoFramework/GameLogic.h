@@ -12,6 +12,7 @@ namespace ego::framework
         virtual ~GameLogic() = default;
 
         virtual bool init() { return true; }
+        virtual void update(float) {}
         virtual void release() {}
     };
 

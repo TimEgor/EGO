@@ -87,3 +87,14 @@ void ego::MeshResource::onUnload()
 {
     m_mesh = nullptr;
 }
+
+ego::MeshHandle ego::CreateMeshHandle(const MeshResourcePointer& _resource)
+{
+    return MakeHandle<Mesh>(
+        _resource,
+        [](const MeshResourcePointer& _storedResource) -> Mesh*
+        {
+            return _storedResource ? _storedResource->getMesh().getObject() : nullptr;
+        }
+    );
+}

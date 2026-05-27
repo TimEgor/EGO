@@ -40,10 +40,6 @@ function(ego_setup_launch_args TARGET_NAME)
         string(APPEND DEBUG_ARGS " --renderHardware=\"${EGO_RENDER_HARDWARE_PLUGIN}\"")
     endif()
 
-    if (DEFINED EGO_PROJECT_FILE AND NOT "${EGO_PROJECT_FILE}" STREQUAL "")
-        string(APPEND DEBUG_ARGS " --project=\"${EGO_PROJECT_FILE}\"")
-    endif()
-
     if (MSVC)
         set_target_properties(${TARGET_NAME} PROPERTIES
             VS_DEBUGGER_COMMAND_ARGUMENTS "${DEBUG_ARGS}"

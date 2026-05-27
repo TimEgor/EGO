@@ -36,5 +36,5 @@ ego_setup_plugin_manifest(
     "TestDemo"
 )
 
-include(${CMAKE_CURRENT_LIST_DIR}/InstallAssetsAndConfig.cmake)
-ego_test_demo_install_assets_and_project()
+include(${CMAKE_CURRENT_LIST_DIR}/ConfigProject.cmake)
+ego_test_demo_config_project()

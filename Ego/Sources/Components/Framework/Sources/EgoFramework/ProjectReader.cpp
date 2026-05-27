@@ -12,6 +12,19 @@ namespace
     {
         return !_value || _value[0] == '\0';
     }
+
+    void ReadGameLogicPluginNode(const ego::XmlNode& _pluginNode, ego::framework::Project& _project)
+    {
+        const char* name = _pluginNode.getAttributeValue("Name");
+        const char* moduleName = _pluginNode.getAttributeValue("Module");
+        if (!IsEmptyString(name) || !IsEmptyString(moduleName))
+        {
+            _project.addGameLogicPlugin(
+                name,
+                IsEmptyString(moduleName) ? ego::FileName() : ego::FileName(moduleName)
+            );
+        }
+    }
 }
 
 bool ego::framework::ProjectReader::ReadFromFile(const FileName& _fileName, Project& _project)
@@ -34,6 +47,7 @@ bool ego::framework::ProjectReader::ReadFromRootNode(const XmlNode& _rootNode, P
 
     ReadAssetDirectories(_rootNode, _project);
     ReadPluginDirectories(_rootNode, _project);
+    ReadGameLogic(_rootNode, _project);
     ReadGameLogicPlugins(_rootNode, _project);
 
     return true;
@@ -75,6 +89,20 @@ void ego::framework::ProjectReader::ReadPluginDirectories(const XmlNode& _rootNo
     }
 }
 
+void ego::framework::ProjectReader::ReadGameLogic(const XmlNode& _rootNode, Project& _project)
+{
+    const XmlNode gameLogicNode = _rootNode.getChild("GameLogic");
+    if (!gameLogicNode)
+    {
+        return;
+    }
+
+    for (const XmlNode pluginNode : gameLogicNode.getChildren("Plugin"))
+    {
+        ReadGameLogicPluginNode(pluginNode, _project);
+    }
+}
+
 void ego::framework::ProjectReader::ReadGameLogicPlugins(const XmlNode& _rootNode, Project& _project)
 {
     const XmlNode gameLogicPluginsNode = _rootNode.getChild("GameLogicPlugins");
@@ -85,13 +113,6 @@ void ego::framework::ProjectReader::ReadGameLogicPlugins(const XmlNode& _rootNod
 
     for (const XmlNode gameLogicPluginNode : gameLogicPluginsNode.getChildren("GameLogicPlugin"))
     {
-        const char* moduleName = gameLogicPluginNode.getAttributeValue("Module");
-        if (!IsEmptyString(moduleName))
-        {
-            _project.addGameLogicPlugin(
-                gameLogicPluginNode.getAttributeValue("Name"),
-                moduleName
-            );
-        }
+        ReadGameLogicPluginNode(gameLogicPluginNode, _project);
     }
 }

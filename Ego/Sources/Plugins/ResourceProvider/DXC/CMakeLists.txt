@@ -50,11 +50,6 @@ if (WIN32)
         )
     endif()
 
-    list(APPEND DXC_RUNTIME_SEARCH_PATHS
-        "$ENV{WindowsSdkDir}/Redist/D3D/${DXC_REDIST_ARCH}"
-        "C:/Program Files (x86)/Windows Kits/10/Redist/D3D/${DXC_REDIST_ARCH}"
-    )
-
     find_file(
         EGO_DXCOMPILER_DLL
         NAMES dxcompiler.dll

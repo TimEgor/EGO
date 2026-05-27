@@ -1,13 +1,32 @@
 #include "EgoCore/Parsers/ArgParser/Parser.h"
+#include "EgoCore/FileDialog/FileDialog.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoFramework/Framework.h"
 #include "EgoFramework/ProjectReader.h"
 
+#include <Windows.h>
+
 #include <string>
 
 namespace
 {
+	ego::FileName SelectProjectFile()
+	{
+		const ego::OpenFileDialogFilter filters[] = {
+			{"EGO Project (*.xml)", "*.xml"},
+			{"All Files (*.*)", "*.*"}
+		};
+
+		ego::OpenFileDialogParams params;
+		params.m_title = "Select EGO project";
+		params.m_defaultExtension = "xml";
+		params.m_filters = filters;
+		params.m_filterCount = sizeof(filters) / sizeof(filters[0]);
+
+		return ego::SelectOpenFile(params);
+	}
+
 	bool LoadProject(const ego::FileName& _fileName, ego::framework::ProjectPointer& _project)
 	{
 		_project = nullptr;
@@ -39,7 +58,12 @@ int WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, in
 	initData.m_engineInitData.m_platformPluginModuleName = platformPluginModuleName;
 	initData.m_engineInitData.m_renderHardwarePluginModuleName = renderHardwarePluginModuleName;
 
-	const ego::FileName projectFileName(projectFilePath);
+	ego::FileName projectFileName(projectFilePath);
+	if (!projectFileName)
+	{
+		projectFileName = SelectProjectFile();
+	}
+
 	if (projectFileName)
 	{
 		EGO_CHECK_RETURN_VALUE(LoadProject(projectFileName, initData.m_project), 2);

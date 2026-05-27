@@ -1,7 +1,51 @@
 #include "Framework.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Job/Job.h"
 #include "EgoCore/UtilsMacros.h"
+
+namespace ego::framework
+{
+    class FrameworkEngine final : public engine::Engine
+    {
+    public:
+        explicit FrameworkEngine(Framework& _framework)
+            : m_framework(_framework)
+        {}
+
+    protected:
+        JobGraphReference getMainLoopJobGraph() override
+        {
+            JobGraphBuilder graphBuilder;
+
+            const JobGraphBuilder::JobGraphJobID updateLogicJobID = graphBuilder.addJob(
+                CreateLambdaJob(
+                    [this]()
+                    {
+                        m_framework.updateCurrentGameLogic(getDeltaTime());
+                    },
+                    "Game logic update"
+                )
+            );
+
+            graphBuilder.addJobAfter(
+                CreateLambdaJob(
+                    [this]()
+                    {
+                        renderFrame();
+                    },
+                    "Render"
+                ),
+                updateLogicJobID
+            );
+
+            return graphBuilder.getGraph();
+        }
+
+    private:
+        Framework& m_framework;
+    };
+}
 
 bool ego::framework::Framework::init(const Framework::InitData& _initData)
 {
@@ -9,13 +53,14 @@ bool ego::framework::Framework::init(const Framework::InitData& _initData)
 
     m_project = _initData.m_project;
 
-    FileName gameLogicPluginModuleName = _initData.m_gameLogicPluginModuleName;
-    if (!gameLogicPluginModuleName && m_project && !m_project->getGameLogicPlugins().empty())
-    {
-        gameLogicPluginModuleName = m_project->getGameLogicPlugins().front().m_moduleName;
-    }
-
     EGO_CHECK_INITIALIZATION(initEngine(_initData));
+
+    FileName gameLogicPluginModuleName;
+    if (m_project && !m_project->getGameLogicPlugins().empty())
+    {
+        gameLogicPluginModuleName = selectProjectGameLogicPluginModule();
+        EGO_CHECK_INITIALIZATION(gameLogicPluginModuleName);
+    }
 
     m_gameLogicPluginController = new GameLogicPluginController();
     EGO_CHECK_INITIALIZATION(m_gameLogicPluginController && m_gameLogicPluginController->init());
@@ -26,6 +71,36 @@ bool ego::framework::Framework::init(const Framework::InitData& _initData)
     }
 
     return true;
+}
+
+ego::FileName ego::framework::Framework::selectProjectGameLogicPluginModule() const
+{
+    if (!m_project || !m_engine)
+    {
+        return FileName();
+    }
+
+    for (const Project::GameLogicPlugin& plugin : m_project->getGameLogicPlugins())
+    {
+        if (plugin.m_moduleName)
+        {
+            return plugin.m_moduleName;
+        }
+
+        if (!plugin.m_name.empty())
+        {
+            const FileName moduleName = m_engine->getPluginCatalog().getModulePath(
+                GameLogicPlugin::GetPluginType(),
+                plugin.m_name.c_str()
+            );
+            if (moduleName)
+            {
+                return moduleName;
+            }
+        }
+    }
+
+    return FileName();
 }
 
 void ego::framework::Framework::release()
@@ -62,7 +137,7 @@ bool ego::framework::Framework::initEngine(const Framework::InitData& _initData)
 {
     engine::Engine::InitData engineInitData = _initData.m_engineInitData;
 
-    m_engine = new engine::Engine();
+    m_engine = new FrameworkEngine(*this);
     engine::EngineCore::GetInstance().init(m_engine);
 
     if (m_project)
@@ -84,6 +159,14 @@ void ego::framework::Framework::run()
 {
     EGO_ASSERT(m_engine);
     m_engine->run();
+}
+
+void ego::framework::Framework::updateCurrentGameLogic(float _deltaTime)
+{
+    if (m_currentGameLogic)
+    {
+        m_currentGameLogic->update(_deltaTime);
+    }
 }
 
 bool ego::framework::Framework::loadGameLogic(const FileName& _moduleName)

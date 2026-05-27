@@ -57,7 +57,7 @@ bool ego::JobController::init(uint32_t _threadCount, const char* _name)
 
 		if (_name)
 		{
-			threadUtils::SetThreadName(thread.native_handle(), StringFormat("%s_%d", _name, threadIndex).c_str());
+			threadUtils::SetThreadName(thread.native_handle(), StringFormat("{}_{}", _name, threadIndex).c_str());
 		}
 
 		m_threads.push_back(std::move(thread));

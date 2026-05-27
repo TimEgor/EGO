@@ -2,10 +2,12 @@
 
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
+#include "EgoECS/Entity.h"
 
 namespace ego
 {
     class GraphicPresenter;
+    class Level;
 
     using RenderType = rtti::TypeMetaInfoID;
     inline constexpr RenderType InvalidRenderType = rtti::InvalidTypeMetaInfoID;
@@ -19,7 +21,7 @@ namespace ego
         virtual bool init() = 0;
         virtual void release() = 0;
 
-        virtual void render(GraphicPresenter& _presenter) = 0;
+        virtual void render(GraphicPresenter& _presenter, Level& _level, ecs::Entity _cameraEntity) = 0;
         virtual void wait() = 0;
         virtual void present(GraphicPresenter& _presenter) = 0;
 

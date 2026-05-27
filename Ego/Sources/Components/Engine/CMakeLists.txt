@@ -18,6 +18,7 @@ target_link_libraries(
     EgoEngine
         PUBLIC
             EgoCore
+            EgoECS
             EgoMath
             EgoPlugin
 )

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "EgoCore/Handle/Handle.h"
 #include "EgoCore/Reference/Reference.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Buffer.h"
@@ -62,7 +63,11 @@ namespace ego
         const uint32_t m_indexCount;
     };
 
-    EGO_REFERENCE(Mesh);
+    EGO_REFERENCE(Mesh)
 
     MeshReference CreateMeshFromRawData(GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
+
+    EGO_HANDLE(Mesh)
+
+    MeshHandle CreateMeshHandle(const MeshReference& _mesh);
 }

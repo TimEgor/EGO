@@ -24,3 +24,8 @@ const ego::Material::SamplerCollection& ego::Material::getSamplers() const
 {
     return m_samplers;
 }
+
+ego::MaterialHandle ego::CreateMaterialHandle(const MaterialReference& _material)
+{
+    return MakeHandle<Material>(_material);
+}

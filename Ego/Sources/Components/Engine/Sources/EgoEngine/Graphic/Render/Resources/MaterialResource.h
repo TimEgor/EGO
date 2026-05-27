@@ -24,4 +24,6 @@ namespace ego
     };
 
     EGO_POINTER(MaterialResource);
+
+    MaterialHandle CreateMaterialHandle(const MaterialResourcePointer& _resource);
 }

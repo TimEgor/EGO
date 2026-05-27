@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include "EgoCore/Handle/Handle.h"
 #include "EgoCore/Reference/Reference.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Pipeline.h"
@@ -36,4 +37,8 @@ namespace ego
     };
 
     EGO_REFERENCE(Material);
+
+    EGO_HANDLE(Material);
+
+    MaterialHandle CreateMaterialHandle(const MaterialReference& _material);
 }

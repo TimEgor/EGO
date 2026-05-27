@@ -11,18 +11,24 @@ ego::PluginModuleID ego::PluginController::GetModuleID(const FileName& _moduleNa
     return _moduleName.hash();
 }
 
-void ego::PluginController::PluginControllerAccessor::ReleasePluginModule(PluginModule* _pluginModule)
+void ego::PluginController::PluginControllerAccessor::ReleasePluginModule(
+    PluginController& _controller,
+    PluginModule* _pluginModule
+)
 {
     EGO_ASSERT(_pluginModule);
 
-    PluginControllerCore().GetInstance().getPluginController()->unloadModule(_pluginModule);
+    _controller.unloadModule(_pluginModule);
 }
 
-void ego::PluginController::PluginControllerAccessor::ReleasePlugin(Plugin* _plugin)
+void ego::PluginController::PluginControllerAccessor::ReleasePlugin(
+    PluginController& _controller,
+    Plugin* _plugin
+)
 {
     EGO_ASSERT(_plugin);
 
-    PluginControllerCore().GetInstance().getPluginController()->unloadPlugin(_plugin);
+    _controller.unloadPlugin(_plugin);
 }
 
 bool ego::PluginController::init()

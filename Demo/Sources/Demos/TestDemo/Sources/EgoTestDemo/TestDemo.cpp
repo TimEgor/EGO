@@ -3,6 +3,8 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Engine.h"
+#include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
+#include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
 #include "EgoEngine/Platform/Platform.h"
 #include "EgoEngine/Resources/Resource/ResourceController.h"
 #include "EgoFramework/Framework.h"
@@ -11,6 +13,9 @@
 
 namespace
 {
+    constexpr float MeshRotationSpeed = 1.0f;
+    constexpr float FullRotation = 6.28318530718f;
+
     bool ReadAssetDirectoriesFromActiveProject(ego::framework::Project::DirectoryCollection& _directories)
     {
         const ego::framework::FrameworkPointer framework = ego::framework::FrameworkCore::GetInstance().getFramework();
@@ -63,34 +68,77 @@ bool ego::demo::TestDemo::init()
         m_assetFileSystems.push_back(assetFileSystem);
     }
 
-    m_textResource = resourceController.load<TextResource>("TestDemoText.txt");
-    EGO_CHECK_INITIALIZATION(m_textResource && m_textResource->isLoaded());
-
-    m_loadedText = m_textResource->getText();
-
     m_triangleMesh = resourceController.load<MeshResource>("TestTriangle.mesh.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMesh && m_triangleMesh->isLoaded());
 
     m_triangleMaterial = resourceController.load<MaterialResource>("TestTriangle.material.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMaterial && m_triangleMaterial->isLoaded());
 
-    engine.getRender().addRenderItem(m_triangleMesh->getMesh(), m_triangleMaterial->getMaterial());
+    m_level = engine.getLevelController().createLevel();
+    EGO_CHECK_INITIALIZATION(m_level);
+    EGO_CHECK_INITIALIZATION(engine.getLevelController().setActiveLevel(m_level->getID()));
+
+    const ecs::Entity cameraNode = m_level->createNode();
+    EGO_CHECK_INITIALIZATION(cameraNode);
+
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<CameraComponent>(cameraNode));
+    engine.setRenderCameraEntity(cameraNode);
+
+    m_meshEntity = m_level->createNode();
+    EGO_CHECK_INITIALIZATION(m_meshEntity);
+
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<MeshRenderComponent>(
+        m_meshEntity,
+        CreateMeshHandle(m_triangleMesh),
+        CreateMaterialHandle(m_triangleMaterial)
+    ));
+
     return true;
+}
+
+void ego::demo::TestDemo::update(float _deltaTime)
+{
+    if (!m_level || !m_meshEntity)
+    {
+        return;
+    }
+
+    TransformComponent* transformComponent = m_level->tryGetComponent<TransformComponent>(m_meshEntity);
+    if (!transformComponent)
+    {
+        return;
+    }
+
+    m_meshRotationAngle += MeshRotationSpeed * _deltaTime;
+    while (m_meshRotationAngle >= FullRotation)
+    {
+        m_meshRotationAngle -= FullRotation;
+    }
+
+    Transform transform;
+    transform.setRotationQuaternion(ComputeQuaternion(ComputeVector3UnitZ, m_meshRotationAngle));
+    transformComponent->m_globalTransform = transform;
 }
 
 void ego::demo::TestDemo::release()
 {
     const engine::EnginePointer engine = engine::EngineCore::GetInstance().getEngine();
-    if (engine)
+    if (engine && m_level)
     {
-        engine->getRender().clearRenderItems();
+        const LevelPointer activeLevel = engine->getLevelController().getActiveLevel();
+        if (activeLevel && activeLevel->getID() == m_level->getID())
+        {
+            engine->getLevelController().clearActiveLevel();
+        }
+
+        engine->clearRenderCameraEntity();
     }
 
+    m_level = nullptr;
+    m_meshEntity = ecs::Entity();
+    m_meshRotationAngle = 0.0f;
     m_triangleMaterial = nullptr;
     m_triangleMesh = nullptr;
-
-    m_loadedText.clear();
-    m_textResource = nullptr;
 
     for (const RootedFileSystemPointer& assetFileSystem : m_assetFileSystems)
     {
@@ -105,9 +153,4 @@ void ego::demo::TestDemo::release()
         }
     }
     m_assetFileSystems.clear();
-}
-
-const std::string& ego::demo::TestDemo::getLoadedText() const
-{
-    return m_loadedText;
 }

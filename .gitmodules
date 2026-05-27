@@ -1,3 +1,6 @@
 [submodule "ThirtParty/pugixml"]
 	path = ThirtParty/pugixml
 	url = https://github.com/zeux/pugixml
+[submodule "ThirtParty/entt"]
+	path = ThirtParty/entt
+	url = https://github.com/skypjack/entt

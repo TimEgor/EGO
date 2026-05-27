@@ -15,6 +15,4 @@ endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Demos)
 
-set(EGO_PROJECT_FILE "$<TARGET_FILE_DIR:EgoTestDemo>/TestDemoProject.xml")
-
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Launcher)

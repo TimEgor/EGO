@@ -22,6 +22,10 @@ target_link_libraries(
             pugixml::pugixml
 )
 
+if(WIN32)
+    target_link_libraries(EgoCore PUBLIC Comdlg32)
+endif()
+
 ego_setup_target_common(
     EgoCore
     "Ego/Components"

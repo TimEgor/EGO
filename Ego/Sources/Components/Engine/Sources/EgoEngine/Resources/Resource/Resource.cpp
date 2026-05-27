@@ -17,7 +17,7 @@ void ego::ResourceDeleter::operator()(Resource* _resource) const
     }
 
     ResourceController& resourceController = engine::GetEngine().getResourceController();
-    ResourceController::ResourceControllerAccessor::RemoveResource(&resourceController, _resource);
+    ResourceController::ResourceControllerAccessor::RemoveResource(resourceController, _resource);
     Resource::ResourceAccessor::Unload(_resource);
     delete _resource;
 }

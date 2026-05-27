@@ -1,12 +1,14 @@
 #include "Engine.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Job/Job.h"
 #include "EgoCore/Job/JobController.h"
 
 #include "Event/EventController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
 #include "Graphic/Render/DefaultRender.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
+#include "Level/LevelController.h"
 #include "Platform/Platform.h"
 #include "Platform/PlatformPlugin.h"
 #include "Plugin/EnginePluginController.h"
@@ -34,6 +36,9 @@ bool ego::engine::Engine::init(const Engine::InitData& _initData)
     EGO_CHECK_INITIALIZATION(initPluginCatalog(_initData));
     EGO_CHECK_INITIALIZATION(initGraphicDevice(_initData));
 
+    m_levelController = new LevelController();
+    EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
+
     m_render = new DefaultRender();
     EGO_CHECK_INITIALIZATION(m_render && m_render->init());
 
@@ -45,6 +50,7 @@ void ego::engine::Engine::release()
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_resourceController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_platform);
@@ -89,15 +95,18 @@ void ego::engine::Engine::run()
         m_platform->getPlatformEventController().updateNativeEvents();
         //m_inputDeviceController->update();
 
-        renderFrame();
-
-        //JobGraphReference mailLoopJobGraph = getMainLoopJobGraph();
-        //m_jobController->addJobGraph(mailLoopJobGraph);
-        //m_jobController->waitAndExecute(mailLoopJobGraph);
+        JobGraphReference mainLoopJobGraph = getMainLoopJobGraph();
+        m_jobController->addJobGraph(mainLoopJobGraph);
+        m_jobController->waitAndExecute(mainLoopJobGraph);
 
         endFrame();
 
         ++m_currentFrame;
+    }
+
+    if (m_render)
+    {
+        m_render->clearResources();
     }
 }
 
@@ -202,6 +211,18 @@ ego::ResourceController& ego::engine::Engine::getResourceController()
     return *m_resourceController;
 }
 
+const ego::LevelController& ego::engine::Engine::getLevelController() const
+{
+    EGO_ASSERT(m_levelController);
+    return *m_levelController;
+}
+
+ego::LevelController& ego::engine::Engine::getLevelController()
+{
+    EGO_ASSERT(m_levelController);
+    return *m_levelController;
+}
+
 const ego::DefaultRender& ego::engine::Engine::getRender() const
 {
     EGO_ASSERT(m_render);
@@ -212,6 +233,37 @@ ego::DefaultRender& ego::engine::Engine::getRender()
 {
     EGO_ASSERT(m_render);
     return *m_render;
+}
+
+ego::ecs::Entity ego::engine::Engine::getRenderCameraEntity() const
+{
+    return m_renderCameraEntity;
+}
+
+void ego::engine::Engine::setRenderCameraEntity(ecs::Entity _cameraEntity)
+{
+    m_renderCameraEntity = _cameraEntity;
+}
+
+void ego::engine::Engine::clearRenderCameraEntity()
+{
+    m_renderCameraEntity = ecs::Entity();
+}
+
+ego::JobGraphReference ego::engine::Engine::getMainLoopJobGraph()
+{
+    JobGraphBuilder graphBuilder;
+    graphBuilder.addJob(
+        CreateLambdaJob(
+            [this]()
+            {
+                renderFrame();
+            },
+            "Render"
+        )
+    );
+
+    return graphBuilder.getGraph();
 }
 
 const ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog() const
@@ -325,12 +377,18 @@ bool ego::engine::Engine::prepareMainWindowPresenter()
 
 void ego::engine::Engine::renderFrame()
 {
-    if (!m_render || !m_graphicPresenter)
+    if (!m_render || !m_graphicPresenter || !m_levelController)
     {
         return;
     }
 
-    m_render->render(*m_graphicPresenter);
+    const LevelPointer activeLevel = m_levelController->getActiveLevel();
+    if (!activeLevel || !m_renderCameraEntity)
+    {
+        return;
+    }
+
+    m_render->render(*m_graphicPresenter, *activeLevel, m_renderCameraEntity);
     m_render->wait();
     m_render->present(*m_graphicPresenter);
 }

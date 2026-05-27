@@ -1,9 +1,9 @@
 set(EGO_TEST_DEMO_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
-function(ego_test_demo_install_assets_and_project)
+function(ego_test_demo_config_project)
     set(TPL_TEST_DEMO_ASSETS_PATH "${EGO_TEST_DEMO_DIR}/Assets")
-    set(TPL_TEST_DEMO_PLUGINS_PATH [[D:\Projects\EGO\Generator\Install\Windows\Plugins]])
-    set(TPL_TEST_DEMO_GAME_PLUGIN_PATH "$<TARGET_FILE:EgoTestDemo>")
+    set(TPL_TEST_DEMO_PLUGINS_PATH "${CMAKE_INSTALL_PREFIX}/Plugins")
+    set(TPL_TEST_DEMO_GAME_PLUGINS_PATH "$<TARGET_FILE_DIR:EgoTestDemo>")
     configure_file(
         "${EGO_TEST_DEMO_DIR}/TestDemoProject.xml.tpl"
         "${CMAKE_CURRENT_BINARY_DIR}/TestDemoProject.xml.in"
@@ -28,8 +28,8 @@ function(ego_test_demo_install_assets_and_project)
 
     install(CODE
         "set(TPL_TEST_DEMO_ASSETS_PATH \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo/Assets\")
-        set(TPL_TEST_DEMO_PLUGINS_PATH [[D:\\Projects\\EGO\\Generator\\Install\\Windows\\Plugins]])
-        set(TPL_TEST_DEMO_GAME_PLUGIN_PATH \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo/EgoTestDemo_\${CMAKE_INSTALL_CONFIG_NAME}_${CMAKE_SYSTEM_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}\")
+        set(TPL_TEST_DEMO_PLUGINS_PATH \"\${CMAKE_INSTALL_PREFIX}/Plugins\")
+        set(TPL_TEST_DEMO_GAME_PLUGINS_PATH \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo\")
         configure_file(
             \"${EGO_TEST_DEMO_DIR}/TestDemoProject.xml.tpl\"
             \"\${CMAKE_INSTALL_PREFIX}/Demo/Demos/TestDemo/TestDemoProject.xml\"

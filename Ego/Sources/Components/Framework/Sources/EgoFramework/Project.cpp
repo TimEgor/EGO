@@ -24,7 +24,7 @@ bool ego::framework::Project::addPluginDirectory(const FileName& _directory)
 
 bool ego::framework::Project::addGameLogicPlugin(const GameLogicPlugin& _plugin)
 {
-    if (!_plugin.m_moduleName)
+    if (_plugin.m_name.empty() && !_plugin.m_moduleName)
     {
         return false;
     }

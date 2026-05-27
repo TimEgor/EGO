@@ -24,4 +24,6 @@ namespace ego
     };
 
     EGO_POINTER(MeshResource);
+
+    MeshHandle CreateMeshHandle(const MeshResourcePointer& _resource);
 }

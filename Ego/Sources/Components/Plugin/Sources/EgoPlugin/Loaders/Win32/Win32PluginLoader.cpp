@@ -3,6 +3,7 @@
 #include "Win32PluginLoader.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/FileDialog/FileDialog.h"
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/String/Format.h"
 #include "EgoCore/String/StringConverter.h"
@@ -12,7 +13,6 @@
 #include "EgoPlugin/ExternalModuleCore.h"
 
 #include <Windows.h>
-#include <commdlg.h>
 
 void OutputError(const ego::FileName& _name)
 {
@@ -51,35 +51,22 @@ void OutputError(const ego::FileName& _name)
 
 ego::FileName ego::Win32PluginLoader::selectPluginModule(const char* _typeName)
 {
-    char moduleName[MAX_PATH] = {};
-
     const std::string title = _typeName
         ? StringFormat("Select {} plugin module", _typeName)
         : "Select plugin module";
 
-    OPENFILENAMEA openFileName = {};
-    openFileName.lStructSize = sizeof(openFileName);
-    openFileName.hwndOwner = GetActiveWindow();
-    openFileName.lpstrFile = moduleName;
-    openFileName.nMaxFile = MAX_PATH;
-    openFileName.lpstrFilter = "Dynamic Libraries (*.dll)\0*.dll\0All Files (*.*)\0*.*\0";
-    openFileName.nFilterIndex = 1;
-    openFileName.lpstrTitle = title.c_str();
-    openFileName.lpstrDefExt = "dll";
-    openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+    const OpenFileDialogFilter filters[] = {
+        {"Dynamic Libraries (*.dll)", "*.dll"},
+        {"All Files (*.*)", "*.*"}
+    };
 
-    if (!GetOpenFileNameA(&openFileName))
-    {
-        const DWORD error = CommDlgExtendedError();
-        if (error != 0)
-        {
-            OutputDebugStringA(StringFormat("Plugin select dialog error: {}\n", error).c_str());
-        }
+    OpenFileDialogParams params;
+    params.m_title = title.c_str();
+    params.m_defaultExtension = "dll";
+    params.m_filters = filters;
+    params.m_filterCount = sizeof(filters) / sizeof(filters[0]);
 
-        return FileName();
-    }
-
-    return FileName(moduleName);
+    return SelectOpenFile(params);
 }
 
 ego::PluginPointer ego::Win32PluginLoader::loadPlugin(const PluginModulePointer& _module, const char* _typeName)

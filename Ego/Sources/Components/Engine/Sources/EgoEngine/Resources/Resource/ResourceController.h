@@ -27,9 +27,9 @@ namespace ego
             friend struct ResourceDeleter;
             friend class ResourceLoadingContext;
 
-            static bool RemoveResource(ResourceController* _controller, Resource* _resource);
+            static bool RemoveResource(ResourceController& _controller, Resource* _resource);
             static bool LoadResourceContent(
-                const ResourceController* _controller,
+                const ResourceController& _controller,
                 const FileName& _path,
                 FileContent& _content
             );
@@ -38,7 +38,7 @@ namespace ego
         ResourceController() = default;
         ~ResourceController();
 
-        bool init(uint32_t _threadCount = 0, const char* _jobThreadName = "ResourceJob");
+        bool init(uint32_t _threadCount = 0, const char* _jobThreadName = "EgoResourceJob");
         void release();
 
         bool isInitialized() const;

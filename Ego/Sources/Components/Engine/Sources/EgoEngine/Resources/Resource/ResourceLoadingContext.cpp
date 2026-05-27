@@ -14,5 +14,5 @@ ego::ResourceLoadingContext::ResourceLoadingContext(
 
 bool ego::ResourceLoadingContext::loadContent(const FileName& _path, FileContent& _content) const
 {
-    return ResourceController::ResourceControllerAccessor::LoadResourceContent(&m_controller, _path, _content);
+    return ResourceController::ResourceControllerAccessor::LoadResourceContent(m_controller, _path, _content);
 }

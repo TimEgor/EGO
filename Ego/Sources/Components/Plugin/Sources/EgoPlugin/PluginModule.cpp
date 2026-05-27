@@ -16,7 +16,14 @@ void ego::PluginModuleDeleter::operator()(PluginModule* _pluginModule) const
         return;
     }
 
-    PluginController::PluginControllerAccessor::ReleasePluginModule(_pluginModule);
+    PluginControllerPointer pluginController = PluginControllerCore::GetInstance().getPluginController();
+    EGO_ASSERT(pluginController);
+
+    if (pluginController)
+    {
+        PluginController::PluginControllerAccessor::ReleasePluginModule(*pluginController, _pluginModule);
+    }
+
     delete _pluginModule;
 }
 

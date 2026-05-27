@@ -5,6 +5,7 @@
 
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/Graphic/RenderHardware/Resources/ShaderResource.h"
+#include "EgoEngine/Graphic/Render/RenderShaderData.h"
 #include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
 
 namespace
@@ -85,6 +86,12 @@ bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContex
     GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
 
     gpu::BindingLayoutDesc bindingLayoutDesc;
+    gpu::PushConstantRangeDesc renderBindlessRootConstants;
+    renderBindlessRootConstants.m_offset = RenderBindlessRootConstantsOffset;
+    renderBindlessRootConstants.m_size = RenderBindlessRootConstantsSize;
+    renderBindlessRootConstants.m_stageFlag = RenderBindlessRootConstantsStageFlag;
+    bindingLayoutDesc.m_pushConstants.push_back(renderBindlessRootConstants);
+
     gpu::BindingLayoutReference bindingLayout = graphicDevice.createBindingLayout(bindingLayoutDesc);
     EGO_CHECK_RETURN_FALSE(bindingLayout);
 
@@ -110,4 +117,15 @@ bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContex
 void ego::MaterialResource::onUnload()
 {
     m_material = nullptr;
+}
+
+ego::MaterialHandle ego::CreateMaterialHandle(const MaterialResourcePointer& _resource)
+{
+    return MakeHandle<Material>(
+        _resource,
+        [](const MaterialResourcePointer& _storedResource) -> Material*
+        {
+            return _storedResource ? _storedResource->getMaterial().getObject() : nullptr;
+        }
+    );
 }

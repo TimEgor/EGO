@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "EgoMath/Transform.h"
 #include "EgoMath/Vector.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
@@ -17,8 +18,10 @@ namespace ego
     public:
         struct Item final
         {
-            MeshReference m_mesh = nullptr;
-            MaterialReference m_material = nullptr;
+            MeshHandle m_mesh = nullptr;
+            MaterialHandle m_material = nullptr;
+            Transform m_globalTransform;
+            uint32_t m_objectIndex = 0;
         };
 
         DefaultRender() = default;
@@ -26,8 +29,9 @@ namespace ego
 
         virtual bool init() override;
         virtual void release() override;
+        void clearResources();
 
-        virtual void render(GraphicPresenter& _presenter) override;
+        virtual void render(GraphicPresenter& _presenter, Level& _level, ecs::Entity _cameraEntity) override;
         virtual void wait() override;
         virtual void present(GraphicPresenter& _presenter) override;
 
@@ -39,14 +43,14 @@ namespace ego
         void setClearEnabled(bool _enabled);
         bool isClearEnabled() const;
 
-        void addRenderItem(const MeshReference& _mesh, const MaterialReference& _material);
-        void clearRenderItems();
-        const std::vector<Item>& getRenderItems() const;
-
         EGO_RENDER(DefaultRender, Render);
 
     private:
+        void collectRenderItems(Level& _level);
         bool prepareRenderTarget(const gpu::Texture2DReference& _targetTexture);
+        bool prepareShaderData(Level& _level, ecs::Entity _cameraEntity);
+        bool prepareCameraShaderData(Level& _level, ecs::Entity _cameraEntity);
+        bool prepareObjectShaderData();
         void setupTargetViewport(const gpu::Texture2DReference& _targetTexture);
         void renderItem(const Item& _item);
 
@@ -54,9 +58,15 @@ namespace ego
         gpu::GraphicCommandListReference m_commandList = nullptr;
         gpu::Texture2DReference m_renderTargetTexture = nullptr;
         gpu::TextureViewReference m_renderTargetView = nullptr;
+        gpu::BufferReference m_cameraShaderDataBuffer = nullptr;
+        gpu::BufferViewReference m_cameraShaderDataView = nullptr;
+        gpu::BufferReference m_objectShaderDataBuffer = nullptr;
+        gpu::BufferViewReference m_objectShaderDataView = nullptr;
 
         std::vector<Item> m_renderItems;
+        ComputeMatrix4x4 m_cameraViewProjectionMatrix = ComputeMatrix4x4Identity;
         FloatVector4 m_clearColor = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);
+        uint32_t m_objectShaderDataCapacity = 0;
         bool m_isInitialized = false;
         bool m_clearEnabled = true;
     };

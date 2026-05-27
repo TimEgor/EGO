@@ -16,7 +16,7 @@ namespace ego
 		JobController() = default;
 		~JobController() { release(); }
 
-		bool init(uint32_t _threadCount, const char* _name = "TSJob");
+		bool init(uint32_t _threadCount, const char* _name = "EgoJob");
 		void release();
 
 		void addJob(const JobReference& _job);

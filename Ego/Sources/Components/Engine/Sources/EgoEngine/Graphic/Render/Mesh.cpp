@@ -137,3 +137,8 @@ ego::MeshReference ego::CreateMeshFromRawData(GraphicDevice& _graphicDevice, con
         indexCount
     ));
 }
+
+ego::MeshHandle ego::CreateMeshHandle(const MeshReference& _mesh)
+{
+    return MakeHandle<Mesh>(_mesh);
+}

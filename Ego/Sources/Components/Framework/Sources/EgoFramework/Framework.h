@@ -16,14 +16,17 @@
 
 namespace ego::framework
 {
+    class FrameworkEngine;
+
     class Framework : public NonCopyable
     {
+        friend class FrameworkEngine;
+
     public:
         struct InitData final
         {
             engine::Engine::InitData m_engineInitData;
             ProjectPointer m_project = nullptr;
-            FileName m_gameLogicPluginModuleName;
         };
 
         Framework() = default;
@@ -44,6 +47,8 @@ namespace ego::framework
         bool initPluginController();
         void releasePluginController();
         bool initEngine(const InitData& _initData);
+        FileName selectProjectGameLogicPluginModule() const;
+        void updateCurrentGameLogic(float _deltaTime);
 
         PluginControllerPointer m_pluginController = nullptr;
 

@@ -26,8 +26,8 @@ namespace ego
             friend struct PluginModuleDeleter;
             friend struct PluginDeleter;
 
-            static void ReleasePluginModule(PluginModule* _pluginModule);
-            static void ReleasePlugin(Plugin* _plugin);
+            static void ReleasePluginModule(PluginController& _controller, PluginModule* _pluginModule);
+            static void ReleasePlugin(PluginController& _controller, Plugin* _plugin);
         };
 
         PluginController() = default;

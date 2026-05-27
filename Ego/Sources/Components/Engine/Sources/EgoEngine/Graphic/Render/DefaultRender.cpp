@@ -1,10 +1,27 @@
 #include "DefaultRender.h"
 
+#include <algorithm>
+#include <cstring>
+
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
+#include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
+#include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
+#include "EgoEngine/Graphic/Render/RenderShaderData.h"
+#include "EgoEngine/Level/Level.h"
+
+namespace
+{
+    constexpr uint32_t ConstantBufferAlignment = 256;
+
+    uint32_t AlignTo(uint32_t _value, uint32_t _alignment)
+    {
+        return _alignment ? ((_value + _alignment - 1) / _alignment) * _alignment : _value;
+    }
+}
 
 bool ego::DefaultRender::init()
 {
@@ -14,6 +31,7 @@ bool ego::DefaultRender::init()
     }
 
     GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    EGO_CHECK_RETURN_FALSE(graphicDevice.getCapabilities().m_supportsBindlessResources);
 
     gpu::CommandQueueDesc queueDesc;
     queueDesc.m_type = gpu::CommandType::Graphic;
@@ -32,21 +50,31 @@ bool ego::DefaultRender::init()
 
 void ego::DefaultRender::release()
 {
-    if (!m_isInitialized)
-    {
-        return;
-    }
+    clearResources();
 
-    wait();
+    m_objectShaderDataView = nullptr;
+    m_objectShaderDataBuffer = nullptr;
+    m_objectShaderDataCapacity = 0;
+    m_cameraShaderDataView = nullptr;
+    m_cameraShaderDataBuffer = nullptr;
 
     m_renderTargetView = nullptr;
     m_renderTargetTexture = nullptr;
+
     m_commandList = nullptr;
     m_commandQueue = nullptr;
+
     m_isInitialized = false;
 }
 
-void ego::DefaultRender::render(GraphicPresenter& _presenter)
+void ego::DefaultRender::clearResources()
+{
+    wait();
+
+    m_renderItems.clear();
+}
+
+void ego::DefaultRender::render(GraphicPresenter& _presenter, Level& _level, ecs::Entity _cameraEntity)
 {
     EGO_ASSERT(m_isInitialized);
 
@@ -65,6 +93,13 @@ void ego::DefaultRender::render(GraphicPresenter& _presenter)
 
     const gpu::Texture2DReference targetTexture = _presenter.getTargetTexture();
     if (!prepareRenderTarget(targetTexture))
+    {
+        return;
+    }
+
+    collectRenderItems(_level);
+
+    if (!prepareShaderData(_level, _cameraEntity))
     {
         return;
     }
@@ -137,27 +172,32 @@ bool ego::DefaultRender::isClearEnabled() const
     return m_clearEnabled;
 }
 
-void ego::DefaultRender::addRenderItem(
-    const MeshReference& _mesh,
-    const MaterialReference& _material
-)
-{
-    if (!_mesh || !_material)
-    {
-        return;
-    }
-
-    m_renderItems.push_back(DefaultRender::Item{_mesh, _material});
-}
-
-void ego::DefaultRender::clearRenderItems()
+void ego::DefaultRender::collectRenderItems(Level& _level)
 {
     m_renderItems.clear();
-}
 
-const std::vector<ego::DefaultRender::Item>& ego::DefaultRender::getRenderItems() const
-{
-    return m_renderItems;
+    _level.forEachComponent<MeshRenderComponent>(
+        [this, &_level](ecs::Entity _entity, const MeshRenderComponent& _meshRenderComponent)
+        {
+            if (!_meshRenderComponent.m_mesh || !_meshRenderComponent.m_material)
+            {
+                return;
+            }
+
+            DefaultRender::Item item;
+            item.m_mesh = _meshRenderComponent.m_mesh;
+            item.m_material = _meshRenderComponent.m_material;
+            item.m_objectIndex = static_cast<uint32_t>(m_renderItems.size());
+
+            const TransformComponent* transformComponent = _level.tryGetComponent<TransformComponent>(_entity);
+            if (transformComponent)
+            {
+                item.m_globalTransform = transformComponent->m_globalTransform;
+            }
+
+            m_renderItems.push_back(item);
+        }
+    );
 }
 
 bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DReference& _targetTexture)
@@ -189,6 +229,127 @@ bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DReference& _tar
     return static_cast<bool>(m_renderTargetView);
 }
 
+bool ego::DefaultRender::prepareShaderData(Level& _level, ecs::Entity _cameraEntity)
+{
+    return prepareCameraShaderData(_level, _cameraEntity) && prepareObjectShaderData();
+}
+
+bool ego::DefaultRender::prepareCameraShaderData(Level& _level, ecs::Entity _cameraEntity)
+{
+    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+
+    if (!m_cameraShaderDataBuffer)
+    {
+        gpu::BufferDesc bufferDesc;
+        bufferDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageConstantBuffer);
+        bufferDesc.m_access = static_cast<gpu::CommonGraphicResourceAccess>(
+            gpu::GraphicResourceAccessCpuWrite | gpu::GraphicResourceAccessGpuRead
+        );
+        bufferDesc.m_size = AlignTo(static_cast<uint32_t>(sizeof(CameraShaderData)), ConstantBufferAlignment);
+        bufferDesc.m_stride = sizeof(CameraShaderData);
+
+        const gpu::BufferReference buffer = graphicDevice.createBuffer(bufferDesc);
+        EGO_CHECK_RETURN_FALSE(buffer);
+
+        gpu::BufferViewDesc viewDesc;
+        viewDesc.m_type = gpu::GraphicResourceViewType::ConstantBuffer;
+        viewDesc.m_size = sizeof(CameraShaderData);
+
+        const gpu::BufferViewReference view = graphicDevice.createBufferView(buffer, viewDesc);
+        EGO_CHECK_RETURN_FALSE(view && view->getBindlessIndex() != gpu::InvalidBindlessIndex);
+
+        m_cameraShaderDataBuffer = buffer;
+        m_cameraShaderDataView = view;
+    }
+
+    const CameraComponent* cameraComponent = _level.tryGetComponent<CameraComponent>(_cameraEntity);
+    const TransformComponent* transformComponent = _level.tryGetComponent<TransformComponent>(_cameraEntity);
+    if (!cameraComponent || !transformComponent)
+    {
+        return false;
+    }
+
+    const Transform& cameraTransform = transformComponent->m_globalTransform;
+    const ComputeMatrix4x4& projectionMatrix = cameraComponent->m_projection;
+    const ComputeMatrix4x4 viewMatrix = InvertComputeMatrix4x4(cameraTransform.m_matrix);
+    const ComputeMatrix4x4 viewProjectionMatrix = projectionMatrix * viewMatrix;
+    const FloatVector3 cameraPosition = cameraTransform.getOrigin().getFloatVector3();
+    m_cameraViewProjectionMatrix = viewProjectionMatrix;
+
+    CameraShaderData shaderData;
+    shaderData.m_view = viewMatrix.getFloatMatrix4x4();
+    shaderData.m_projection = projectionMatrix.getFloatMatrix4x4();
+    shaderData.m_viewProjection = viewProjectionMatrix.getFloatMatrix4x4();
+    shaderData.m_position = FloatVector4(cameraPosition, 1.0f);
+
+    void* mappedData = m_cameraShaderDataBuffer->map(0, sizeof(shaderData));
+    EGO_CHECK_RETURN_FALSE(mappedData);
+
+    std::memcpy(mappedData, &shaderData, sizeof(shaderData));
+    m_cameraShaderDataBuffer->unmap(0, sizeof(shaderData));
+    return true;
+}
+
+bool ego::DefaultRender::prepareObjectShaderData()
+{
+    if (m_renderItems.empty())
+    {
+        return true;
+    }
+
+    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    const uint32_t requiredCapacity = static_cast<uint32_t>(m_renderItems.size());
+
+    if (!m_objectShaderDataBuffer || m_objectShaderDataCapacity < requiredCapacity)
+    {
+        const uint32_t newCapacity = (std::max)(requiredCapacity, (std::max)(m_objectShaderDataCapacity * 2, 1u));
+
+        gpu::BufferDesc bufferDesc;
+        bufferDesc.m_usage = gpu::GraphicResourceUsageShaderResource;
+        bufferDesc.m_access = static_cast<gpu::CommonGraphicResourceAccess>(
+            gpu::GraphicResourceAccessCpuWrite | gpu::GraphicResourceAccessGpuRead
+        );
+        bufferDesc.m_size = static_cast<uint32_t>(sizeof(ObjectShaderData)) * newCapacity;
+        bufferDesc.m_stride = sizeof(ObjectShaderData);
+
+        const gpu::BufferReference buffer = graphicDevice.createBuffer(bufferDesc);
+        EGO_CHECK_RETURN_FALSE(buffer);
+
+        gpu::BufferViewDesc viewDesc;
+        viewDesc.m_type = gpu::GraphicResourceViewType::ShaderResource;
+        viewDesc.m_size = bufferDesc.m_size;
+        viewDesc.m_stride = sizeof(ObjectShaderData);
+
+        const gpu::BufferViewReference view = graphicDevice.createBufferView(buffer, viewDesc);
+        EGO_CHECK_RETURN_FALSE(view && view->getBindlessIndex() != gpu::InvalidBindlessIndex);
+
+        m_objectShaderDataBuffer = buffer;
+        m_objectShaderDataView = view;
+        m_objectShaderDataCapacity = newCapacity;
+    }
+
+    const uint32_t dataSize = static_cast<uint32_t>(sizeof(ObjectShaderData)) * requiredCapacity;
+    ObjectShaderData* shaderData = static_cast<ObjectShaderData*>(m_objectShaderDataBuffer->map(0, dataSize));
+    EGO_CHECK_RETURN_FALSE(shaderData);
+
+    const ComputeMatrix4x4 viewProjectionMatrix = m_cameraViewProjectionMatrix;
+
+    for (uint32_t itemIndex = 0; itemIndex < requiredCapacity; ++itemIndex)
+    {
+        Item& item = m_renderItems[itemIndex];
+        item.m_objectIndex = itemIndex;
+
+        const ComputeMatrix4x4 modelMatrix = item.m_globalTransform.m_matrix;
+        const ComputeMatrix4x4 modelViewProjectionMatrix = viewProjectionMatrix * modelMatrix;
+
+        shaderData[itemIndex].m_model = modelMatrix.getFloatMatrix4x4();
+        shaderData[itemIndex].m_modelViewProjection = modelViewProjectionMatrix.getFloatMatrix4x4();
+    }
+
+    m_objectShaderDataBuffer->unmap(0, dataSize);
+    return true;
+}
+
 void ego::DefaultRender::setupTargetViewport(const gpu::Texture2DReference& _targetTexture)
 {
     EGO_ASSERT(_targetTexture);
@@ -214,12 +375,14 @@ void ego::DefaultRender::setupTargetViewport(const gpu::Texture2DReference& _tar
 
 void ego::DefaultRender::renderItem(const DefaultRender::Item& _item)
 {
-    if (!_item.m_mesh || !_item.m_material)
+    Mesh* mesh = _item.m_mesh.getObject();
+    Material* material = _item.m_material.getObject();
+    if (!mesh || !material)
     {
         return;
     }
 
-    const gpu::GraphicPipelineReference& pipeline = _item.m_material->getPipeline();
+    const gpu::GraphicPipelineReference& pipeline = material->getPipeline();
     if (!pipeline)
     {
         return;
@@ -227,38 +390,61 @@ void ego::DefaultRender::renderItem(const DefaultRender::Item& _item)
 
     m_commandList->setPipeline(pipeline);
 
-    const Material::ResourceViewCollection& resourceViews = _item.m_material->getResourceViews();
+    const Material::ResourceViewCollection& resourceViews = material->getResourceViews();
     for (uint32_t resourceViewIndex = 0; resourceViewIndex < resourceViews.size(); ++resourceViewIndex)
     {
         m_commandList->bindResourceView(resourceViewIndex, resourceViews[resourceViewIndex]);
     }
 
-    const Material::SamplerCollection& samplers = _item.m_material->getSamplers();
+    const Material::SamplerCollection& samplers = material->getSamplers();
     for (uint32_t samplerIndex = 0; samplerIndex < samplers.size(); ++samplerIndex)
     {
         m_commandList->bindSampler(samplerIndex, samplers[samplerIndex]);
     }
 
-    const Mesh::VertexBufferBinding& vertexBuffer = _item.m_mesh->getVertexBuffer();
+    if (!m_cameraShaderDataView || !m_objectShaderDataView)
+    {
+        return;
+    }
+
+    RenderBindlessRootConstants rootConstants;
+    rootConstants.m_cameraDataIndex = m_cameraShaderDataView->getBindlessIndex();
+    rootConstants.m_objectDataIndex = m_objectShaderDataView->getBindlessIndex();
+    rootConstants.m_objectIndex = _item.m_objectIndex;
+
+    if (rootConstants.m_cameraDataIndex == gpu::InvalidBindlessIndex ||
+        rootConstants.m_objectDataIndex == gpu::InvalidBindlessIndex)
+    {
+        return;
+    }
+
+    m_commandList->pushConstants(
+        RenderBindlessRootConstantsStageFlag,
+        RenderBindlessRootConstantsOffset,
+        sizeof(rootConstants),
+        &rootConstants
+    );
+
+    const Mesh::VertexBufferBinding& vertexBuffer = mesh->getVertexBuffer();
     if (vertexBuffer.m_buffer && vertexBuffer.m_stride != 0)
     {
         m_commandList->setVertexBuffer(0, vertexBuffer.m_buffer, vertexBuffer.m_stride, vertexBuffer.m_offset);
     }
 
-    const Mesh::IndexBufferBinding& indexBuffer = _item.m_mesh->getIndexBuffer();
-    if (indexBuffer.m_buffer && _item.m_mesh->getIndexCount() != 0)
+    const Mesh::IndexBufferBinding& indexBuffer = mesh->getIndexBuffer();
+    if (indexBuffer.m_buffer && mesh->getIndexCount() != 0)
     {
         m_commandList->setIndexBuffer(
             indexBuffer.m_buffer,
             indexBuffer.m_format,
             indexBuffer.m_offset
         );
-        m_commandList->drawIndexed(_item.m_mesh->getIndexCount());
+        m_commandList->drawIndexed(mesh->getIndexCount());
         return;
     }
 
-    if (_item.m_mesh->getVertexCount() != 0)
+    if (mesh->getVertexCount() != 0)
     {
-        m_commandList->draw(_item.m_mesh->getVertexCount());
+        m_commandList->draw(mesh->getVertexCount());
     }
 }

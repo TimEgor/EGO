@@ -3,13 +3,16 @@
 #include "EgoCore/Clock.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Job/JobController.h"
+#include "EgoCore/Job/JobGraph.h"
 #include "EgoCore/Patterns/Singleton.h"
+#include "EgoECS/Entity.h"
 
 #include "Event/EventController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
 #include "Graphic/Render/DefaultRender.h"
 #include "Graphic/RenderHardware/GraphicDevice.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
+#include "Level/LevelController.h"
 #include "Platform/Platform.h"
 #include "Platform/PlatformPlugin.h"
 #include "Plugin/EnginePluginController.h"
@@ -29,7 +32,7 @@ namespace ego
 
 namespace ego::engine
 {
-    class Engine final
+    class Engine
     {
     public:
         struct InitData final
@@ -43,6 +46,7 @@ namespace ego::engine
         };
 
         Engine() = default;
+        virtual ~Engine() = default;
 
         bool init(const InitData& _initData);
         void release();
@@ -74,11 +78,23 @@ namespace ego::engine
         const ResourceController& getResourceController() const;
         ResourceController& getResourceController();
 
+        const LevelController& getLevelController() const;
+        LevelController& getLevelController();
+
         const DefaultRender& getRender() const;
         DefaultRender& getRender();
 
+        ecs::Entity getRenderCameraEntity() const;
+        void setRenderCameraEntity(ecs::Entity _cameraEntity);
+        void clearRenderCameraEntity();
+
         const PluginCatalog& getPluginCatalog() const;
         PluginCatalog& getPluginCatalog();
+
+    protected:
+        virtual JobGraphReference getMainLoopJobGraph();
+
+        void renderFrame();
 
     private:
         bool initPluginController();
@@ -89,13 +105,13 @@ namespace ego::engine
         void beginFrame();
         void endFrame();
         bool prepareMainWindowPresenter();
-        void renderFrame();
 
         EnginePluginControllerPointer m_enginePluginController = nullptr;
 
         EventControllerPointer m_eventController = nullptr;
         JobControllerPointer m_jobController = nullptr;
         ResourceControllerPointer m_resourceController = nullptr;
+        LevelControllerPointer m_levelController = nullptr;
 
         PluginCatalog m_pluginCatalog;
 
@@ -112,6 +128,7 @@ namespace ego::engine
         ClockTimePoint m_prevFrameStartTime;
 
         uint32_t m_currentFrame = 0;
+        ecs::Entity m_renderCameraEntity;
 
         float m_deltaTime = 0.0f;
         float m_timeScale = 1.0f;
