@@ -5,8 +5,6 @@
 #include "EgoEngine/Engine.h"
 #include "LevelController.h"
 
-#include <algorithm>
-
 ego::Level::Level(LevelID _id)
     : m_world(new ecs::World())
     , m_id(_id)
@@ -38,6 +36,67 @@ void ego::Level::LevelAccessor::Destroy(Level* _level)
     }
 
     delete _level;
+}
+
+ego::Level::NodeChildIterator::NodeChildIterator(const Level* _level, ecs::Entity _node)
+    : m_level(_level && _node ? _level : nullptr)
+    , m_node(_level ? _node : ecs::Entity())
+    , m_nextNode(m_level ? m_level->getNextNodeSibling(m_node) : ecs::Entity())
+{}
+
+ego::ecs::Entity ego::Level::NodeChildIterator::operator*() const
+{
+    return m_node;
+}
+
+ego::Level::NodeChildIterator& ego::Level::NodeChildIterator::operator++()
+{
+    if (m_level && m_node)
+    {
+        m_node = m_nextNode;
+        m_nextNode = m_level && m_node ? m_level->getNextNodeSibling(m_node) : ecs::Entity();
+
+        if (!m_node)
+        {
+            m_level = nullptr;
+        }
+    }
+
+    return *this;
+}
+
+ego::Level::NodeChildIterator ego::Level::NodeChildIterator::operator++(int)
+{
+    NodeChildIterator iterator = *this;
+    ++(*this);
+    return iterator;
+}
+
+bool ego::Level::NodeChildIterator::operator==(const NodeChildIterator& _iterator) const
+{
+    return m_node == _iterator.m_node;
+}
+
+bool ego::Level::NodeChildIterator::operator!=(const NodeChildIterator& _iterator) const
+{
+    return !(*this == _iterator);
+}
+
+ego::Level::NodeChildRange::NodeChildRange(const Level* _level, ecs::Entity _parent)
+    : m_level(_level && _parent ? _level : nullptr)
+    , m_parent(_level ? _parent : ecs::Entity())
+{}
+
+ego::Level::NodeChildIterator ego::Level::NodeChildRange::begin() const
+{
+    return m_level
+        ? NodeChildIterator(m_level, m_level->getFirstNodeChild(m_parent))
+        : NodeChildIterator();
+}
+
+ego::Level::NodeChildIterator ego::Level::NodeChildRange::end() const
+{
+    return NodeChildIterator();
 }
 
 ego::LevelID ego::Level::getID() const
@@ -218,15 +277,58 @@ ego::ecs::Entity ego::Level::getNodeParent(ecs::Entity _node) const
     return nodeComponent ? nodeComponent->m_parent : ecs::Entity();
 }
 
-const std::vector<ego::ecs::Entity>* ego::Level::getNodeChildren(ecs::Entity _node) const
+ego::Level::NodeChildRange ego::Level::getNodeChildren(ecs::Entity _node) const
 {
     if (!m_world || !isNode(_node))
     {
-        return nullptr;
+        return NodeChildRange();
+    }
+
+    return NodeChildRange(this, _node);
+}
+
+ego::ecs::Entity ego::Level::getFirstNodeChild(ecs::Entity _node) const
+{
+    if (!m_world || !isNode(_node))
+    {
+        return ecs::Entity();
     }
 
     const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
-    return nodeComponent ? &nodeComponent->m_children : nullptr;
+    return nodeComponent ? nodeComponent->m_firstChild : ecs::Entity();
+}
+
+ego::ecs::Entity ego::Level::getLastNodeChild(ecs::Entity _node) const
+{
+    if (!m_world || !isNode(_node))
+    {
+        return ecs::Entity();
+    }
+
+    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    return nodeComponent ? nodeComponent->m_lastChild : ecs::Entity();
+}
+
+ego::ecs::Entity ego::Level::getPreviousNodeSibling(ecs::Entity _node) const
+{
+    if (!m_world || !isNode(_node))
+    {
+        return ecs::Entity();
+    }
+
+    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    return nodeComponent ? nodeComponent->m_previousSibling : ecs::Entity();
+}
+
+ego::ecs::Entity ego::Level::getNextNodeSibling(ecs::Entity _node) const
+{
+    if (!m_world || !isNode(_node))
+    {
+        return ecs::Entity();
+    }
+
+    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    return nodeComponent ? nodeComponent->m_nextSibling : ecs::Entity();
 }
 
 void ego::Level::clear()
@@ -297,7 +399,7 @@ void ego::Level::collectNodeHierarchy(ecs::Entity _node, std::vector<ecs::Entity
         return;
     }
 
-    for (ecs::Entity child : nodeComponent->m_children)
+    for (ecs::Entity child : getNodeChildren(_node))
     {
         collectNodeHierarchy(child, _nodes);
     }
@@ -338,14 +440,22 @@ bool ego::Level::attachNodeToParent(ecs::Entity _node, ecs::Entity _parent)
         return false;
     }
 
-    const auto childIt = std::find(
-        parentComponent->m_children.begin(),
-        parentComponent->m_children.end(),
-        _node
-    );
-    if (childIt == parentComponent->m_children.end())
+    if (parentComponent->m_lastChild)
     {
-        parentComponent->m_children.push_back(_node);
+        SceneNodeComponent* lastChildComponent = m_world->tryGetComponent<SceneNodeComponent>(parentComponent->m_lastChild);
+        if (!lastChildComponent)
+        {
+            return false;
+        }
+
+        lastChildComponent->m_nextSibling = _node;
+        nodeComponent->m_previousSibling = parentComponent->m_lastChild;
+        parentComponent->m_lastChild = _node;
+    }
+    else
+    {
+        parentComponent->m_firstChild = _node;
+        parentComponent->m_lastChild = _node;
     }
 
     nodeComponent->m_parent = _parent;
@@ -365,16 +475,37 @@ void ego::Level::detachNodeFromParent(ecs::Entity _node)
     SceneNodeComponent* parentComponent = m_world->tryGetComponent<SceneNodeComponent>(nodeComponent->m_parent);
     if (parentComponent)
     {
-        parentComponent->m_children.erase(
-            std::remove(
-                parentComponent->m_children.begin(),
-                parentComponent->m_children.end(),
-                _node
-            ),
-            parentComponent->m_children.end()
-        );
+        if (parentComponent->m_firstChild == _node)
+        {
+            parentComponent->m_firstChild = nodeComponent->m_nextSibling;
+        }
+
+        if (parentComponent->m_lastChild == _node)
+        {
+            parentComponent->m_lastChild = nodeComponent->m_previousSibling;
+        }
+    }
+
+    if (nodeComponent->m_previousSibling)
+    {
+        SceneNodeComponent* previousSiblingComponent = m_world->tryGetComponent<SceneNodeComponent>(nodeComponent->m_previousSibling);
+        if (previousSiblingComponent)
+        {
+            previousSiblingComponent->m_nextSibling = nodeComponent->m_nextSibling;
+        }
+    }
+
+    if (nodeComponent->m_nextSibling)
+    {
+        SceneNodeComponent* nextSiblingComponent = m_world->tryGetComponent<SceneNodeComponent>(nodeComponent->m_nextSibling);
+        if (nextSiblingComponent)
+        {
+            nextSiblingComponent->m_previousSibling = nodeComponent->m_previousSibling;
+        }
     }
 
     nodeComponent->m_parent = ecs::Entity();
+    nodeComponent->m_previousSibling = ecs::Entity();
+    nodeComponent->m_nextSibling = ecs::Entity();
 }
 

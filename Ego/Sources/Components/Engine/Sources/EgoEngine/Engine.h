@@ -13,6 +13,7 @@
 #include "Graphic/RenderHardware/GraphicDevice.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Level/LevelController.h"
+#include "MainLoop.h"
 #include "Platform/Platform.h"
 #include "Platform/PlatformPlugin.h"
 #include "Plugin/EnginePluginController.h"
@@ -91,20 +92,21 @@ namespace ego::engine
         const PluginCatalog& getPluginCatalog() const;
         PluginCatalog& getPluginCatalog();
 
-    protected:
-        virtual JobGraphReference getMainLoopJobGraph();
-
-        void renderFrame();
+        const MainLoop& getMainLoop() const;
+        MainLoop& getMainLoop();
 
     private:
         bool initPluginController();
         bool initPlatform(const InitData& _initData);
         bool initPluginCatalog(const InitData& _initData);
         bool initGraphicDevice(const InitData& _initData);
+        bool initMainLoop();
 
         void beginFrame();
         void endFrame();
         bool prepareMainWindowPresenter();
+        JobGraphReference getMainLoopJobGraph();
+        void renderFrame();
 
         EnginePluginControllerPointer m_enginePluginController = nullptr;
 
@@ -114,6 +116,7 @@ namespace ego::engine
         LevelControllerPointer m_levelController = nullptr;
 
         PluginCatalog m_pluginCatalog;
+        MainLoop m_mainLoop;
 
         PlatformPointer m_platform = nullptr;
         GraphicDevicePointer m_graphicDevice = nullptr;

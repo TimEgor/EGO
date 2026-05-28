@@ -1,51 +1,8 @@
 #include "Framework.h"
 
 #include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/Job/Job.h"
+#include "EgoCore/Job/JobDescriptor.h"
 #include "EgoCore/UtilsMacros.h"
-
-namespace ego::framework
-{
-    class FrameworkEngine final : public engine::Engine
-    {
-    public:
-        explicit FrameworkEngine(Framework& _framework)
-            : m_framework(_framework)
-        {}
-
-    protected:
-        JobGraphReference getMainLoopJobGraph() override
-        {
-            JobGraphBuilder graphBuilder;
-
-            const JobGraphBuilder::JobGraphJobID updateLogicJobID = graphBuilder.addJob(
-                CreateLambdaJob(
-                    [this]()
-                    {
-                        m_framework.updateCurrentGameLogic(getDeltaTime());
-                    },
-                    "Game logic update"
-                )
-            );
-
-            graphBuilder.addJobAfter(
-                CreateLambdaJob(
-                    [this]()
-                    {
-                        renderFrame();
-                    },
-                    "Render"
-                ),
-                updateLogicJobID
-            );
-
-            return graphBuilder.getGraph();
-        }
-
-    private:
-        Framework& m_framework;
-    };
-}
 
 bool ego::framework::Framework::init(const Framework::InitData& _initData)
 {
@@ -105,6 +62,8 @@ ego::FileName ego::framework::Framework::selectProjectGameLogicPluginModule() co
 
 void ego::framework::Framework::release()
 {
+    m_updateGameLogicJobID = JobDescriptorID();
+
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_currentGameLogic);
     m_currentGameLogicPlugin = nullptr;
 
@@ -137,7 +96,7 @@ bool ego::framework::Framework::initEngine(const Framework::InitData& _initData)
 {
     engine::Engine::InitData engineInitData = _initData.m_engineInitData;
 
-    m_engine = new FrameworkEngine(*this);
+    m_engine = new engine::Engine();
     engine::EngineCore::GetInstance().init(m_engine);
 
     if (m_project)
@@ -151,8 +110,31 @@ bool ego::framework::Framework::initEngine(const Framework::InitData& _initData)
     }
 
     EGO_CHECK_RETURN_FALSE(m_engine && m_engine->init(engineInitData));
+    EGO_CHECK_RETURN_FALSE(registerGameLogicMainLoopJob());
 
     return true;
+}
+
+bool ego::framework::Framework::registerGameLogicMainLoopJob()
+{
+    EGO_ASSERT(m_engine);
+
+    engine::MainLoop& mainLoop = m_engine->getMainLoop();
+    const JobDescriptorID renderJobID = mainLoop.getRenderJobID();
+    EGO_CHECK_RETURN_FALSE(renderJobID.isValid());
+
+    m_updateGameLogicJobID = mainLoop.addJobBefore(
+        CreateJobDescriptor(
+            [this]()
+            {
+                updateCurrentGameLogic(m_engine->getDeltaTime());
+            },
+            "Game logic update"
+        ),
+        renderJobID
+    );
+
+    return m_updateGameLogicJobID.isValid();
 }
 
 void ego::framework::Framework::run()
@@ -251,4 +233,3 @@ ego::framework::Framework& ego::framework::GetFramework()
     EGO_ASSERT(framework);
     return *framework.get();
 }
-

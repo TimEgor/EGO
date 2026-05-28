@@ -5,8 +5,6 @@
 
 #include "EgoMath/Transform.h"
 
-#include <vector>
-
 namespace ego
 {
     struct SceneNodeComponent final : public ecs::Component
@@ -15,7 +13,10 @@ namespace ego
         explicit SceneNodeComponent(ecs::Entity _parent);
 
         ecs::Entity m_parent;
-        std::vector<ecs::Entity> m_children;
+        ecs::Entity m_firstChild;
+        ecs::Entity m_lastChild;
+        ecs::Entity m_previousSibling;
+        ecs::Entity m_nextSibling;
     };
 
     struct TransformComponent final : public ecs::Component

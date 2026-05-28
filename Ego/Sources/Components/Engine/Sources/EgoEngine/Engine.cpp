@@ -1,8 +1,8 @@
 #include "Engine.h"
 
 #include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/Job/Job.h"
 #include "EgoCore/Job/JobController.h"
+#include "EgoCore/Job/JobDescriptor.h"
 
 #include "Event/EventController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
@@ -42,11 +42,15 @@ bool ego::engine::Engine::init(const Engine::InitData& _initData)
     m_render = new DefaultRender();
     EGO_CHECK_INITIALIZATION(m_render && m_render->init());
 
+    EGO_CHECK_INITIALIZATION(initMainLoop());
+
     return true;
 }
 
 void ego::engine::Engine::release()
 {
+    m_mainLoop.release();
+
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
@@ -96,6 +100,13 @@ void ego::engine::Engine::run()
         //m_inputDeviceController->update();
 
         JobGraphReference mainLoopJobGraph = getMainLoopJobGraph();
+        if (!mainLoopJobGraph)
+        {
+            EGO_ASSERT_FAIL_MESSAGE("Main loop job graph is invalid.");
+            stop();
+            continue;
+        }
+
         m_jobController->addJobGraph(mainLoopJobGraph);
         m_jobController->waitAndExecute(mainLoopJobGraph);
 
@@ -252,18 +263,7 @@ void ego::engine::Engine::clearRenderCameraEntity()
 
 ego::JobGraphReference ego::engine::Engine::getMainLoopJobGraph()
 {
-    JobGraphBuilder graphBuilder;
-    graphBuilder.addJob(
-        CreateLambdaJob(
-            [this]()
-            {
-                renderFrame();
-            },
-            "Render"
-        )
-    );
-
-    return graphBuilder.getGraph();
+    return m_mainLoop.createJobGraph();
 }
 
 const ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog() const
@@ -274,6 +274,16 @@ const ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog() const
 ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog()
 {
     return m_pluginCatalog;
+}
+
+const ego::engine::MainLoop& ego::engine::Engine::getMainLoop() const
+{
+    return m_mainLoop;
+}
+
+ego::engine::MainLoop& ego::engine::Engine::getMainLoop()
+{
+    return m_mainLoop;
 }
 
 bool ego::engine::Engine::initPluginController()
@@ -342,6 +352,19 @@ bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
     EGO_CHECK_RETURN_FALSE(m_graphicDevice && m_graphicDevice->init(GraphicDevice::InitParams()));
 
     return true;
+}
+
+bool ego::engine::Engine::initMainLoop()
+{
+    return m_mainLoop.init(
+        CreateJobDescriptor(
+            [this]()
+            {
+                renderFrame();
+            },
+            "Render"
+        )
+    );
 }
 
 void ego::engine::Engine::beginFrame()

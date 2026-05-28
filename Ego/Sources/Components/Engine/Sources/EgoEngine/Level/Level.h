@@ -30,9 +30,6 @@ namespace ego
     class Level final : public NonCopyable
     {
     public:
-        explicit Level(LevelID _id);
-        ~Level();
-
         class LevelAccessor final : public NonInstanceable
         {
             friend class LevelController;
@@ -40,6 +37,42 @@ namespace ego
 
             static void Destroy(Level* _level);
         };
+
+        class NodeChildIterator final
+        {
+        public:
+            NodeChildIterator() = default;
+            NodeChildIterator(const Level* _level, ecs::Entity _node);
+
+            ecs::Entity operator*() const;
+            NodeChildIterator& operator++();
+            NodeChildIterator operator++(int);
+
+            bool operator==(const NodeChildIterator& _iterator) const;
+            bool operator!=(const NodeChildIterator& _iterator) const;
+
+        private:
+            const Level* m_level = nullptr;
+            ecs::Entity m_node;
+            ecs::Entity m_nextNode;
+        };
+
+        class NodeChildRange final
+        {
+        public:
+            NodeChildRange() = default;
+            NodeChildRange(const Level* _level, ecs::Entity _parent);
+
+            NodeChildIterator begin() const;
+            NodeChildIterator end() const;
+
+        private:
+            const Level* m_level = nullptr;
+            ecs::Entity m_parent;
+        };
+
+        explicit Level(LevelID _id);
+        ~Level();
 
         LevelID getID() const;
         bool isValid() const;
@@ -75,7 +108,11 @@ namespace ego
 
         bool setNodeParent(ecs::Entity _node, ecs::Entity _parent);
         ecs::Entity getNodeParent(ecs::Entity _node) const;
-        const std::vector<ecs::Entity>* getNodeChildren(ecs::Entity _node) const;
+        NodeChildRange getNodeChildren(ecs::Entity _node) const;
+        ecs::Entity getFirstNodeChild(ecs::Entity _node) const;
+        ecs::Entity getLastNodeChild(ecs::Entity _node) const;
+        ecs::Entity getPreviousNodeSibling(ecs::Entity _node) const;
+        ecs::Entity getNextNodeSibling(ecs::Entity _node) const;
 
         void clear();
 

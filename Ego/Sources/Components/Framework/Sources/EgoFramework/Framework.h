@@ -16,12 +16,8 @@
 
 namespace ego::framework
 {
-    class FrameworkEngine;
-
     class Framework : public NonCopyable
     {
-        friend class FrameworkEngine;
-
     public:
         struct InitData final
         {
@@ -47,6 +43,7 @@ namespace ego::framework
         bool initPluginController();
         void releasePluginController();
         bool initEngine(const InitData& _initData);
+        bool registerGameLogicMainLoopJob();
         FileName selectProjectGameLogicPluginModule() const;
         void updateCurrentGameLogic(float _deltaTime);
 
@@ -58,6 +55,7 @@ namespace ego::framework
         GameLogicPluginControllerPointer m_gameLogicPluginController = nullptr;
         GameLogicPluginPointer m_currentGameLogicPlugin = nullptr;
         GameLogicPointer m_currentGameLogic = nullptr;
+        JobDescriptorID m_updateGameLogicJobID;
     };
 
     EGO_POINTER(Framework);
