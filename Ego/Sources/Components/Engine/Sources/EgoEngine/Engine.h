@@ -9,7 +9,7 @@
 
 #include "Event/EventController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
-#include "Graphic/Render/DefaultRender.h"
+#include "Graphic/Render/RenderPlugin.h"
 #include "Graphic/RenderHardware/GraphicDevice.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Level/LevelController.h"
@@ -42,6 +42,7 @@ namespace ego::engine
 
             void* m_nativeInstanceHandle = nullptr;
             FileName m_platformPluginModuleName;
+            FileName m_renderPluginModuleName;
             FileName m_renderHardwarePluginModuleName;
             PluginDirectoryCollection m_pluginDirectories;
         };
@@ -82,8 +83,8 @@ namespace ego::engine
         const LevelController& getLevelController() const;
         LevelController& getLevelController();
 
-        const DefaultRender& getRender() const;
-        DefaultRender& getRender();
+        const Render& getRender() const;
+        Render& getRender();
 
         ecs::Entity getRenderCameraEntity() const;
         void setRenderCameraEntity(ecs::Entity _cameraEntity);
@@ -100,6 +101,7 @@ namespace ego::engine
         bool initPlatform(const InitData& _initData);
         bool initPluginCatalog(const InitData& _initData);
         bool initGraphicDevice(const InitData& _initData);
+        bool initRender(const InitData& _initData);
         bool initMainLoop();
 
         void beginFrame();
@@ -107,6 +109,8 @@ namespace ego::engine
         bool prepareMainWindowPresenter();
         JobGraphReference getMainLoopJobGraph();
         void renderFrame();
+        void presentFrame();
+        void prepareRenderFrame();
 
         EnginePluginControllerPointer m_enginePluginController = nullptr;
 
@@ -121,9 +125,10 @@ namespace ego::engine
         PlatformPointer m_platform = nullptr;
         GraphicDevicePointer m_graphicDevice = nullptr;
         WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
-        DefaultRenderPointer m_render = nullptr;
+        RenderPointer m_render = nullptr;
 
         PlatformPluginPointer m_platformPlugin = nullptr;
+        RenderPluginPointer m_renderPlugin = nullptr;
         RenderHardwarePluginPointer m_renderHardwarePlugin = nullptr;
 
         ClockTimePoint m_startTime;

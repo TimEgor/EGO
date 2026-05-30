@@ -1,0 +1,97 @@
+#pragma once
+
+#include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Patterns/Singleton.h"
+#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/UtilsMacros.h"
+
+#include <atomic>
+#include <mutex>
+
+namespace ego::profile
+{
+    class Profiler
+    {
+    public:
+        Profiler() = default;
+        virtual ~Profiler() = default;
+
+        virtual void beginEvent(const char* _titleName, const char* _contextName = nullptr) = 0;
+        virtual void endEvent() = 0;
+    };
+
+    EGO_POINTER(Profiler);
+
+    class ProfilerController final : public NonCopyable
+    {
+    public:
+        ProfilerController();
+
+        bool setProfiler(const ProfilerPointer& _profiler);
+        void resetProfiler(const ProfilerPointer& _profiler = nullptr);
+
+        ProfilerPointer getProfiler() const;
+
+        void beginEvent(const char* _titleName, const char* _contextName = nullptr) const;
+        void endEvent() const;
+
+    private:
+        mutable std::mutex m_lock;
+        ProfilerPointer m_profiler = nullptr;
+        std::atomic<Profiler*> m_profilerRaw;
+    };
+
+    EGO_POINTER(ProfilerController);
+
+    class ProfileCore final : public Singleton<ProfileCore>
+    {
+    public:
+        ProfileCore();
+
+        void setController(const ProfilerControllerPointer& _controller);
+        ProfilerControllerPointer getController() const;
+
+    private:
+        ProfilerControllerPointer m_controller = nullptr;
+    };
+
+    ProfilerControllerPointer GetProfilerController();
+
+    void BeginEvent(const char* _titleName, const char* _contextName = nullptr);
+    void EndEvent();
+
+    class ProfileEvent final
+    {
+    public:
+        ProfileEvent(const char* _titleName, const char* _contextName = nullptr);
+        ~ProfileEvent();
+
+    private:
+        bool m_isActive = false;
+    };
+}
+
+#ifndef EGO_CONFIG_RETAIL
+#define EGO_PROFILE_SCOPE_NAME(SCOPE) EGO_CONCAT_DEF(profileEvent_, SCOPE)
+#define EGO_PROFILE_GENERIC_SCOPE_NAME() EGO_PROFILE_SCOPE_NAME(EGO_COUNTER)
+
+#define EGO_PROFILE_BEGIN_EVENT(TITLE) ego::profile::BeginEvent(TITLE)
+#define EGO_PROFILE_BEGIN_EVENT_CONTEXT(TITLE, CONTEXT) ego::profile::BeginEvent(TITLE, CONTEXT)
+#define EGO_PROFILE_END_EVENT() ego::profile::EndEvent()
+
+#define EGO_PROFILE_BLOCK_EVENT(TITLE) ego::profile::ProfileEvent EGO_PROFILE_GENERIC_SCOPE_NAME()(TITLE)
+#define EGO_PROFILE_BLOCK_EVENT_CONTEXT(TITLE, CONTEXT) \
+    ego::profile::ProfileEvent EGO_PROFILE_GENERIC_SCOPE_NAME()(TITLE, CONTEXT)
+#define EGO_PROFILE_FUNCTION() EGO_PROFILE_BLOCK_EVENT(EGO_FUNCTION_NAME)
+#else
+#define EGO_PROFILE_SCOPE_NAME(SCOPE)
+#define EGO_PROFILE_GENERIC_SCOPE_NAME()
+
+#define EGO_PROFILE_BEGIN_EVENT(TITLE) ((void)0)
+#define EGO_PROFILE_BEGIN_EVENT_CONTEXT(TITLE, CONTEXT) ((void)0)
+#define EGO_PROFILE_END_EVENT() ((void)0)
+
+#define EGO_PROFILE_BLOCK_EVENT(TITLE) ((void)0)
+#define EGO_PROFILE_BLOCK_EVENT_CONTEXT(TITLE, CONTEXT) ((void)0)
+#define EGO_PROFILE_FUNCTION() ((void)0)
+#endif

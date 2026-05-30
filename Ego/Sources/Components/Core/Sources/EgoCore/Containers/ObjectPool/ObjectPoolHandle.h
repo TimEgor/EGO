@@ -1,141 +1,110 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 
 namespace ego
 {
-    struct ObjectPoolHandleStorage8 final
+    template <typename HandleKeyType, typename HandleIndexType, typename HandleVersionType, uint8_t HandleIndexBits>
+    struct ObjectPoolHandleStorageBase
     {
-        using KeyType = uint8_t;
-        using IndexType = uint8_t;
-        using VersionType = uint8_t;
+        using KeyType = HandleKeyType;
+        using IndexType = HandleIndexType;
+        using VersionType = HandleVersionType;
+
+        static_assert(std::is_unsigned_v<KeyType>);
+        static_assert(std::is_unsigned_v<IndexType>);
+        static_assert(std::is_unsigned_v<VersionType>);
+
+        static constexpr uint8_t KeyBits = static_cast<uint8_t>(sizeof(KeyType) * 8);
+        static constexpr uint8_t IndexBits = HandleIndexBits;
+        static constexpr uint8_t VersionBits = KeyBits - IndexBits;
+
+        static_assert(IndexBits > 0);
+        static_assert(IndexBits < KeyBits);
+        static_assert(VersionBits > 0);
 
         static constexpr KeyType InvalidKey = 0;
         static constexpr VersionType InvalidVersion = 0;
 
-        union
-        {
-            KeyType m_key = InvalidKey;
+        static constexpr KeyType IndexMask = (KeyType(1) << IndexBits) - 1;
+        static constexpr KeyType VersionMask = (KeyType(1) << VersionBits) - 1;
+        static constexpr IndexType MaxIndex = static_cast<IndexType>(IndexMask);
+        static constexpr VersionType MaxVersion = static_cast<VersionType>(VersionMask);
 
-            struct
-            {
-                IndexType m_index : 4;
-                VersionType m_version : 4;
-            };
-        };
+        KeyType m_key = InvalidKey;
 
-        constexpr ObjectPoolHandleStorage8() = default;
-        constexpr ObjectPoolHandleStorage8(KeyType _key): m_key(_key) {}
-
-        constexpr ObjectPoolHandleStorage8(IndexType _index, VersionType _version)
-            : m_index(_index),
-              m_version(_version)
+        constexpr ObjectPoolHandleStorageBase() noexcept = default;
+        constexpr ObjectPoolHandleStorageBase(KeyType _key) noexcept
+            : m_key(_key)
         {}
 
-        constexpr ObjectPoolHandleStorage8(const ObjectPoolHandleStorage8&) = default;
-
-        IndexType getIndex() const { return m_index; }
-        VersionType getVersion() const { return m_version; }
-    };
-
-    struct ObjectPoolHandleStorage16 final
-    {
-        using KeyType = uint16_t;
-        using IndexType = uint8_t;
-        using VersionType = uint8_t;
-
-        static constexpr KeyType InvalidKey = 0;
-        static constexpr VersionType InvalidVersion = 0;
-
-        union
-        {
-            KeyType m_key = InvalidKey;
-
-            struct
-            {
-                IndexType m_index;
-                VersionType m_version;
-            };
-        };
-
-        constexpr ObjectPoolHandleStorage16() = default;
-        constexpr ObjectPoolHandleStorage16(KeyType _key): m_key(_key) {}
-
-        constexpr ObjectPoolHandleStorage16(IndexType _index, VersionType _version)
-            : m_index(_index),
-              m_version(_version)
+        constexpr ObjectPoolHandleStorageBase(IndexType _index, VersionType _version) noexcept
+            : m_key(makeKey(_index, _version))
         {}
 
-        constexpr ObjectPoolHandleStorage16(const ObjectPoolHandleStorage16&) = default;
+        constexpr ObjectPoolHandleStorageBase(const ObjectPoolHandleStorageBase&) noexcept = default;
+        constexpr ObjectPoolHandleStorageBase& operator=(const ObjectPoolHandleStorageBase&) noexcept = default;
 
-        IndexType getIndex() const { return m_index; }
-        VersionType getVersion() const { return m_version; }
+        static constexpr KeyType makeKey(IndexType _index, VersionType _version) noexcept
+        {
+            const KeyType index = static_cast<KeyType>(_index) & IndexMask;
+            const KeyType version = static_cast<KeyType>(_version) & VersionMask;
+            return index | (version << IndexBits);
+        }
+
+        static constexpr IndexType getIndex(KeyType _key) noexcept
+        {
+            return static_cast<IndexType>(_key & IndexMask);
+        }
+
+        static constexpr VersionType getVersion(KeyType _key) noexcept
+        {
+            return static_cast<VersionType>((_key >> IndexBits) & VersionMask);
+        }
+
+        constexpr IndexType getIndex() const noexcept { return getIndex(m_key); }
+        constexpr VersionType getVersion() const noexcept { return getVersion(m_key); }
     };
 
-    struct ObjectPoolHandleStorage32 final
+    struct ObjectPoolHandleStorage8 final : ObjectPoolHandleStorageBase<uint8_t, uint8_t, uint8_t, 4>
     {
-        using KeyType = uint32_t;
-        using IndexType = uint16_t;
-        using VersionType = uint16_t;
+        using BaseType = ObjectPoolHandleStorageBase<uint8_t, uint8_t, uint8_t, 4>;
+        using BaseType::BaseType;
 
-        static constexpr KeyType InvalidKey = 0;
-        static constexpr VersionType InvalidVersion = 0;
-
-        union
-        {
-            KeyType m_key = InvalidKey;
-
-            struct
-            {
-                IndexType m_index;
-                VersionType m_version;
-            };
-        };
-
-        constexpr ObjectPoolHandleStorage32() = default;
-        constexpr ObjectPoolHandleStorage32(KeyType _key): m_key(_key) {}
-
-        constexpr ObjectPoolHandleStorage32(IndexType _index, VersionType _version)
-            : m_index(_index),
-              m_version(_version) {}
-
-        constexpr ObjectPoolHandleStorage32(const ObjectPoolHandleStorage32&) = default;
-
-        IndexType getIndex() const { return m_index; }
-        VersionType getVersion() const { return m_version; }
+        constexpr ObjectPoolHandleStorage8() noexcept = default;
+        constexpr ObjectPoolHandleStorage8(const ObjectPoolHandleStorage8&) noexcept = default;
+        constexpr ObjectPoolHandleStorage8& operator=(const ObjectPoolHandleStorage8&) noexcept = default;
     };
 
-    struct ObjectPoolHandleStorage64 final
+    struct ObjectPoolHandleStorage16 final : ObjectPoolHandleStorageBase<uint16_t, uint8_t, uint8_t, 8>
     {
-        using KeyType = uint64_t;
-        using IndexType = uint32_t;
-        using VersionType = uint32_t;
+        using BaseType = ObjectPoolHandleStorageBase<uint16_t, uint8_t, uint8_t, 8>;
+        using BaseType::BaseType;
 
-        static constexpr KeyType InvalidKey = 0;
-        static constexpr VersionType InvalidVersion = 0;
+        constexpr ObjectPoolHandleStorage16() noexcept = default;
+        constexpr ObjectPoolHandleStorage16(const ObjectPoolHandleStorage16&) noexcept = default;
+        constexpr ObjectPoolHandleStorage16& operator=(const ObjectPoolHandleStorage16&) noexcept = default;
+    };
 
-        union
-        {
-            KeyType m_key = InvalidKey;
+    struct ObjectPoolHandleStorage32 final : ObjectPoolHandleStorageBase<uint32_t, uint16_t, uint16_t, 16>
+    {
+        using BaseType = ObjectPoolHandleStorageBase<uint32_t, uint16_t, uint16_t, 16>;
+        using BaseType::BaseType;
 
-            struct
-            {
-                IndexType m_index;
-                VersionType m_version;
-            };
-        };
+        constexpr ObjectPoolHandleStorage32() noexcept = default;
+        constexpr ObjectPoolHandleStorage32(const ObjectPoolHandleStorage32&) noexcept = default;
+        constexpr ObjectPoolHandleStorage32& operator=(const ObjectPoolHandleStorage32&) noexcept = default;
+    };
 
-        constexpr ObjectPoolHandleStorage64() = default;
-        constexpr ObjectPoolHandleStorage64(KeyType _key): m_key(_key) {}
+    struct ObjectPoolHandleStorage64 final : ObjectPoolHandleStorageBase<uint64_t, uint32_t, uint32_t, 32>
+    {
+        using BaseType = ObjectPoolHandleStorageBase<uint64_t, uint32_t, uint32_t, 32>;
+        using BaseType::BaseType;
 
-        constexpr ObjectPoolHandleStorage64(IndexType _index, VersionType _version)
-            : m_index(_index),
-              m_version(_version) {}
-
-        constexpr ObjectPoolHandleStorage64(const ObjectPoolHandleStorage64&) = default;
-
-        IndexType getIndex() const { return m_index; }
-        VersionType getVersion() const { return m_version; }
+        constexpr ObjectPoolHandleStorage64() noexcept = default;
+        constexpr ObjectPoolHandleStorage64(const ObjectPoolHandleStorage64&) noexcept = default;
+        constexpr ObjectPoolHandleStorage64& operator=(const ObjectPoolHandleStorage64&) noexcept = default;
     };
 
     template <typename ObjectPoolHandleStorageType>
@@ -149,40 +118,86 @@ namespace ego
 
         static constexpr KeyType InvalidKey = ObjectPoolHandleStorageType::InvalidKey;
         static constexpr VersionType InvalidVersion = ObjectPoolHandleStorageType::InvalidVersion;
+        static constexpr IndexType MaxIndex = ObjectPoolHandleStorageType::MaxIndex;
+        static constexpr VersionType MaxVersion = ObjectPoolHandleStorageType::MaxVersion;
 
         HandleStorageType m_handle;
 
-        constexpr ObjectPoolHandle() = default;
-        constexpr ObjectPoolHandle(KeyType _key): m_handle(_key) {}
+        constexpr ObjectPoolHandle() noexcept = default;
+        constexpr ObjectPoolHandle(KeyType _key) noexcept
+            : m_handle(_key)
+        {}
 
-        constexpr ObjectPoolHandle(IndexType _index, VersionType _version)
-            : m_handle(_index, _version) {}
+        constexpr ObjectPoolHandle(IndexType _index, VersionType _version) noexcept
+            : m_handle(_index, _version)
+        {}
 
-        constexpr ObjectPoolHandle(HandleStorageType _handle): m_handle(_handle) {}
-        constexpr ObjectPoolHandle(const ObjectPoolHandle&) = default;
+        constexpr ObjectPoolHandle(HandleStorageType _handle) noexcept
+            : m_handle(_handle)
+        {}
 
-        inline KeyType getKey() const { return m_handle.m_key; }
-        inline IndexType getIndex() const { return m_handle.getIndex(); }
-        inline VersionType getVersion() const { return m_handle.getVersion(); }
+        constexpr ObjectPoolHandle(const ObjectPoolHandle&) noexcept = default;
+        constexpr ObjectPoolHandle& operator=(const ObjectPoolHandle&) noexcept = default;
 
-        static KeyType makeKey(IndexType _index, VersionType _version)
+        constexpr KeyType getKey() const noexcept { return m_handle.m_key; }
+        constexpr IndexType getIndex() const noexcept { return m_handle.getIndex(); }
+        constexpr VersionType getVersion() const noexcept { return m_handle.getVersion(); }
+        constexpr bool isValid() const noexcept { return getKey() != InvalidKey; }
+
+        constexpr explicit operator bool() const noexcept { return isValid(); }
+
+        friend constexpr bool operator==(ObjectPoolHandle _left, ObjectPoolHandle _right) noexcept
         {
-            return HandleStorageType(_index, _version).m_key;
+            return _left.getKey() == _right.getKey();
         }
 
-        static IndexType getIndex(KeyType _key)
+        friend constexpr bool operator!=(ObjectPoolHandle _left, ObjectPoolHandle _right) noexcept
         {
-            return HandleStorageType(_key).getIndex();
+            return !(_left == _right);
         }
 
-        static VersionType getVersion(KeyType _key)
+        static constexpr bool canRepresentIndex(IndexType _index) noexcept
         {
-            return HandleStorageType(_key).getVersion();
+            return _index <= MaxIndex;
+        }
+
+        static constexpr bool canRepresentVersion(VersionType _version) noexcept
+        {
+            return _version <= MaxVersion;
+        }
+
+        static constexpr KeyType makeKey(IndexType _index, VersionType _version) noexcept
+        {
+            return HandleStorageType::makeKey(_index, _version);
+        }
+
+        static constexpr IndexType getIndex(KeyType _key) noexcept
+        {
+            return HandleStorageType::getIndex(_key);
+        }
+
+        static constexpr VersionType getVersion(KeyType _key) noexcept
+        {
+            return HandleStorageType::getVersion(_key);
         }
     };
+
+    static_assert(sizeof(ObjectPoolHandleStorage8) == sizeof(ObjectPoolHandleStorage8::KeyType));
+    static_assert(sizeof(ObjectPoolHandleStorage16) == sizeof(ObjectPoolHandleStorage16::KeyType));
+    static_assert(sizeof(ObjectPoolHandleStorage32) == sizeof(ObjectPoolHandleStorage32::KeyType));
+    static_assert(sizeof(ObjectPoolHandleStorage64) == sizeof(ObjectPoolHandleStorage64::KeyType));
 
     using ObjectPoolHandle8 = ObjectPoolHandle<ObjectPoolHandleStorage8>;
     using ObjectPoolHandle16 = ObjectPoolHandle<ObjectPoolHandleStorage16>;
     using ObjectPoolHandle32 = ObjectPoolHandle<ObjectPoolHandleStorage32>;
     using ObjectPoolHandle64 = ObjectPoolHandle<ObjectPoolHandleStorage64>;
+
+    static_assert(sizeof(ObjectPoolHandle8) == sizeof(ObjectPoolHandle8::KeyType));
+    static_assert(sizeof(ObjectPoolHandle16) == sizeof(ObjectPoolHandle16::KeyType));
+    static_assert(sizeof(ObjectPoolHandle32) == sizeof(ObjectPoolHandle32::KeyType));
+    static_assert(sizeof(ObjectPoolHandle64) == sizeof(ObjectPoolHandle64::KeyType));
+
+    static_assert(ObjectPoolHandle8::makeKey(0x0F, 0x0F) == 0xFF);
+    static_assert(ObjectPoolHandle16::makeKey(0xFF, 0xFF) == 0xFFFF);
+    static_assert(ObjectPoolHandle32::makeKey(0xFFFF, 0xFFFF) == 0xFFFFFFFF);
 }

@@ -1,3 +1,5 @@
+#include <string>
+
 #include "MaterialResource.h"
 
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
@@ -12,10 +14,9 @@ namespace
 {
     constexpr uint32_t DefaultVertexStride = sizeof(float) * 7;
 
-    const char* ReadText(const ego::XmlNode& _node, const char* _name)
+    std::string ReadText(const ego::XmlNode& _node, const char* _name)
     {
-        const ego::XmlNode child = _node.getChild(_name);
-        return child ? child.getValue().get<const char*>() : nullptr;
+        return _node.getChildValueOr<std::string>(_name, "");
     }
 
     ego::gpu::InputLayoutDesc CreateDefaultInputLayout()
@@ -67,18 +68,19 @@ bool ego::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContex
     XmlDocument document;
     EGO_CHECK_RETURN_FALSE(!_content.empty() && document.loadFromBuffer(_content.data(), _content.size()));
 
-    const XmlNode materialNode = document.getRootNode().getChild("Material");
+    const XmlNode materialNode = document.getRootNode();
     EGO_CHECK_RETURN_FALSE(materialNode);
+    EGO_CHECK_RETURN_FALSE(materialNode.getNameView() == "Material");
 
-    const char* vertexShaderPath = ReadText(materialNode, "VertexShader");
-    const char* pixelShaderPath = ReadText(materialNode, "PixelShader");
-    EGO_CHECK_RETURN_FALSE(vertexShaderPath && vertexShaderPath[0]);
-    EGO_CHECK_RETURN_FALSE(pixelShaderPath && pixelShaderPath[0]);
+    const std::string vertexShaderPath = ReadText(materialNode, "VertexShader");
+    const std::string pixelShaderPath = ReadText(materialNode, "PixelShader");
+    EGO_CHECK_RETURN_FALSE(!vertexShaderPath.empty());
+    EGO_CHECK_RETURN_FALSE(!pixelShaderPath.empty());
 
     gpu::VertexShaderResourcePointer vertexShaderResource =
-        _loadingContext.loadResource<gpu::VertexShaderResource>(vertexShaderPath);
+        _loadingContext.loadResource<gpu::VertexShaderResource>(vertexShaderPath.c_str());
     gpu::PixelShaderResourcePointer pixelShaderResource =
-        _loadingContext.loadResource<gpu::PixelShaderResource>(pixelShaderPath);
+        _loadingContext.loadResource<gpu::PixelShaderResource>(pixelShaderPath.c_str());
 
     EGO_CHECK_RETURN_FALSE(vertexShaderResource && vertexShaderResource->isLoaded());
     EGO_CHECK_RETURN_FALSE(pixelShaderResource && pixelShaderResource->isLoaded());

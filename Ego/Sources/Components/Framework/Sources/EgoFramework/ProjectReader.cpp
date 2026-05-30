@@ -1,27 +1,37 @@
+#include <string>
+
 #include "ProjectReader.h"
 
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include <cstring>
-
 namespace
 {
-    bool IsEmptyString(const char* _value)
-    {
-        return !_value || _value[0] == '\0';
-    }
-
     void ReadGameLogicPluginNode(const ego::XmlNode& _pluginNode, ego::framework::Project& _project)
     {
-        const char* name = _pluginNode.getAttributeValue("Name");
-        const char* moduleName = _pluginNode.getAttributeValue("Module");
-        if (!IsEmptyString(name) || !IsEmptyString(moduleName))
+        const std::string name = _pluginNode.getAttributeOr<std::string>("Name", "");
+        const std::string moduleName = _pluginNode.getAttributeOr<std::string>("Module", "");
+        if (!name.empty() || !moduleName.empty())
         {
             _project.addGameLogicPlugin(
-                name,
-                IsEmptyString(moduleName) ? ego::FileName() : ego::FileName(moduleName)
+                name.c_str(),
+                moduleName.empty() ? ego::FileName() : ego::FileName(moduleName)
+            );
+        }
+    }
+
+    void ReadPluginNode(const ego::XmlNode& _pluginNode, ego::framework::Project& _project)
+    {
+        const std::string type = _pluginNode.getAttributeOr<std::string>("Type", "");
+        const std::string name = _pluginNode.getAttributeOr<std::string>("Name", "");
+        const std::string moduleName = _pluginNode.getAttributeOr<std::string>("Module", "");
+        if (!type.empty() && (!name.empty() || !moduleName.empty()))
+        {
+            _project.addPlugin(
+                type.c_str(),
+                name.c_str(),
+                moduleName.empty() ? ego::FileName() : ego::FileName(moduleName)
             );
         }
     }
@@ -34,19 +44,20 @@ bool ego::framework::ProjectReader::ReadFromFile(const FileName& _fileName, Proj
     XmlDocument document;
     EGO_CHECK_RETURN_FALSE(document.loadFromFile(_fileName));
 
-    const XmlNode rootNode = document.getRootNode().getFirstChild();
+    const XmlNode rootNode = document.getRootNode();
     return ReadFromRootNode(rootNode, _project);
 }
 
 bool ego::framework::ProjectReader::ReadFromRootNode(const XmlNode& _rootNode, Project& _project)
 {
     EGO_CHECK_RETURN_FALSE(_rootNode);
-    EGO_CHECK_RETURN_FALSE(std::strcmp(_rootNode.getName(), "Project") == 0);
+    EGO_CHECK_RETURN_FALSE(_rootNode.getNameView() == "Project");
 
     _project.clear();
 
     ReadAssetDirectories(_rootNode, _project);
     ReadPluginDirectories(_rootNode, _project);
+    ReadPlugins(_rootNode, _project);
     ReadGameLogic(_rootNode, _project);
     ReadGameLogicPlugins(_rootNode, _project);
 
@@ -63,8 +74,8 @@ void ego::framework::ProjectReader::ReadAssetDirectories(const XmlNode& _rootNod
 
     for (const XmlNode assetDirectoryNode : assetDirectoriesNode.getChildren("AssetDirectory"))
     {
-        const char* path = assetDirectoryNode.getAttributeValue("Path");
-        if (!IsEmptyString(path))
+        const std::string path = assetDirectoryNode.getAttributeOr<std::string>("Path", "");
+        if (!path.empty())
         {
             _project.addAssetDirectory(path);
         }
@@ -81,11 +92,25 @@ void ego::framework::ProjectReader::ReadPluginDirectories(const XmlNode& _rootNo
 
     for (const XmlNode pluginDirectoryNode : pluginDirectoriesNode.getChildren("PluginDirectory"))
     {
-        const char* path = pluginDirectoryNode.getAttributeValue("Path");
-        if (!IsEmptyString(path))
+        const std::string path = pluginDirectoryNode.getAttributeOr<std::string>("Path", "");
+        if (!path.empty())
         {
             _project.addPluginDirectory(path);
         }
+    }
+}
+
+void ego::framework::ProjectReader::ReadPlugins(const XmlNode& _rootNode, Project& _project)
+{
+    const XmlNode pluginsNode = _rootNode.getChild("Plugins");
+    if (!pluginsNode)
+    {
+        return;
+    }
+
+    for (const XmlNode pluginNode : pluginsNode.getChildren("Plugin"))
+    {
+        ReadPluginNode(pluginNode, _project);
     }
 }
 

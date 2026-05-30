@@ -124,6 +124,11 @@ const char* ego::XmlNode::getName() const
 	return m_xmlNode.name();
 }
 
+std::string_view ego::XmlNode::getNameView() const
+{
+	return getName();
+}
+
 bool ego::XmlNode::setName(const char* _name)
 {
 	return m_xmlNode.set_name(_name);

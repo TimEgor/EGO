@@ -17,7 +17,12 @@ bool ego::XmlDocument::loadFromString(const char* _str)
 	return m_xmlDocument.load_string(_str);
 }
 
-ego::XmlNode ego::XmlDocument::getRootNode() const
+ego::XmlNode ego::XmlDocument::getDocumentNode() const
 {
 	return m_xmlDocument;
+}
+
+ego::XmlNode ego::XmlDocument::getRootNode() const
+{
+	return m_xmlDocument.document_element();
 }

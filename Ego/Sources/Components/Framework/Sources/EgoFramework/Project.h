@@ -15,12 +15,20 @@ namespace ego::framework
     public:
         using DirectoryCollection = std::vector<FileName>;
 
+        struct Plugin final
+        {
+            std::string m_type;
+            std::string m_name;
+            FileName m_moduleName;
+        };
+
         struct GameLogicPlugin final
         {
             std::string m_name;
             FileName m_moduleName;
         };
 
+        using PluginCollection = std::vector<Plugin>;
         using GameLogicPluginCollection = std::vector<GameLogicPlugin>;
 
         Project() = default;
@@ -28,6 +36,8 @@ namespace ego::framework
 
         bool addAssetDirectory(const FileName& _directory);
         bool addPluginDirectory(const FileName& _directory);
+        bool addPlugin(const Plugin& _plugin);
+        bool addPlugin(const char* _type, const char* _name, const FileName& _moduleName);
         bool addGameLogicPlugin(const GameLogicPlugin& _plugin);
         bool addGameLogicPlugin(const char* _name, const FileName& _moduleName);
 
@@ -35,11 +45,13 @@ namespace ego::framework
 
         const DirectoryCollection& getAssetDirectories() const;
         const DirectoryCollection& getPluginDirectories() const;
+        const PluginCollection& getPlugins() const;
         const GameLogicPluginCollection& getGameLogicPlugins() const;
 
     private:
         DirectoryCollection m_assetDirectories;
         DirectoryCollection m_pluginDirectories;
+        PluginCollection m_plugins;
         GameLogicPluginCollection m_gameLogicPlugins;
     };
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EgoMath/Vector.h"
+
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 #include "EgoECS/Entity.h"
@@ -11,6 +13,8 @@ namespace ego
 
     using RenderType = rtti::TypeMetaInfoID;
     inline constexpr RenderType InvalidRenderType = rtti::InvalidTypeMetaInfoID;
+    using RenderResolution = UInt32Vector2;
+    inline constexpr RenderResolution DefaultRenderResolution = RenderResolution(500, 500);
 
     class Render
     {
@@ -20,10 +24,15 @@ namespace ego
 
         virtual bool init() = 0;
         virtual void release() = 0;
+        virtual void clearResources() = 0;
 
-        virtual void render(GraphicPresenter& _presenter, Level& _level, ecs::Entity _cameraEntity) = 0;
+        virtual bool prepare(Level& _level, ecs::Entity _cameraEntity) = 0;
+        virtual void render() = 0;
         virtual void wait() = 0;
         virtual void present(GraphicPresenter& _presenter) = 0;
+
+        virtual void setResolution(const RenderResolution& _resolution) = 0;
+        virtual const RenderResolution& getResolution() const = 0;
 
         virtual RenderType getType() const = 0;
 

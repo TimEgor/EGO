@@ -4,6 +4,7 @@ function(ego_test_demo_config_project)
     set(TPL_TEST_DEMO_ASSETS_PATH "${EGO_TEST_DEMO_DIR}/Assets")
     set(TPL_TEST_DEMO_PLUGINS_PATH "${CMAKE_INSTALL_PREFIX}/Plugins")
     set(TPL_TEST_DEMO_GAME_PLUGINS_PATH "$<TARGET_FILE_DIR:EgoTestDemo>")
+
     configure_file(
         "${EGO_TEST_DEMO_DIR}/TestDemoProject.xml.tpl"
         "${CMAKE_CURRENT_BINARY_DIR}/TestDemoProject.xml.in"

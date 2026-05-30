@@ -11,6 +11,7 @@ void ego::JobQueue::release()
 
 	std::lock_guard locker(m_mutex);
 	m_isReleased = true;
+	m_queue.clear();
 
 	m_wakeCondition.notify_all();
 }
@@ -18,6 +19,11 @@ void ego::JobQueue::release()
 void ego::JobQueue::addJob(const JobReference& job)
 {
 	std::lock_guard locker(m_mutex);
+
+	if (m_isReleased)
+	{
+		return;
+	}
 
 	m_queue.push_back(job);
 	m_wakeCondition.notify_one();

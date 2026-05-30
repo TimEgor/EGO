@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "MeshResource.h"
 
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
@@ -6,8 +8,6 @@
 #include "EgoMath/Vector.h"
 
 #include "EgoEngine/Engine.h"
-
-#include <vector>
 
 namespace
 {
@@ -19,8 +19,7 @@ namespace
 
     float ReadFloat(const ego::XmlNode& _node, const char* _name, float _defaultValue = 0.0f)
     {
-        const ego::XmlNode child = _node.getChild(_name);
-        return child ? child.getValue().get<float>() : _defaultValue;
+        return _node.getChildValueOr(_name, _defaultValue);
     }
 
     MeshVertex ReadVertex(const ego::XmlNode& _node)
@@ -57,7 +56,10 @@ bool ego::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
     XmlDocument document;
     EGO_CHECK_RETURN_FALSE(!_content.empty() && document.loadFromBuffer(_content.data(), _content.size()));
 
-    const XmlNode meshNode = document.getRootNode().getChild("Mesh");
+    const XmlNode meshNode = document.getRootNode();
+    EGO_CHECK_RETURN_FALSE(meshNode);
+    EGO_CHECK_RETURN_FALSE(meshNode.getNameView() == "Mesh");
+
     const XmlNode verticesNode = meshNode.getChild("Vertices");
     EGO_CHECK_RETURN_FALSE(verticesNode);
 

@@ -4,6 +4,8 @@
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/String/Format.h"
 
+#include <thread>
+
 void ego::JobController::ThreadFunction(JobControllerWeakPointer _jobController)
 {
 	while (true)
@@ -40,6 +42,10 @@ bool ego::JobController::executeOnCurrentThread()
 	if (job)
 	{
 		job->execute();
+	}
+	else
+	{
+		std::this_thread::yield();
 	}
 
 	return true;
@@ -79,6 +85,8 @@ void ego::JobController::release()
 			thread.join();
 		}
 	}
+
+	m_threads.clear();
 }
 
 void ego::JobController::addJob(const JobReference& _job)
@@ -89,7 +97,22 @@ void ego::JobController::addJob(const JobReference& _job)
 		return;
 	}
 
-	_job->setExecutionContext(weakFromThis());
+	if (m_isStoped)
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job controller has been stopped.");
+		return;
+	}
+
+	if (_job->getState() != JobState::Undefined)
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job has been already scheduled.");
+		return;
+	}
+
+	if (!_job->trySetExecutionContext(weakFromThis()))
+	{
+		return;
+	}
 
 	m_jobQueue.addJob(_job);
 }
@@ -102,9 +125,23 @@ void ego::JobController::addJobGraph(const JobGraphReference& _jobGraph)
 		return;
 	}
 
-	_jobGraph->setExecutionContext(weakFromThis());
+	if (m_isStoped)
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job controller has been stopped.");
+		return;
+	}
 
-	const JobGraph::JobCollection baseGraphJobs = _jobGraph->getBaseJobs();
+	JobGraph::JobCollection baseGraphJobs;
+	if (!_jobGraph->schedule(weakFromThis(), baseGraphJobs))
+	{
+		return;
+	}
+
+	if (baseGraphJobs.empty())
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job graph has no base jobs.");
+		return;
+	}
 
 	for (const JobReference& job : baseGraphJobs)
 	{
@@ -127,11 +164,17 @@ void ego::JobController::waitAndExecute(const JobReference& job)
 		return;
 	}
 
+	if (job->getState() == JobState::Undefined)
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job hasn't been scheduled.");
+		return;
+	}
+
 	while(!job->isFinished())
 	{
 		if (!executeOnCurrentThread())
 		{
-			break;;
+			break;
 		}
 	}
 }
@@ -151,6 +194,12 @@ void ego::JobController::waitAndExecute(const JobGraphReference& _jobGraph)
 		return;
 	}
 
+	if (!_jobGraph->isScheduled())
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job graph hasn't been scheduled.");
+		return;
+	}
+
 	while (!_jobGraph->isFinished())
 	{
 		if (!executeOnCurrentThread())
@@ -162,7 +211,7 @@ void ego::JobController::waitAndExecute(const JobGraphReference& _jobGraph)
 
 uint32_t ego::JobController::getJobExecutorCount() const
 {
-	return m_threads.size();
+	return static_cast<uint32_t>(m_threads.size());
 }
 
 uint32_t ego::JobController::GetHardwareThreadCount()

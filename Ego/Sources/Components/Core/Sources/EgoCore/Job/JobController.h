@@ -42,6 +42,6 @@ namespace ego
 		ThreadCollection m_threads;
 		JobQueue m_jobQueue;
 
-		std::atomic_bool m_isStoped = false;
+		std::atomic_bool m_isStoped = true;
 	};
 }

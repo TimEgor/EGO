@@ -1,3 +1,7 @@
+#include <cctype>
+#include <cstring>
+#include <string>
+
 #include "PluginCatalogBuilder.h"
 
 #include "EgoCore/FileName/FileNameUtils.h"
@@ -5,10 +9,6 @@
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 
 #include "EgoEngine/Platform/FileSystem/FileSystem.h"
-
-#include <cctype>
-#include <cstring>
-#include <string>
 
 #ifndef EGO_MODULE_PLATFORM_NAME
 #define EGO_MODULE_PLATFORM_NAME ""
@@ -115,8 +115,10 @@ namespace
 
     bool IsManifestForCurrentModule(const ego::XmlNode& _manifestNode)
     {
-        return EqualsNoCase(_manifestNode.getAttributeValue("Platform"), EGO_MODULE_PLATFORM_NAME) &&
-            EqualsNoCase(_manifestNode.getAttributeValue("Configuration"), EGO_MODULE_CONFIGURATION_NAME);
+        const std::string platform = _manifestNode.getAttributeOr<std::string>("Platform", "");
+        const std::string configuration = _manifestNode.getAttributeOr<std::string>("Configuration", "");
+        return EqualsNoCase(platform.c_str(), EGO_MODULE_PLATFORM_NAME) &&
+            EqualsNoCase(configuration.c_str(), EGO_MODULE_CONFIGURATION_NAME);
     }
 }
 
@@ -180,7 +182,7 @@ size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifest(
 
     return AddPluginsFromManifestNode(
         _catalog,
-        document.getRootNode().getFirstChild(),
+        document.getRootNode(),
         ResolveModuleName(_fileSystem, _manifestPath)
     );
 }
@@ -196,7 +198,7 @@ size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifestNode(
         return 0;
     }
 
-    if (std::strcmp(_manifestNode.getName(), "PluginModule") != 0 || !IsManifestForCurrentModule(_manifestNode))
+    if (_manifestNode.getNameView() != "PluginModule" || !IsManifestForCurrentModule(_manifestNode))
     {
         return 0;
     }
@@ -218,15 +220,15 @@ bool ego::engine::PluginCatalogBuilder::AddPluginFromNode(
     const XmlNode& _pluginNode
 )
 {
-    const char* typeName = _pluginNode.getAttributeValue("Type");
-    const char* name = _pluginNode.getAttributeValue("Name");
-    if (IsEmptyString(typeName) || IsEmptyString(name))
+    const std::string typeName = _pluginNode.getAttributeOr<std::string>("Type", "");
+    const std::string name = _pluginNode.getAttributeOr<std::string>("Name", "");
+    if (typeName.empty() || name.empty())
     {
         return false;
     }
 
     PluginCatalog::Plugin plugin;
-    plugin.m_type = ego::GetPluginType(typeName);
+    plugin.m_type = ego::GetPluginType(typeName.c_str());
     plugin.m_name = name;
 
     _entry.m_plugins.push_back(plugin);

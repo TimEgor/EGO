@@ -38,6 +38,16 @@ namespace ego
 
         FileName selectPluginModule(const char* _pluginTypeName);
 
+        PluginPointer loadPlugin(const FileName& _moduleName, const char* _pluginTypeName)
+        {
+            if (!_pluginTypeName || _pluginTypeName[0] == '\0')
+            {
+                return nullptr;
+            }
+
+            return loadPlugin(_moduleName, GetPluginType(_pluginTypeName), _pluginTypeName);
+        }
+
         template <typename TPlugin>
         FileName selectPluginModule()
         {

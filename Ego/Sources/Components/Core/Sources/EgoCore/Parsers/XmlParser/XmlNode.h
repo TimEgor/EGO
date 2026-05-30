@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "XmlNodeValue.h"
 
 namespace ego
@@ -77,6 +79,7 @@ namespace ego
 			: m_xmlNode(_pugiXmlNode) {}
 
 		operator bool() const { return m_xmlNode; }
+		bool isValid() const { return m_xmlNode; }
 
 		XmlNode getChild(const char* _name) const;
 
@@ -90,11 +93,95 @@ namespace ego
 		XmlNode getPrevSibling() const;
 
 		const char* getName() const;
+		std::string_view getNameView() const;
 		bool setName(const char* _name);
 
 		bool hasAttribute(const char* _name) const;
 		const char* getAttributeValue(const char* _name) const;
+
+		template <typename T>
+		bool tryGetAttribute(const char* _name, T& _val) const;
+
+		template <typename T>
+		T getAttributeOr(const char* _name, const T& _defaultVal) const;
 		
 		XmlNodeValue getValue() const;
+
+		template <typename T>
+		bool tryGetChildValue(const char* _name, T& _val) const;
+
+		template <typename T>
+		T getChildValueOr(const char* _name, const T& _defaultVal) const;
 	};
+
+	template <typename T>
+	bool XmlNode::tryGetAttribute(const char* _name, T& _val) const
+	{
+		if (_name == nullptr)
+		{
+			return false;
+		}
+
+		const pugi::xml_attribute attribute = m_xmlNode.attribute(_name);
+		return attribute && TryParseXmlValue(attribute.value(), _val);
+	}
+
+	template <typename T>
+	T XmlNode::getAttributeOr(const char* _name, const T& _defaultVal) const
+	{
+		T result = _defaultVal;
+		return tryGetAttribute(_name, result) ? result : _defaultVal;
+	}
+
+	template <typename T>
+	bool XmlNode::tryGetChildValue(const char* _name, T& _val) const
+	{
+		if (_name == nullptr)
+		{
+			return false;
+		}
+
+		const XmlNode child = getChild(_name);
+		return child && child.getValue().tryGet(_val);
+	}
+
+	template <typename T>
+	T XmlNode::getChildValueOr(const char* _name, const T& _defaultVal) const
+	{
+		T result = _defaultVal;
+		return tryGetChildValue(_name, result) ? result : _defaultVal;
+	}
+}
+
+namespace ego::xml_parser_interface
+{
+	template <typename T>
+	void GetValue(const XmlNode& _node, T& _val)
+	{
+		_val = _node.getValue().get<T>();
+	}
+
+	template <typename T>
+	void GetValue(const XmlNode& _node, T* _val)
+	{
+		if (_val != nullptr)
+		{
+			GetValue(_node, *_val);
+		}
+	}
+
+	template <typename T>
+	void SetValue(XmlNode& _node, const T& _val)
+	{
+		_node.getValue().set(_val);
+	}
+
+	template <typename T>
+	void SetValue(XmlNode& _node, const T* _val)
+	{
+		if (_val != nullptr)
+		{
+			SetValue(_node, *_val);
+		}
+	}
 }

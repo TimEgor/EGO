@@ -1,5 +1,5 @@
 template<typename T>
-ego::Reference<T>::Reference(nullptr_t)
+ego::Reference<T>::Reference(std::nullptr_t)
 	: m_object(nullptr)
 {}
 
@@ -16,30 +16,36 @@ template<typename T>
 ego::Reference<T>::Reference(T* _object)
 {
 	validateReferenceType();
-
-	if (_object)
-	{
-		const_cast<T*>(_object)->addReference();
-		m_object = _object;
-	}
+	assign(_object);
 }
 
 template<typename T>
 ego::Reference<T>::Reference(const Reference<T>& _reference)
 {
 	validateReferenceType();
+	assign(_reference.m_object);
+}
 
-	if (_reference.m_object)
-	{
-		const_cast<T*>(_reference.m_object)->addReference();
-		m_object = _reference.m_object;
-	}
+template<typename T>
+ego::Reference<T>::Reference(Reference<T>&& _reference) noexcept
+	: m_object(std::exchange(_reference.m_object, nullptr))
+{
+	validateReferenceType();
 }
 
 template<typename T>
 template<typename U, typename>
 ego::Reference<T>::Reference(const ego::Reference<U>& _reference)
-	: Reference<T>(std::move(Reference(_reference.getObject()))) {}
+	: Reference<T>(static_cast<T*>(_reference.m_object))
+{}
+
+template<typename T>
+template<typename U, typename>
+ego::Reference<T>::Reference(ego::Reference<U>&& _reference) noexcept
+	: m_object(static_cast<T*>(std::exchange(_reference.m_object, nullptr)))
+{
+	validateReferenceType();
+}
 
 template<typename T>
 ego::Reference<T>::~Reference()
@@ -48,22 +54,57 @@ ego::Reference<T>::~Reference()
 }
 
 template <typename T>
-ego::Reference<T>& ego::Reference<T>::operator=(const Reference<T>& _reference)
+ego::Reference<T>& ego::Reference<T>::operator=(std::nullptr_t)
 {
-	assign(const_cast<T*>(_reference.m_object));
+	reset();
 	return *this;
 }
 
-template <typename T1, typename T2>
-bool operator<(ego::Reference<T1> _reference1, ego::Reference<T2> _reference2)
+template <typename T>
+ego::Reference<T>& ego::Reference<T>::operator=(T* _object)
 {
-	return _reference1->getObject() < _reference2->getObject();
+	assign(_object);
+	return *this;
 }
 
-template <typename T1, typename T2>
-bool operator>(ego::Reference<T1> _reference1, ego::Reference<T2> _reference2)
+template <typename T>
+ego::Reference<T>& ego::Reference<T>::operator=(const Reference<T>& _reference)
 {
-	return _reference1->getObject() > _reference2->getObject();
+	if (this != &_reference)
+	{
+		assign(_reference.m_object);
+	}
+
+	return *this;
+}
+
+template <typename T>
+ego::Reference<T>& ego::Reference<T>::operator=(Reference<T>&& _reference) noexcept
+{
+	if (this != &_reference)
+	{
+		release();
+		m_object = std::exchange(_reference.m_object, nullptr);
+	}
+
+	return *this;
+}
+
+template<typename T>
+template<typename U, typename>
+ego::Reference<T>& ego::Reference<T>::operator=(const ego::Reference<U>& _reference)
+{
+	assign(static_cast<T*>(_reference.m_object));
+	return *this;
+}
+
+template<typename T>
+template<typename U, typename>
+ego::Reference<T>& ego::Reference<T>::operator=(ego::Reference<U>&& _reference) noexcept
+{
+	release();
+	m_object = static_cast<T*>(std::exchange(_reference.m_object, nullptr));
+	return *this;
 }
 
 template <typename T>
@@ -79,24 +120,73 @@ void ego::Reference<T>::release()
 
 	if (m_object)
 	{
-		const_cast<T*>(m_object)->releaseReference();
+		T* object = m_object;
 		m_object = nullptr;
+		object->releaseReference();
 	}
 }
 
 template <typename T>
 void ego::Reference<T>::assign(T* _object)
 {
+	validateReferenceType();
+
 	if (m_object == _object)
 	{
 		return;
 	}
 
-	release();
-
 	if (_object)
 	{
-		const_cast<T*>(_object)->addReference();
-		m_object = _object;
+		_object->addReference();
 	}
+
+	release();
+	m_object = _object;
+}
+
+template <typename T>
+void ego::Reference<T>::swap(Reference& _reference) noexcept
+{
+	std::swap(m_object, _reference.m_object);
+}
+
+template <typename T1, typename T2>
+bool ego::operator==(const Reference<T1>& _reference1, const Reference<T2>& _reference2)
+{
+	return static_cast<const void*>(_reference1.getObject())
+		== static_cast<const void*>(_reference2.getObject());
+}
+
+template <typename T1, typename T2>
+bool ego::operator!=(const Reference<T1>& _reference1, const Reference<T2>& _reference2)
+{
+	return !(_reference1 == _reference2);
+}
+
+template <typename T1, typename T2>
+bool ego::operator<(const Reference<T1>& _reference1, const Reference<T2>& _reference2)
+{
+	return std::less<const void*>()(
+		static_cast<const void*>(_reference1.getObject()),
+		static_cast<const void*>(_reference2.getObject())
+	);
+}
+
+template <typename T1, typename T2>
+bool ego::operator>(const Reference<T1>& _reference1, const Reference<T2>& _reference2)
+{
+	return _reference2 < _reference1;
+}
+
+template <typename T1, typename T2>
+bool ego::operator<=(const Reference<T1>& _reference1, const Reference<T2>& _reference2)
+{
+	return !(_reference2 < _reference1);
+}
+
+template <typename T1, typename T2>
+bool ego::operator>=(const Reference<T1>& _reference1, const Reference<T2>& _reference2)
+{
+	return !(_reference1 < _reference2);
 }

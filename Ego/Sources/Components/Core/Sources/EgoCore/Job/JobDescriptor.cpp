@@ -2,8 +2,8 @@
 
 #include "EgoCore/Assert/AssertCore.h"
 
-ego::JobDescriptor::JobDescriptor(const JobFactory& _factory)
-    : m_factory(_factory)
+ego::JobDescriptor::JobDescriptor(JobFactory _factory)
+    : m_factory(std::move(_factory))
 {}
 
 ego::JobReference ego::JobDescriptor::createJob() const
@@ -33,6 +33,17 @@ ego::JobDescriptor::operator bool() const
     return isValid();
 }
 
+ego::JobDescriptor ego::CreateJobDescriptor(JobDescriptor::JobFactory _factory)
+{
+    if (!_factory)
+    {
+        EGO_ASSERT_FAIL_MESSAGE("Job descriptor factory is null.");
+        return JobDescriptor();
+    }
+
+    return JobDescriptor(std::move(_factory));
+}
+
 ego::JobDescriptor ego::CreateJobDescriptor(const LambdaJob::JobFunction& _function, const char* _dbgName)
 {
     if (!_function)
@@ -41,12 +52,19 @@ ego::JobDescriptor ego::CreateJobDescriptor(const LambdaJob::JobFunction& _funct
         return JobDescriptor();
     }
 
-    return JobDescriptor(
-        [_function, _dbgName]()
-        {
-            return _dbgName
-                ? CreateLambdaJob(_function, _dbgName)
-                : CreateLambdaJob(_function);
-        }
+    return CreateJobDescriptor(
+        JobDescriptor::JobFactory(
+            [_function, _dbgName]()
+            {
+                return _dbgName
+                    ? CreateLambdaJob(_function, _dbgName)
+                    : CreateLambdaJob(_function);
+            }
+        )
     );
+}
+
+ego::JobDescriptor ego::CreateEmptyJobDescriptor(const char* _dbgName)
+{
+    return CreateJobDescriptor([]() {}, _dbgName);
 }

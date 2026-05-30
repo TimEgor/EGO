@@ -1,8 +1,9 @@
 #pragma once
 
+#include "ObjectPoolStorage.h"
+
+#include <cstddef>
 #include <type_traits>
-#include <vector>
-#include <deque>
 
 namespace ego
 {
@@ -25,15 +26,18 @@ namespace ego
         IndexObjectPool(IndexObjectPool&& _pool);
         ~IndexObjectPool() { release(); }
 
+        IndexObjectPool& operator=(const IndexObjectPool&) = delete;
+        IndexObjectPool& operator=(IndexObjectPool&&) = delete;
+
         bool init(size_t _pageSize = 4096, size_t _maxFreePageCount = 2, size_t _minFreeIndexCount = 64);
-        void release() { clear(); }
+        void release();
 
         void clear();
 
         bool isValid(IndexType _index) const;
 
-        const ValType* getElement(IndexType _index) const { return getElementInternal(_index); }
-        ValType* getElement(IndexType _index) { return getElementInternal(_index); }
+        const ValType* getElement(IndexType _index) const;
+        ValType* getElement(IndexType _index);
 
         void addElementRaw(NewElementInfo& _info);
 
@@ -48,51 +52,13 @@ namespace ego
         void removeElement(IndexType _index);
 
     private:
-        struct Page final
-        {
-            void* m_mem = nullptr;
-            ValType* m_valsMem = nullptr;
-            bool* m_aliveMem = nullptr;
+        using StoragePolicy = detail::IndexObjectPoolPolicy<IndexType>;
+        using Storage = detail::ObjectPoolStorage<ValType, StoragePolicy>;
+        using StorageNewElementInfo = typename Storage::NewElementInfo;
 
-            size_t m_capacity = 0;
-            size_t m_size = 0;
+        static NewElementInfo makeElementInfo(const StorageNewElementInfo& _info);
 
-            Page() = default;
-            Page(const Page&) = delete;
-            Page(Page&& _page);
-
-            ~Page() { deallocate(); }
-
-            Page& operator=(const Page&) = delete;
-            Page& operator=(Page&&) = delete;
-
-            void allocate(size_t _capacity);
-            void deallocate();
-
-            bool isAllocated() const;
-        };
-
-        struct ElementLocation final
-        {
-            size_t m_pageIndex = -1;
-            size_t m_elementIndex = -1;
-        };
-
-        bool checkElementLocation(const ElementLocation& _location) const;
-        bool checkElementLocationWithPage(const ElementLocation& _location) const;
-
-        ElementLocation getElementLocation(IndexType _index) const;
-        ValType* getElementInternal(IndexType _index);
-
-        std::vector<Page> m_pages;
-        std::deque<IndexType> m_freeIndices;
-        size_t m_size = 0;
-        size_t m_emptyPages = 0;
-        IndexType m_maxUsedIndex = 0;
-
-        size_t m_pageSize = 0;
-        size_t m_maxFreePageCount = 0;
-        size_t m_minFreeIndexCount = 0;
+        Storage m_storage;
     };
 }
 

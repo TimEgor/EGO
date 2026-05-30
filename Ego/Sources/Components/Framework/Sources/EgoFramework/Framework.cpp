@@ -12,15 +12,18 @@ bool ego::framework::Framework::init(const Framework::InitData& _initData)
 
     EGO_CHECK_INITIALIZATION(initEngine(_initData));
 
+    m_gameLogicPluginController = new GameLogicPluginController();
+    EGO_CHECK_INITIALIZATION(m_gameLogicPluginController && m_gameLogicPluginController->init());
+
+    EGO_CHECK_INITIALIZATION(loadProfilerPlugin(_initData));
+    EGO_CHECK_INITIALIZATION(loadProjectPlugins());
+
     FileName gameLogicPluginModuleName;
     if (m_project && !m_project->getGameLogicPlugins().empty())
     {
         gameLogicPluginModuleName = selectProjectGameLogicPluginModule();
         EGO_CHECK_INITIALIZATION(gameLogicPluginModuleName);
     }
-
-    m_gameLogicPluginController = new GameLogicPluginController();
-    EGO_CHECK_INITIALIZATION(m_gameLogicPluginController && m_gameLogicPluginController->init());
 
     if (gameLogicPluginModuleName)
     {
@@ -66,6 +69,8 @@ void ego::framework::Framework::release()
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_currentGameLogic);
     m_currentGameLogicPlugin = nullptr;
+
+    m_plugins.clear();
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_gameLogicPluginController);
 
@@ -115,15 +120,76 @@ bool ego::framework::Framework::initEngine(const Framework::InitData& _initData)
     return true;
 }
 
+bool ego::framework::Framework::loadProfilerPlugin(const InitData& _initData)
+{
+    if (!_initData.m_profilerPluginModuleName)
+    {
+        return true;
+    }
+
+    return loadPlugin("ProfilerPlugin", _initData.m_profilerPluginModuleName);
+}
+
+bool ego::framework::Framework::loadPlugin(const Project::Plugin& _plugin)
+{
+    EGO_ASSERT(m_engine);
+    EGO_ASSERT(m_pluginController);
+    EGO_CHECK_RETURN_FALSE(m_engine && m_pluginController);
+    EGO_CHECK_RETURN_FALSE(!_plugin.m_type.empty());
+
+    FileName moduleName = _plugin.m_moduleName;
+    if (!moduleName)
+    {
+        EGO_CHECK_RETURN_FALSE(!_plugin.m_name.empty());
+        moduleName = m_engine->getPluginCatalog().getModulePath(
+            GetPluginType(_plugin.m_type.c_str()),
+            _plugin.m_name.c_str()
+        );
+    }
+
+    EGO_CHECK_RETURN_FALSE(moduleName);
+
+    PluginPointer loadedPlugin = m_pluginController->loadPlugin(moduleName, _plugin.m_type.c_str());
+    EGO_CHECK_RETURN_FALSE(loadedPlugin);
+
+    m_plugins.push_back(loadedPlugin);
+    return true;
+}
+
+bool ego::framework::Framework::loadPlugin(const char* _type, const FileName& _moduleName)
+{
+    Project::Plugin plugin;
+    plugin.m_type = _type ? _type : "";
+    plugin.m_moduleName = _moduleName;
+    return loadPlugin(plugin);
+}
+
+bool ego::framework::Framework::loadPlugins(const Project::PluginCollection& _plugins)
+{
+    for (const Project::Plugin& plugin : _plugins)
+    {
+        EGO_CHECK_RETURN_FALSE(loadPlugin(plugin));
+    }
+
+    return true;
+}
+
+bool ego::framework::Framework::loadProjectPlugins()
+{
+    return m_project ? loadPlugins(m_project->getPlugins()) : true;
+}
+
 bool ego::framework::Framework::registerGameLogicMainLoopJob()
 {
     EGO_ASSERT(m_engine);
 
     engine::MainLoop& mainLoop = m_engine->getMainLoop();
-    const JobDescriptorID renderJobID = mainLoop.getRenderJobID();
-    EGO_CHECK_RETURN_FALSE(renderJobID.isValid());
+    const JobDescriptorID gameLogicBeginJobID = mainLoop.getGameLogicBeginJobID();
+    const JobDescriptorID gameLogicEndJobID = mainLoop.getGameLogicEndJobID();
+    EGO_CHECK_RETURN_FALSE(gameLogicBeginJobID.isValid());
+    EGO_CHECK_RETURN_FALSE(gameLogicEndJobID.isValid());
 
-    m_updateGameLogicJobID = mainLoop.addJobBefore(
+    m_updateGameLogicJobID = mainLoop.addJobBetween(
         CreateJobDescriptor(
             [this]()
             {
@@ -131,7 +197,8 @@ bool ego::framework::Framework::registerGameLogicMainLoopJob()
             },
             "Game logic update"
         ),
-        renderJobID
+        gameLogicBeginJobID,
+        gameLogicEndJobID
     );
 
     return m_updateGameLogicJobID.isValid();

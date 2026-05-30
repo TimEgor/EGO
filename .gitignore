@@ -83,3 +83,6 @@ x86/
 [Bb]uild/
 
 Install/
+
+!ThirtParty/WinPixEventRuntime/
+!ThirtParty/WinPixEventRuntime/**

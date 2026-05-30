@@ -15,6 +15,7 @@
 
 namespace
 {
+    constexpr ego::gpu::GraphicResourceFormat RenderTargetFormat = ego::gpu::GraphicResourceFormat::B8G8R8A8UNorm;
     constexpr uint32_t ConstantBufferAlignment = 256;
 
     uint32_t AlignTo(uint32_t _value, uint32_t _alignment)
@@ -44,6 +45,14 @@ bool ego::DefaultRender::init()
     EGO_CHECK_CALL(m_commandList, release());
     EGO_CHECK_RETURN_FALSE(m_commandList);
 
+    m_presentCommandList = graphicDevice.createGraphicCommandList();
+    EGO_CHECK_CALL(m_presentCommandList, release());
+    EGO_CHECK_RETURN_FALSE(m_presentCommandList);
+
+    m_frameFence = graphicDevice.createFence();
+    EGO_CHECK_CALL(m_frameFence, release());
+    EGO_CHECK_RETURN_FALSE(m_frameFence);
+
     m_isInitialized = true;
     return m_isInitialized;
 }
@@ -60,8 +69,13 @@ void ego::DefaultRender::release()
 
     m_renderTargetView = nullptr;
     m_renderTargetTexture = nullptr;
+    m_renderTargetState = gpu::GraphicResourceState::Common;
+    m_isPrepared = false;
 
     m_commandList = nullptr;
+    m_presentCommandList = nullptr;
+    m_frameFence = nullptr;
+    m_frameFenceValue = 0;
     m_commandQueue = nullptr;
 
     m_isInitialized = false;
@@ -72,15 +86,16 @@ void ego::DefaultRender::clearResources()
     wait();
 
     m_renderItems.clear();
+    m_isPrepared = false;
 }
 
-void ego::DefaultRender::render(GraphicPresenter& _presenter, Level& _level, ecs::Entity _cameraEntity)
+bool ego::DefaultRender::prepare(Level& _level, ecs::Entity _cameraEntity)
 {
     EGO_ASSERT(m_isInitialized);
 
     if (!m_isInitialized)
     {
-        return;
+        return false;
     }
 
     EGO_ASSERT(m_commandQueue);
@@ -88,24 +103,49 @@ void ego::DefaultRender::render(GraphicPresenter& _presenter, Level& _level, ecs
 
     if (!m_commandQueue || !m_commandList)
     {
-        return;
+        return false;
     }
 
-    const gpu::Texture2DReference targetTexture = _presenter.getTargetTexture();
-    if (!prepareRenderTarget(targetTexture))
+    m_isPrepared = false;
+
+    if (!prepareRenderTarget())
     {
-        return;
+        return false;
     }
 
     collectRenderItems(_level);
 
     if (!prepareShaderData(_level, _cameraEntity))
     {
+        m_renderItems.clear();
+        return false;
+    }
+
+    m_isPrepared = true;
+    return true;
+}
+
+void ego::DefaultRender::render()
+{
+    EGO_ASSERT(m_isInitialized);
+
+    if (!m_isInitialized || !m_isPrepared)
+    {
+        return;
+    }
+
+    EGO_ASSERT(m_commandQueue);
+    EGO_ASSERT(m_commandList);
+    EGO_ASSERT(m_renderTargetTexture);
+    EGO_ASSERT(m_renderTargetView);
+
+    if (!m_commandQueue || !m_commandList || !m_renderTargetTexture || !m_renderTargetView)
+    {
         return;
     }
 
     m_commandList->begin();
-    m_commandList->resourceBarrier(targetTexture, gpu::GraphicResourceState::Present, gpu::GraphicResourceState::RenderTarget);
+    transitionRenderTarget(m_commandList, gpu::GraphicResourceState::RenderTarget);
 
     gpu::ColorAttachmentDesc colorAttachment;
     colorAttachment.m_view = m_renderTargetView;
@@ -117,10 +157,10 @@ void ego::DefaultRender::render(GraphicPresenter& _presenter, Level& _level, ecs
 
     gpu::RenderingDesc renderingDesc;
     renderingDesc.m_colorAttachments.push_back(colorAttachment);
-    renderingDesc.m_renderArea = targetTexture->getDesc().m_size;
+    renderingDesc.m_renderArea = m_resolution;
 
     m_commandList->beginRendering(renderingDesc);
-    setupTargetViewport(targetTexture);
+    setupTargetViewport();
 
     for (const DefaultRender::Item& item : m_renderItems)
     {
@@ -128,10 +168,11 @@ void ego::DefaultRender::render(GraphicPresenter& _presenter, Level& _level, ecs
     }
 
     m_commandList->endRendering();
-    m_commandList->resourceBarrier(targetTexture, gpu::GraphicResourceState::RenderTarget, gpu::GraphicResourceState::Present);
+    transitionRenderTarget(m_commandList, gpu::GraphicResourceState::CopySrc);
     m_commandList->end();
 
-    m_commandQueue->execute(m_commandList);
+    submitCommandList(m_commandList);
+    m_isPrepared = false;
 }
 
 bool ego::DefaultRender::isInitialized() const
@@ -141,6 +182,12 @@ bool ego::DefaultRender::isInitialized() const
 
 void ego::DefaultRender::wait()
 {
+    if (m_frameFence)
+    {
+        m_frameFence->waitValue(m_frameFenceValue);
+        return;
+    }
+
     if (m_commandQueue)
     {
         m_commandQueue->waitIdle();
@@ -149,7 +196,25 @@ void ego::DefaultRender::wait()
 
 void ego::DefaultRender::present(GraphicPresenter& _presenter)
 {
+    if (!copyRenderTargetToPresenter(_presenter))
+    {
+        wait();
+        return;
+    }
+
+    wait();
     _presenter.present();
+}
+
+void ego::DefaultRender::setResolution(const RenderResolution& _resolution)
+{
+    EGO_ASSERT(_resolution.m_x != 0 && _resolution.m_y != 0);
+    m_pendingResolution = _resolution;
+}
+
+const ego::RenderResolution& ego::DefaultRender::getResolution() const
+{
+    return m_pendingResolution;
 }
 
 void ego::DefaultRender::setClearColor(const FloatVector4& _clearColor)
@@ -200,31 +265,47 @@ void ego::DefaultRender::collectRenderItems(Level& _level)
     );
 }
 
-bool ego::DefaultRender::prepareRenderTarget(const gpu::Texture2DReference& _targetTexture)
+bool ego::DefaultRender::prepareRenderTarget()
 {
-    if (!_targetTexture)
+    if (m_pendingResolution.m_x == 0 || m_pendingResolution.m_y == 0)
     {
         return false;
     }
 
-    const gpu::Texture2DDesc& targetDesc = _targetTexture->getDesc();
-    if (targetDesc.m_size.m_x == 0 || targetDesc.m_size.m_y == 0)
+    const gpu::Texture2DDesc* currentDesc = m_renderTargetTexture ? &m_renderTargetTexture->getDesc() : nullptr;
+    if (currentDesc &&
+        currentDesc->m_size.m_x == m_pendingResolution.m_x &&
+        currentDesc->m_size.m_y == m_pendingResolution.m_y &&
+        currentDesc->m_format == RenderTargetFormat &&
+        m_renderTargetView)
     {
-        return false;
-    }
-
-    if (m_renderTargetTexture.getObject() == _targetTexture.getObject() && m_renderTargetView)
-    {
+        m_resolution = m_pendingResolution;
         return true;
     }
+
+    m_resolution = m_pendingResolution;
+
+    gpu::Texture2DDesc textureDesc;
+    textureDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(
+        gpu::TextureUsageRenderTarget | gpu::GraphicResourceUsageTransferSrc
+    );
+    textureDesc.m_size = m_resolution;
+    textureDesc.m_arrayLayers = 1;
+    textureDesc.m_mipLevels = 1;
+    textureDesc.m_samples.m_count = 1;
+    textureDesc.m_samples.m_quality = 0;
+    textureDesc.m_format = RenderTargetFormat;
+
+    m_renderTargetTexture = engine::GetEngine().getGraphicDevice().createTexture2D(textureDesc);
+    EGO_CHECK_RETURN_FALSE(m_renderTargetTexture);
 
     gpu::TextureViewDesc viewDesc;
     viewDesc.m_type = gpu::GraphicResourceViewType::RenderTarget;
     viewDesc.m_dimension = gpu::TextureViewDimension::D2;
-    viewDesc.m_format = targetDesc.m_format;
+    viewDesc.m_format = textureDesc.m_format;
 
-    m_renderTargetTexture = _targetTexture;
-    m_renderTargetView = engine::GetEngine().getGraphicDevice().createTextureView(_targetTexture, viewDesc);
+    m_renderTargetView = engine::GetEngine().getGraphicDevice().createTextureView(m_renderTargetTexture, viewDesc);
+    m_renderTargetState = gpu::GraphicResourceState::Common;
 
     return static_cast<bool>(m_renderTargetView);
 }
@@ -350,27 +431,108 @@ bool ego::DefaultRender::prepareObjectShaderData()
     return true;
 }
 
-void ego::DefaultRender::setupTargetViewport(const gpu::Texture2DReference& _targetTexture)
+void ego::DefaultRender::setupTargetViewport()
 {
-    EGO_ASSERT(_targetTexture);
-    if (!_targetTexture)
+    EGO_ASSERT(m_renderTargetTexture);
+    if (!m_renderTargetTexture)
     {
         return;
     }
 
-    const gpu::Texture2DSize& targetSize = _targetTexture->getDesc().m_size;
-
     gpu::ViewportDesc viewportDesc;
-    viewportDesc.m_width = static_cast<float>(targetSize.m_x);
-    viewportDesc.m_height = static_cast<float>(targetSize.m_y);
+    viewportDesc.m_width = static_cast<float>(m_resolution.m_x);
+    viewportDesc.m_height = static_cast<float>(m_resolution.m_y);
     viewportDesc.m_minDepth = 0.0f;
     viewportDesc.m_maxDepth = 1.0f;
     m_commandList->setViewport(viewportDesc);
 
     gpu::ScissorRectDesc scissorRectDesc;
-    scissorRectDesc.m_right = static_cast<int32_t>(targetSize.m_x);
-    scissorRectDesc.m_bottom = static_cast<int32_t>(targetSize.m_y);
+    scissorRectDesc.m_right = static_cast<int32_t>(m_resolution.m_x);
+    scissorRectDesc.m_bottom = static_cast<int32_t>(m_resolution.m_y);
     m_commandList->setScissorRect(scissorRectDesc);
+}
+
+void ego::DefaultRender::submitCommandList(const gpu::GraphicCommandListReference& _commandList)
+{
+    if (!m_commandQueue || !_commandList)
+    {
+        return;
+    }
+
+    m_commandQueue->execute(_commandList);
+
+    if (m_frameFence)
+    {
+        ++m_frameFenceValue;
+        m_commandQueue->signal(m_frameFence, m_frameFenceValue);
+    }
+}
+
+void ego::DefaultRender::transitionRenderTarget(
+    const gpu::GraphicCommandListReference& _commandList,
+    gpu::GraphicResourceState _nextState
+)
+{
+    if (!_commandList || !m_renderTargetTexture || m_renderTargetState == _nextState)
+    {
+        return;
+    }
+
+    _commandList->resourceBarrier(m_renderTargetTexture, m_renderTargetState, _nextState);
+    m_renderTargetState = _nextState;
+}
+
+bool ego::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _presenter)
+{
+    EGO_ASSERT(m_commandQueue);
+    EGO_ASSERT(m_presentCommandList);
+
+    if (!m_commandQueue || !m_presentCommandList || !m_renderTargetTexture)
+    {
+        return false;
+    }
+
+    const gpu::Texture2DReference presenterTargetTexture = _presenter.getTargetTexture();
+    if (!presenterTargetTexture)
+    {
+        return false;
+    }
+
+    const gpu::Texture2DDesc& renderTargetDesc = m_renderTargetTexture->getDesc();
+    const gpu::Texture2DDesc& presenterTargetDesc = presenterTargetTexture->getDesc();
+    if (renderTargetDesc.m_format != presenterTargetDesc.m_format)
+    {
+        return false;
+    }
+
+    const uint32_t copyWidth = (std::min)(renderTargetDesc.m_size.m_x, presenterTargetDesc.m_size.m_x);
+    const uint32_t copyHeight = (std::min)(renderTargetDesc.m_size.m_y, presenterTargetDesc.m_size.m_y);
+    if (copyWidth == 0 || copyHeight == 0)
+    {
+        return false;
+    }
+
+    gpu::TextureCopyRegionDesc copyRegion;
+    copyRegion.m_extent = UInt32Vector3(copyWidth, copyHeight, 1);
+
+    m_presentCommandList->begin();
+    transitionRenderTarget(m_presentCommandList, gpu::GraphicResourceState::CopySrc);
+    m_presentCommandList->resourceBarrier(
+        presenterTargetTexture,
+        gpu::GraphicResourceState::Present,
+        gpu::GraphicResourceState::CopyDst
+    );
+    m_presentCommandList->copyTexture(m_renderTargetTexture, presenterTargetTexture, copyRegion);
+    m_presentCommandList->resourceBarrier(
+        presenterTargetTexture,
+        gpu::GraphicResourceState::CopyDst,
+        gpu::GraphicResourceState::Present
+    );
+    transitionRenderTarget(m_presentCommandList, gpu::GraphicResourceState::Common);
+    m_presentCommandList->end();
+
+    submitCommandList(m_presentCommandList);
+    return true;
 }
 
 void ego::DefaultRender::renderItem(const DefaultRender::Item& _item)

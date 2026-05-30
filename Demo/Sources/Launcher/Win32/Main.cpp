@@ -45,18 +45,24 @@ int WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, LPSTR _lpCmdLine, in
 	ego::framework::Framework::InitData initData;
 	initData.m_engineInitData.m_nativeInstanceHandle = _hInstance;
 	std::string platformPluginModuleName;
+	std::string profilerPluginModuleName;
+	std::string renderPluginModuleName;
 	std::string renderHardwarePluginModuleName;
 	std::string projectFilePath;
 
 	ego::ArgParser argParser;
 	argParser.addOptionValue("--platform", platformPluginModuleName);
+	argParser.addOptionValue("--profiler", profilerPluginModuleName);
+	argParser.addOptionValue("--render", renderPluginModuleName);
 	argParser.addOptionValue("--renderHardware", renderHardwarePluginModuleName);
 	argParser.addOptionValue("--project", projectFilePath);
 
 	argParser.parse(__argc, __argv);
 
 	initData.m_engineInitData.m_platformPluginModuleName = platformPluginModuleName;
+	initData.m_engineInitData.m_renderPluginModuleName = renderPluginModuleName;
 	initData.m_engineInitData.m_renderHardwarePluginModuleName = renderHardwarePluginModuleName;
+	initData.m_profilerPluginModuleName = profilerPluginModuleName;
 
 	ego::FileName projectFileName(projectFilePath);
 	if (!projectFileName)

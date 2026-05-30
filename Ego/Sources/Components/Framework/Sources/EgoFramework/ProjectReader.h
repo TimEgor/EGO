@@ -21,6 +21,7 @@ namespace ego::framework
         static bool ReadFromRootNode(const XmlNode& _rootNode, Project& _project);
         static void ReadAssetDirectories(const XmlNode& _rootNode, Project& _project);
         static void ReadPluginDirectories(const XmlNode& _rootNode, Project& _project);
+        static void ReadPlugins(const XmlNode& _rootNode, Project& _project);
         static void ReadGameLogic(const XmlNode& _rootNode, Project& _project);
         static void ReadGameLogicPlugins(const XmlNode& _rootNode, Project& _project);
     };

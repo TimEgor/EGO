@@ -1,74 +1,37 @@
 #include "Job.h"
 
-#include "EgoCore/UtilsMacros.h"
 #include "EgoCore/Assert/AssertCore.h"
-//#include "EgoCore/Profile/Profile.h"
-
-ego::Job::JobEvent::JobEvent(Job* _job)
-	: m_job(_job)
-{
-    
-}
-
-void ego::Job::JobEvent::wait()
-{
-	std::unique_lock locker(m_job->m_mutex);
-	m_notifier.wait(locker, [this]() { return m_job->m_state == JobState::Finished; });
-}
-
-void ego::Job::JobEvent::set()
-{
-	m_notifier.notify_all();
-}
+#include "EgoCore/Profile/Profile.h"
 
 ego::Job::Job(const char* _dbgName)
-#ifdef EDGE_JOB_DEBUG
-	: m_dbgName(dbgName)
+#ifdef EGO_JOB_DEBUG
+	: m_dbgName(_dbgName)
 #endif
 {
     
-}
-
-ego::Job::~Job()
-{
-	EGO_SAFE_DESTROY(m_completionEvent);
 }
 
 void ego::Job::wait()
 {
-	if (isFinished())
+	std::unique_lock locker(m_mutex);
+
+	if (m_state == JobState::Finished)
 	{
 		return;
 	}
 
+	if (m_state == JobState::Undefined)
 	{
-		std::lock_guard locker(m_mutex);
-		if (!m_completionEvent)
-		{
-			m_completionEvent = new JobEvent(this);
-		}
+		EGO_ASSERT_FAIL_MESSAGE("Job hasn't been scheduled.");
+		return;
 	}
 
-	m_completionEvent->wait();
+	m_completionNotifier.wait(locker, [this]() { return m_state == JobState::Finished; });
 }
 
 void ego::Job::execute()
 {
-#ifdef EDGE_JOB_DEBUG
-	EDGE_PROFILE_BLOCK_EVENT_CONTEXT("Job", getDbgName());
-#endif
-
-	m_state = JobState::Executing;
-
-	operate();
-
-	m_state = JobState::Finished;
-
-	std::lock_guard locker(m_mutex);
-	if (m_completionEvent)
-	{
-		m_completionEvent->set();
-	}
+	tryExecute();
 }
 
 bool ego::Job::isFinished() const
@@ -78,10 +41,53 @@ bool ego::Job::isFinished() const
 
 void ego::Job::setExecutionContext(const JobControllerWeakPointer& _jobController)
 {
-	EGO_ASSERT(m_jobController.isExpired());
+	trySetExecutionContext(_jobController);
+}
+
+bool ego::Job::trySetExecutionContext(const JobControllerWeakPointer& _jobController)
+{
+	if (!m_jobController.isExpired())
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job execution context has been already assigned.");
+		return false;
+	}
+
+	JobState expectedState = JobState::Undefined;
+	if (!m_state.compare_exchange_strong(expectedState, JobState::Pending))
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job has been already scheduled.");
+		return false;
+	}
 
 	m_jobController = _jobController;
-	m_state = JobState::Pending;
+	return true;
+}
+
+bool ego::Job::tryExecute()
+{
+	JobState expectedState = JobState::Pending;
+	if (!m_state.compare_exchange_strong(expectedState, JobState::Executing))
+	{
+		EGO_ASSERT_FAIL_MESSAGE("Job execution state is invalid.");
+		return false;
+	}
+
+	{
+#ifdef EGO_JOB_DEBUG
+		EGO_PROFILE_BLOCK_EVENT(m_dbgName ? m_dbgName : "Job");
+#else
+		EGO_PROFILE_BLOCK_EVENT("Job");
+#endif
+		operate();
+	}
+
+	{
+		std::lock_guard locker(m_mutex);
+		m_state = JobState::Finished;
+	}
+	m_completionNotifier.notify_all();
+
+	return true;
 }
 
 void ego::LambdaJob::operate()

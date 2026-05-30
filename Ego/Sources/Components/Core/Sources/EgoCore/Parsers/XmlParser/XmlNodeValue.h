@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string>
+#include <string_view>
+
+#include "NodeValueParserBase.h"
+
 #include <pugixml.hpp>
 
 namespace ego
@@ -18,56 +23,61 @@ namespace ego
 		T get() const;
 
 		const char* getRaw() const { return m_xmlText.get(); }
+		std::string_view getRawView() const;
 
 		template <typename T>
-		void set(T _val);
+		bool tryGet(T& _val) const;
+
+		template <typename T>
+		T getOr(const T& _defaultVal) const;
+
+		void set(std::string_view _val);
+		void set(const std::string& _val);
+
+		template <typename T>
+		void set(const T& _val);
 	};
 
 	template <typename T>
 	T XmlNodeValue::get() const
 	{
-		static_assert(sizeof(T) == 0, "Invalid XML value type");
-		return T();
+		T result{};
+		ParseXmlValue(getRawView(), result);
+		return result;
 	}
 
-	template <>
-	inline bool XmlNodeValue::get() const
+	inline std::string_view XmlNodeValue::getRawView() const
 	{
-		return m_xmlText.as_bool();
-	}
-
-	template <>
-	inline unsigned XmlNodeValue::get() const
-	{
-		return m_xmlText.as_uint();
-	}
-
-	template <>
-	inline int XmlNodeValue::get() const
-	{
-		return m_xmlText.as_int();
-	}
-
-	template <>
-	inline float XmlNodeValue::get() const
-	{
-		return m_xmlText.as_float();
-	}
-
-	template <>
-	inline double XmlNodeValue::get() const
-	{
-		return m_xmlText.as_double();
-	}
-
-	template <>
-	inline const char* XmlNodeValue::get() const
-	{
-		return m_xmlText.as_string();
+		const char* rawValue = getRaw();
+		return rawValue != nullptr ? std::string_view(rawValue) : std::string_view();
 	}
 
 	template <typename T>
-	void XmlNodeValue::set(T _val)
+	bool XmlNodeValue::tryGet(T& _val) const
+	{
+		return TryParseXmlValue(getRawView(), _val);
+	}
+
+	template <typename T>
+	T XmlNodeValue::getOr(const T& _defaultVal) const
+	{
+		T result = _defaultVal;
+		return tryGet(result) ? result : _defaultVal;
+	}
+
+	inline void XmlNodeValue::set(std::string_view _val)
+	{
+		const std::string value = _val.empty() ? std::string() : std::string(_val.data(), _val.size());
+		m_xmlText.set(value.c_str());
+	}
+
+	inline void XmlNodeValue::set(const std::string& _val)
+	{
+		m_xmlText.set(_val.c_str());
+	}
+
+	template <typename T>
+	void XmlNodeValue::set(const T& _val)
 	{
 		m_xmlText.set(_val);
 	}

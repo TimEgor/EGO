@@ -3,10 +3,11 @@
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/Job/JobController.h"
 #include "EgoCore/Job/JobDescriptor.h"
+#include "EgoCore/Profile/Profile.h"
 
 #include "Event/EventController.h"
 #include "Graphic/Presenter/WindowGraphicPresenter.h"
-#include "Graphic/Render/DefaultRender.h"
+#include "Graphic/Render/RenderPlugin.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Level/LevelController.h"
 #include "Platform/Platform.h"
@@ -39,8 +40,7 @@ bool ego::engine::Engine::init(const Engine::InitData& _initData)
     m_levelController = new LevelController();
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
-    m_render = new DefaultRender();
-    EGO_CHECK_INITIALIZATION(m_render && m_render->init());
+    EGO_CHECK_INITIALIZATION(initRender(_initData));
 
     EGO_CHECK_INITIALIZATION(initMainLoop());
 
@@ -63,6 +63,7 @@ void ego::engine::Engine::release()
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
 
     m_renderHardwarePlugin = nullptr;
+    m_renderPlugin = nullptr;
     m_platformPlugin = nullptr;
 
     m_pluginCatalog.clear();
@@ -81,12 +82,9 @@ void ego::engine::Engine::run()
         return;
     }
 
-    beginFrame();
-    endFrame();  
-
     while (!m_isStopped)
     {
-        //EDGE_PROFILE_BLOCK_EVENT("Frame");
+        EGO_PROFILE_BLOCK_EVENT("Frame");
 
         beginFrame();
 
@@ -234,13 +232,13 @@ ego::LevelController& ego::engine::Engine::getLevelController()
     return *m_levelController;
 }
 
-const ego::DefaultRender& ego::engine::Engine::getRender() const
+const ego::Render& ego::engine::Engine::getRender() const
 {
     EGO_ASSERT(m_render);
     return *m_render;
 }
 
-ego::DefaultRender& ego::engine::Engine::getRender()
+ego::Render& ego::engine::Engine::getRender()
 {
     EGO_ASSERT(m_render);
     return *m_render;
@@ -354,6 +352,27 @@ bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
     return true;
 }
 
+bool ego::engine::Engine::initRender(const InitData& _initData)
+{
+    EGO_ASSERT(m_enginePluginController);
+
+    FileName renderPluginModuleName = _initData.m_renderPluginModuleName;
+    if (!renderPluginModuleName)
+    {
+        renderPluginModuleName = m_enginePluginController->selectEnginePluginModule<RenderPlugin>();
+    }
+
+    EGO_CHECK_RETURN_FALSE(renderPluginModuleName);
+
+    m_renderPlugin = m_enginePluginController->loadEnginePlugin<RenderPlugin>(renderPluginModuleName);
+    EGO_CHECK_RETURN_FALSE(m_renderPlugin);
+
+    m_render = m_renderPlugin->createRender();
+    EGO_CHECK_RETURN_FALSE(m_render && m_render->init());
+
+    return true;
+}
+
 bool ego::engine::Engine::initMainLoop()
 {
     return m_mainLoop.init(
@@ -362,7 +381,21 @@ bool ego::engine::Engine::initMainLoop()
             {
                 renderFrame();
             },
-            "Render"
+            "Render frame"
+        ),
+        CreateJobDescriptor(
+            [this]()
+            {
+                presentFrame();
+            },
+            "Present frame"
+        ),
+        CreateJobDescriptor(
+            [this]()
+            {
+                prepareRenderFrame();
+            },
+            "Prepare render frame"
         )
     );
 }
@@ -400,20 +433,32 @@ bool ego::engine::Engine::prepareMainWindowPresenter()
 
 void ego::engine::Engine::renderFrame()
 {
-    if (!m_render || !m_graphicPresenter || !m_levelController)
+    if (m_render)
+    {
+        m_render->render();
+    }
+}
+
+void ego::engine::Engine::presentFrame()
+{
+    if (m_render && m_graphicPresenter)
+    {
+        m_render->present(*m_graphicPresenter);
+    }
+}
+
+void ego::engine::Engine::prepareRenderFrame()
+{
+    if (!m_render || !m_levelController)
     {
         return;
     }
 
     const LevelPointer activeLevel = m_levelController->getActiveLevel();
-    if (!activeLevel || !m_renderCameraEntity)
+    if (activeLevel && m_renderCameraEntity)
     {
-        return;
+        m_render->prepare(*activeLevel, m_renderCameraEntity);
     }
-
-    m_render->render(*m_graphicPresenter, *activeLevel, m_renderCameraEntity);
-    m_render->wait();
-    m_render->present(*m_graphicPresenter);
 }
 
 ego::engine::EnginePointer ego::engine::EngineCore::getEngine() const

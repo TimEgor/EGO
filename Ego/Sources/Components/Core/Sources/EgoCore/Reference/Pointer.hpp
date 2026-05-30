@@ -1,5 +1,3 @@
-#include <memory>
-
 inline ego::ControlBlockBase::ControlBlockBase()
     : m_sharedCount(1)
     , m_weakCount(1)
@@ -92,7 +90,7 @@ ego::SharedPointer<T>::SharedPointer(const SharedPointer& _pointer)
 }
 
 template <typename T>
-ego::SharedPointer<T>::SharedPointer(SharedPointer&& _pointer)
+ego::SharedPointer<T>::SharedPointer(SharedPointer&& _pointer) noexcept
     : m_object(_pointer.m_object)
     , m_controlBlock(_pointer.m_controlBlock)
 {
@@ -111,7 +109,7 @@ ego::SharedPointer<T>::SharedPointer(const SharedPointer<U>& _pointer)
 
 template <typename T>
 template <typename U, typename>
-ego::SharedPointer<T>::SharedPointer(SharedPointer<U>&& _pointer)
+ego::SharedPointer<T>::SharedPointer(SharedPointer<U>&& _pointer) noexcept
     : m_object(static_cast<T*>(_pointer.m_object))
     , m_controlBlock(_pointer.m_controlBlock)
 {
@@ -169,15 +167,12 @@ ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(const SharedPointer& _po
 }
 
 template <typename T>
-ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(SharedPointer&& _pointer)
+ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(SharedPointer&& _pointer) noexcept
 {
     if (this != &_pointer)
     {
-        releaseSharedCount();
-        m_object = _pointer.m_object;
-        m_controlBlock = _pointer.m_controlBlock;
-        _pointer.m_object = nullptr;
-        _pointer.m_controlBlock = nullptr;
+        SharedPointer temporary(std::move(_pointer));
+        swap(temporary);
     }
 
     return *this;
@@ -204,22 +199,10 @@ ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(const SharedPointer<U>& 
 
 template <typename T>
 template <typename U, typename>
-ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(SharedPointer<U>&& _pointer)
+ego::SharedPointer<T>& ego::SharedPointer<T>::operator=(SharedPointer<U>&& _pointer) noexcept
 {
-    if (m_controlBlock != _pointer.m_controlBlock)
-    {
-        releaseSharedCount();
-        m_object = static_cast<T*>(_pointer.m_object);
-        m_controlBlock = _pointer.m_controlBlock;
-        _pointer.m_object = nullptr;
-        _pointer.m_controlBlock = nullptr;
-    }
-    else
-    {
-        m_object = static_cast<T*>(_pointer.m_object);
-        _pointer.m_object = nullptr;
-        _pointer.m_controlBlock = nullptr;
-    }
+    SharedPointer temporary(std::move(_pointer));
+    swap(temporary);
 
     return *this;
 }
@@ -232,6 +215,12 @@ ego::SharedPointer<T>::operator bool() const
 
 template <typename T>
 T* ego::SharedPointer<T>::get() const
+{
+    return m_object;
+}
+
+template <typename T>
+T* ego::SharedPointer<T>::getObject() const
 {
     return m_object;
 }
@@ -354,7 +343,7 @@ ego::WeakPointer<T>::WeakPointer(const WeakPointer& _pointer)
 }
 
 template <typename T>
-ego::WeakPointer<T>::WeakPointer(WeakPointer&& _pointer)
+ego::WeakPointer<T>::WeakPointer(WeakPointer&& _pointer) noexcept
     : m_object(_pointer.m_object)
     , m_controlBlock(_pointer.m_controlBlock)
 {
@@ -382,7 +371,7 @@ ego::WeakPointer<T>::WeakPointer(const WeakPointer<U>& _pointer)
 
 template <typename T>
 template <typename U, typename>
-ego::WeakPointer<T>::WeakPointer(WeakPointer<U>&& _pointer)
+ego::WeakPointer<T>::WeakPointer(WeakPointer<U>&& _pointer) noexcept
     : m_object(static_cast<T*>(_pointer.m_object))
     , m_controlBlock(_pointer.m_controlBlock)
 {
@@ -411,15 +400,12 @@ ego::WeakPointer<T>& ego::WeakPointer<T>::operator=(const WeakPointer& _pointer)
 }
 
 template <typename T>
-ego::WeakPointer<T>& ego::WeakPointer<T>::operator=(WeakPointer&& _pointer)
+ego::WeakPointer<T>& ego::WeakPointer<T>::operator=(WeakPointer&& _pointer) noexcept
 {
     if (this != &_pointer)
     {
-        releaseWeakCount();
-        m_object = _pointer.m_object;
-        m_controlBlock = _pointer.m_controlBlock;
-        _pointer.m_object = nullptr;
-        _pointer.m_controlBlock = nullptr;
+        WeakPointer temporary(std::move(_pointer));
+        swap(temporary);
     }
 
     return *this;
@@ -483,22 +469,10 @@ ego::WeakPointer<T>& ego::WeakPointer<T>::operator=(const WeakPointer<U>& _point
 
 template <typename T>
 template <typename U, typename>
-ego::WeakPointer<T>& ego::WeakPointer<T>::operator=(WeakPointer<U>&& _pointer)
+ego::WeakPointer<T>& ego::WeakPointer<T>::operator=(WeakPointer<U>&& _pointer) noexcept
 {
-    if (m_controlBlock != _pointer.m_controlBlock)
-    {
-        releaseWeakCount();
-        m_object = static_cast<T*>(_pointer.m_object);
-        m_controlBlock = _pointer.m_controlBlock;
-        _pointer.m_object = nullptr;
-        _pointer.m_controlBlock = nullptr;
-    }
-    else
-    {
-        m_object = static_cast<T*>(_pointer.m_object);
-        _pointer.m_object = nullptr;
-        _pointer.m_controlBlock = nullptr;
-    }
+    WeakPointer temporary(std::move(_pointer));
+    swap(temporary);
 
     return *this;
 }

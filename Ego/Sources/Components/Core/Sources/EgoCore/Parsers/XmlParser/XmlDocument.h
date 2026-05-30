@@ -23,6 +23,7 @@ namespace ego
 		bool loadFromBuffer(const void* _data, size_t _dataSize);
 		bool loadFromString(const char* _str);
 
+		XmlNode getDocumentNode() const;
 		XmlNode getRootNode() const;
 	};
 }

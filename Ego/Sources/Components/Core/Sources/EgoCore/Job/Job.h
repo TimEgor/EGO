@@ -3,8 +3,10 @@
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/Reference/Reference.h"
 
+#include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <mutex>
 
 #ifndef EGO_CONFIG_RETAIL
 #define EGO_JOB_DEBUG
@@ -26,23 +28,12 @@ namespace ego
 
     class Job : public STDDestroyMTCountable
     {
-        struct JobEvent final
-        {
-            std::condition_variable m_notifier;
-            Job* m_job = nullptr;
-
-            JobEvent(Job* _job);
-
-            void wait();
-            void set();
-        };
-
-        friend JobEvent;
+		friend class JobController;
 
     public:
         Job() = default;
         Job(const char* _dbgName);
-        ~Job() override;
+        ~Job() override = default;
 
         void wait();
         void execute();
@@ -54,7 +45,7 @@ namespace ego
 
         JobState getState() const { return m_state; }
 
-#ifdef EDGE_JOB_DEBUG
+#ifdef EGO_JOB_DEBUG
         const char* getDbgName() const { return m_dbgName; }
 #endif
 
@@ -62,14 +53,17 @@ namespace ego
         virtual void operate() = 0;
 
     private:
+		bool trySetExecutionContext(const JobControllerWeakPointer& _jobController);
+		bool tryExecute();
+
         mutable std::mutex m_mutex;
+        std::condition_variable m_completionNotifier;
 
         JobControllerWeakPointer m_jobController;
-        JobEvent* m_completionEvent = nullptr;
 
-        std::atomic<JobState> m_state;
+        std::atomic<JobState> m_state = JobState::Undefined;
 
-#ifdef EDGE_JOB_DEBUG
+#ifdef EGO_JOB_DEBUG
         const char* m_dbgName = nullptr;
 #endif
     };

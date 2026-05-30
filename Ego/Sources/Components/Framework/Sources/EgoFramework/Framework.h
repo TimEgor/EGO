@@ -14,6 +14,8 @@
 #include "Plugin/GameLogicPluginController.h"
 #include "Project.h"
 
+#include <vector>
+
 namespace ego::framework
 {
     class Framework : public NonCopyable
@@ -22,6 +24,7 @@ namespace ego::framework
         struct InitData final
         {
             engine::Engine::InitData m_engineInitData;
+            FileName m_profilerPluginModuleName;
             ProjectPointer m_project = nullptr;
         };
 
@@ -32,6 +35,8 @@ namespace ego::framework
         void release();
 
         void run();
+        bool loadPlugin(const Project::Plugin& _plugin);
+        bool loadPlugin(const char* _type, const FileName& _moduleName);
         bool loadGameLogic(const FileName& _moduleName);
 
         PluginController& getPluginController() const;
@@ -43,6 +48,9 @@ namespace ego::framework
         bool initPluginController();
         void releasePluginController();
         bool initEngine(const InitData& _initData);
+        bool loadProfilerPlugin(const InitData& _initData);
+        bool loadPlugins(const Project::PluginCollection& _plugins);
+        bool loadProjectPlugins();
         bool registerGameLogicMainLoopJob();
         FileName selectProjectGameLogicPluginModule() const;
         void updateCurrentGameLogic(float _deltaTime);
@@ -52,6 +60,7 @@ namespace ego::framework
         engine::EnginePointer m_engine = nullptr;
         ProjectPointer m_project = nullptr;
 
+        std::vector<PluginPointer> m_plugins;
         GameLogicPluginControllerPointer m_gameLogicPluginController = nullptr;
         GameLogicPluginPointer m_currentGameLogicPlugin = nullptr;
         GameLogicPointer m_currentGameLogic = nullptr;

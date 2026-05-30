@@ -1,6 +1,11 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 namespace ego
 {
@@ -63,30 +68,31 @@ namespace ego
         SharedPointer(T* _object, TDeleter _deleter);
 
         SharedPointer(const SharedPointer& _pointer);
-        SharedPointer(SharedPointer&& _pointer);
+        SharedPointer(SharedPointer&& _pointer) noexcept;
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
         SharedPointer(const SharedPointer<U>& _pointer);
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
-        SharedPointer(SharedPointer<U>&& _pointer);
+        SharedPointer(SharedPointer<U>&& _pointer) noexcept;
 
         ~SharedPointer();
 
         SharedPointer& operator=(std::nullptr_t);
         SharedPointer& operator=(T* _object);
         SharedPointer& operator=(const SharedPointer& _pointer);
-        SharedPointer& operator=(SharedPointer&& _pointer);
+        SharedPointer& operator=(SharedPointer&& _pointer) noexcept;
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
         SharedPointer& operator=(const SharedPointer<U>& _pointer);
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
-        SharedPointer& operator=(SharedPointer<U>&& _pointer);
+        SharedPointer& operator=(SharedPointer<U>&& _pointer) noexcept;
 
         explicit operator bool() const;
 
         T* get() const;
+        T* getObject() const;
         T& operator*() const;
         T* operator->() const;
 
@@ -110,8 +116,8 @@ namespace ego
         void releaseSharedCount();
         void initializeEnableSharedFromThis(T* _object);
 
-        T* m_object;
-        ControlBlockBase* m_controlBlock;
+        T* m_object = nullptr;
+        ControlBlockBase* m_controlBlock = nullptr;
     };
 
     template <typename T>
@@ -129,7 +135,7 @@ namespace ego
 
         WeakPointer(const SharedPointer<T>& _pointer);
         WeakPointer(const WeakPointer& _pointer);
-        WeakPointer(WeakPointer&& _pointer);
+        WeakPointer(WeakPointer&& _pointer) noexcept;
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
         WeakPointer(const SharedPointer<U>& _pointer);
@@ -138,12 +144,12 @@ namespace ego
         WeakPointer(const WeakPointer<U>& _pointer);
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
-        WeakPointer(WeakPointer<U>&& _pointer);
+        WeakPointer(WeakPointer<U>&& _pointer) noexcept;
 
         ~WeakPointer();
 
         WeakPointer& operator=(const WeakPointer& _pointer);
-        WeakPointer& operator=(WeakPointer&& _pointer);
+        WeakPointer& operator=(WeakPointer&& _pointer) noexcept;
         WeakPointer& operator=(const SharedPointer<T>& _pointer);
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
@@ -153,7 +159,7 @@ namespace ego
         WeakPointer& operator=(const WeakPointer<U>& _pointer);
 
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
-        WeakPointer& operator=(WeakPointer<U>&& _pointer);
+        WeakPointer& operator=(WeakPointer<U>&& _pointer) noexcept;
 
         void reset();
         void swap(WeakPointer& _pointer);
@@ -167,8 +173,8 @@ namespace ego
         void incrementWeakCount();
         void releaseWeakCount();
 
-        T* m_object;
-        ControlBlockBase* m_controlBlock;
+        T* m_object = nullptr;
+        ControlBlockBase* m_controlBlock = nullptr;
     };
 
     template <typename T>
