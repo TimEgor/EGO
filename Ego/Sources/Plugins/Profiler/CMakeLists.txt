@@ -12,7 +12,7 @@ if (WIN32)
         target_link_libraries(
             EgoPluginsProfiler
                 INTERFACE
-                    EgoWinPIXProfiler
+                    Ego::Plugins::Profiler::WinPIX
         )
     endif()
 endif()

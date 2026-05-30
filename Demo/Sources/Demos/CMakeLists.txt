@@ -10,5 +10,5 @@ add_subdirectory(TestDemo)
 target_link_libraries(
     EgoDemoDemos
         INTERFACE
-            EgoTestDemo
+            Ego::Demo::Demos::TestDemo
 )

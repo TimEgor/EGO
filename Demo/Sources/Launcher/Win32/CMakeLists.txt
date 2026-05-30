@@ -4,14 +4,13 @@ project(EgoDemoLauncherWin32)
 
 add_executable(EgoDemoLauncherWin32 WIN32)
 
-set(LAUNCHER_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+ego_setup_target_sources(
+    EgoDemoLauncherWin32
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
-ego_collect_sources(LAUNCHER_SOURCES "${LAUNCHER_SOURCES_PATH}")
-
-target_sources(EgoDemoLauncherWin32 PRIVATE ${LAUNCHER_SOURCES})
-source_group(TREE "${LAUNCHER_SOURCES_PATH}" FILES ${LAUNCHER_SOURCES})
-
-target_link_libraries(EgoDemoLauncherWin32 PRIVATE EgoFramework)
+target_link_libraries(EgoDemoLauncherWin32 PRIVATE Ego::Framework)
 
 if (TARGET EgoTestDemo)
     add_dependencies(EgoDemoLauncherWin32 EgoTestDemo)

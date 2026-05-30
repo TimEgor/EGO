@@ -11,6 +11,6 @@ if (WIN32)
     target_link_libraries(
         EgoPluginsResourceProvider
             INTERFACE
-                EgoDXCResourceProvider
+                Ego::Plugins::ResourceProvider::DXC
     )
 endif()

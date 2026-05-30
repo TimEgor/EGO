@@ -82,7 +82,7 @@ ego::profile::ProfilerControllerPointer ego::profile::GetProfilerController()
 
 void ego::profile::BeginEvent(const char* _titleName, const char* _contextName)
 {
-#ifndef EGO_CONFIG_RETAIL
+#if EGO_ENABLE_PROFILING
     const ProfilerControllerPointer controller = GetProfilerController();
     if (controller)
     {
@@ -93,7 +93,7 @@ void ego::profile::BeginEvent(const char* _titleName, const char* _contextName)
 
 void ego::profile::EndEvent()
 {
-#ifndef EGO_CONFIG_RETAIL
+#if EGO_ENABLE_PROFILING
     const ProfilerControllerPointer controller = GetProfilerController();
     if (controller)
     {
@@ -104,7 +104,7 @@ void ego::profile::EndEvent()
 
 ego::profile::ProfileEvent::ProfileEvent(const char* _titleName, const char* _contextName)
 {
-#ifndef EGO_CONFIG_RETAIL
+#if EGO_ENABLE_PROFILING
     BeginEvent(_titleName, _contextName);
     m_isActive = true;
 #endif
@@ -112,7 +112,7 @@ ego::profile::ProfileEvent::ProfileEvent(const char* _titleName, const char* _co
 
 ego::profile::ProfileEvent::~ProfileEvent()
 {
-#ifndef EGO_CONFIG_RETAIL
+#if EGO_ENABLE_PROFILING
     if (m_isActive)
     {
         EndEvent();

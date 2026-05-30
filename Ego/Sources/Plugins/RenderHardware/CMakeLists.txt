@@ -11,6 +11,6 @@ if (WIN32)
     target_link_libraries(
         EgoPluginsRenderHardware
             INTERFACE
-                EgoD3D12RenderHardware
+                Ego::Plugins::RenderHardware::D3D12
     )
 endif()

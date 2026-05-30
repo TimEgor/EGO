@@ -7,6 +7,14 @@
 
 #include <cassert>
 
+#ifndef EGO_ENABLE_ASSERTS
+#if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE)
+#define EGO_ENABLE_ASSERTS 1
+#else
+#define EGO_ENABLE_ASSERTS 0
+#endif
+#endif
+
 namespace ego
 {
 	class AssertCore final : public Singleton<AssertCore>
@@ -24,7 +32,7 @@ namespace ego
 	inline AssertGeneratorPointer GetAssertGenerator() { return AssertCore::GetInstance().getGenerator(); }
 }
 
-#if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE)
+#if EGO_ENABLE_ASSERTS
 #define EGO_ASSERT(_CONDITION)														\
 	if (!(_CONDITION)) {															\
 		ego::AssertGeneratorPointer generator = ego::GetAssertGenerator();			\

@@ -2,23 +2,18 @@ cmake_minimum_required(VERSION 3.10)
 
 project(EgoDXCResourceProvider)
 
-add_library(EgoDXCResourceProvider SHARED)
-
-set(PLUGIN_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Sources)
-
-ego_collect_sources(PLUGIN_SOURCES "${PLUGIN_SOURCES_PATH}")
-
-target_sources(EgoDXCResourceProvider PRIVATE ${PLUGIN_SOURCES})
-source_group(TREE "${PLUGIN_SOURCES_PATH}/EgoDXCResourceProvider" FILES ${PLUGIN_SOURCES})
-
-target_include_directories(EgoDXCResourceProvider PUBLIC "${PLUGIN_SOURCES_PATH}")
+ego_add_plugin(
+    EgoDXCResourceProvider
+    ALIAS Ego::Plugins::ResourceProvider::DXC
+    CATEGORY ResourceProvider
+)
 
 target_compile_definitions(EgoDXCResourceProvider PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 
 target_link_libraries(
     EgoDXCResourceProvider
         PUBLIC
-            EgoEngine
+            Ego::Engine
         PRIVATE
             dxcompiler
 )
@@ -68,9 +63,6 @@ if (WIN32)
         message(FATAL_ERROR "DXC runtime DLLs were not found for ${DXC_REDIST_ARCH}. Install Windows SDK with Direct3D shader compiler redist.")
     endif()
 
-    message(STATUS "DXC runtime dxcompiler: ${EGO_DXCOMPILER_DLL}")
-    message(STATUS "DXC runtime dxil: ${EGO_DXIL_DLL}")
-
     add_custom_command(
         TARGET EgoDXCResourceProvider
         POST_BUILD
@@ -83,19 +75,10 @@ if (WIN32)
     install(FILES "${EGO_DXCOMPILER_DLL}" "${EGO_DXIL_DLL}" DESTINATION "Plugins/ResourceProvider")
 endif()
 
-ego_setup_target_common(
-    EgoDXCResourceProvider
-    "Plugins/ResourceProvider"
-)
-
-ego_install_target(
-    EgoDXCResourceProvider
-    "Plugins/ResourceProvider"
-)
-
-ego_setup_plugin_manifest(
-    EgoDXCResourceProvider
-    "Plugins/ResourceProvider"
-    "ResourceProviderPlugin"
-    "DXC"
+ego_register_plugin(
+    TARGET EgoDXCResourceProvider
+    INSTALL_DIR "Plugins/ResourceProvider"
+    MANIFEST
+        "ResourceProviderPlugin"
+        "DXC"
 )

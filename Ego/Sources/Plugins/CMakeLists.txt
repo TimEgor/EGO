@@ -14,9 +14,9 @@ add_subdirectory(ResourceProvider)
 target_link_libraries(
     EgoComponentsPlugins
         INTERFACE
-            EgoPluginsPlatform
-            EgoPluginsProfiler
-            EgoPluginsRender
-            EgoPluginsRenderHardware
-            EgoPluginsResourceProvider
+            Ego::Plugins::Platform
+            Ego::Plugins::Profiler
+            Ego::Plugins::Render
+            Ego::Plugins::RenderHardware
+            Ego::Plugins::ResourceProvider
 )

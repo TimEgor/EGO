@@ -15,6 +15,86 @@ function(ego_setup_target_common TARGET_NAME FILTER)
     endif()
 endfunction()
 
+function(_ego_create_target_alias TARGET_NAME ALIAS_NAME)
+    if (NOT "${ALIAS_NAME}" STREQUAL "")
+        add_library(${ALIAS_NAME} ALIAS ${TARGET_NAME})
+    endif()
+endfunction()
+
+function(ego_add_component TARGET_NAME)
+    set(ONE_VALUE_ARGS ALIAS)
+    cmake_parse_arguments(EGO_COMPONENT "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    if (EGO_COMPONENT_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_add_component received unknown arguments: ${EGO_COMPONENT_UNPARSED_ARGUMENTS}")
+    endif()
+
+    add_library(${TARGET_NAME} STATIC)
+    _ego_create_target_alias(${TARGET_NAME} "${EGO_COMPONENT_ALIAS}")
+
+    ego_setup_target_sources(
+        ${TARGET_NAME}
+        INCLUDE_SCOPE PUBLIC
+    )
+
+    ego_setup_target_common(
+        ${TARGET_NAME}
+        "Ego/Components"
+    )
+endfunction()
+
+function(ego_add_plugin TARGET_NAME)
+    set(ONE_VALUE_ARGS ALIAS CATEGORY INCLUDE_SCOPE)
+    cmake_parse_arguments(EGO_PLUGIN "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    if (EGO_PLUGIN_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_add_plugin received unknown arguments: ${EGO_PLUGIN_UNPARSED_ARGUMENTS}")
+    endif()
+
+    if (NOT EGO_PLUGIN_CATEGORY)
+        message(FATAL_ERROR "ego_add_plugin requires CATEGORY.")
+    endif()
+
+    if (NOT EGO_PLUGIN_INCLUDE_SCOPE)
+        set(EGO_PLUGIN_INCLUDE_SCOPE PUBLIC)
+    endif()
+
+    add_library(${TARGET_NAME} SHARED)
+    _ego_create_target_alias(${TARGET_NAME} "${EGO_PLUGIN_ALIAS}")
+
+    ego_setup_target_sources(
+        ${TARGET_NAME}
+        INCLUDE_SCOPE ${EGO_PLUGIN_INCLUDE_SCOPE}
+    )
+
+    ego_setup_target_common(
+        ${TARGET_NAME}
+        "Plugins/${EGO_PLUGIN_CATEGORY}"
+    )
+endfunction()
+
+function(ego_add_demo_plugin TARGET_NAME)
+    set(ONE_VALUE_ARGS ALIAS)
+    cmake_parse_arguments(EGO_DEMO_PLUGIN "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    if (EGO_DEMO_PLUGIN_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_add_demo_plugin received unknown arguments: ${EGO_DEMO_PLUGIN_UNPARSED_ARGUMENTS}")
+    endif()
+
+    add_library(${TARGET_NAME} SHARED)
+    _ego_create_target_alias(${TARGET_NAME} "${EGO_DEMO_PLUGIN_ALIAS}")
+
+    ego_setup_target_sources(
+        ${TARGET_NAME}
+        INCLUDE_SCOPE PRIVATE
+    )
+
+    ego_setup_target_common(
+        ${TARGET_NAME}
+        "Demo/Demos"
+    )
+endfunction()
+
 function(ego_setup_launch_args TARGET_NAME)
     set(DEBUG_ARGS)
 
@@ -81,4 +161,50 @@ endfunction()
 
 function(ego_install_target TARGET_NAME DIR)
     install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION ${DIR})
+endfunction()
+
+function(ego_register_plugin)
+    set(ONE_VALUE_ARGS TARGET INSTALL_DIR)
+    set(MULTI_VALUE_ARGS MANIFEST)
+    cmake_parse_arguments(EGO_REGISTER_PLUGIN "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
+
+    if (EGO_REGISTER_PLUGIN_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_register_plugin received unknown arguments: ${EGO_REGISTER_PLUGIN_UNPARSED_ARGUMENTS}")
+    endif()
+
+    if (NOT EGO_REGISTER_PLUGIN_TARGET)
+        message(FATAL_ERROR "ego_register_plugin requires TARGET.")
+    endif()
+
+    if (NOT TARGET ${EGO_REGISTER_PLUGIN_TARGET})
+        message(FATAL_ERROR "ego_register_plugin target '${EGO_REGISTER_PLUGIN_TARGET}' does not exist.")
+    endif()
+
+    if (NOT EGO_REGISTER_PLUGIN_INSTALL_DIR)
+        message(FATAL_ERROR "ego_register_plugin requires INSTALL_DIR.")
+    endif()
+
+    if (NOT EGO_REGISTER_PLUGIN_MANIFEST)
+        message(FATAL_ERROR "ego_register_plugin requires MANIFEST entries.")
+    endif()
+
+    set_target_properties(
+        ${EGO_REGISTER_PLUGIN_TARGET}
+        PROPERTIES
+            EGO_PLUGIN_INSTALL_DIR "${EGO_REGISTER_PLUGIN_INSTALL_DIR}"
+            EGO_PLUGIN_MANIFEST "${EGO_REGISTER_PLUGIN_MANIFEST}"
+    )
+
+    set_property(GLOBAL APPEND PROPERTY EGO_REGISTERED_PLUGINS ${EGO_REGISTER_PLUGIN_TARGET})
+
+    ego_install_target(
+        ${EGO_REGISTER_PLUGIN_TARGET}
+        "${EGO_REGISTER_PLUGIN_INSTALL_DIR}"
+    )
+
+    ego_setup_plugin_manifest(
+        ${EGO_REGISTER_PLUGIN_TARGET}
+        "${EGO_REGISTER_PLUGIN_INSTALL_DIR}"
+        ${EGO_REGISTER_PLUGIN_MANIFEST}
+    )
 endfunction()

@@ -14,10 +14,10 @@ add_library(Ego::Components ALIAS EgoComponents)
 
 target_link_libraries(EgoComponents
     INTERFACE
-        EgoCore
-        EgoECS
-        EgoEngine
-        EgoFramework
-        EgoMath
-        EgoPlugin
+        Ego::Core
+        Ego::ECS
+        Ego::Engine
+        Ego::Framework
+        Ego::Math
+        Ego::Plugin
 )

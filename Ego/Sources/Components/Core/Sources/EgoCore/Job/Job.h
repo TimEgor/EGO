@@ -8,7 +8,15 @@
 #include <functional>
 #include <mutex>
 
-#ifndef EGO_CONFIG_RETAIL
+#ifndef EGO_ENABLE_JOB_DEBUG
+#if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE) || defined(EGO_CONFIG_PROFILE)
+#define EGO_ENABLE_JOB_DEBUG 1
+#else
+#define EGO_ENABLE_JOB_DEBUG 0
+#endif
+#endif
+
+#if EGO_ENABLE_JOB_DEBUG
 #define EGO_JOB_DEBUG
 #endif
 

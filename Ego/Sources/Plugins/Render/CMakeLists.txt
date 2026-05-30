@@ -10,5 +10,5 @@ add_subdirectory(Default)
 target_link_libraries(
     EgoPluginsRender
         INTERFACE
-            EgoDefaultRender
+            Ego::Plugins::Render::Default
 )

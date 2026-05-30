@@ -90,12 +90,23 @@ endfunction()
 
 # Continue source collection recursively in the specified subdirectories
 function(ego_sources_recurse)
-    file(GLOB SUB_DIRS LIST_DIRECTORIES true CONFIGURE_DEPENDS "${EGO_DIR}/*")
-    foreach(DIR_ITEM IN LISTS SUB_DIRS)
-        if(IS_DIRECTORY "${DIR_ITEM}")
-            _ego_collect_dir("${DIR_ITEM}" CHILD_SOURCES)
-            list(APPEND EGO_TARGET_SOURCES ${CHILD_SOURCES})
+    if (ARGC EQUAL 0)
+        message(FATAL_ERROR "ego_sources_recurse expects at least one directory.")
+    endif()
+
+    foreach(DIR_ITEM IN LISTS ARGN)
+        if(IS_ABSOLUTE "${DIR_ITEM}")
+            set(CHILD_DIR "${DIR_ITEM}")
+        else()
+            set(CHILD_DIR "${EGO_DIR}/${DIR_ITEM}")
         endif()
+
+        if(NOT IS_DIRECTORY "${CHILD_DIR}")
+            message(FATAL_ERROR "ego_sources_recurse directory '${DIR_ITEM}' does not exist.")
+        endif()
+
+        _ego_collect_dir("${CHILD_DIR}" CHILD_SOURCES)
+        list(APPEND EGO_TARGET_SOURCES ${CHILD_SOURCES})
     endforeach()
 
     set(EGO_TARGET_SOURCES "${EGO_TARGET_SOURCES}" PARENT_SCOPE)
@@ -110,6 +121,8 @@ function(ego_sources_recurse_all)
             list(APPEND EGO_TARGET_SOURCES ${CHILD})
         endif()
     endforeach()
+
+    set(EGO_TARGET_SOURCES "${EGO_TARGET_SOURCES}" PARENT_SCOPE)
 endfunction()
 
 function(_ego_collect_dir DIR OUT_SOURCES)
@@ -152,4 +165,51 @@ function(ego_collect_sources OUT_SOURCES)
 
     _ego_collect_dir("${ROOT}" ALL_SOURCES)
     set(${OUT_SOURCES} ${ALL_SOURCES} PARENT_SCOPE)
+endfunction()
+
+# Attach a conventional source tree to an already created target.
+function(ego_setup_target_sources TARGET_NAME)
+    set(ONE_VALUE_ARGS SOURCE_DIR SOURCE_GROUP_ROOT INCLUDE_SCOPE)
+    cmake_parse_arguments(EGO_TARGET_SOURCES "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    if (EGO_TARGET_SOURCES_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_setup_target_sources received unknown arguments: ${EGO_TARGET_SOURCES_UNPARSED_ARGUMENTS}")
+    endif()
+
+    if (NOT EGO_TARGET_SOURCES_SOURCE_DIR)
+        set(EGO_TARGET_SOURCES_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Sources")
+    endif()
+
+    if (NOT IS_ABSOLUTE "${EGO_TARGET_SOURCES_SOURCE_DIR}")
+        set(EGO_TARGET_SOURCES_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${EGO_TARGET_SOURCES_SOURCE_DIR}")
+    endif()
+
+    if (NOT EGO_TARGET_SOURCES_SOURCE_GROUP_ROOT)
+        set(EGO_TARGET_SOURCES_SOURCE_GROUP_ROOT "${EGO_TARGET_SOURCES_SOURCE_DIR}/${TARGET_NAME}")
+    endif()
+
+    if (NOT IS_ABSOLUTE "${EGO_TARGET_SOURCES_SOURCE_GROUP_ROOT}")
+        set(EGO_TARGET_SOURCES_SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/${EGO_TARGET_SOURCES_SOURCE_GROUP_ROOT}")
+    endif()
+
+    if (EGO_TARGET_SOURCES_INCLUDE_SCOPE)
+        if (NOT EGO_TARGET_SOURCES_INCLUDE_SCOPE MATCHES "^(PRIVATE|PUBLIC|INTERFACE)$")
+            message(FATAL_ERROR "ego_setup_target_sources INCLUDE_SCOPE must be PRIVATE, PUBLIC, or INTERFACE.")
+        endif()
+    endif()
+
+    ego_collect_sources(TARGET_SOURCE_FILES "${EGO_TARGET_SOURCES_SOURCE_DIR}")
+
+    if (TARGET_SOURCE_FILES)
+        target_sources(${TARGET_NAME} PRIVATE ${TARGET_SOURCE_FILES})
+        source_group(TREE "${EGO_TARGET_SOURCES_SOURCE_GROUP_ROOT}" FILES ${TARGET_SOURCE_FILES})
+    endif()
+
+    if (EGO_TARGET_SOURCES_INCLUDE_SCOPE)
+        target_include_directories(
+            ${TARGET_NAME}
+                ${EGO_TARGET_SOURCES_INCLUDE_SCOPE}
+                    "${EGO_TARGET_SOURCES_SOURCE_DIR}"
+        )
+    endif()
 endfunction()

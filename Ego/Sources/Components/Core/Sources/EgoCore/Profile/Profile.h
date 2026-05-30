@@ -8,6 +8,14 @@
 #include <atomic>
 #include <mutex>
 
+#ifndef EGO_ENABLE_PROFILING
+#if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE) || defined(EGO_CONFIG_PROFILE)
+#define EGO_ENABLE_PROFILING 1
+#else
+#define EGO_ENABLE_PROFILING 0
+#endif
+#endif
+
 namespace ego::profile
 {
     class Profiler
@@ -71,7 +79,7 @@ namespace ego::profile
     };
 }
 
-#ifndef EGO_CONFIG_RETAIL
+#if EGO_ENABLE_PROFILING
 #define EGO_PROFILE_SCOPE_NAME(SCOPE) EGO_CONCAT_DEF(profileEvent_, SCOPE)
 #define EGO_PROFILE_GENERIC_SCOPE_NAME() EGO_PROFILE_SCOPE_NAME(EGO_COUNTER)
 

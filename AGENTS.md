@@ -3,7 +3,7 @@
 ## General Rules
 - Use CRLF for new and modified text files unless the specific file clearly uses another line ending style.
 - Do not use `dynamic_cast`; use the project's existing RTTI (`EGO_RTTI`, `ego::rtti`) or explicit interfaces for type checks and casts.
-- Do not modify generated files, object files, or build artifacts (`build/`, `*.obj`, `ThirtParty/*/Build/`) unless the task explicitly requires it.
+- If you create temporary directories for test builds, verification runs, or experiments, remove them after confirming they are no longer needed.
 - Do not edit vendored code in `ThirtParty/` unless explicitly requested.
 
 ## Project
