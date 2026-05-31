@@ -11,6 +11,11 @@ function(ego_setup_target_common TARGET_NAME FILTER)
     if (MSVC)
         target_compile_options(${TARGET_NAME} PRIVATE
             /Zc:preprocessor
+            /WX
+        )
+    else()
+        target_compile_options(${TARGET_NAME} PRIVATE
+            -Werror
         )
     endif()
 endfunction()
@@ -69,7 +74,7 @@ function(ego_add_plugin TARGET_NAME)
 
     ego_setup_target_common(
         ${TARGET_NAME}
-        "Plugins/${EGO_PLUGIN_CATEGORY}"
+        "Ego/Plugins/${EGO_PLUGIN_CATEGORY}"
     )
 endfunction()
 

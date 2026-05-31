@@ -10,6 +10,7 @@
 #include "../D3D12GraphicDevice.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Memory/Utils.h"
 
 namespace
 {
@@ -402,9 +403,9 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyBufferToTextureInternal(
 
     if (_region.m_bufferRowPitch)
     {
-        footprint.Footprint.RowPitch = static_cast<UINT>(AlignTo(
+        footprint.Footprint.RowPitch = static_cast<UINT>(ego::Align(
             _region.m_bufferRowPitch,
-            D3D12_TEXTURE_DATA_PITCH_ALIGNMENT
+            static_cast<uint32_t>(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT)
         ));
     }
 
@@ -459,9 +460,9 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyTextureToBufferInternal(
 
     if (_region.m_bufferRowPitch)
     {
-        footprint.Footprint.RowPitch = static_cast<UINT>(AlignTo(
+        footprint.Footprint.RowPitch = static_cast<UINT>(ego::Align(
             _region.m_bufferRowPitch,
-            D3D12_TEXTURE_DATA_PITCH_ALIGNMENT
+            static_cast<uint32_t>(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT)
         ));
     }
 

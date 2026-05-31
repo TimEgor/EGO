@@ -1,5 +1,10 @@
 #include "D3D12SwapChain.h"
 
+#include <cstring>
+#include <limits>
+
+#include "EgoCore/Assert/AssertCore.h"
+
 #include "../Common/D3D12Utils.h"
 
 ego::gpu::d3d12::D3D12SwapChain::D3D12SwapChain(
@@ -21,7 +26,14 @@ void* ego::gpu::d3d12::D3D12SwapChain::getNativeHandle() const
 
 void ego::gpu::d3d12::D3D12SwapChain::setName(const char* _name)
 {
-    m_swapChain->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(_name) - 1, _name);
+    if (!m_swapChain || !_name)
+    {
+        return;
+    }
+
+    const size_t nameLength = std::strlen(_name);
+    EGO_ASSERT(nameLength <= std::numeric_limits<UINT>::max());
+    m_swapChain->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(nameLength), _name);
 }
 
 ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12SwapChain::getTargetTexture()

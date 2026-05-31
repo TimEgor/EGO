@@ -90,7 +90,9 @@ namespace ego
 	template <typename T>
 	uint32_t DynamicVectorBase<T>::getElementCount() const
 	{
-		return m_values.size();
+		const size_t elementCount = m_values.size();
+		EGO_ASSERT(elementCount <= std::numeric_limits<uint32_t>::max());
+		return static_cast<uint32_t>(elementCount);
 	}
 
 #pragma endregion

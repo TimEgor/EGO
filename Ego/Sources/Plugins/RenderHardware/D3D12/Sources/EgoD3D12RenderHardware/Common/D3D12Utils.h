@@ -53,11 +53,6 @@ namespace ego::gpu::d3d12
         }
     }
 
-    inline uint64_t AlignTo(uint64_t _value, uint64_t _alignment)
-    {
-        return (_value + (_alignment - 1)) & ~(_alignment - 1);
-    }
-
     inline D3D12_COMMAND_LIST_TYPE ToD3D12CommandListType(CommandType _type)
     {
         switch (_type)

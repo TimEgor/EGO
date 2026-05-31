@@ -3,7 +3,7 @@
 ## General Rules
 - Use CRLF for new and modified text files unless the specific file clearly uses another line ending style.
 - Do not use `dynamic_cast`; use the project's existing RTTI (`EGO_RTTI`, `ego::rtti`) or explicit interfaces for type checks and casts.
-- If you create temporary directories for test builds, verification runs, or experiments, remove them after confirming they are no longer needed.
+- Put all temporary or disposable work artifacts under VCS-ignored directories unless the project has a dedicated real output location for them. This includes build/configure trees, generated files, logs, experiments, and verification outputs; remove disposable directories after confirming they are no longer needed.
 - Do not edit vendored code in `ThirtParty/` unless explicitly requested.
 
 ## Project

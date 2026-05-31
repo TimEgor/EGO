@@ -91,11 +91,11 @@ namespace ego
 	}
 
 	template <typename T>
-	const typename DynamicMatrixBase<T>::ValueType& DynamicMatrixBase<T>::getElement(size_t _row, size_t _column) const
+	typename DynamicMatrixBase<T>::ValueType DynamicMatrixBase<T>::getElement(size_t _row, size_t _column) const
 	{
 		//EGO_ASSERT(_row < m_values.size());
 		//EGO_ASSERT(_column < m_values[_row].size());
-		return m_values[_row][_column];
+		return m_values[_row].getElement(_column);
 	}
 
 	template <typename T>
@@ -127,7 +127,9 @@ namespace ego
 	template <typename T>
 	uint32_t DynamicMatrixBase<T>::getRowCount() const
 	{
-		return m_values.size();
+		const size_t rowCount = m_values.size();
+		EGO_ASSERT(rowCount <= std::numeric_limits<uint32_t>::max());
+		return static_cast<uint32_t>(rowCount);
 	}
 
 	template <typename T>

@@ -3,7 +3,9 @@
 #include "UtilsMacros.h"
 
 #if defined(WIN32) || defined(_WIN32)
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <Windows.h>
 
 #define EGO_WIN_PLATFORM

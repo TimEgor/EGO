@@ -14,7 +14,3 @@ target_link_libraries(
         PUBLIC
             Ego::ThirdParty::PugiXML
 )
-
-if(WIN32)
-    target_link_libraries(EgoCore PUBLIC Comdlg32)
-endif()

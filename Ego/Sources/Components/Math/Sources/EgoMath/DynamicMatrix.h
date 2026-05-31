@@ -34,7 +34,7 @@ namespace ego
 		const RowType& getRow(size_t _index) const;
 		RowType& getRow(size_t _index);
 
-		const ValueType& getElement(size_t _row, size_t _column) const;
+		ValueType getElement(size_t _row, size_t _column) const;
 		ValueType& getElement(size_t _row, size_t _column);
 
 		void setElement(size_t _row, size_t _column, ValueType _value);

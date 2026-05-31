@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "EgoCore/Memory/Utils.h"
+
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/Platform/Window/Window.h"
 #include "EgoPlugin/PluginController.h"
@@ -786,7 +788,10 @@ ego::gpu::BufferViewReference ego::gpu::d3d12::D3D12GraphicDevice::createBufferV
 
         D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
         viewDesc.BufferLocation = buffer->getD3D12Resource()->GetGPUVirtualAddress() + _desc.m_offset;
-        viewDesc.SizeInBytes = static_cast<UINT>(AlignTo(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+        viewDesc.SizeInBytes = static_cast<UINT>(ego::Align(
+            size,
+            static_cast<uint64_t>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT)
+        ));
         m_device->CreateConstantBufferView(&viewDesc, cpuHandle);
     }
     else if (_desc.m_type == GraphicResourceViewType::ShaderResource)

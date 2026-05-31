@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Memory/Utils.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Engine.h"
@@ -17,11 +18,6 @@ namespace
 {
     constexpr ego::gpu::GraphicResourceFormat RenderTargetFormat = ego::gpu::GraphicResourceFormat::B8G8R8A8UNorm;
     constexpr uint32_t ConstantBufferAlignment = 256;
-
-    uint32_t AlignTo(uint32_t _value, uint32_t _alignment)
-    {
-        return _alignment ? ((_value + _alignment - 1) / _alignment) * _alignment : _value;
-    }
 }
 
 bool ego::DefaultRender::init()
@@ -326,7 +322,7 @@ bool ego::DefaultRender::prepareCameraShaderData(Level& _level, ecs::Entity _cam
         bufferDesc.m_access = static_cast<gpu::CommonGraphicResourceAccess>(
             gpu::GraphicResourceAccessCpuWrite | gpu::GraphicResourceAccessGpuRead
         );
-        bufferDesc.m_size = AlignTo(static_cast<uint32_t>(sizeof(CameraShaderData)), ConstantBufferAlignment);
+        bufferDesc.m_size = ego::Align(static_cast<uint32_t>(sizeof(CameraShaderData)), ConstantBufferAlignment);
         bufferDesc.m_stride = sizeof(CameraShaderData);
 
         const gpu::BufferReference buffer = graphicDevice.createBuffer(bufferDesc);

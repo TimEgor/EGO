@@ -1,3 +1,7 @@
+// std has no non-deprecated general UTF converter in C++20; keep this warning
+// suppression local until the converter moves to a platform-specific backend.
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+
 #include "StringConverter.h"
 
 #include <codecvt>
