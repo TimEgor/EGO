@@ -4,7 +4,7 @@
 
 #include "Render.h"
 
-namespace ego
+namespace ego::render
 {
     class RenderPlugin : public engine::EnginePlugin
     {

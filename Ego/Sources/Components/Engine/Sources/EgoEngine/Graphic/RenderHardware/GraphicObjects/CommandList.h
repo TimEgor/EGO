@@ -96,7 +96,7 @@ namespace ego::gpu
     {
         std::vector<ColorAttachmentDesc> m_colorAttachments;
         DepthStencilAttachmentDesc m_depthStencilAttachment;
-        UInt32Vector2 m_renderArea = UInt32Vector2Zero;
+        Texture2DSize m_renderArea = UInt32Vector2Zero;
     };
 
     enum class CommandType

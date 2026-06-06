@@ -2,7 +2,7 @@
 
 #include "EgoMath/Transform.h"
 
-namespace ego
+namespace ego::render
 {
     class RenderCamera final
     {

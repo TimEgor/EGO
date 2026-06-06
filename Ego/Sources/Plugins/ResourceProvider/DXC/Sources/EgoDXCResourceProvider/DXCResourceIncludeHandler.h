@@ -1,0 +1,62 @@
+#pragma once
+
+#include "EgoCore/FileName/FileName.h"
+
+#include "EgoEngine/Platform/FileSystem/FileSystem.h"
+
+#include <Windows.h>
+#include <Unknwn.h>
+#include <ObjIdl.h>
+#include <WTypes.h>
+#include <dxcapi.h>
+#include <wrl/client.h>
+
+#include <atomic>
+#include <vector>
+
+namespace ego
+{
+    class ResourceLoadingContext;
+}
+
+namespace ego::resources::dxc
+{
+    class DXCResourceIncludeHandler final : public IDxcIncludeHandler
+    {
+    public:
+        DXCResourceIncludeHandler(
+            IDxcUtils* _utils,
+            ResourceLoadingContext& _loadingContext,
+            const FileName& _sourcePath
+        );
+
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID _riid, void** _object) override;
+        virtual ULONG STDMETHODCALLTYPE AddRef() override;
+        virtual ULONG STDMETHODCALLTYPE Release() override;
+        virtual HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR _filename, IDxcBlob** _includeSource) override;
+
+    private:
+        static FileName ToFileName(LPCWSTR _filename);
+
+        void AddIncludeDirectory(const FileName& _directory);
+
+        bool TryLoadInclude(
+            const FileName& _path,
+            FileName& _loadedPath,
+            FileContent& _content
+        ) const;
+
+        bool LoadIncludeContent(
+            const FileName& _includePath,
+            FileName& _loadedPath,
+            FileContent& _content
+        ) const;
+
+        HRESULT CreateBlob(const FileContent& _content, IDxcBlob** _includeSource) const;
+
+        std::atomic<ULONG> m_refCount = 1;
+        Microsoft::WRL::ComPtr<IDxcUtils> m_utils;
+        ResourceLoadingContext* m_loadingContext = nullptr;
+        std::vector<FileName> m_includeDirectories;
+    };
+}

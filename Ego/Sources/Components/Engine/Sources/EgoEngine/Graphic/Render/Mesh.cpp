@@ -28,7 +28,7 @@ namespace
     }
 }
 
-ego::Mesh::Mesh(
+ego::render::Mesh::Mesh(
     const VertexBufferBinding& _vertexBuffer,
     uint32_t _vertexCount,
     const IndexBufferBinding& _indexBuffer,
@@ -40,27 +40,30 @@ ego::Mesh::Mesh(
       m_indexCount(_indexCount)
 {}
 
-const ego::Mesh::VertexBufferBinding& ego::Mesh::getVertexBuffer() const
+const ego::render::Mesh::VertexBufferBinding& ego::render::Mesh::getVertexBuffer() const
 {
     return m_vertexBuffer;
 }
 
-const ego::Mesh::IndexBufferBinding& ego::Mesh::getIndexBuffer() const
+const ego::render::Mesh::IndexBufferBinding& ego::render::Mesh::getIndexBuffer() const
 {
     return m_indexBuffer;
 }
 
-uint32_t ego::Mesh::getVertexCount() const
+uint32_t ego::render::Mesh::getVertexCount() const
 {
     return m_vertexCount;
 }
 
-uint32_t ego::Mesh::getIndexCount() const
+uint32_t ego::render::Mesh::getIndexCount() const
 {
     return m_indexCount;
 }
 
-ego::MeshReference ego::CreateMeshFromRawData(GraphicDevice& _graphicDevice, const MeshRawData& _rawData)
+ego::render::MeshHandler ego::render::CreateMeshFromRawData(
+    ego::GraphicDevice& _graphicDevice,
+    const MeshRawData& _rawData
+)
 {
     if (!_rawData.m_vertexData || _rawData.m_vertexDataSize == 0 || _rawData.m_vertexStride == 0)
     {
@@ -84,13 +87,13 @@ ego::MeshReference ego::CreateMeshFromRawData(GraphicDevice& _graphicDevice, con
     vertexBufferDesc.m_stride = _rawData.m_vertexStride;
 
     const gpu::InitialGraphicResourceData vertexData(_rawData.m_vertexData, _rawData.m_vertexDataSize);
-    const gpu::BufferReference vertexBuffer = _graphicDevice.createBuffer(vertexBufferDesc, vertexData);
+    const RenderBuffer vertexBuffer = _graphicDevice.createBuffer(vertexBufferDesc, vertexData);
     if (!vertexBuffer)
     {
         return nullptr;
     }
 
-    gpu::BufferReference indexBuffer = nullptr;
+    RenderBuffer indexBuffer = nullptr;
     uint32_t indexCount = 0;
     if (_rawData.m_indexData && _rawData.m_indexDataSize != 0)
     {
@@ -136,9 +139,4 @@ ego::MeshReference ego::CreateMeshFromRawData(GraphicDevice& _graphicDevice, con
         indexBufferBinding,
         indexCount
     ));
-}
-
-ego::MeshHandle ego::CreateMeshHandle(const MeshReference& _mesh)
-{
-    return MakeHandle<Mesh>(_mesh);
 }

@@ -23,7 +23,6 @@ struct CameraShaderData
 struct ObjectShaderData
 {
     column_major float4x4 Model;
-    column_major float4x4 ModelViewProjection;
 };
 
 struct VSOutput

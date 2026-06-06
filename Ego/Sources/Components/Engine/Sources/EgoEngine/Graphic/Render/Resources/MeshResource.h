@@ -1,17 +1,16 @@
 #pragma once
 
-#include "EgoEngine/Graphic/Render/Mesh.h"
+#include "EgoEngine/Graphic/Render/RenderObject.h"
 #include "EgoEngine/Resources/Resource/Resource.h"
 
-namespace ego
+namespace ego::render
 {
     class MeshResource final : public Resource
     {
     public:
         MeshResource() = default;
 
-        const MeshReference& getMesh() const;
-        void setMesh(const MeshReference& _mesh);
+        const RenderMesh& getMesh() const;
 
         EGO_RESOURCE(MeshResource, Resource);
 
@@ -20,10 +19,10 @@ namespace ego
         virtual void onUnload() override;
 
     private:
-        MeshReference m_mesh = nullptr;
+        RenderMesh m_mesh = nullptr;
     };
 
     EGO_POINTER(MeshResource);
 
-    MeshHandle CreateMeshHandle(const MeshResourcePointer& _resource);
+    RenderMesh CreateMeshHandler(const MeshResourcePointer& _resource);
 }

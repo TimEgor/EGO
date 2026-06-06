@@ -4,6 +4,24 @@
 
 #include <limits>
 
+namespace
+{
+    template <typename TShader>
+    ego::Reference<TShader> MakeTypedShaderReference(
+        const ego::gpu::ShaderReference& _shader,
+        ego::gpu::ShaderStage _stage
+    )
+    {
+        ego::gpu::Shader* shader = _shader.getObject();
+        if (!shader || shader->getShaderType() != _stage)
+        {
+            return nullptr;
+        }
+
+        return static_cast<TShader*>(shader);
+    }
+}
+
 ego::gpu::ShaderReference ego::gpu::ShaderResource::getShader() const
 {
     return m_shader;
@@ -30,7 +48,7 @@ void ego::gpu::ShaderResource::onUnload()
 
 ego::gpu::VertexShaderReference ego::gpu::VertexShaderResource::getVertexShader() const
 {
-    return VertexShaderReference(m_shader.getObjectCast<VertexShader>());
+    return MakeTypedShaderReference<VertexShader>(getShader(), ShaderStage::Vertex);
 }
 
 ego::gpu::ShaderStage ego::gpu::VertexShaderResource::getShaderStage() const
@@ -45,7 +63,7 @@ ego::gpu::ShaderReference ego::gpu::VertexShaderResource::createShader(const Sha
 
 ego::gpu::PixelShaderReference ego::gpu::PixelShaderResource::getPixelShader() const
 {
-    return PixelShaderReference(m_shader.getObjectCast<PixelShader>());
+    return MakeTypedShaderReference<PixelShader>(getShader(), ShaderStage::Pixel);
 }
 
 ego::gpu::ShaderStage ego::gpu::PixelShaderResource::getShaderStage() const
@@ -60,7 +78,7 @@ ego::gpu::ShaderReference ego::gpu::PixelShaderResource::createShader(const Shad
 
 ego::gpu::ComputeShaderReference ego::gpu::ComputeShaderResource::getComputeShader() const
 {
-    return ComputeShaderReference(m_shader.getObjectCast<ComputeShader>());
+    return MakeTypedShaderReference<ComputeShader>(getShader(), ShaderStage::Compute);
 }
 
 ego::gpu::ShaderStage ego::gpu::ComputeShaderResource::getShaderStage() const

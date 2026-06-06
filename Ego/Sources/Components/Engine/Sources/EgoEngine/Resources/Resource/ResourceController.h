@@ -161,8 +161,7 @@ namespace ego
         ResourceProviderPointer getResourceProvider(const FileName& _path) const;
         bool loadResourceData(
             const ResourcePointer& _resource,
-            const FileName& _path,
-            bool _asyncChildLoading
+            const FileName& _path
         );
         bool isChildResourcesLoaded(
             const ResourcePointer& _resource,

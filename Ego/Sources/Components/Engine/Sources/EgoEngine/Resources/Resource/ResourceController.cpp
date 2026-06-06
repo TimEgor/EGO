@@ -244,7 +244,7 @@ ego::ResourcePointer ego::ResourceController::loadResource(
         return resource->isLoaded() ? resource : nullptr;
     }
 
-    return loadResourceData(resource, _path, false) ? resource : nullptr;
+    return loadResourceData(resource, _path) ? resource : nullptr;
 }
 
 ego::ResourcePointer ego::ResourceController::loadResourceAsync(
@@ -286,7 +286,7 @@ ego::ResourcePointer ego::ResourceController::loadResourceAsync(
                 ResourcePointer resource = resourceWeakPointer.lock();
                 if (resource)
                 {
-                    loadResourceData(resource, path, true);
+                    loadResourceData(resource, path);
                 }
             },
             "LoadResource"
@@ -520,8 +520,7 @@ ego::ResourceProviderPointer ego::ResourceController::getResourceProvider(const 
 
 bool ego::ResourceController::loadResourceData(
     const ResourcePointer& _resource,
-    const FileName& _path,
-    bool _asyncChildLoading
+    const FileName& _path
 )
 {
     if (!_resource)
@@ -529,20 +528,31 @@ bool ego::ResourceController::loadResourceData(
         return false;
     }
 
-    ResourceLoadingContext loadingContext(*this, *_resource, _asyncChildLoading);
+    ResourceLoadingContext loadingContext(*this, *_resource);
     FileContent content;
 
     const ResourceProviderPointer provider = getResourceProvider(_path);
     if (provider)
     {
-        if (!provider->provideContent(*_resource, _path, loadingContext, content))
+        std::string loadingError;
+        if (!provider->provideContent(*_resource, _path, loadingContext, content, loadingError))
         {
+            if (loadingError.empty())
+            {
+                loadingError = std::string("Resource provider failed to load content: ") + _path.c_str();
+            }
+
+            Resource::ResourceAccessor::SetLoadingError(_resource.get(), std::move(loadingError));
             Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
             return false;
         }
     }
     else if (!loadResourceContent(_path, content))
     {
+        Resource::ResourceAccessor::SetLoadingError(
+            _resource.get(),
+            std::string("Failed to load resource content: ") + _path.c_str()
+        );
         Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
         return false;
     }

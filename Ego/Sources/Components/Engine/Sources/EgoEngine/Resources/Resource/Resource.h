@@ -10,6 +10,7 @@
 #include <atomic>
 #include <functional>
 #include <mutex>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -55,6 +56,7 @@ namespace ego
             friend struct ResourceDeleter;
 
             static void PrepareLoading(Resource* _resource, const FileName& _path);
+            static void SetLoadingError(Resource* _resource, std::string _loadingError);
             static void SetState(Resource* _resource, ResourceState _state);
             static void Unload(Resource* _resource);
             static void AddDependency(Resource* _resource, const ResourcePointer& _dependency);
@@ -66,6 +68,7 @@ namespace ego
 
         FileName getPath() const;
         ResourceState getState() const;
+        std::string getLoadingError() const;
 
         bool isLoading() const;
         bool isLoaded() const;
@@ -87,12 +90,14 @@ namespace ego
         void getDependencies(DependencyCollection& _dependencies) const;
 
         void prepareLoading(const FileName& _path);
+        void setLoadingError(std::string _loadingError);
         void setState(ResourceState _state);
         void unload();
 
         mutable std::mutex m_mutex;
 
         FileName m_path;
+        std::string m_loadingError;
         DependencyCollection m_dependencies;
         std::atomic<ResourceState> m_state = ResourceState::Undefined;
     };

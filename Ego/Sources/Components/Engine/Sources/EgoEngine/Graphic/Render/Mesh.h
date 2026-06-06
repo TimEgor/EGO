@@ -2,15 +2,15 @@
 
 #include <cstdint>
 
-#include "EgoCore/Handle/Handle.h"
-#include "EgoCore/Reference/Reference.h"
-
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Buffer.h"
+#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
 
 namespace ego
 {
     class GraphicDevice;
+}
 
+namespace ego::render
+{
     struct MeshRawData final
     {
         const void* m_vertexData = nullptr;
@@ -31,14 +31,14 @@ namespace ego
     public:
         struct VertexBufferBinding final
         {
-            gpu::BufferReference m_buffer = nullptr;
+            RenderBuffer m_buffer = nullptr;
             uint32_t m_stride = 0;
             uint32_t m_offset = 0;
         };
 
         struct IndexBufferBinding final
         {
-            gpu::BufferReference m_buffer = nullptr;
+            RenderBuffer m_buffer = nullptr;
             gpu::GraphicResourceFormat m_format = gpu::GraphicResourceFormat::Undefined;
             uint32_t m_offset = 0;
         };
@@ -63,11 +63,8 @@ namespace ego
         const uint32_t m_indexCount;
     };
 
-    EGO_REFERENCE(Mesh)
+    EGO_REFERENCE(Mesh);
+    EGO_NAMED_HANDLER(MeshReference, Mesh);
 
-    MeshReference CreateMeshFromRawData(GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
-
-    EGO_HANDLE(Mesh)
-
-    MeshHandle CreateMeshHandle(const MeshReference& _mesh);
+    MeshHandler CreateMeshFromRawData(ego::GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
 }

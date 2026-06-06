@@ -115,8 +115,8 @@ namespace ego::gpu
     {
         BindingLayoutReference m_bindingLayout = nullptr;
 
-        ShaderReference m_vertexShader = nullptr;
-        ShaderReference m_pixelShader = nullptr;
+        VertexShaderReference m_vertexShader = nullptr;
+        PixelShaderReference m_pixelShader = nullptr;
 
         InputLayoutDesc m_inputLayoutDesc;
 
@@ -134,7 +134,7 @@ namespace ego::gpu
     struct ComputePipelineDesc final
     {
         BindingLayoutReference m_bindingLayout = nullptr;
-        ShaderReference m_computeShader = nullptr;
+        ComputeShaderReference m_computeShader = nullptr;
     };
 
     enum class PipelineType

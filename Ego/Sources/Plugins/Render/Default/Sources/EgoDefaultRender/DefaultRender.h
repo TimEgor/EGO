@@ -1,29 +1,32 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
+
+#include "EgoCore/FileName/FileName.h"
 
 #include "EgoMath/Transform.h"
 #include "EgoMath/Vector.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
-#include "EgoEngine/Graphic/Render/Material.h"
-#include "EgoEngine/Graphic/Render/Mesh.h"
 #include "EgoEngine/Graphic/Render/Render.h"
 
-namespace ego
+#include "DefaultRenderDebugDraw.h"
+
+namespace ego::render
 {
     class DefaultRender : public Render
     {
     public:
         struct Item final
         {
-            MeshHandle m_mesh = nullptr;
-            MaterialHandle m_material = nullptr;
+            RenderMesh m_mesh = nullptr;
+            RenderMaterial m_material = nullptr;
             Transform m_globalTransform;
             uint32_t m_objectIndex = 0;
         };
 
-        DefaultRender() = default;
+        explicit DefaultRender(const FileName& _pluginRootPath = FileName());
         ~DefaultRender() override = default;
 
         virtual bool init() override;
@@ -35,8 +38,18 @@ namespace ego
         virtual void wait() override;
         virtual void present(GraphicPresenter& _presenter) override;
 
-        virtual void setResolution(const RenderResolution& _resolution) override;
-        virtual const RenderResolution& getResolution() const override;
+        virtual void setResolution(const gpu::Texture2DSize& _resolution) override;
+        virtual const gpu::Texture2DSize& getResolution() const override;
+
+        virtual RenderGraphicPipeline createPipeline(
+            const RenderVertexShader& _vertexShader,
+            const RenderPixelShader& _pixelShader
+        ) override;
+
+        using Render::drawPoint;
+        using Render::drawLine;
+        virtual void drawPoint(const DebugDrawPointData& _point) override;
+        virtual void drawLine(const DebugDrawLineData& _line) override;
 
         bool isInitialized() const;
 
@@ -55,29 +68,32 @@ namespace ego
         bool prepareCameraShaderData(Level& _level, ecs::Entity _cameraEntity);
         bool prepareObjectShaderData();
         void setupTargetViewport();
-        void submitCommandList(const gpu::GraphicCommandListReference& _commandList);
+        void submitCommandList(const RenderGraphicCommandList& _commandList);
         void transitionRenderTarget(
-            const gpu::GraphicCommandListReference& _commandList,
+            const RenderGraphicCommandList& _commandList,
             gpu::GraphicResourceState _nextState
         );
         bool copyRenderTargetToPresenter(GraphicPresenter& _presenter);
         void renderItem(const Item& _item);
 
-        gpu::CommandQueueReference m_commandQueue = nullptr;
-        gpu::GraphicCommandListReference m_commandList = nullptr;
-        gpu::GraphicCommandListReference m_presentCommandList = nullptr;
-        gpu::FenceReference m_frameFence = nullptr;
-        gpu::Texture2DReference m_renderTargetTexture = nullptr;
-        gpu::TextureViewReference m_renderTargetView = nullptr;
-        gpu::BufferReference m_cameraShaderDataBuffer = nullptr;
-        gpu::BufferViewReference m_cameraShaderDataView = nullptr;
-        gpu::BufferReference m_objectShaderDataBuffer = nullptr;
-        gpu::BufferViewReference m_objectShaderDataView = nullptr;
+        FileName m_pluginRootPath;
+        DefaultRenderDebugDraw m_debugDraw;
+        RenderCommandQueue m_commandQueue = nullptr;
+        RenderGraphicCommandList m_commandList = nullptr;
+        RenderGraphicCommandList m_presentCommandList = nullptr;
+        RenderFence m_frameFence = nullptr;
+        RenderTexture2D m_renderTargetTexture = nullptr;
+        RenderTextureView m_renderTargetView = nullptr;
+        RenderBuffer m_cameraShaderDataBuffer = nullptr;
+        RenderBufferView m_cameraShaderDataView = nullptr;
+        RenderBuffer m_objectShaderDataBuffer = nullptr;
+        RenderBufferView m_objectShaderDataView = nullptr;
+        RenderBindingLayout m_bindingLayout = nullptr;
 
         std::vector<Item> m_renderItems;
         ComputeMatrix4x4 m_cameraViewProjectionMatrix = ComputeMatrix4x4Identity;
-        RenderResolution m_resolution = DefaultRenderResolution;
-        RenderResolution m_pendingResolution = DefaultRenderResolution;
+        gpu::Texture2DSize m_resolution = DefaultRenderResolution;
+        gpu::Texture2DSize m_pendingResolution = DefaultRenderResolution;
         FloatVector4 m_clearColor = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);
         gpu::GraphicResourceState m_renderTargetState = gpu::GraphicResourceState::Common;
         gpu::Fence::FenceValue m_frameFenceValue = 0;

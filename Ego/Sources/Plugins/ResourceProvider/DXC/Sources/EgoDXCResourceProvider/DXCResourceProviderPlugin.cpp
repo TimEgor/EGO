@@ -22,9 +22,11 @@ void ego::resources::dxc::DXCResourceProviderPlugin::registerResourceProviders()
 {
     const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
     engine::GetEngine().getResourceController().addResourceProvider(".shader", shaderProvider);
+    engine::GetEngine().getResourceController().addResourceProvider(".hlsl", shaderProvider);
 }
 
 void ego::resources::dxc::DXCResourceProviderPlugin::unregisterResourceProviders()
 {
+    engine::GetEngine().getResourceController().removeResourceProvider(".hlsl");
     engine::GetEngine().getResourceController().removeResourceProvider(".shader");
 }

@@ -2,8 +2,7 @@
 
 ego::gpu::GraphicPipeline::GraphicPipeline(const GraphicPipelineDesc& _desc)
     : m_desc(_desc)
-{
-}
+{}
 
 const ego::gpu::GraphicPipelineDesc& ego::gpu::GraphicPipeline::getDesc() const
 {
@@ -17,8 +16,7 @@ ego::gpu::PipelineType ego::gpu::GraphicPipeline::getPipelineType() const
 
 ego::gpu::ComputePipeline::ComputePipeline(const ComputePipelineDesc& _desc)
     : m_desc(_desc)
-{
-}
+{}
 
 const ego::gpu::ComputePipelineDesc& ego::gpu::ComputePipeline::getDesc() const
 {

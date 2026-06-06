@@ -2,7 +2,7 @@
 
 #include "EgoEngine/Graphic/Render/RenderPlugin.h"
 
-namespace ego::default_render
+namespace ego::render::default_render
 {
     class DefaultRenderPlugin final : public RenderPlugin
     {

@@ -168,13 +168,15 @@ void ego::gpu::d3d12::D3D12CommandListBase::bindBindlessDescriptorHeapsInternal(
     D3D12DescriptorAllocatorPointer viewAllocator = m_device->getViewDescriptorAllocator();
     if (viewAllocator && viewAllocator->getHeap())
     {
-        heaps[heapCount++] = viewAllocator->getHeap();
+        heaps[heapCount] = viewAllocator->getHeap();
+        ++heapCount;
     }
 
     D3D12DescriptorAllocatorPointer samplerAllocator = m_device->getSamplerDescriptorAllocator();
     if (samplerAllocator && samplerAllocator->getHeap())
     {
-        heaps[heapCount++] = samplerAllocator->getHeap();
+        heaps[heapCount] = samplerAllocator->getHeap();
+        ++heapCount;
     }
 
     if (heapCount)

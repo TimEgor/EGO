@@ -7,7 +7,7 @@
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
 
-namespace ego
+namespace ego::render
 {
     inline constexpr uint32_t RenderBindlessRootConstantsOffset = 0;
     inline constexpr uint32_t RenderBindlessRootConstantsSize = sizeof(uint32_t) * 4;
@@ -32,7 +32,6 @@ namespace ego
     struct ObjectShaderData final
     {
         FloatMatrix4x4 m_model = FloatMatrix4x4Identity;
-        FloatMatrix4x4 m_modelViewProjection = FloatMatrix4x4Identity;
     };
 
     static_assert(sizeof(RenderBindlessRootConstants) == RenderBindlessRootConstantsSize);

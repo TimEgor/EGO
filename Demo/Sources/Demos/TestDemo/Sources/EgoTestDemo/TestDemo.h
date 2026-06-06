@@ -28,8 +28,8 @@ namespace ego::demo
         std::vector<RootedFileSystemPointer> m_assetFileSystems;
         LevelPointer m_level = nullptr;
         ecs::Entity m_meshEntity;
-        MeshResourcePointer m_triangleMesh = nullptr;
-        MaterialResourcePointer m_triangleMaterial = nullptr;;
+        render::MeshResourcePointer m_triangleMesh = nullptr;
+        render::MaterialResourcePointer m_triangleMaterial = nullptr;
         float m_meshRotationAngle = 0.0f;
     };
 

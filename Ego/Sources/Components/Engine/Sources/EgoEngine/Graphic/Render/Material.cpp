@@ -1,7 +1,7 @@
 #include "Material.h"
 
-ego::Material::Material(
-    const gpu::GraphicPipelineReference& _pipeline,
+ego::render::Material::Material(
+    const RenderGraphicPipeline& _pipeline,
     ResourceViewCollection _resourceViews,
     SamplerCollection _samplers
 )
@@ -10,22 +10,17 @@ ego::Material::Material(
       m_samplers(std::move(_samplers))
 {}
 
-const ego::gpu::GraphicPipelineReference& ego::Material::getPipeline() const
+const ego::render::RenderGraphicPipeline& ego::render::Material::getPipeline() const
 {
     return m_pipeline;
 }
 
-const ego::Material::ResourceViewCollection& ego::Material::getResourceViews() const
+const ego::render::Material::ResourceViewCollection& ego::render::Material::getResourceViews() const
 {
     return m_resourceViews;
 }
 
-const ego::Material::SamplerCollection& ego::Material::getSamplers() const
+const ego::render::Material::SamplerCollection& ego::render::Material::getSamplers() const
 {
     return m_samplers;
-}
-
-ego::MaterialHandle ego::CreateMaterialHandle(const MaterialReference& _material)
-{
-    return MakeHandle<Material>(_material);
 }

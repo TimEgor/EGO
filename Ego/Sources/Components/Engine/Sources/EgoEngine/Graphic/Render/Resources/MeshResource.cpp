@@ -41,17 +41,12 @@ namespace
     }
 }
 
-const ego::MeshReference& ego::MeshResource::getMesh() const
+const ego::render::RenderMesh& ego::render::MeshResource::getMesh() const
 {
     return m_mesh;
 }
 
-void ego::MeshResource::setMesh(const MeshReference& _mesh)
-{
-    m_mesh = _mesh;
-}
-
-bool ego::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
+bool ego::render::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
 {
     XmlDocument document;
     EGO_CHECK_RETURN_FALSE(!_content.empty() && document.loadFromBuffer(_content.data(), _content.size()));
@@ -77,26 +72,26 @@ bool ego::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
     rawData.m_vertexStride = sizeof(MeshVertex);
     rawData.m_vertexCount = static_cast<uint32_t>(vertices.size());
 
-    const MeshReference mesh = CreateMeshFromRawData(engine::GetEngine().getGraphicDevice(), rawData);
+    const RenderMesh mesh = CreateMeshFromRawData(engine::GetEngine().getGraphicDevice(), rawData);
     EGO_CHECK_RETURN_FALSE(mesh);
 
-    setMesh(mesh);
+    m_mesh = mesh;
 
     return true;
 }
 
-void ego::MeshResource::onUnload()
+void ego::render::MeshResource::onUnload()
 {
     m_mesh = nullptr;
 }
 
-ego::MeshHandle ego::CreateMeshHandle(const MeshResourcePointer& _resource)
+ego::render::RenderMesh ego::render::CreateMeshHandler(const MeshResourcePointer& _resource)
 {
-    return MakeHandle<Mesh>(
+    return MakeHandler<MeshReference>(
         _resource,
-        [](const MeshResourcePointer& _storedResource) -> Mesh*
+        [](const MeshResourcePointer& _storedResource) -> RenderMesh
         {
-            return _storedResource ? _storedResource->getMesh().getObject() : nullptr;
+            return _storedResource ? _storedResource->getMesh() : nullptr;
         }
     );
 }

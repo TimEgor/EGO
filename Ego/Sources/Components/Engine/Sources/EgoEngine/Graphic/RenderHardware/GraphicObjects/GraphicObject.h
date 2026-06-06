@@ -6,7 +6,7 @@
 
 namespace ego::gpu
 {
-	inline constexpr uint32_t InvalidBindlessIndex = 0xffffffffu;
+	inline constexpr uint32_t InvalidBindlessIndex = -1;
 
 	class GraphicObject : public STDDestroyMTCountable
 	{

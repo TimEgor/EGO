@@ -232,13 +232,13 @@ ego::LevelController& ego::engine::Engine::getLevelController()
     return *m_levelController;
 }
 
-const ego::Render& ego::engine::Engine::getRender() const
+const ego::render::Render& ego::engine::Engine::getRender() const
 {
     EGO_ASSERT(m_render);
     return *m_render;
 }
 
-ego::Render& ego::engine::Engine::getRender()
+ego::render::Render& ego::engine::Engine::getRender()
 {
     EGO_ASSERT(m_render);
     return *m_render;
@@ -347,7 +347,10 @@ bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
     EGO_CHECK_RETURN_FALSE(m_renderHardwarePlugin);
 
     m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();
-    EGO_CHECK_RETURN_FALSE(m_graphicDevice && m_graphicDevice->init(GraphicDevice::InitParams()));
+    GraphicDevice::InitParams graphicDeviceInitParams;
+    graphicDeviceInitParams.m_debugEnable = true;
+    graphicDeviceInitParams.m_gpuValidation = true;
+    EGO_CHECK_RETURN_FALSE(m_graphicDevice && m_graphicDevice->init(graphicDeviceInitParams));
 
     return true;
 }
@@ -359,12 +362,12 @@ bool ego::engine::Engine::initRender(const InitData& _initData)
     FileName renderPluginModuleName = _initData.m_renderPluginModuleName;
     if (!renderPluginModuleName)
     {
-        renderPluginModuleName = m_enginePluginController->selectEnginePluginModule<RenderPlugin>();
+        renderPluginModuleName = m_enginePluginController->selectEnginePluginModule<ego::render::RenderPlugin>();
     }
 
     EGO_CHECK_RETURN_FALSE(renderPluginModuleName);
 
-    m_renderPlugin = m_enginePluginController->loadEnginePlugin<RenderPlugin>(renderPluginModuleName);
+    m_renderPlugin = m_enginePluginController->loadEnginePlugin<ego::render::RenderPlugin>(renderPluginModuleName);
     EGO_CHECK_RETURN_FALSE(m_renderPlugin);
 
     m_render = m_renderPlugin->createRender();

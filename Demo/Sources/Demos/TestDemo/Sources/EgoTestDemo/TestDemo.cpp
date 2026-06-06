@@ -68,10 +68,10 @@ bool ego::demo::TestDemo::init()
         m_assetFileSystems.push_back(assetFileSystem);
     }
 
-    m_triangleMesh = resourceController.load<MeshResource>("TestTriangle.mesh.xml");
+    m_triangleMesh = resourceController.load<render::MeshResource>("TestTriangle.mesh.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMesh && m_triangleMesh->isLoaded());
 
-    m_triangleMaterial = resourceController.load<MaterialResource>("TestTriangle.material.xml");
+    m_triangleMaterial = resourceController.load<render::MaterialResource>("TestTriangle.material.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMaterial && m_triangleMaterial->isLoaded());
 
     m_level = engine.getLevelController().createLevel();
@@ -81,16 +81,20 @@ bool ego::demo::TestDemo::init()
     const ecs::Entity cameraNode = m_level->createNode();
     EGO_CHECK_INITIALIZATION(cameraNode);
 
-    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<CameraComponent>(cameraNode));
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(cameraNode));
     engine.setRenderCameraEntity(cameraNode);
 
     m_meshEntity = m_level->createNode();
     EGO_CHECK_INITIALIZATION(m_meshEntity);
 
-    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<MeshRenderComponent>(
+    const render::RenderMesh triangleMesh = render::CreateMeshHandler(m_triangleMesh);
+    const render::RenderMaterial triangleMaterial = render::CreateMaterialHandler(m_triangleMaterial);
+    EGO_CHECK_INITIALIZATION(triangleMesh && triangleMaterial);
+
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::MeshRenderComponent>(
         m_meshEntity,
-        CreateMeshHandle(m_triangleMesh),
-        CreateMaterialHandle(m_triangleMaterial)
+        triangleMesh,
+        triangleMaterial
     ));
 
     return true;

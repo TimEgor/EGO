@@ -28,6 +28,12 @@ void ego::Resource::ResourceAccessor::PrepareLoading(Resource* _resource, const 
     _resource->prepareLoading(_path);
 }
 
+void ego::Resource::ResourceAccessor::SetLoadingError(Resource* _resource, std::string _loadingError)
+{
+    EGO_ASSERT(_resource);
+    _resource->setLoadingError(std::move(_loadingError));
+}
+
 void ego::Resource::ResourceAccessor::SetState(Resource* _resource, ResourceState _state)
 {
     EGO_ASSERT(_resource);
@@ -69,6 +75,12 @@ ego::ResourceState ego::Resource::getState() const
     return m_state.load(std::memory_order_acquire);
 }
 
+std::string ego::Resource::getLoadingError() const
+{
+    std::lock_guard locker(m_mutex);
+    return m_loadingError;
+}
+
 bool ego::Resource::isLoading() const
 {
     return getState() == ResourceState::Loading;
@@ -93,6 +105,11 @@ bool ego::Resource::load(
     prepareLoading(_path);
 
     const bool result = onLoad(std::move(_content), _loadingContext);
+    if (!result && getLoadingError().empty())
+    {
+        setLoadingError(std::string("Failed to load resource: ") + _path.c_str());
+    }
+
     setState(result ? ResourceState::Loaded : ResourceState::Failed);
 
     return result;
@@ -109,6 +126,7 @@ void ego::Resource::unload()
 
     std::lock_guard locker(m_mutex);
     m_path.clear();
+    m_loadingError.clear();
     m_dependencies.clear();
     setState(ResourceState::Undefined);
 }
@@ -120,8 +138,15 @@ void ego::Resource::prepareLoading(const FileName& _path)
 {
     std::lock_guard locker(m_mutex);
     m_path = _path;
+    m_loadingError.clear();
     m_dependencies.clear();
     setState(ResourceState::Loading);
+}
+
+void ego::Resource::setLoadingError(std::string _loadingError)
+{
+    std::lock_guard locker(m_mutex);
+    m_loadingError = std::move(_loadingError);
 }
 
 void ego::Resource::setState(ResourceState _state)

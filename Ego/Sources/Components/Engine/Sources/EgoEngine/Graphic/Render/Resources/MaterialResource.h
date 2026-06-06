@@ -1,17 +1,16 @@
 #pragma once
 
-#include "EgoEngine/Graphic/Render/Material.h"
+#include "EgoEngine/Graphic/Render/RenderObject.h"
 #include "EgoEngine/Resources/Resource/Resource.h"
 
-namespace ego
+namespace ego::render
 {
     class MaterialResource final : public Resource
     {
     public:
         MaterialResource() = default;
 
-        const MaterialReference& getMaterial() const;
-        void setMaterial(const MaterialReference& _material);
+        const RenderMaterial& getMaterial() const;
 
         EGO_RESOURCE(MaterialResource, Resource);
 
@@ -20,10 +19,10 @@ namespace ego
         virtual void onUnload() override;
 
     private:
-        MaterialReference m_material = nullptr;
+        RenderMaterial m_material = nullptr;
     };
 
     EGO_POINTER(MaterialResource);
 
-    MaterialHandle CreateMaterialHandle(const MaterialResourcePointer& _resource);
+    RenderMaterial CreateMaterialHandler(const MaterialResourcePointer& _resource);
 }
