@@ -13,10 +13,17 @@ const ego::render::RenderMaterial& ego::render::MaterialResource::getMaterial() 
     return m_material;
 }
 
-bool ego::render::MaterialResource::onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext)
+bool ego::render::MaterialResource::onLoad(
+    FileContent&& _content,
+    ResourceLoadingContext& _loadingContext
+)
 {
+    m_material = nullptr;
+
     XmlDocument document;
-    EGO_CHECK_RETURN_FALSE(!_content.empty() && document.loadFromBuffer(_content.data(), _content.size()));
+    EGO_CHECK_RETURN_FALSE(
+        !_content.empty() && document.loadFromBuffer(_content.data(), _content.size())
+    );
 
     const XmlNode materialNode = document.getRootNode();
     EGO_CHECK_RETURN_FALSE(materialNode);
@@ -32,21 +39,82 @@ bool ego::render::MaterialResource::onLoad(FileContent&& _content, ResourceLoadi
     EGO_CHECK_RETURN_FALSE(vertexShaderPath);
     EGO_CHECK_RETURN_FALSE(pixelShaderPath);
 
+    if (_loadingContext.isAsyncLoading())
+    {
+        gpu::VertexShaderResourcePointer vertexShaderResource =
+            _loadingContext.loadAsyncDependency<gpu::VertexShaderResource>(vertexShaderPath);
+        gpu::PixelShaderResourcePointer pixelShaderResource =
+            _loadingContext.loadAsyncDependency<gpu::PixelShaderResource>(pixelShaderPath);
+
+        if (!vertexShaderResource || !pixelShaderResource)
+        {
+            setLoadingError("Failed to load material shader dependencies.");
+            return false;
+        }
+
+        setDependenciesLoadedCallback(
+            [this, vertexShaderResource, pixelShaderResource]()
+            {
+                return completeLoading(vertexShaderResource, pixelShaderResource);
+            }
+        );
+
+        return true;
+    }
+
     gpu::VertexShaderResourcePointer vertexShaderResource =
-        _loadingContext.loadChildResource<gpu::VertexShaderResource>(vertexShaderPath);
+        _loadingContext.loadDependency<gpu::VertexShaderResource>(vertexShaderPath);
     gpu::PixelShaderResourcePointer pixelShaderResource =
-        _loadingContext.loadChildResource<gpu::PixelShaderResource>(pixelShaderPath);
+        _loadingContext.loadDependency<gpu::PixelShaderResource>(pixelShaderPath);
 
-    EGO_CHECK_RETURN_FALSE(vertexShaderResource && vertexShaderResource->isLoaded());
-    EGO_CHECK_RETURN_FALSE(pixelShaderResource && pixelShaderResource->isLoaded());
+    if (!vertexShaderResource || !pixelShaderResource)
+    {
+        setLoadingError("Failed to load material shader dependencies.");
+        return false;
+    }
 
-    const RenderVertexShader vertexShader = CreateVertexShaderHandler(vertexShaderResource);
-    const RenderPixelShader pixelShader = CreatePixelShaderHandler(pixelShaderResource);
+    return completeLoading(vertexShaderResource, pixelShaderResource);
+}
+
+bool ego::render::MaterialResource::completeLoading(
+    const SharedPointer<gpu::VertexShaderResource>& _vertexShaderResource,
+    const SharedPointer<gpu::PixelShaderResource>& _pixelShaderResource
+)
+{
+    if (!_vertexShaderResource || !_vertexShaderResource->isLoaded())
+    {
+        setLoadingError("Vertex shader resource hasn't been loaded.");
+        return false;
+    }
+
+    if (!_pixelShaderResource || !_pixelShaderResource->isLoaded())
+    {
+        setLoadingError("Pixel shader resource hasn't been loaded.");
+        return false;
+    }
+
+    const RenderVertexShader vertexShader = CreateVertexShaderHandler(_vertexShaderResource);
+    const RenderPixelShader pixelShader = CreatePixelShaderHandler(_pixelShaderResource);
+    if (!vertexShader || !pixelShader)
+    {
+        setLoadingError("Failed to create material shader handlers.");
+        return false;
+    }
 
     const RenderGraphicPipeline pipeline = engine::GetEngine().getRender().createPipeline(vertexShader, pixelShader);
-    EGO_CHECK_RETURN_FALSE(pipeline);
+    if (!pipeline)
+    {
+        setLoadingError("Failed to create material pipeline.");
+        return false;
+    }
 
     RenderMaterial material = MaterialReference(new Material(pipeline));
+    if (!material)
+    {
+        setLoadingError("Failed to create material.");
+        return false;
+    }
+
     m_material = material;
 
     return true;

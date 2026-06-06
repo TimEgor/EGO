@@ -18,7 +18,9 @@
 namespace ego
 {
     class ResourceController;
+    class ResourceDependencyGraph;
     class ResourceLoadingContext;
+    class ResourceRegistry;
 
     using ResourceType = rtti::TypeMetaInfoID;
     inline constexpr ResourceType InvalidResourceType = rtti::InvalidTypeMetaInfoID;
@@ -29,6 +31,7 @@ namespace ego
     {
         Undefined,
         Loading,
+        LoadingDependencies,
         Loaded,
         Failed
     };
@@ -52,7 +55,9 @@ namespace ego
         class ResourceAccessor final : public NonInstanceable
         {
             friend class ResourceController;
+            friend class ResourceDependencyGraph;
             friend class ResourceLoadingContext;
+            friend class ResourceRegistry;
             friend struct ResourceDeleter;
 
             static void PrepareLoading(Resource* _resource, const FileName& _path);
@@ -61,6 +66,7 @@ namespace ego
             static void Unload(Resource* _resource);
             static void AddDependency(Resource* _resource, const ResourcePointer& _dependency);
             static void GetDependencies(const Resource* _resource, DependencyCollection& _dependencies);
+            static bool OnDependenciesLoaded(Resource* _resource);
         };
 
         Resource() = default;
@@ -71,26 +77,37 @@ namespace ego
         std::string getLoadingError() const;
 
         bool isLoading() const;
+        bool isLoadingDependencies() const;
         bool isLoaded() const;
         bool isFailed() const;
 
-        bool load(const FileName& _path, FileContent&& _content, ResourceLoadingContext& _loadingContext);
+        bool load(
+            const FileName& _path,
+            FileContent&& _content,
+            ResourceLoadingContext& _loadingContext
+        );
 
         virtual ResourceType getType() const = 0;
 
         EGO_RTTI_VIRTUAL_BASE(Resource);
 
     protected:
+        using DependenciesLoadedCallback = std::function<bool()>;
+
+        void setLoadingError(std::string _loadingError);
+        void setDependenciesLoadedCallback(DependenciesLoadedCallback&& _callback);
+
         virtual bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) = 0;
+        virtual bool onDependenciesLoaded();
         virtual void onUnload();
 
     private:
         void clearDependencies();
         void addDependency(const ResourcePointer& _resource);
         void getDependencies(DependencyCollection& _dependencies) const;
+        DependenciesLoadedCallback takeDependenciesLoadedCallback();
 
         void prepareLoading(const FileName& _path);
-        void setLoadingError(std::string _loadingError);
         void setState(ResourceState _state);
         void unload();
 
@@ -99,6 +116,7 @@ namespace ego
         FileName m_path;
         std::string m_loadingError;
         DependencyCollection m_dependencies;
+        DependenciesLoadedCallback m_dependenciesLoadedCallback;
         std::atomic<ResourceState> m_state = ResourceState::Undefined;
     };
 

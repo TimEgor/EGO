@@ -49,7 +49,9 @@ const ego::render::RenderMesh& ego::render::MeshResource::getMesh() const
 bool ego::render::MeshResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
 {
     XmlDocument document;
-    EGO_CHECK_RETURN_FALSE(!_content.empty() && document.loadFromBuffer(_content.data(), _content.size()));
+    EGO_CHECK_RETURN_FALSE(
+        !_content.empty() && document.loadFromBuffer(_content.data(), _content.size())
+    );
 
     const XmlNode meshNode = document.getRootNode();
     EGO_CHECK_RETURN_FALSE(meshNode);

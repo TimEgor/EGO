@@ -1,48 +1,12 @@
-#include "ResourceController.h"
-
-#include "ResourceLoadingContext.h"
-
-#include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/FileName/FileNameUtils.h"
-#include "EgoCore/UtilsMacros.h"
-
-#include <algorithm>
-#include <cctype>
 #include <string>
 #include <utility>
+#include <vector>
 
-namespace
-{
-    std::string NormalizeProviderExtension(const ego::FileName& _extension)
-    {
-        std::string extension = _extension.c_str();
-        if (extension.empty())
-        {
-            return extension;
-        }
+#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/UtilsMacros.h"
 
-        if (extension.front() != '.')
-        {
-            extension.insert(extension.begin(), '.');
-        }
-
-        std::transform(
-            extension.begin(),
-            extension.end(),
-            extension.begin(),
-            [](unsigned char _ch)
-            {
-                return static_cast<char>(std::tolower(_ch));
-            }
-        );
-        return extension;
-    }
-
-    std::string GetProviderExtension(const ego::FileName& _path)
-    {
-        return NormalizeProviderExtension(ego::file_name_utils::GetFileExtension(_path));
-    }
-}
+#include "ResourceController.h"
+#include "ResourceLoadingContext.h"
 
 ego::ResourceController::~ResourceController()
 {
@@ -64,6 +28,15 @@ bool ego::ResourceController::ResourceControllerAccessor::LoadResourceContent(
 )
 {
     return _controller.loadResourceContent(_path, _content);
+}
+
+bool ego::ResourceController::ResourceControllerAccessor::AddDependency(
+    ResourceController& _controller,
+    Resource& _resource,
+    const ResourcePointer& _dependency
+)
+{
+    return _controller.addDependency(_resource, _dependency);
 }
 
 bool ego::ResourceController::init(uint32_t _threadCount, const char* _jobThreadName)
@@ -94,10 +67,9 @@ void ego::ResourceController::release()
     waitAllLoadingJobs();
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
 
-    std::lock_guard locker(m_mutex);
-    m_resources.clear();
-    m_fileSystems.clear();
-    m_resourceProviders.clear();
+    m_resourceRegistry.clear();
+    m_resourceSources.clear();
+    m_dependencyGraph.clear();
     m_isInitialized = false;
 }
 
@@ -108,59 +80,17 @@ bool ego::ResourceController::isInitialized() const
 
 void ego::ResourceController::addFileSystem(const FileSystemPointer& _fileSystem)
 {
-    if (!_fileSystem)
-    {
-        return;
-    }
-
-    std::lock_guard locker(m_mutex);
-
-    const auto foundIt = std::find_if(
-        m_fileSystems.begin(),
-        m_fileSystems.end(),
-        [&_fileSystem](const FileSystemPointer& _registeredFileSystem)
-        {
-            return _registeredFileSystem.get() == _fileSystem.get();
-        }
-    );
-    if (foundIt != m_fileSystems.end())
-    {
-        return;
-    }
-
-    m_fileSystems.push_back(_fileSystem);
+    m_resourceSources.addFileSystem(_fileSystem);
 }
 
 bool ego::ResourceController::removeFileSystem(const FileSystemPointer& _fileSystem)
 {
-    if (!_fileSystem)
-    {
-        return false;
-    }
-
-    std::lock_guard locker(m_mutex);
-
-    const auto foundIt = std::find_if(
-        m_fileSystems.begin(),
-        m_fileSystems.end(),
-        [&_fileSystem](const FileSystemPointer& _registeredFileSystem)
-        {
-            return _registeredFileSystem.get() == _fileSystem.get();
-        }
-    );
-    if (foundIt == m_fileSystems.end())
-    {
-        return false;
-    }
-
-    m_fileSystems.erase(foundIt);
-    return true;
+    return m_resourceSources.removeFileSystem(_fileSystem);
 }
 
 void ego::ResourceController::clearFileSystems()
 {
-    std::lock_guard locker(m_mutex);
-    m_fileSystems.clear();
+    m_resourceSources.clearFileSystems();
 }
 
 bool ego::ResourceController::addResourceProvider(
@@ -168,39 +98,49 @@ bool ego::ResourceController::addResourceProvider(
     const ResourceProviderPointer& _provider
 )
 {
-    const std::string extension = NormalizeProviderExtension(_extension);
-    if (extension.empty() || !_provider)
-    {
-        return false;
-    }
-
-    std::lock_guard locker(m_mutex);
-
-    auto [providerIt, added] = m_resourceProviders.emplace(extension, _provider);
-    if (!added)
-    {
-        providerIt->second = _provider;
-    }
-
-    return true;
+    return m_resourceSources.addResourceProvider(_extension, _provider);
 }
 
 bool ego::ResourceController::removeResourceProvider(const FileName& _extension)
 {
-    const std::string extension = NormalizeProviderExtension(_extension);
-    if (extension.empty())
-    {
-        return false;
-    }
-
-    std::lock_guard locker(m_mutex);
-    return m_resourceProviders.erase(extension) != 0;
+    return m_resourceSources.removeResourceProvider(_extension);
 }
 
 void ego::ResourceController::clearResourceProviders()
 {
-    std::lock_guard locker(m_mutex);
-    m_resourceProviders.clear();
+    m_resourceSources.clearResourceProviders();
+}
+
+ego::ResourcePointer ego::ResourceController::getResource(const FileName& _path) const
+{
+    return getResource(_path.hash());
+}
+
+ego::ResourcePointer ego::ResourceController::getResource(FileNameID _id) const
+{
+    return m_resourceRegistry.getResource(_id);
+}
+
+bool ego::ResourceController::removeResource(Resource* _resource)
+{
+    return m_resourceRegistry.removeResource(_resource);
+}
+
+const ego::JobController& ego::ResourceController::getJobController() const
+{
+    EGO_ASSERT(m_jobController);
+    return *m_jobController;
+}
+
+ego::JobController& ego::ResourceController::getJobController()
+{
+    EGO_ASSERT(m_jobController);
+    return *m_jobController;
+}
+
+bool ego::ResourceController::loadResourceContent(const FileName& _path, FileContent& _content) const
+{
+    return m_resourceSources.loadContent(_path, _content);
 }
 
 ego::ResourcePointer ego::ResourceController::loadResource(
@@ -217,7 +157,13 @@ ego::ResourcePointer ego::ResourceController::loadResource(
 
     bool needLoading = false;
     const ResourceID resourceID = _path.hash();
-    ResourcePointer resource = getOrCreateResource(_type, _path, resourceID, _factory, needLoading);
+    ResourcePointer resource = m_resourceRegistry.getOrCreateResource(
+        _type,
+        _path,
+        resourceID,
+        _factory,
+        needLoading
+    );
 
     if (!resource)
     {
@@ -226,39 +172,23 @@ ego::ResourcePointer ego::ResourceController::loadResource(
 
     if (!needLoading)
     {
-        JobReference loadingJob;
-        {
-            std::lock_guard locker(m_mutex);
-            const auto resourceIt = m_resources.find(resourceID);
-            if (resourceIt != m_resources.end())
-            {
-                loadingJob = resourceIt->second.m_loadingJob.lock();
-            }
-        }
-
-        if (loadingJob && !loadingJob->isFinished())
-        {
-            m_jobController->wait(loadingJob);
-        }
-
-        return resource->isLoaded() ? resource : nullptr;
+        return waitResourceLoading(resource) ? resource : nullptr;
     }
 
-    return loadResourceData(resource, _path) ? resource : nullptr;
+    if (!loadResourceData(resource, _path, false))
+    {
+        return nullptr;
+    }
+
+    return waitResourceLoading(resource) ? resource : nullptr;
 }
 
-ego::ResourcePointer ego::ResourceController::loadResourceAsync(
+ego::ResourceLoadingOperationPointer ego::ResourceController::loadResourceAsync(
     ResourceType _type,
     const FileName& _path,
-    const ResourceFactory& _factory,
-    JobReference* _job
+    const ResourceFactory& _factory
 )
 {
-    if (_job)
-    {
-        *_job = JobReference();
-    }
-
     if (!m_isInitialized)
     {
         EGO_ASSERT_FAIL_MESSAGE("ResourceController isn't initialized.");
@@ -267,110 +197,167 @@ ego::ResourcePointer ego::ResourceController::loadResourceAsync(
 
     bool needLoading = false;
     const ResourceID resourceID = _path.hash();
-    ResourcePointer resource = getOrCreateResource(_type, _path, resourceID, _factory, needLoading);
+    ResourcePointer resource = m_resourceRegistry.getOrCreateResource(
+        _type,
+        _path,
+        resourceID,
+        _factory,
+        needLoading
+    );
 
     if (!resource)
     {
         return nullptr;
     }
 
-    JobReference loadingJob;
-
     if (needLoading)
     {
         ResourceWeakPointer resourceWeakPointer = resource;
 
-        loadingJob = CreateLambdaJob(
+        const JobReference loadingJob = CreateLambdaJob(
             [this, resourceWeakPointer, path = _path]()
             {
                 ResourcePointer resource = resourceWeakPointer.lock();
                 if (resource)
                 {
-                    loadResourceData(resource, path);
+                    loadResourceData(resource, path, true);
                 }
             },
             "LoadResource"
         );
 
-        {
-            std::lock_guard locker(m_mutex);
-            auto resourceIt = m_resources.find(resourceID);
-            ResourcePointer storedResource = resourceIt != m_resources.end()
-                ? resourceIt->second.m_resource.lock()
-                : nullptr;
-            if (resourceIt != m_resources.end() && storedResource.get() == resource.get())
-            {
-                resourceIt->second.m_loadingJob = loadingJob;
-            }
-        }
-
+        m_resourceRegistry.setLoadingJob(resource, loadingJob);
         m_jobController->addJob(loadingJob);
     }
-    else
+
+    return new ResourceLoadingOperation(weakFromThis(), resource);
+}
+
+bool ego::ResourceController::readResourceContent(
+    const ResourcePointer& _resource,
+    const FileName& _path,
+    ResourceLoadingContext& _loadingContext,
+    FileContent& _content
+)
+{
+    const ResourceProviderPointer provider = m_resourceSources.getResourceProvider(_path);
+    if (provider)
     {
-        std::lock_guard locker(m_mutex);
-        const auto resourceIt = m_resources.find(resourceID);
-        if (resourceIt != m_resources.end())
+        std::string loadingError;
+        if (provider->provideContent(*_resource, _path, _loadingContext, _content, loadingError))
         {
-            loadingJob = resourceIt->second.m_loadingJob.lock();
+            return true;
         }
+
+        if (loadingError.empty())
+        {
+            loadingError = std::string("Resource provider failed to load content: ") + _path.c_str();
+        }
+
+        finishResourceFailed(_resource, std::move(loadingError));
+        return false;
     }
 
-    if (_job)
+    if (loadResourceContent(_path, _content))
     {
-        *_job = loadingJob;
+        return true;
     }
 
-    return resource;
+    finishResourceFailed(_resource, std::string("Failed to load resource content: ") + _path.c_str());
+    return false;
 }
 
-ego::ResourcePointer ego::ResourceController::getResource(const FileName& _path) const
-{
-    return getResource(_path.hash());
-}
-
-ego::ResourcePointer ego::ResourceController::getResource(FileNameID _id) const
-{
-    std::lock_guard locker(m_mutex);
-    const auto resourceIt = m_resources.find(_id);
-
-    if (resourceIt == m_resources.end())
-    {
-        return nullptr;
-    }
-
-    return resourceIt->second.m_resource.lock();
-}
-
-bool ego::ResourceController::removeResource(Resource* _resource)
+bool ego::ResourceController::loadResourceData(
+    const ResourcePointer& _resource,
+    const FileName& _path,
+    bool _isAsyncLoading
+)
 {
     if (!_resource)
     {
         return false;
     }
 
-    const FileName resourcePath = _resource->getPath();
-    if (!resourcePath)
+    ResourceLoadingContext loadingContext(*this, *_resource, _isAsyncLoading);
+    FileContent content;
+
+    if (!readResourceContent(_resource, _path, loadingContext, content))
     {
         return false;
     }
 
-    const ResourceID resourceID = resourcePath.hash();
-    if (resourceID == InvalidResourceID)
+    const bool isLoadSuccessful = _resource->load(_path, std::move(content), loadingContext);
+    return completeResourceLoad(_resource, isLoadSuccessful, loadingContext);
+}
+
+bool ego::ResourceController::completeResourceLoad(
+    const ResourcePointer& _resource,
+    bool _isLoadSuccessful,
+    ResourceLoadingContext& _loadingContext
+)
+{
+    if (!_resource)
     {
         return false;
     }
 
-    std::lock_guard locker(m_mutex);
-
-    const auto resourceIt = m_resources.find(resourceID);
-    if (resourceIt == m_resources.end() || resourceIt->second.m_resourcePtr != _resource)
+    if (!_isLoadSuccessful)
     {
+        finishResourceFailed(_resource);
         return false;
     }
 
-    m_resources.erase(resourceIt);
-    return true;
+    if (!_loadingContext.hasAsyncDependencies())
+    {
+        finishResourceLoaded(_resource);
+        return true;
+    }
+
+    if (beginResourceDependenciesLoading(*_resource, _loadingContext.takeDependencies()))
+    {
+        return true;
+    }
+
+    finishResourceFailed(
+        _resource,
+        std::string("Failed to begin resource dependencies loading: ") + _resource->getPath().c_str()
+    );
+    return false;
+}
+
+void ego::ResourceController::finishResourceLoaded(const ResourcePointer& _resource)
+{
+    if (!_resource)
+    {
+        return;
+    }
+
+    Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Loaded);
+    notifyResourceLoadingFinished(_resource);
+}
+
+void ego::ResourceController::finishResourceFailed(
+    const ResourcePointer& _resource,
+    std::string _loadingError
+)
+{
+    if (!_resource)
+    {
+        return;
+    }
+
+    if (!_loadingError.empty())
+    {
+        Resource::ResourceAccessor::SetLoadingError(_resource.get(), std::move(_loadingError));
+    }
+
+    Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
+    notifyResourceLoadingFinished(_resource);
+}
+
+bool ego::ResourceController::addDependency(Resource& _resource, const ResourcePointer& _dependency)
+{
+    return m_dependencyGraph.addDependency(_resource, _dependency);
 }
 
 bool ego::ResourceController::isChildResourcesLoaded(const FileName& _path) const
@@ -385,232 +372,148 @@ bool ego::ResourceController::isChildResourcesLoaded(FileNameID _id) const
 
 bool ego::ResourceController::isChildResourcesLoaded(const ResourcePointer& _resource) const
 {
-    std::unordered_set<const Resource*> checkedResources;
-    checkedResources.insert(_resource.get());
-
-    return isChildResourcesLoaded(_resource, checkedResources);
+    return m_dependencyGraph.isChildResourcesLoaded(_resource);
 }
 
-const ego::JobController& ego::ResourceController::getJobController() const
+bool ego::ResourceController::waitLoading(const ResourcePointer& _resource)
 {
-    EGO_ASSERT(m_jobController);
-    return *m_jobController;
+    return waitResourceLoading(_resource);
 }
 
-ego::JobController& ego::ResourceController::getJobController()
+bool ego::ResourceController::waitLoading(const FileName& _path)
 {
-    EGO_ASSERT(m_jobController);
-    return *m_jobController;
+    return waitLoading(getResource(_path));
 }
 
-ego::ResourcePointer ego::ResourceController::getOrCreateResource(
-    ResourceType _type,
-    const FileName& _path,
-    FileNameID _id,
-    const ResourceFactory& _factory,
-    bool& _needLoading
+bool ego::ResourceController::waitLoading(FileNameID _id)
+{
+    return waitLoading(getResource(_id));
+}
+
+bool ego::ResourceController::beginResourceDependenciesLoading(
+    Resource& _resource,
+    Resource::DependencyCollection&& _dependencies
 )
 {
-    _needLoading = false;
-
-    if (_type == InvalidResourceType || !_path || _id == InvalidFileNameID)
-    {
-        EGO_ASSERT_FAIL_MESSAGE("Resource name is invalid.");
-        return nullptr;
-    }
-
-    if (!_factory)
-    {
-        EGO_ASSERT_FAIL_MESSAGE("Resource factory is null.");
-        return nullptr;
-    }
-
-    std::lock_guard locker(m_mutex);
-
-    auto resourceIt = m_resources.find(_id);
-    if (resourceIt != m_resources.end())
-    {
-        ResourcePointer resource = resourceIt->second.m_resource.lock();
-        if (!resource)
-        {
-            m_resources.erase(resourceIt);
-            _needLoading = true;
-        }
-        else
-        {
-            if (resource->getType() != _type)
-            {
-                EGO_ASSERT_FAIL_MESSAGE("Resource with requested name has different type.");
-                return nullptr;
-            }
-
-            const JobReference loadingJob = resourceIt->second.m_loadingJob.lock();
-            if (loadingJob && !loadingJob->isFinished())
-            {
-                return resource;
-            }
-
-            if (resource->isLoaded() || resource->isLoading())
-            {
-                return resource;
-            }
-
-            Resource::ResourceAccessor::PrepareLoading(resource.get(), _path);
-            resourceIt->second.m_loadingJob.reset();
-            _needLoading = true;
-            return resource;
-        }
-    }
-
-    ResourcePointer resource = _factory();
+    ResourcePointer resource = m_resourceRegistry.getRegisteredResource(_resource);
     if (!resource)
     {
-        EGO_ASSERT_FAIL_MESSAGE("Resource factory returned null.");
-        return nullptr;
+        return false;
     }
 
-    if (resource->getType() != _type)
+    const ResourceDependencyGraph::PendingLoadingPointer pendingLoading = m_dependencyGraph.createPendingLoading(
+        _resource,
+        resource,
+        std::move(_dependencies)
+    );
+    if (!pendingLoading)
     {
-        EGO_ASSERT_FAIL_MESSAGE("Resource factory returned unexpected resource type.");
-        return nullptr;
+        return false;
     }
 
-    Resource::ResourceAccessor::PrepareLoading(resource.get(), _path);
+    Resource::ResourceAccessor::SetState(&_resource, ResourceState::LoadingDependencies);
+    const uint32_t remainingDependencyCount = m_dependencyGraph.registerPendingDependencyWaiters(pendingLoading);
 
-    m_resources.emplace(_id, ResourceEntry{_type, _path, _factory, resource, resource.get(), nullptr});
-    _needLoading = true;
+    if (remainingDependencyCount == 0)
+    {
+        schedulePendingLoadingCompletion(pendingLoading);
+    }
 
-    return resource;
+    return true;
 }
 
-bool ego::ResourceController::loadResourceContent(const FileName& _path, FileContent& _content) const
+void ego::ResourceController::notifyResourceLoadingFinished(const ResourcePointer& _resource)
 {
-    FileSystemCollection fileSystems;
-
+    for (const ResourceDependencyGraph::PendingLoadingPointer& pendingLoading :
+        m_dependencyGraph.notifyResourceLoadingFinished(_resource))
     {
-        std::lock_guard locker(m_mutex);
-        fileSystems = m_fileSystems;
+        schedulePendingLoadingCompletion(pendingLoading);
     }
-
-    for (const FileSystemPointer& fileSystem : fileSystems)
-    {
-        if (fileSystem && fileSystem->readFile(_path, _content))
-        {
-            return true;
-        }
-    }
-
-    _content.clear();
-    return false;
 }
 
-ego::ResourceProviderPointer ego::ResourceController::getResourceProvider(const FileName& _path) const
-{
-    const std::string extension = GetProviderExtension(_path);
-    if (extension.empty())
-    {
-        return nullptr;
-    }
-
-    std::lock_guard locker(m_mutex);
-
-    const auto providerIt = m_resourceProviders.find(extension);
-    return providerIt != m_resourceProviders.end() ? providerIt->second : nullptr;
-}
-
-bool ego::ResourceController::loadResourceData(
-    const ResourcePointer& _resource,
-    const FileName& _path
+void ego::ResourceController::schedulePendingLoadingCompletion(
+    const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading
 )
 {
-    if (!_resource)
+    if (!_pendingLoading || _pendingLoading->m_isCompletionScheduled.exchange(true))
     {
-        return false;
+        return;
     }
 
-    ResourceLoadingContext loadingContext(*this, *_resource);
-    FileContent content;
-
-    const ResourceProviderPointer provider = getResourceProvider(_path);
-    if (provider)
+    const ResourcePointer resource = m_dependencyGraph.getPendingResource(_pendingLoading);
+    if (!resource)
     {
-        std::string loadingError;
-        if (!provider->provideContent(*_resource, _path, loadingContext, content, loadingError))
+        return;
+    }
+
+    const JobReference completionJob = CreateLambdaJob(
+        [this, _pendingLoading]()
         {
-            if (loadingError.empty())
+            completePendingLoading(_pendingLoading);
+        },
+        "CompleteResourceLoading"
+    );
+
+    m_jobController->addJob(completionJob);
+    m_resourceRegistry.setLoadingJob(resource, completionJob);
+}
+
+void ego::ResourceController::completePendingLoading(
+    const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading
+)
+{
+    ResourceDependencyGraph::PendingLoadingCompletionResult result =
+        m_dependencyGraph.completePendingLoading(_pendingLoading);
+    if (!result.m_isCompleted)
+    {
+        return;
+    }
+
+    if (!result.m_areDependenciesLoaded)
+    {
+        finishResourceFailed(result.m_resource, std::move(result.m_loadingError));
+        return;
+    }
+
+    if (Resource::ResourceAccessor::OnDependenciesLoaded(result.m_resource.get()))
+    {
+        finishResourceLoaded(result.m_resource);
+        return;
+    }
+
+    std::string loadingError = result.m_resource->getLoadingError();
+    if (loadingError.empty())
+    {
+        loadingError =
+            std::string("Failed to complete resource loading: ") + result.m_resource->getPath().c_str();
+    }
+
+    finishResourceFailed(result.m_resource, std::move(loadingError));
+}
+
+bool ego::ResourceController::waitResourceLoading(const ResourcePointer& _resource)
+{
+    while (_resource && _resource->isLoading())
+    {
+        std::vector<JobReference> loadingJobs;
+        m_dependencyGraph.collectResourceLoadingJobs(
+            _resource,
+            [this](const ResourcePointer& _loadingResource)
             {
-                loadingError = std::string("Resource provider failed to load content: ") + _path.c_str();
-            }
-
-            Resource::ResourceAccessor::SetLoadingError(_resource.get(), std::move(loadingError));
-            Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
-            return false;
-        }
-    }
-    else if (!loadResourceContent(_path, content))
-    {
-        Resource::ResourceAccessor::SetLoadingError(
-            _resource.get(),
-            std::string("Failed to load resource content: ") + _path.c_str()
+                return m_resourceRegistry.getLoadingJob(_loadingResource);
+            },
+            loadingJobs
         );
-        Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);
-        return false;
-    }
 
-    if (!_resource->load(_path, std::move(content), loadingContext))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool ego::ResourceController::isChildResourcesLoaded(
-    const ResourcePointer& _resource,
-    std::unordered_set<const Resource*>& _checkedResources
-) const
-{
-    if (!_resource || !_resource->isLoaded())
-    {
-        return false;
-    }
-
-    Resource::DependencyCollection dependencies;
-    Resource::ResourceAccessor::GetDependencies(_resource.get(), dependencies);
-
-    for (const ResourcePointer& dependency : dependencies)
-    {
-        if (!dependency || !dependency->isLoaded())
+        if (loadingJobs.empty())
         {
-            return false;
+            break;
         }
 
-        if (!_checkedResources.insert(dependency.get()).second)
-        {
-            continue;
-        }
-
-        if (!isChildResourcesLoaded(dependency, _checkedResources))
-        {
-            return false;
-        }
+        waitLoadingJobs(loadingJobs);
     }
 
-    return true;
-}
-
-void ego::ResourceController::collectLoadingJobs(std::vector<JobReference>& _jobs) const
-{
-    std::lock_guard locker(m_mutex);
-
-    for (const auto& resourceEntry : m_resources)
-    {
-        const JobReference loadingJob = resourceEntry.second.m_loadingJob.lock();
-        if (loadingJob && !loadingJob->isFinished())
-        {
-            _jobs.push_back(loadingJob);
-        }
-    }
+    return _resource && _resource->isLoaded();
 }
 
 void ego::ResourceController::waitLoadingJobs(const std::vector<JobReference>& _jobs)
@@ -629,7 +532,7 @@ void ego::ResourceController::waitAllLoadingJobs()
     while (true)
     {
         std::vector<JobReference> loadingJobs;
-        collectLoadingJobs(loadingJobs);
+        m_resourceRegistry.collectLoadingJobs(loadingJobs);
 
         if (loadingJobs.empty())
         {

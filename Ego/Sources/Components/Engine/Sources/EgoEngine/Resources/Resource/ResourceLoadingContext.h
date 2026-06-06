@@ -6,43 +6,60 @@ namespace ego
 {
     class ResourceLoadingContext final
     {
+        friend class ResourceController;
+
     public:
-        ResourceLoadingContext(ResourceController& _controller, Resource& _ownerResource);
+        ResourceLoadingContext(ResourceController& _controller, Resource& _ownerResource, bool _isAsyncLoading);
 
         template <typename TResource>
-        SharedPointer<TResource> loadChildResource(const FileName& _path)
+        SharedPointer<TResource> loadDependency(const FileName& _path)
         {
             static_assert(std::is_base_of_v<Resource, TResource>);
 
             SharedPointer<TResource> resource = m_controller.load<TResource>(_path);
 
-            if (resource)
+            if (resource && !addDependency(resource))
             {
-                Resource::ResourceAccessor::AddDependency(&m_ownerResource, resource);
+                return nullptr;
             }
 
             return resource;
         }
 
         template <typename TResource>
-        SharedPointer<TResource> loadAsyncChildResource(const FileName& _path, JobReference* _job = nullptr)
+        SharedPointer<TResource> loadAsyncDependency(const FileName& _path)
         {
             static_assert(std::is_base_of_v<Resource, TResource>);
 
-            SharedPointer<TResource> resource = m_controller.loadAsync<TResource>(_path, _job);
+            ResourceLoadingOperationPointer operation = m_controller.loadAsync<TResource>(_path);
+            SharedPointer<TResource> resource = operation ? operation->getResource<TResource>() : nullptr;
+
+            if (resource && !addDependency(resource))
+            {
+                return nullptr;
+            }
 
             if (resource)
             {
-                Resource::ResourceAccessor::AddDependency(&m_ownerResource, resource);
+                m_hasAsyncDependencies = true;
             }
 
             return resource;
         }
 
+        bool addDependency(const ResourcePointer& _dependency);
+
+        bool isAsyncLoading() const;
         bool loadContent(const FileName& _path, FileContent& _content) const;
 
     private:
+        Resource::DependencyCollection takeDependencies();
+        bool hasAsyncDependencies() const;
+
         ResourceController& m_controller;
         Resource& m_ownerResource;
+        Resource::DependencyCollection m_dependencies;
+        bool m_isAsyncLoading = false;
+        bool m_hasAsyncDependencies = false;
     };
 }

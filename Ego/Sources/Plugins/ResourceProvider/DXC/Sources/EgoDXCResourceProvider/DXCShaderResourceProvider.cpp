@@ -1,3 +1,6 @@
+#include <string>
+#include <utility>
+
 #include "DXCShaderResourceProvider.h"
 
 #include "DXCResourceUtils.h"
@@ -7,14 +10,12 @@
 #include "EgoEngine/Graphic/RenderHardware/Resources/ShaderResource.h"
 #include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
 
-#include <string>
-#include <utility>
-
 bool ego::resources::dxc::DXCShaderResourceProvider::onProvideContent(
     const Resource& _resource,
     const FileName& _path,
     ResourceLoadingContext& _loadingContext,
-    FileContent& _content
+    FileContent& _content,
+    std::string& _loadingError
 )
 {
     if (!ego::rtti::IsObjectBasedOn<gpu::ShaderResource>(_resource))
@@ -24,17 +25,15 @@ bool ego::resources::dxc::DXCShaderResourceProvider::onProvideContent(
             return true;
         }
 
-        setLoadingError(std::string("Failed to load resource content: ") + _path.c_str());
+        _loadingError = std::string("Failed to load resource content: ") + _path.c_str();
         return false;
     }
 
     const gpu::ShaderResource& shaderResource = static_cast<const gpu::ShaderResource&>(_resource);
     FileName sourcePath;
     FileContent sourceContent;
-    std::string loadingError;
-    if (!ResolveShaderSourceContent(_path, _loadingContext, sourcePath, sourceContent, loadingError))
+    if (!ResolveShaderSourceContent(_path, _loadingContext, sourcePath, sourceContent, _loadingError))
     {
-        setLoadingError(std::move(loadingError));
         _content.clear();
         return false;
     }
@@ -47,7 +46,7 @@ bool ego::resources::dxc::DXCShaderResourceProvider::onProvideContent(
             return true;
         }
 
-        setLoadingError(std::string("Shader bytecode is empty: ") + sourcePath.c_str());
+        _loadingError = std::string("Shader bytecode is empty: ") + sourcePath.c_str();
         return false;
     }
 
@@ -57,12 +56,11 @@ bool ego::resources::dxc::DXCShaderResourceProvider::onProvideContent(
         shaderResource.getShaderStage(),
         _loadingContext,
         _content,
-        loadingError
+        _loadingError
     ))
     {
         return true;
     }
 
-    setLoadingError(std::move(loadingError));
     return false;
 }

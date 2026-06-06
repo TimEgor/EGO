@@ -3,6 +3,12 @@
 #include "EgoEngine/Graphic/Render/RenderObject.h"
 #include "EgoEngine/Resources/Resource/Resource.h"
 
+namespace ego::gpu
+{
+    class PixelShaderResource;
+    class VertexShaderResource;
+}
+
 namespace ego::render
 {
     class MaterialResource final : public Resource
@@ -19,6 +25,11 @@ namespace ego::render
         virtual void onUnload() override;
 
     private:
+        bool completeLoading(
+            const SharedPointer<gpu::VertexShaderResource>& _vertexShaderResource,
+            const SharedPointer<gpu::PixelShaderResource>& _pixelShaderResource
+        );
+
         RenderMaterial m_material = nullptr;
     };
 

@@ -38,7 +38,7 @@ bool ego::gpu::ShaderResource::onLoad(ego::FileContent&& _content, ResourceLoadi
     const ShaderCodeReference code(new ShaderCode(_content.data(), static_cast<uint32_t>(_content.size())));
     m_shader = createShader(code);
 
-    return static_cast<bool>(m_shader);
+    return m_shader != nullptr;
 }
 
 void ego::gpu::ShaderResource::onUnload()

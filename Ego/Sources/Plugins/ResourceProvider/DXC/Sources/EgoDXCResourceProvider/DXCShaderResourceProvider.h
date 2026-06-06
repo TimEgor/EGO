@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "EgoEngine/Resources/Resource/ResourceProvider.h"
 
 namespace ego::resources::dxc
@@ -14,7 +16,8 @@ namespace ego::resources::dxc
             const Resource& _resource,
             const FileName& _path,
             ResourceLoadingContext& _loadingContext,
-            FileContent& _content
+            FileContent& _content,
+            std::string& _loadingError
         ) override;
     };
 

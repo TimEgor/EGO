@@ -5,6 +5,7 @@
 
 #include "EgoCore/Assert/AssertCore.h"
 
+#include <algorithm>
 #include <utility>
 
 ego::Resource::~Resource() = default;
@@ -64,6 +65,12 @@ void ego::Resource::ResourceAccessor::GetDependencies(
     _resource->getDependencies(_dependencies);
 }
 
+bool ego::Resource::ResourceAccessor::OnDependenciesLoaded(Resource* _resource)
+{
+    EGO_ASSERT(_resource);
+    return _resource->onDependenciesLoaded();
+}
+
 ego::FileName ego::Resource::getPath() const
 {
     std::lock_guard locker(m_mutex);
@@ -83,7 +90,13 @@ std::string ego::Resource::getLoadingError() const
 
 bool ego::Resource::isLoading() const
 {
-    return getState() == ResourceState::Loading;
+    const ResourceState state = getState();
+    return state == ResourceState::Loading || state == ResourceState::LoadingDependencies;
+}
+
+bool ego::Resource::isLoadingDependencies() const
+{
+    return getState() == ResourceState::LoadingDependencies;
 }
 
 bool ego::Resource::isLoaded() const
@@ -104,15 +117,18 @@ bool ego::Resource::load(
 {
     prepareLoading(_path);
 
-    const bool result = onLoad(std::move(_content), _loadingContext);
-    if (!result && getLoadingError().empty())
+    if (!onLoad(std::move(_content), _loadingContext))
     {
-        setLoadingError(std::string("Failed to load resource: ") + _path.c_str());
+        if (getLoadingError().empty())
+        {
+            setLoadingError(std::string("Failed to load resource: ") + _path.c_str());
+        }
+
+        setState(ResourceState::Failed);
+        return false;
     }
 
-    setState(result ? ResourceState::Loaded : ResourceState::Failed);
-
-    return result;
+    return true;
 }
 
 void ego::Resource::unload()
@@ -128,11 +144,28 @@ void ego::Resource::unload()
     m_path.clear();
     m_loadingError.clear();
     m_dependencies.clear();
+    m_dependenciesLoadedCallback = nullptr;
     setState(ResourceState::Undefined);
 }
 
 void ego::Resource::onUnload()
 {}
+
+bool ego::Resource::onDependenciesLoaded()
+{
+    DependenciesLoadedCallback dependenciesLoadedCallback = takeDependenciesLoadedCallback();
+    if (dependenciesLoadedCallback)
+    {
+        return dependenciesLoadedCallback();
+    }
+
+    const std::string loadingError =
+        "Resource dependencies have been loaded, but dependency completion isn't implemented.";
+
+    setLoadingError(loadingError);
+    EGO_ASSERT_FAIL_MESSAGE(loadingError.c_str());
+    return false;
+}
 
 void ego::Resource::prepareLoading(const FileName& _path)
 {
@@ -140,6 +173,7 @@ void ego::Resource::prepareLoading(const FileName& _path)
     m_path = _path;
     m_loadingError.clear();
     m_dependencies.clear();
+    m_dependenciesLoadedCallback = nullptr;
     setState(ResourceState::Loading);
 }
 
@@ -147,6 +181,12 @@ void ego::Resource::setLoadingError(std::string _loadingError)
 {
     std::lock_guard locker(m_mutex);
     m_loadingError = std::move(_loadingError);
+}
+
+void ego::Resource::setDependenciesLoadedCallback(DependenciesLoadedCallback&& _callback)
+{
+    std::lock_guard locker(m_mutex);
+    m_dependenciesLoadedCallback = std::move(_callback);
 }
 
 void ego::Resource::setState(ResourceState _state)
@@ -162,6 +202,19 @@ void ego::Resource::addDependency(const ResourcePointer& _resource)
     }
 
     std::lock_guard locker(m_mutex);
+    const auto foundIt = std::find_if(
+        m_dependencies.begin(),
+        m_dependencies.end(),
+        [&_resource](const ResourcePointer& _dependency)
+        {
+            return _dependency.get() == _resource.get();
+        }
+    );
+    if (foundIt != m_dependencies.end())
+    {
+        return;
+    }
+
     m_dependencies.push_back(_resource);
 }
 
@@ -175,4 +228,12 @@ void ego::Resource::getDependencies(DependencyCollection& _dependencies) const
 {
     std::lock_guard locker(m_mutex);
     _dependencies = m_dependencies;
+}
+
+ego::Resource::DependenciesLoadedCallback ego::Resource::takeDependenciesLoadedCallback()
+{
+    std::lock_guard locker(m_mutex);
+    DependenciesLoadedCallback dependenciesLoadedCallback = std::move(m_dependenciesLoadedCallback);
+    m_dependenciesLoadedCallback = nullptr;
+    return dependenciesLoadedCallback;
 }

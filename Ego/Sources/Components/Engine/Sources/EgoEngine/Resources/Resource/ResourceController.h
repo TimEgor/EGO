@@ -1,23 +1,61 @@
 #pragma once
 
-#include "Resource.h"
-#include "ResourceProvider.h"
+#include <functional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 #include "EgoCore/Job/Job.h"
 #include "EgoCore/Job/JobController.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 
-#include <functional>
-#include <mutex>
-#include <string>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include "Resource.h"
+#include "ResourceDependencyGraph.h"
+#include "ResourceProvider.h"
+#include "ResourceRegistry.h"
+#include "ResourceSourceRegistry.h"
 
 namespace ego
 {
-    class ResourceController final
+    class ResourceController;
+    EGO_POINTER(ResourceController);
+    EGO_WEAK_POINTER(ResourceController);
+
+    class ResourceLoadingOperation final
+    {
+    public:
+        ResourceLoadingOperation(
+            const ResourceControllerWeakPointer& _controller,
+            const ResourcePointer& _resource
+        );
+
+        ResourcePointer getResource() const;
+
+        template <typename TResource>
+        SharedPointer<TResource> getResource() const
+        {
+            static_assert(std::is_base_of_v<Resource, TResource>);
+
+            return m_resource && m_resource->getType() == EGO_RESOURCE_TYPE(TResource)
+                ? StaticPointerCast<TResource>(m_resource)
+                : nullptr;
+        }
+
+        ResourceState getState() const;
+
+        bool isFinished() const;
+        bool isLoaded() const;
+        bool isFailed() const;
+        bool waitLoading();
+
+    private:
+        ResourceControllerWeakPointer m_controller;
+        ResourcePointer m_resource;
+    };
+
+    EGO_POINTER(ResourceLoadingOperation);
+
+    class ResourceController final : public EnableSharedFromThis<ResourceController>
     {
     public:
         using ResourceFactory = ego::ResourceFactory;
@@ -32,6 +70,11 @@ namespace ego
                 const ResourceController& _controller,
                 const FileName& _path,
                 FileContent& _content
+            );
+            static bool AddDependency(
+                ResourceController& _controller,
+                Resource& _resource,
+                const ResourcePointer& _dependency
             );
         };
 
@@ -66,17 +109,14 @@ namespace ego
         }
 
         template <typename TResource>
-        SharedPointer<TResource> loadAsync(const FileName& _path, JobReference* _job = nullptr)
+        ResourceLoadingOperationPointer loadAsync(const FileName& _path)
         {
             static_assert(std::is_base_of_v<Resource, TResource>);
 
-            return StaticPointerCast<TResource>(
-                loadResourceAsync(
-                    EGO_RESOURCE_TYPE(TResource),
-                    _path,
-                    []() { return CreateResource<TResource>(); },
-                    _job
-                )
+            return loadResourceAsync(
+                EGO_RESOURCE_TYPE(TResource),
+                _path,
+                []() { return CreateResource<TResource>(); }
             );
         }
 
@@ -116,70 +156,66 @@ namespace ego
         bool isChildResourcesLoaded(FileNameID _id) const;
         bool isChildResourcesLoaded(const ResourcePointer& _resource) const;
 
+        bool waitLoading(const ResourcePointer& _resource);
+        bool waitLoading(const FileName& _path);
+        bool waitLoading(FileNameID _id);
+
         const JobController& getJobController() const;
         JobController& getJobController();
 
     private:
-        struct ResourceEntry final
-        {
-            ResourceType m_type = InvalidResourceType;
-            FileName m_path;
-            ResourceFactory m_factory;
-            ResourceWeakPointer m_resource;
-            Resource* m_resourcePtr = nullptr;
-            JobWeakReference m_loadingJob;
-        };
-
-        using FileSystemCollection = std::vector<FileSystemPointer>;
-        using ResourceCollection = std::unordered_map<ResourceID, ResourceEntry>;
-        using ResourceProviderCollection = std::unordered_map<std::string, ResourceProviderPointer>;
-
         ResourcePointer loadResource(
             ResourceType _type,
             const FileName& _path,
             const ResourceFactory& _factory
         );
 
-        ResourcePointer loadResourceAsync(
+        ResourceLoadingOperationPointer loadResourceAsync(
             ResourceType _type,
             const FileName& _path,
-            const ResourceFactory& _factory,
-            JobReference* _job = nullptr
+            const ResourceFactory& _factory
         );
 
         bool removeResource(Resource* _resource);
-
-        ResourcePointer getOrCreateResource(
-            ResourceType _type,
-            const FileName& _path,
-            ResourceID _id,
-            const ResourceFactory& _factory,
-            bool& _needLoading
-        );
+        bool addDependency(Resource& _resource, const ResourcePointer& _dependency);
 
         bool loadResourceContent(const FileName& _path, FileContent& _content) const;
-        ResourceProviderPointer getResourceProvider(const FileName& _path) const;
+        bool readResourceContent(
+            const ResourcePointer& _resource,
+            const FileName& _path,
+            ResourceLoadingContext& _loadingContext,
+            FileContent& _content
+        );
         bool loadResourceData(
             const ResourcePointer& _resource,
-            const FileName& _path
+            const FileName& _path,
+            bool _isAsyncLoading
         );
-        bool isChildResourcesLoaded(
+        bool completeResourceLoad(
             const ResourcePointer& _resource,
-            std::unordered_set<const Resource*>& _checkedResources
-        ) const;
+            bool _isLoadSuccessful,
+            ResourceLoadingContext& _loadingContext
+        );
+        void finishResourceLoaded(const ResourcePointer& _resource);
+        void finishResourceFailed(const ResourcePointer& _resource, std::string _loadingError = {});
+        bool beginResourceDependenciesLoading(
+            Resource& _resource,
+            Resource::DependencyCollection&& _dependencies
+        );
+        void notifyResourceLoadingFinished(const ResourcePointer& _resource);
+        void schedulePendingLoadingCompletion(
+            const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading
+        );
+        void completePendingLoading(const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading);
+        bool waitResourceLoading(const ResourcePointer& _resource);
 
-        void collectLoadingJobs(std::vector<JobReference>& _jobs) const;
         void waitLoadingJobs(const std::vector<JobReference>& _jobs);
         void waitAllLoadingJobs();
 
-        mutable std::recursive_mutex m_mutex;
-        FileSystemCollection m_fileSystems;
-        ResourceCollection m_resources;
-        ResourceProviderCollection m_resourceProviders;
+        ResourceRegistry m_resourceRegistry;
+        ResourceSourceRegistry m_resourceSources;
+        ResourceDependencyGraph m_dependencyGraph;
         JobControllerPointer m_jobController = nullptr;
         bool m_isInitialized = false;
     };
-
-    EGO_POINTER(ResourceController);
-    EGO_WEAK_POINTER(ResourceController);
 }
