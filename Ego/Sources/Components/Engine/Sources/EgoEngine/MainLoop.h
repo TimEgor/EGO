@@ -22,7 +22,7 @@ namespace ego::engine
             JobDescriptorID m_endJobID;
         };
 
-        struct GameLogicJobs final
+        struct FrameLogicJobs final
         {
             JobDescriptorID m_beginJobID;
             JobDescriptorID m_endJobID;
@@ -108,9 +108,9 @@ namespace ego::engine
         JobDescriptorID getPresentJobID() const;
         JobDescriptorID getRenderEndJobID() const;
 
-        const GameLogicJobs& getGameLogicJobs() const;
-        JobDescriptorID getGameLogicBeginJobID() const;
-        JobDescriptorID getGameLogicEndJobID() const;
+        const FrameLogicJobs& getFrameLogicJobs() const;
+        JobDescriptorID getFrameLogicBeginJobID() const;
+        JobDescriptorID getFrameLogicEndJobID() const;
 
         const PrepareRenderJobs& getPrepareRenderJobs() const;
         JobDescriptorID getPrepareRenderBeginJobID() const;
@@ -126,7 +126,7 @@ namespace ego::engine
 
         FrameJobs m_frameJobs;
         RenderJobs m_renderJobs;
-        GameLogicJobs m_gameLogicJobs;
+        FrameLogicJobs m_frameLogicJobs;
         PrepareRenderJobs m_prepareRenderJobs;
 
         bool m_isInitialized = false;

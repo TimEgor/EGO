@@ -1,15 +1,10 @@
 #pragma once
 
-#include "EgoCore/FileName/FileName.h"
-
 #include "EgoEngine/Graphic/Render/Resources/MaterialResource.h"
 #include "EgoEngine/Graphic/Render/Resources/MeshResource.h"
 #include "EgoEngine/Level/Level.h"
-#include "EgoEngine/Platform/FileSystem/RootedFileSystem.h"
 
 #include "EgoFramework/GameLogic.h"
-
-#include <vector>
 
 namespace ego::demo
 {
@@ -17,15 +12,12 @@ namespace ego::demo
     {
     public:
         TestDemo() = default;
-        explicit TestDemo(const FileName& _projectPath);
 
         bool init() override;
         void update(float _deltaTime) override;
         void release() override;
 
     private:
-        FileName m_projectPath;
-        std::vector<RootedFileSystemPointer> m_assetFileSystems;
         LevelPointer m_level = nullptr;
         ecs::Entity m_meshEntity;
         render::MeshResourcePointer m_triangleMesh = nullptr;

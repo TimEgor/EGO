@@ -1,7 +1,5 @@
 #include "TestDemoPlugin.h"
 
-#include "EgoCore/FileName/FileNameUtils.h"
-
 #include "EgoEngine/Plugin/EngineExternalModuleCore.h"
 
 #include "EgoFramework/Plugin/FrameworkExternalModuleCore.h"
@@ -21,6 +19,5 @@ ego::demo::TestDemoPlugin::TestDemoPlugin(const PluginModulePointer& _module, Pl
 
 ego::framework::GameLogicPointer ego::demo::TestDemoPlugin::createGameLogic()
 {
-    const FileName moduleDirPath = file_name_utils::GetFileDirPath(getModule()->getInfo().m_modulePath);
-    return ego::framework::GameLogicPointer(new TestDemo(moduleDirPath + "/TestDemoProject.xml"));
+    return ego::framework::GameLogicPointer(new TestDemo());
 }

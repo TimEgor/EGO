@@ -39,21 +39,21 @@ bool ego::engine::MainLoop::init(
     );
     EGO_CHECK_RETURN_FALSE(m_renderJobs.m_endJobID.isValid());
 
-    m_gameLogicJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Game logic begin"),
+    m_frameLogicJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(
+        ego::CreateEmptyJobDescriptor("Frame logic begin"),
         m_frameJobs.m_beginJobID
     );
-    EGO_CHECK_RETURN_FALSE(m_gameLogicJobs.m_beginJobID.isValid());
+    EGO_CHECK_RETURN_FALSE(m_frameLogicJobs.m_beginJobID.isValid());
 
-    m_gameLogicJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Game logic end"),
-        m_gameLogicJobs.m_beginJobID
+    m_frameLogicJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(
+        ego::CreateEmptyJobDescriptor("Frame logic end"),
+        m_frameLogicJobs.m_beginJobID
     );
-    EGO_CHECK_RETURN_FALSE(m_gameLogicJobs.m_endJobID.isValid());
+    EGO_CHECK_RETURN_FALSE(m_frameLogicJobs.m_endJobID.isValid());
 
     m_prepareRenderJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(
         ego::CreateEmptyJobDescriptor("Prepare render begin"),
-        JobDescriptorIDCollection{ m_renderJobs.m_endJobID, m_gameLogicJobs.m_endJobID }
+        JobDescriptorIDCollection{ m_renderJobs.m_endJobID, m_frameLogicJobs.m_endJobID }
     );
     EGO_CHECK_RETURN_FALSE(m_prepareRenderJobs.m_beginJobID.isValid());
 
@@ -83,7 +83,7 @@ void ego::engine::MainLoop::release()
 {
     m_frameJobs = FrameJobs();
     m_renderJobs = RenderJobs();
-    m_gameLogicJobs = GameLogicJobs();
+    m_frameLogicJobs = FrameLogicJobs();
     m_prepareRenderJobs = PrepareRenderJobs();
     m_jobGraphDescriptorBuilder.clear();
     m_isInitialized = false;
@@ -265,19 +265,19 @@ ego::JobDescriptorID ego::engine::MainLoop::getRenderEndJobID() const
     return m_renderJobs.m_endJobID;
 }
 
-const ego::engine::MainLoop::GameLogicJobs& ego::engine::MainLoop::getGameLogicJobs() const
+const ego::engine::MainLoop::FrameLogicJobs& ego::engine::MainLoop::getFrameLogicJobs() const
 {
-    return m_gameLogicJobs;
+    return m_frameLogicJobs;
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::getGameLogicBeginJobID() const
+ego::JobDescriptorID ego::engine::MainLoop::getFrameLogicBeginJobID() const
 {
-    return m_gameLogicJobs.m_beginJobID;
+    return m_frameLogicJobs.m_beginJobID;
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::getGameLogicEndJobID() const
+ego::JobDescriptorID ego::engine::MainLoop::getFrameLogicEndJobID() const
 {
-    return m_gameLogicJobs.m_endJobID;
+    return m_frameLogicJobs.m_endJobID;
 }
 
 const ego::engine::MainLoop::PrepareRenderJobs& ego::engine::MainLoop::getPrepareRenderJobs() const
