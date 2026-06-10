@@ -9,7 +9,6 @@
 #include "Buffer.h"
 #include "Texture.h"
 #include "Pipeline.h"
-#include "Sampler.h"
 
 namespace ego::gpu
 {
@@ -122,11 +121,6 @@ namespace ego::gpu
             GraphicResourceState _prevState,
             GraphicResourceState _nextState
         ) = 0;
-
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) = 0;
-        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) = 0;
-        virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const = 0;
-        virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const = 0;
 
         virtual void pushConstants(
             ShaderStageFlags _stageFlags,

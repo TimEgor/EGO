@@ -4,14 +4,19 @@
 #include <cstring>
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/Memory/Utils.h"
 #include "EgoCore/UtilsMacros.h"
+
+#include "EgoPlugin/PluginModule.h"
 
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
 #include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
 #include "EgoEngine/Level/Level.h"
+#include "EgoEngine/Platform/Platform.h"
+#include "EgoEngine/Resources/Resource/ResourceController.h"
 
 #include "RenderShaderData.h"
 
@@ -68,10 +73,6 @@ namespace
     }
 }
 
-ego::render::DefaultRender::DefaultRender(const FileName& _pluginRootPath)
-    : m_pluginRootPath(_pluginRootPath)
-{}
-
 bool ego::render::DefaultRender::init()
 {
     if (m_isInitialized)
@@ -101,7 +102,8 @@ bool ego::render::DefaultRender::init()
     m_bindingLayout = CreateDefaultBindingLayout(graphicDevice);
     EGO_CHECK_INITIALIZATION(m_bindingLayout);
 
-    EGO_CHECK_INITIALIZATION(m_debugDraw.init(m_pluginRootPath, graphicDevice, m_bindingLayout, RenderTargetFormat));
+    EGO_CHECK_INITIALIZATION(initPluginFileSystem());
+    EGO_CHECK_INITIALIZATION(m_debugDraw.init(graphicDevice, m_bindingLayout, RenderTargetFormat));
 
     m_isInitialized = true;
     return m_isInitialized;
@@ -117,6 +119,7 @@ void ego::render::DefaultRender::release()
     m_cameraShaderDataView = nullptr;
     m_cameraShaderDataBuffer = nullptr;
     m_debugDraw.release();
+    releasePluginFileSystem();
     m_bindingLayout = nullptr;
 
     m_renderTargetView = nullptr;
@@ -131,6 +134,46 @@ void ego::render::DefaultRender::release()
     m_commandQueue = nullptr;
 
     m_isInitialized = false;
+}
+
+bool ego::render::DefaultRender::initPluginFileSystem()
+{
+    const PluginModuleInfo& moduleInfo = PluginModuleCore::GetInstance().getInfo();
+    const FileName pluginRootPath = file_name_utils::GetFileDirPath(moduleInfo.m_modulePath);
+    EGO_CHECK_RETURN_FALSE(pluginRootPath);
+
+    ResourceController& resourceController = engine::GetEngine().getResourceController();
+    if (m_pluginFileSystem)
+    {
+        resourceController.removeFileSystem(m_pluginFileSystem);
+        m_pluginFileSystem->release();
+        m_pluginFileSystem = nullptr;
+    }
+
+    RootedFileSystemPointer pluginFileSystem =
+        new RootedFileSystem(engine::GetEngine().getPlatform().getFileSystem(), pluginRootPath);
+    EGO_CHECK_RETURN_FALSE(pluginFileSystem && pluginFileSystem->init());
+
+    resourceController.addFileSystem(pluginFileSystem);
+    m_pluginFileSystem = pluginFileSystem;
+    return true;
+}
+
+void ego::render::DefaultRender::releasePluginFileSystem()
+{
+    if (!m_pluginFileSystem)
+    {
+        return;
+    }
+
+    const engine::EnginePointer engine = engine::EngineCore::GetInstance().getEngine();
+    if (engine)
+    {
+        engine->getResourceController().removeFileSystem(m_pluginFileSystem);
+    }
+
+    m_pluginFileSystem->release();
+    m_pluginFileSystem = nullptr;
 }
 
 void ego::render::DefaultRender::clearResources()
@@ -204,7 +247,7 @@ void ego::render::DefaultRender::render()
         return;
     }
 
-    (*m_commandList).begin();
+    m_commandList->begin();
     transitionRenderTarget(m_commandList, gpu::GraphicResourceState::RenderTarget);
 
     gpu::ColorAttachmentDesc colorAttachment;
@@ -219,7 +262,7 @@ void ego::render::DefaultRender::render()
     renderingDesc.m_colorAttachments.push_back(colorAttachment);
     renderingDesc.m_renderArea = m_resolution;
 
-    (*m_commandList).beginRendering(renderingDesc);
+    m_commandList->beginRendering(renderingDesc);
     setupTargetViewport();
 
     for (const DefaultRender::Item& item : m_renderItems)
@@ -229,9 +272,9 @@ void ego::render::DefaultRender::render()
 
     m_debugDraw.render(m_commandList, m_cameraShaderDataView);
 
-    (*m_commandList).endRendering();
+    m_commandList->endRendering();
     transitionRenderTarget(m_commandList, gpu::GraphicResourceState::CopySrc);
-    (*m_commandList).end();
+    m_commandList->end();
 
     submitCommandList(m_commandList);
     m_isPrepared = false;
@@ -246,13 +289,13 @@ void ego::render::DefaultRender::wait()
 {
     if (m_frameFence)
     {
-        (*m_frameFence).waitValue(m_frameFenceValue);
+        m_frameFence->waitValue(m_frameFenceValue);
         return;
     }
 
     if (m_commandQueue)
     {
-        (*m_commandQueue).waitIdle();
+        m_commandQueue->waitIdle();
     }
 }
 
@@ -351,7 +394,7 @@ bool ego::render::DefaultRender::prepareRenderTarget()
 
     m_resolution = m_pendingResolution;
 
-    const gpu::Texture2DDesc* currentDesc = m_renderTargetTexture ? &(*m_renderTargetTexture).getDesc() : nullptr;
+    const gpu::Texture2DDesc* currentDesc = m_renderTargetTexture ? &m_renderTargetTexture->getDesc() : nullptr;
     if (currentDesc &&
         currentDesc->m_size.m_x == m_pendingResolution.m_x &&
         currentDesc->m_size.m_y == m_pendingResolution.m_y &&
@@ -416,7 +459,7 @@ bool ego::render::DefaultRender::prepareCameraShaderData(Level& _level, ecs::Ent
         viewDesc.m_size = sizeof(CameraShaderData);
 
         const RenderBufferView view = graphicDevice.createBufferView(buffer.getObject(), viewDesc);
-        EGO_CHECK_RETURN_FALSE(view && (*view).getBindlessIndex() != gpu::InvalidBindlessIndex);
+        EGO_CHECK_RETURN_FALSE(view && view->getBindlessIndex() != gpu::InvalidBindlessIndex);
 
         m_cameraShaderDataBuffer = buffer;
         m_cameraShaderDataView = view;
@@ -441,12 +484,18 @@ bool ego::render::DefaultRender::prepareCameraShaderData(Level& _level, ecs::Ent
     shaderData.m_projection = projectionMatrix.getFloatMatrix4x4();
     shaderData.m_viewProjection = viewProjectionMatrix.getFloatMatrix4x4();
     shaderData.m_position = FloatVector4(cameraPosition, 1.0f);
+    shaderData.m_screenSize = FloatVector4(
+        static_cast<float>(m_resolution.m_x),
+        static_cast<float>(m_resolution.m_y),
+        0.0f,
+        0.0f
+    );
 
-    void* mappedData = (*m_cameraShaderDataBuffer).map(0, sizeof(shaderData));
+    void* mappedData = m_cameraShaderDataBuffer->map(0, sizeof(shaderData));
     EGO_CHECK_RETURN_FALSE(mappedData);
 
     std::memcpy(mappedData, &shaderData, sizeof(shaderData));
-    (*m_cameraShaderDataBuffer).unmap(0, sizeof(shaderData));
+    m_cameraShaderDataBuffer->unmap(0, sizeof(shaderData));
     return true;
 }
 
@@ -481,7 +530,7 @@ bool ego::render::DefaultRender::prepareObjectShaderData()
         viewDesc.m_stride = sizeof(ObjectShaderData);
 
         const RenderBufferView view = graphicDevice.createBufferView(buffer.getObject(), viewDesc);
-        EGO_CHECK_RETURN_FALSE(view && (*view).getBindlessIndex() != gpu::InvalidBindlessIndex);
+        EGO_CHECK_RETURN_FALSE(view && view->getBindlessIndex() != gpu::InvalidBindlessIndex);
 
         m_objectShaderDataBuffer = buffer;
         m_objectShaderDataView = view;
@@ -489,7 +538,7 @@ bool ego::render::DefaultRender::prepareObjectShaderData()
     }
 
     const uint32_t dataSize = static_cast<uint32_t>(sizeof(ObjectShaderData)) * requiredCapacity;
-    ObjectShaderData* shaderData = static_cast<ObjectShaderData*>((*m_objectShaderDataBuffer).map(0, dataSize));
+    ObjectShaderData* shaderData = static_cast<ObjectShaderData*>(m_objectShaderDataBuffer->map(0, dataSize));
     EGO_CHECK_RETURN_FALSE(shaderData);
 
     for (uint32_t itemIndex = 0; itemIndex < requiredCapacity; ++itemIndex)
@@ -501,7 +550,7 @@ bool ego::render::DefaultRender::prepareObjectShaderData()
         shaderData[itemIndex].m_model = modelMatrix.getFloatMatrix4x4();
     }
 
-    (*m_objectShaderDataBuffer).unmap(0, dataSize);
+    m_objectShaderDataBuffer->unmap(0, dataSize);
     return true;
 }
 
@@ -518,12 +567,12 @@ void ego::render::DefaultRender::setupTargetViewport()
     viewportDesc.m_height = static_cast<float>(m_resolution.m_y);
     viewportDesc.m_minDepth = 0.0f;
     viewportDesc.m_maxDepth = 1.0f;
-    (*m_commandList).setViewport(viewportDesc);
+    m_commandList->setViewport(viewportDesc);
 
     gpu::ScissorRectDesc scissorRectDesc;
     scissorRectDesc.m_right = static_cast<int32_t>(m_resolution.m_x);
     scissorRectDesc.m_bottom = static_cast<int32_t>(m_resolution.m_y);
-    (*m_commandList).setScissorRect(scissorRectDesc);
+    m_commandList->setScissorRect(scissorRectDesc);
 }
 
 void ego::render::DefaultRender::submitCommandList(const RenderGraphicCommandList& _commandList)
@@ -533,12 +582,12 @@ void ego::render::DefaultRender::submitCommandList(const RenderGraphicCommandLis
         return;
     }
 
-    (*m_commandQueue).execute(_commandList.getObject());
+    m_commandQueue->execute(_commandList.getObject());
 
     if (m_frameFence)
     {
         ++m_frameFenceValue;
-        (*m_commandQueue).signal(m_frameFence.getObject(), m_frameFenceValue);
+        m_commandQueue->signal(m_frameFence.getObject(), m_frameFenceValue);
     }
 }
 
@@ -552,7 +601,7 @@ void ego::render::DefaultRender::transitionRenderTarget(
         return;
     }
 
-    (*_commandList).resourceBarrier(m_renderTargetTexture.getObject(), m_renderTargetState, _nextState);
+    _commandList->resourceBarrier(m_renderTargetTexture.getObject(), m_renderTargetState, _nextState);
     m_renderTargetState = _nextState;
 }
 
@@ -575,8 +624,8 @@ bool ego::render::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _
         return false;
     }
 
-    const gpu::Texture2DDesc& renderTargetDesc = (*m_renderTargetTexture).getDesc();
-    const gpu::Texture2DDesc& presenterTargetDesc = (*presenterTargetTexture).getDesc();
+    const gpu::Texture2DDesc& renderTargetDesc = m_renderTargetTexture->getDesc();
+    const gpu::Texture2DDesc& presenterTargetDesc = presenterTargetTexture->getDesc();
     if (renderTargetDesc.m_format != presenterTargetDesc.m_format)
     {
         return false;
@@ -592,25 +641,25 @@ bool ego::render::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _
     gpu::TextureCopyRegionDesc copyRegion;
     copyRegion.m_extent = UInt32Vector3(copyWidth, copyHeight, 1);
 
-    (*m_presentCommandList).begin();
+    m_presentCommandList->begin();
     transitionRenderTarget(m_presentCommandList, gpu::GraphicResourceState::CopySrc);
-    (*m_presentCommandList).resourceBarrier(
+    m_presentCommandList->resourceBarrier(
         presenterTargetTexture.getObject(),
         gpu::GraphicResourceState::Present,
         gpu::GraphicResourceState::CopyDst
     );
-    (*m_presentCommandList).copyTexture(
+    m_presentCommandList->copyTexture(
         m_renderTargetTexture.getObject(),
         presenterTargetTexture.getObject(),
         copyRegion
     );
-    (*m_presentCommandList).resourceBarrier(
+    m_presentCommandList->resourceBarrier(
         presenterTargetTexture.getObject(),
         gpu::GraphicResourceState::CopyDst,
         gpu::GraphicResourceState::Present
     );
     transitionRenderTarget(m_presentCommandList, gpu::GraphicResourceState::Common);
-    (*m_presentCommandList).end();
+    m_presentCommandList->end();
 
     submitCommandList(m_presentCommandList);
     return true;
@@ -659,19 +708,7 @@ void ego::render::DefaultRender::renderItem(const DefaultRender::Item& _item)
         return;
     }
 
-    (*m_commandList).setPipeline(pipeline.getObject());
-
-    const Material::ResourceViewCollection& resourceViews = material.getResourceViews();
-    for (uint32_t resourceViewIndex = 0; resourceViewIndex < resourceViews.size(); ++resourceViewIndex)
-    {
-        (*m_commandList).bindResourceView(resourceViewIndex, resourceViews[resourceViewIndex].getObject());
-    }
-
-    const Material::SamplerCollection& samplers = material.getSamplers();
-    for (uint32_t samplerIndex = 0; samplerIndex < samplers.size(); ++samplerIndex)
-    {
-        (*m_commandList).bindSampler(samplerIndex, samplers[samplerIndex].getObject());
-    }
+    m_commandList->setPipeline(pipeline.getObject());
 
     if (!m_cameraShaderDataView || !m_objectShaderDataView)
     {
@@ -679,8 +716,8 @@ void ego::render::DefaultRender::renderItem(const DefaultRender::Item& _item)
     }
 
     RenderBindlessRootConstants rootConstants;
-    rootConstants.m_cameraDataIndex = (*m_cameraShaderDataView).getBindlessIndex();
-    rootConstants.m_objectDataIndex = (*m_objectShaderDataView).getBindlessIndex();
+    rootConstants.m_cameraDataIndex = m_cameraShaderDataView->getBindlessIndex();
+    rootConstants.m_objectDataIndex = m_objectShaderDataView->getBindlessIndex();
     rootConstants.m_objectIndex = _item.m_objectIndex;
 
     if (rootConstants.m_cameraDataIndex == gpu::InvalidBindlessIndex ||
@@ -689,7 +726,7 @@ void ego::render::DefaultRender::renderItem(const DefaultRender::Item& _item)
         return;
     }
 
-    (*m_commandList).pushConstants(
+    m_commandList->pushConstants(
         RenderBindlessRootConstantsStageFlag,
         RenderBindlessRootConstantsOffset,
         sizeof(rootConstants),
@@ -699,7 +736,7 @@ void ego::render::DefaultRender::renderItem(const DefaultRender::Item& _item)
     const Mesh::VertexBufferBinding& vertexBuffer = mesh.getVertexBuffer();
     if (vertexBuffer.m_buffer && vertexBuffer.m_stride != 0)
     {
-        (*m_commandList).setVertexBuffer(
+        m_commandList->setVertexBuffer(
             0,
             vertexBuffer.m_buffer.getObject(),
             vertexBuffer.m_stride,
@@ -710,17 +747,17 @@ void ego::render::DefaultRender::renderItem(const DefaultRender::Item& _item)
     const Mesh::IndexBufferBinding& indexBuffer = mesh.getIndexBuffer();
     if (indexBuffer.m_buffer && mesh.getIndexCount() != 0)
     {
-        (*m_commandList).setIndexBuffer(
+        m_commandList->setIndexBuffer(
             indexBuffer.m_buffer.getObject(),
             indexBuffer.m_format,
             indexBuffer.m_offset
         );
-        (*m_commandList).drawIndexed(mesh.getIndexCount());
+        m_commandList->drawIndexed(mesh.getIndexCount());
         return;
     }
 
     if (mesh.getVertexCount() != 0)
     {
-        (*m_commandList).draw(mesh.getVertexCount());
+        m_commandList->draw(mesh.getVertexCount());
     }
 }

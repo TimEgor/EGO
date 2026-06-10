@@ -27,6 +27,7 @@ namespace ego::render
         FloatMatrix4x4 m_projection = FloatMatrix4x4Identity;
         FloatMatrix4x4 m_viewProjection = FloatMatrix4x4Identity;
         FloatVector4 m_position = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);
+        FloatVector4 m_screenSize = FloatVector4(1.0f, 1.0f, 0.0f, 0.0f);
     };
 
     struct ObjectShaderData final

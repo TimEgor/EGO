@@ -3,15 +3,14 @@
 #include <cstdint>
 #include <vector>
 
-#include "EgoCore/FileName/FileName.h"
-
 #include "EgoMath/Transform.h"
 #include "EgoMath/Vector.h"
 
+#include "EgoEngine/Platform/FileSystem/RootedFileSystem.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
 #include "EgoEngine/Graphic/Render/Render.h"
 
-#include "DefaultRenderDebugDraw.h"
+#include "DebugRender/DebugRender.h"
 
 namespace ego::render
 {
@@ -26,7 +25,7 @@ namespace ego::render
             uint32_t m_objectIndex = 0;
         };
 
-        explicit DefaultRender(const FileName& _pluginRootPath = FileName());
+        DefaultRender() = default;
         ~DefaultRender() override = default;
 
         virtual bool init() override;
@@ -62,6 +61,8 @@ namespace ego::render
         EGO_RENDER(DefaultRender, Render);
 
     private:
+        bool initPluginFileSystem();
+        void releasePluginFileSystem();
         void collectRenderItems(Level& _level);
         bool prepareRenderTarget();
         bool prepareShaderData(Level& _level, ecs::Entity _cameraEntity);
@@ -76,8 +77,8 @@ namespace ego::render
         bool copyRenderTargetToPresenter(GraphicPresenter& _presenter);
         void renderItem(const Item& _item);
 
-        FileName m_pluginRootPath;
         DefaultRenderDebugDraw m_debugDraw;
+        RootedFileSystemPointer m_pluginFileSystem = nullptr;
         RenderCommandQueue m_commandQueue = nullptr;
         RenderGraphicCommandList m_commandList = nullptr;
         RenderGraphicCommandList m_presentCommandList = nullptr;

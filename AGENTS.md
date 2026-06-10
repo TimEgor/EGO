@@ -16,6 +16,7 @@
 ## C++ Style
 - Preserve the current code style and the settings from `Utils/ReSharper.DotSettings`.
 - Use `#pragma once` and namespaces `ego`/`ego::*`.
+- Minimize the use of anonymous namespaces during implementation. Do not put meaningful domain, component, plugin, or launcher logic into anonymous namespaces; keep them only for small file-local implementation details when they are clearly justified.
 - Naming: classes, structs, unions, enums, enum members, concepts, typedefs/type aliases, global functions, global variables, and constants use `UpperCamelCase`.
 - Naming: instance methods, local variables, and lambdas use `lowerCamelCase`.
 - Naming: static class/struct methods use `UpperCamelCase`.

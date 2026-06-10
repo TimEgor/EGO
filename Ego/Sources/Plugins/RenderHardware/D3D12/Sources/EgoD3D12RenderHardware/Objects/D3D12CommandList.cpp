@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <vector>
 
 #include "D3D12Buffer.h"
 #include "D3D12Pipeline.h"
@@ -133,8 +134,6 @@ void ego::gpu::d3d12::D3D12CommandListBase::resetInternal()
 {
     m_currentBindingLayout = nullptr;
     m_currentPipelineType = PipelineType::Graphic;
-    m_boundResourceViews.clear();
-    m_boundSamplers.clear();
 
     if (m_allocator)
     {
@@ -206,74 +205,6 @@ void ego::gpu::d3d12::D3D12CommandListBase::resourceBarrierInternal(
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
     m_commandList->ResourceBarrier(1, &barrier);
-}
-
-void ego::gpu::d3d12::D3D12CommandListBase::bindResourceViewInternal(
-    uint32_t _slot,
-    const ResourceViewReference& _resourceView
-)
-{
-    EGO_ASSERT_MESSAGE(
-        !_resourceView || _resourceView->getBindlessIndex() != InvalidBindlessIndex,
-        "ResourceView must expose a valid bindless descriptor index"
-    );
-
-    if (_resourceView && _resourceView->getBindlessIndex() == InvalidBindlessIndex)
-    {
-        return;
-    }
-
-    if (_slot >= m_boundResourceViews.size())
-    {
-        m_boundResourceViews.resize(static_cast<size_t>(_slot) + 1);
-    }
-
-    m_boundResourceViews[_slot] = _resourceView;
-    bindBindlessDescriptorHeapsInternal();
-}
-
-void ego::gpu::d3d12::D3D12CommandListBase::bindSamplerInternal(
-    uint32_t _slot,
-    const SamplerReference& _sampler
-)
-{
-    EGO_ASSERT_MESSAGE(
-        !_sampler || _sampler->getBindlessIndex() != InvalidBindlessIndex,
-        "Sampler must expose a valid bindless descriptor index"
-    );
-
-    if (_sampler && _sampler->getBindlessIndex() == InvalidBindlessIndex)
-    {
-        return;
-    }
-
-    if (_slot >= m_boundSamplers.size())
-    {
-        m_boundSamplers.resize(static_cast<size_t>(_slot) + 1);
-    }
-
-    m_boundSamplers[_slot] = _sampler;
-    bindBindlessDescriptorHeapsInternal();
-}
-
-uint32_t ego::gpu::d3d12::D3D12CommandListBase::getResourceViewBindlessIndexInternal(uint32_t _slot) const
-{
-    if (_slot >= m_boundResourceViews.size() || !m_boundResourceViews[_slot])
-    {
-        return InvalidBindlessIndex;
-    }
-
-    return m_boundResourceViews[_slot]->getBindlessIndex();
-}
-
-uint32_t ego::gpu::d3d12::D3D12CommandListBase::getSamplerBindlessIndexInternal(uint32_t _slot) const
-{
-    if (_slot >= m_boundSamplers.size() || !m_boundSamplers[_slot])
-    {
-        return InvalidBindlessIndex;
-    }
-
-    return m_boundSamplers[_slot]->getBindlessIndex();
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::pushConstantsInternal(
@@ -532,26 +463,6 @@ void ego::gpu::d3d12::D3D12CopyCommandList::resourceBarrier(
     resourceBarrierInternal(_resource, _prevState, _nextState);
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::bindResourceView(uint32_t, const ResourceViewReference&)
-{
-    EGO_ASSERT_FAIL_MESSAGE("Copy command list does not support resource bindings");
-}
-
-void ego::gpu::d3d12::D3D12CopyCommandList::bindSampler(uint32_t, const SamplerReference&)
-{
-    EGO_ASSERT_FAIL_MESSAGE("Copy command list does not support sampler bindings");
-}
-
-uint32_t ego::gpu::d3d12::D3D12CopyCommandList::getResourceViewBindlessIndex(uint32_t) const
-{
-    return InvalidBindlessIndex;
-}
-
-uint32_t ego::gpu::d3d12::D3D12CopyCommandList::getSamplerBindlessIndex(uint32_t) const
-{
-    return InvalidBindlessIndex;
-}
-
 void ego::gpu::d3d12::D3D12CopyCommandList::pushConstants(ShaderStageFlags, uint32_t, uint32_t, const void*)
 {
     EGO_ASSERT_FAIL_MESSAGE("Copy command list does not support push constants");
@@ -633,32 +544,6 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::resourceBarrier(
 )
 {
     resourceBarrierInternal(_resource, _prevState, _nextState);
-}
-
-void ego::gpu::d3d12::D3D12ComputeCommandList::bindResourceView(
-    uint32_t _slot,
-    const ResourceViewReference& _resourceView
-)
-{
-    bindResourceViewInternal(_slot, _resourceView);
-}
-
-void ego::gpu::d3d12::D3D12ComputeCommandList::bindSampler(
-    uint32_t _slot,
-    const SamplerReference& _sampler
-)
-{
-    bindSamplerInternal(_slot, _sampler);
-}
-
-uint32_t ego::gpu::d3d12::D3D12ComputeCommandList::getResourceViewBindlessIndex(uint32_t _slot) const
-{
-    return getResourceViewBindlessIndexInternal(_slot);
-}
-
-uint32_t ego::gpu::d3d12::D3D12ComputeCommandList::getSamplerBindlessIndex(uint32_t _slot) const
-{
-    return getSamplerBindlessIndexInternal(_slot);
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::pushConstants(
@@ -774,32 +659,6 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::resourceBarrier(
 )
 {
     resourceBarrierInternal(_resource, _prevState, _nextState);
-}
-
-void ego::gpu::d3d12::D3D12GraphicCommandList::bindResourceView(
-    uint32_t _slot,
-    const ResourceViewReference& _resourceView
-)
-{
-    bindResourceViewInternal(_slot, _resourceView);
-}
-
-void ego::gpu::d3d12::D3D12GraphicCommandList::bindSampler(
-    uint32_t _slot,
-    const SamplerReference& _sampler
-)
-{
-    bindSamplerInternal(_slot, _sampler);
-}
-
-uint32_t ego::gpu::d3d12::D3D12GraphicCommandList::getResourceViewBindlessIndex(uint32_t _slot) const
-{
-    return getResourceViewBindlessIndexInternal(_slot);
-}
-
-uint32_t ego::gpu::d3d12::D3D12GraphicCommandList::getSamplerBindlessIndex(uint32_t _slot) const
-{
-    return getSamplerBindlessIndexInternal(_slot);
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::pushConstants(

@@ -256,8 +256,13 @@ namespace ego::detail
         bool findAliveSlot(HandleElementType _handle, ConstElementSlot& _slot) const;
 
         bool prepareSlotForInsert(IndexType _storageIndex, ElementSlot& _slot);
-        bool makeHandleForSlot(IndexType _storageIndex, ElementSlot& _slot, HandleElementType& _handle);
-        void activateSlot(ElementSlot& _slot);
+        bool makeHandleForSlot(
+            IndexType _storageIndex,
+            const ElementSlot& _slot,
+            VersionType& _version,
+            HandleElementType& _handle
+        );
+        void activateSlot(ElementSlot& _slot, VersionType _version);
         void removeSlot(HandleElementType _handle, ElementSlot& _slot);
         void releaseEmptyPage(Page& _page);
         void destroyAliveElements(Page& _page);
@@ -504,13 +509,14 @@ namespace ego::detail
             return;
         }
 
+        VersionType version = VersionType();
         HandleElementType handle = HandlePolicy::InvalidHandle;
-        if (!makeHandleForSlot(index, slot, handle))
+        if (!makeHandleForSlot(index, slot, version, handle))
         {
             return;
         }
 
-        activateSlot(slot);
+        activateSlot(slot, version);
 
         _info = NewElementInfo{handle, slot.m_page->getValue(slot.m_location.m_elementIndex)};
     }
@@ -711,67 +717,83 @@ namespace ego::detail
             return false;
         }
 
-        Page& page = getOrCreatePage(location.m_pageIndex);
-        if (!page.isAllocated())
+        Page* page = nullptr;
+        if (location.m_pageIndex < m_pages.size())
         {
-            page.allocate(m_pageSize);
-        }
-        else if (page.m_size == 0 && m_emptyPages > 0)
-        {
-            --m_emptyPages;
-        }
-
-        EGO_ASSERT(page.m_size < page.m_capacity);
-
-        if (page.isAlive(location.m_elementIndex))
-        {
-            EGO_ASSERT_FAIL_MESSAGE("ObjectPool::addElement() : Reusing alive element.");
-            _slot = ElementSlot();
-            return false;
+            page = &m_pages[location.m_pageIndex];
+            if (page->isAllocated() && page->isAlive(location.m_elementIndex))
+            {
+                EGO_ASSERT_FAIL_MESSAGE("ObjectPool::addElement() : Reusing alive element.");
+                _slot = ElementSlot();
+                return false;
+            }
         }
 
-        _slot = ElementSlot{&page, location};
+        _slot = ElementSlot{page, location};
         return true;
     }
 
     template <typename ValType, typename HandlePolicy>
     bool ObjectPoolStorage<ValType, HandlePolicy>::makeHandleForSlot(
         IndexType _storageIndex,
-        ElementSlot& _slot,
+        const ElementSlot& _slot,
+        VersionType& _version,
         HandleElementType& _handle
     )
     {
-        VersionType version = VersionType();
+        _version = VersionType();
         if constexpr (HandlePolicy::HasVersion)
         {
-            VersionType& pageVersion = _slot.m_page->getVersion(_slot.m_location.m_elementIndex);
-            version = HandlePolicy::nextVersion(_storageIndex, pageVersion);
-            if (version == HandlePolicy::InvalidVersion)
+            VersionType pageVersion = HandlePolicy::InvalidVersion;
+            if (_slot.m_page && _slot.m_page->isAllocated())
+            {
+                pageVersion = _slot.m_page->getVersion(_slot.m_location.m_elementIndex);
+            }
+
+            _version = HandlePolicy::nextVersion(_storageIndex, pageVersion);
+            if (_version == HandlePolicy::InvalidVersion)
             {
                 EGO_ASSERT_FAIL_MESSAGE("ObjectPool::addElement() : Handle version overflow.");
                 return false;
             }
         }
 
-        _handle = HandlePolicy::makeHandle(_storageIndex, version);
-        if (!HandlePolicy::isHandleConsistent(_handle, _storageIndex, version))
+        _handle = HandlePolicy::makeHandle(_storageIndex, _version);
+        if (!HandlePolicy::isHandleConsistent(_handle, _storageIndex, _version))
         {
             EGO_ASSERT_FAIL_MESSAGE("ObjectPool::addElement() : Handle indexing invalidation.");
             _handle = HandlePolicy::InvalidHandle;
             return false;
         }
 
-        if constexpr (HandlePolicy::HasVersion)
-        {
-            _slot.m_page->getVersion(_slot.m_location.m_elementIndex) = version;
-        }
-
         return true;
     }
 
     template <typename ValType, typename HandlePolicy>
-    void ObjectPoolStorage<ValType, HandlePolicy>::activateSlot(ElementSlot& _slot)
+    void ObjectPoolStorage<ValType, HandlePolicy>::activateSlot(ElementSlot& _slot, VersionType _version)
     {
+        if (!_slot.m_page)
+        {
+            _slot.m_page = &getOrCreatePage(_slot.m_location.m_pageIndex);
+        }
+
+        if (!_slot.m_page->isAllocated())
+        {
+            _slot.m_page->allocate(m_pageSize);
+        }
+        else if (_slot.m_page->m_size == 0 && m_emptyPages > 0)
+        {
+            --m_emptyPages;
+        }
+
+        EGO_ASSERT(_slot.m_page->m_size < _slot.m_page->m_capacity);
+        EGO_ASSERT(!_slot.m_page->isAlive(_slot.m_location.m_elementIndex));
+
+        if constexpr (HandlePolicy::HasVersion)
+        {
+            _slot.m_page->getVersion(_slot.m_location.m_elementIndex) = _version;
+        }
+
         _slot.m_page->setAlive(_slot.m_location.m_elementIndex, true);
 
         ++_slot.m_page->m_size;

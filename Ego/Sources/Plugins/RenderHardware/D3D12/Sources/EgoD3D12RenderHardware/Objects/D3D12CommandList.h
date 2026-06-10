@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include <wrl/client.h>
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandList.h"
@@ -38,10 +36,6 @@ namespace ego::gpu::d3d12
             GraphicResourceState _nextState
         );
 
-        void bindResourceViewInternal(uint32_t _slot, const ResourceViewReference& _resourceView);
-        void bindSamplerInternal(uint32_t _slot, const SamplerReference& _sampler);
-        uint32_t getResourceViewBindlessIndexInternal(uint32_t _slot) const;
-        uint32_t getSamplerBindlessIndexInternal(uint32_t _slot) const;
         void pushConstantsInternal(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data);
 
         void copyBufferInternal(
@@ -71,8 +65,6 @@ namespace ego::gpu::d3d12
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
         const D3D12BindingLayout* m_currentBindingLayout = nullptr;
         PipelineType m_currentPipelineType = PipelineType::Graphic;
-        std::vector<ResourceViewReference> m_boundResourceViews;
-        std::vector<SamplerReference> m_boundSamplers;
     };
 
     class D3D12CopyCommandList final : public CopyCommandList,
@@ -98,10 +90,6 @@ namespace ego::gpu::d3d12
             GraphicResourceState _nextState
         ) override;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) override;
-        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) override;
-        virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const override;
-        virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const override;
         virtual void pushConstants(
             ShaderStageFlags _stageFlags,
             uint32_t _offset,
@@ -157,10 +145,6 @@ namespace ego::gpu::d3d12
             GraphicResourceState _nextState
         ) override;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) override;
-        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) override;
-        virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const override;
-        virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const override;
         virtual void pushConstants(
             ShaderStageFlags _stageFlags,
             uint32_t _offset,
@@ -219,10 +203,6 @@ namespace ego::gpu::d3d12
             GraphicResourceState _nextState
         ) override;
 
-        virtual void bindResourceView(uint32_t _slot, const ResourceViewReference& _resourceView) override;
-        virtual void bindSampler(uint32_t _slot, const SamplerReference& _sampler) override;
-        virtual uint32_t getResourceViewBindlessIndex(uint32_t _slot) const override;
-        virtual uint32_t getSamplerBindlessIndex(uint32_t _slot) const override;
         virtual void pushConstants(
             ShaderStageFlags _stageFlags,
             uint32_t _offset,
