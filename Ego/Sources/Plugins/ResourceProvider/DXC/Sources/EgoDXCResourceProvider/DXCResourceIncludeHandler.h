@@ -10,8 +10,8 @@
 #include <WTypes.h>
 #include <dxcapi.h>
 #include <wrl/client.h>
+#include <wrl/implements.h>
 
-#include <atomic>
 #include <vector>
 
 namespace ego
@@ -21,7 +21,10 @@ namespace ego
 
 namespace ego::resources::dxc
 {
-    class DXCResourceIncludeHandler final : public IDxcIncludeHandler
+    class DXCResourceIncludeHandler final
+        : public Microsoft::WRL::RuntimeClass<
+            Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
+            IDxcIncludeHandler>
     {
     public:
         DXCResourceIncludeHandler(
@@ -30,21 +33,10 @@ namespace ego::resources::dxc
             const FileName& _sourcePath
         );
 
-        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID _riid, void** _object) override;
-        virtual ULONG STDMETHODCALLTYPE AddRef() override;
-        virtual ULONG STDMETHODCALLTYPE Release() override;
         virtual HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR _filename, IDxcBlob** _includeSource) override;
 
     private:
-        static FileName ToFileName(LPCWSTR _filename);
-
         void AddIncludeDirectory(const FileName& _directory);
-
-        bool TryLoadInclude(
-            const FileName& _path,
-            FileName& _loadedPath,
-            FileContent& _content
-        ) const;
 
         bool LoadIncludeContent(
             const FileName& _includePath,
@@ -54,7 +46,6 @@ namespace ego::resources::dxc
 
         HRESULT CreateBlob(const FileContent& _content, IDxcBlob** _includeSource) const;
 
-        std::atomic<ULONG> m_refCount = 1;
         Microsoft::WRL::ComPtr<IDxcUtils> m_utils;
         ResourceLoadingContext* m_loadingContext = nullptr;
         std::vector<FileName> m_includeDirectories;

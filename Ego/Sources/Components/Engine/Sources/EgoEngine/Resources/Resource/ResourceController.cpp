@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Log/Log.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "ResourceController.h"
@@ -333,6 +334,7 @@ void ego::ResourceController::finishResourceLoaded(const ResourcePointer& _resou
     }
 
     Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Loaded);
+    EGO_LOG_MESSAGE(std::string("Resource loaded successfully: ") + _resource->getPath().c_str());
     notifyResourceLoadingFinished(_resource);
 }
 
@@ -349,6 +351,12 @@ void ego::ResourceController::finishResourceFailed(
     if (!_loadingError.empty())
     {
         Resource::ResourceAccessor::SetLoadingError(_resource.get(), std::move(_loadingError));
+    }
+
+    const std::string loadingError = _resource->getLoadingError();
+    if (!loadingError.empty())
+    {
+        EGO_LOG_ERROR(loadingError);
     }
 
     Resource::ResourceAccessor::SetState(_resource.get(), ResourceState::Failed);

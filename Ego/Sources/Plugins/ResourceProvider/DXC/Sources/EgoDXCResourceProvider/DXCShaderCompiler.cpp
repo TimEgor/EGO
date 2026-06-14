@@ -246,8 +246,8 @@ bool ego::resources::dxc::CompileHlslContent(
         return false;
     }
 
-    Microsoft::WRL::ComPtr<IDxcIncludeHandler> includeHandler;
-    includeHandler.Attach(new DXCResourceIncludeHandler(utils.Get(), _loadingContext, _sourcePath));
+    Microsoft::WRL::ComPtr<DXCResourceIncludeHandler> includeHandler =
+        Microsoft::WRL::Make<DXCResourceIncludeHandler>(utils.Get(), _loadingContext, _sourcePath);
     if (!includeHandler)
     {
         _loadingError = "Failed to create DXC include handler.";

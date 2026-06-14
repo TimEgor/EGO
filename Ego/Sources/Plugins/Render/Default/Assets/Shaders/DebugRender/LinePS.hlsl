@@ -1,5 +1,3 @@
-#include "/Assets/Shaders/Common/GBufferPass.hlsli"
-
 struct PSInput
 {
     float4 Position : SV_POSITION;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EgoCore/PlatformMacros.h"
+#include "EgoCore/Log/Log.h"
 #include "EgoCore/Profile/Profile.h"
 
 #include "PluginController.h"
@@ -33,6 +34,7 @@
         static void InitModuleCore(const PluginModuleBindingBridge& _bindings)                      \
         {                                                                                           \
             AssertCore::GetInstance().setGenerator(_bindings.getBinding<AssertGenerator>());        \
+            log::LogCore::GetInstance().setLogger(_bindings.getBinding<log::Logger>());             \
             profile::ProfileCore::GetInstance().setController(                                      \
                 _bindings.getBinding<profile::ProfilerController>()                                 \
             );                                                                                      \

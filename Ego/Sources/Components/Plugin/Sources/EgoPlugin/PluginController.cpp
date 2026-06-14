@@ -2,6 +2,7 @@
 
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/FileName/FileName.h"
+#include "EgoCore/Log/Log.h"
 #include "EgoCore/Profile/Profile.h"
 #include "EgoCore/UtilsMacros.h"
 
@@ -43,6 +44,7 @@ bool ego::PluginController::init()
     EGO_CHECK_INITIALIZATION(pluginController);
 
     m_bindingBridge.addBinding(AssertCore::GetInstance().getGenerator());
+    m_bindingBridge.addBinding(log::LogCore::GetInstance().getLogger());
     m_bindingBridge.addBinding(profile::ProfileCore::GetInstance().getController());
     m_bindingBridge.addBinding(pluginController);
 
@@ -57,6 +59,7 @@ void ego::PluginController::release()
     EGO_ASSERT(m_plugins.empty());
 
     m_bindingBridge.removeBinding<AssertGenerator>();
+    m_bindingBridge.removeBinding<log::Logger>();
     m_bindingBridge.removeBinding<profile::ProfilerController>();
     m_bindingBridge.removeBinding<PluginController>();
 
