@@ -31,7 +31,10 @@ namespace ego
         };
 
         PluginController() = default;
-        ~PluginController() { release(); }
+        ~PluginController()
+        {
+            release();
+        }
 
         bool init();
         void release();
@@ -115,4 +118,4 @@ namespace ego
     private:
         PluginControllerPointer m_pluginController = nullptr;
     };
-}
+} // namespace ego

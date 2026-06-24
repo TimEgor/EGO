@@ -13,7 +13,7 @@ void ego::win32::Win32WindowEventController::updateNativeEvents()
 
 LRESULT ego::win32::Win32WindowEventController::WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam)
 {
-    Win32WindowWeakPointer* windowData = reinterpret_cast<Win32WindowWeakPointer*>(GetWindowLongPtr(_hwnd, 0));
+    auto windowData = reinterpret_cast<Win32WindowWeakPointer*>(GetWindowLongPtr(_hwnd, 0));
 
     if (windowData)
     {

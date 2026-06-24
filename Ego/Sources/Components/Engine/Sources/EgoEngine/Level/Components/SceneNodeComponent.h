@@ -26,4 +26,4 @@ namespace ego
 
         Transform m_globalTransform;
     };
-}
+} // namespace ego

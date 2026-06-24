@@ -11,7 +11,8 @@ EGO_PLUGIN_CREATE(ego::winpix::WinPIXProfilerPlugin, ProfilerPlugin, ego::Profil
 
 ego::winpix::WinPIXProfilerPlugin::WinPIXProfilerPlugin(const PluginModulePointer& _module, PluginType _pluginType)
     : ProfilerPlugin(_module, _pluginType)
-{}
+{
+}
 
 ego::profile::ProfilerPointer ego::winpix::WinPIXProfilerPlugin::createProfiler()
 {

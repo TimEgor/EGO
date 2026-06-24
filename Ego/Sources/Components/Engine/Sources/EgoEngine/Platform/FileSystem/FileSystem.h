@@ -32,8 +32,14 @@ namespace ego
         bool m_isReadOnly = false;
         bool m_isHidden = false;
 
-        bool isFile() const { return m_type == FileSystemEntryType::File; }
-        bool isDirectory() const { return m_type == FileSystemEntryType::Directory; }
+        bool isFile() const
+        {
+            return m_type == FileSystemEntryType::File;
+        }
+        bool isDirectory() const
+        {
+            return m_type == FileSystemEntryType::Directory;
+        }
     };
 
     using FileSystemEntryCollection = std::vector<FileSystemEntryDesc>;
@@ -89,11 +95,7 @@ namespace ego
         virtual FileName getAbsolutePath(const FileName& _path) const = 0;
 
         virtual bool getEntryInfo(const FileName& _path, FileSystemEntryDesc& _entry) const = 0;
-        virtual bool enumerate(
-            const FileName& _directoryPath,
-            FileSystemEntryCollection& _entries,
-            bool _recursive = false
-        ) const = 0;
+        virtual bool enumerate(const FileName& _directoryPath, FileSystemEntryCollection& _entries, bool _recursive = false) const = 0;
 
         virtual bool createDirectory(const FileName& _path, bool _recursive = true) = 0;
         virtual bool removeFile(const FileName& _path) = 0;
@@ -109,11 +111,7 @@ namespace ego
         virtual bool appendFile(const FileName& _path, const FileContent& _content) = 0;
         virtual bool appendTextFile(const FileName& _path, const std::string& _content) = 0;
 
-        virtual FileSystemWatchID watchDirectory(
-            const FileName& _directoryPath,
-            FileSystemWatchFilter _filter = FileSystemWatchFilter::Default,
-            bool _recursive = false
-        ) = 0;
+        virtual FileSystemWatchID watchDirectory(const FileName& _directoryPath, FileSystemWatchFilter _filter = FileSystemWatchFilter::Default, bool _recursive = false) = 0;
         virtual bool unwatchDirectory(FileSystemWatchID _watchID) = 0;
         virtual void updateDirectoryWatches() = 0;
 
@@ -122,4 +120,4 @@ namespace ego
 
     EGO_POINTER(FileSystem);
     EGO_WEAK_POINTER(FileSystem);
-}
+} // namespace ego

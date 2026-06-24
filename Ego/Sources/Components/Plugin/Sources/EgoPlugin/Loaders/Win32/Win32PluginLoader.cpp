@@ -1,18 +1,18 @@
 #if defined(WIN32) || defined(_WIN32)
 
-#include "Win32PluginLoader.h"
+    #include "Win32PluginLoader.h"
 
-#include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/FileDialog/FileDialog.h"
-#include "EgoCore/FileName/FileNameUtils.h"
-#include "EgoCore/String/Format.h"
-#include "EgoCore/String/StringConverter.h"
-#include "EgoCore/UtilsMacros.h"
+    #include "EgoCore/Assert/AssertCore.h"
+    #include "EgoCore/FileDialog/FileDialog.h"
+    #include "EgoCore/FileName/FileNameUtils.h"
+    #include "EgoCore/String/Format.h"
+    #include "EgoCore/String/StringConverter.h"
+    #include "EgoCore/UtilsMacros.h"
 
-#include "EgoPlugin/ExternalPluginCore.h"
-#include "EgoPlugin/ExternalModuleCore.h"
+    #include "EgoPlugin/ExternalPluginCore.h"
+    #include "EgoPlugin/ExternalModuleCore.h"
 
-#include <Windows.h>
+    #include <Windows.h>
 
 void OutputError(const ego::FileName& _name)
 {
@@ -20,28 +20,20 @@ void OutputError(const ego::FileName& _name)
     const DWORD error = GetLastError();
 
     FormatMessageW(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr,
         error,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         reinterpret_cast<LPWSTR>(&message),
         0,
-        nullptr
-    );
+        nullptr);
 
-#ifdef _MSC_VER
-    const std::wstring output = L"Plugin issue (\"" +
-        ego::ConvertStringToWString(_name.c_str()) +
-        L"\") error " +
-        std::to_wstring(error) +
-        L":\n " +
-        (message != nullptr ? message : L"Unknown error") +
-        L"\n";
+    #ifdef _MSC_VER
+    const std::wstring output = L"Plugin issue (\"" + ego::ConvertStringToWString(_name.c_str()) + L"\") error " + std::to_wstring(error) + L":\n " +
+                                (message != nullptr ? message : L"Unknown error") + L"\n";
 
     OutputDebugStringW(output.c_str());
-#endif // _MSC_VER
+    #endif // _MSC_VER
 
     if (message != nullptr)
     {
@@ -51,14 +43,9 @@ void OutputError(const ego::FileName& _name)
 
 ego::FileName ego::Win32PluginLoader::selectPluginModule(const char* _typeName)
 {
-    const std::string title = _typeName
-        ? StringFormat("Select {} plugin module", _typeName)
-        : "Select plugin module";
+    const std::string title = _typeName ? StringFormat("Select {} plugin module", _typeName) : "Select plugin module";
 
-    const OpenFileDialogFilter filters[] = {
-        {"Dynamic Libraries (*.dll)", "*.dll"},
-        {"All Files (*.*)", "*.*"}
-    };
+    const OpenFileDialogFilter filters[] = {{"Dynamic Libraries (*.dll)", "*.dll"}, {"All Files (*.*)", "*.*"}};
 
     OpenFileDialogParams params;
     params.m_title = title.c_str();
@@ -72,9 +59,7 @@ ego::FileName ego::Win32PluginLoader::selectPluginModule(const char* _typeName)
 ego::PluginPointer ego::Win32PluginLoader::loadPlugin(const PluginModulePointer& _module, const char* _typeName)
 {
     const std::string functionName = StringFormat("{}{}", EGO_TO_STRING_DEF(EGO_PLUGIN_CREATE_FUNC_BASE), _typeName);
-    const PluginCreatingFunctionPtr creationFunction = reinterpret_cast<PluginCreatingFunctionPtr>(
-        GetProcAddress(reinterpret_cast<HMODULE>(_module->getInfo().m_handle), functionName.c_str())
-    );
+    const auto creationFunction = reinterpret_cast<PluginCreatingFunctionPtr>(GetProcAddress(reinterpret_cast<HMODULE>(_module->getInfo().m_handle), functionName.c_str()));
 
     if (!creationFunction)
     {
@@ -110,15 +95,9 @@ void ego::Win32PluginLoader::unloadNativeModule(void* _moduleHandle, const FileN
     }
 }
 
-void ego::Win32PluginLoader::initModule(
-    void* _moduleHandle,
-    const PluginModuleInfo& _info,
-    PluginModuleBindingBridge& _bindings
-)
+void ego::Win32PluginLoader::initModule(void* _moduleHandle, const PluginModuleInfo& _info, PluginModuleBindingBridge& _bindings)
 {
-    const ModuleInitFunctionPtr initFunction = reinterpret_cast<ModuleInitFunctionPtr>(
-        GetProcAddress(reinterpret_cast<HMODULE>(_moduleHandle), EGO_TO_STRING_DEF(EGO_MODULE_INIT_FUNC))
-    );
+    const auto initFunction = reinterpret_cast<ModuleInitFunctionPtr>(GetProcAddress(reinterpret_cast<HMODULE>(_moduleHandle), EGO_TO_STRING_DEF(EGO_MODULE_INIT_FUNC)));
 
     if (!initFunction)
     {
@@ -130,12 +109,7 @@ void ego::Win32PluginLoader::initModule(
 
 void ego::Win32PluginLoader::releaseModule(void* _moduleHandle)
 {
-    const ModuleReleaseFunctionPtr releaseFunction = reinterpret_cast<ModuleReleaseFunctionPtr>(
-        GetProcAddress(
-            reinterpret_cast<HMODULE>(_moduleHandle),
-            EGO_TO_STRING_DEF(EGO_MODULE_RELEASE_FUNC)
-        )
-    );
+    const auto releaseFunction = reinterpret_cast<ModuleReleaseFunctionPtr>(GetProcAddress(reinterpret_cast<HMODULE>(_moduleHandle), EGO_TO_STRING_DEF(EGO_MODULE_RELEASE_FUNC)));
 
     if (!releaseFunction)
     {

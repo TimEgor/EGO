@@ -24,33 +24,14 @@ namespace
 
     constexpr size_t MaxHuffmanBits = 15;
 
-    constexpr std::array<uint16_t, 29> DeflateLengthBases = {
-        3, 4, 5, 6, 7, 8, 9, 10,
-        11, 13, 15, 17, 19, 23, 27, 31,
-        35, 43, 51, 59, 67, 83, 99, 115,
-        131, 163, 195, 227, 258
-    };
+    constexpr std::array<uint16_t, 29> DeflateLengthBases = {3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258};
 
-    constexpr std::array<uint8_t, 29> DeflateLengthExtraBits = {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 2, 2, 2, 2,
-        3, 3, 3, 3, 4, 4, 4, 4,
-        5, 5, 5, 5, 0
-    };
+    constexpr std::array<uint8_t, 29> DeflateLengthExtraBits = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0};
 
-    constexpr std::array<uint16_t, 30> DeflateDistanceBases = {
-        1, 2, 3, 4, 5, 7, 9, 13,
-        17, 25, 33, 49, 65, 97, 129, 193,
-        257, 385, 513, 769, 1025, 1537, 2049, 3073,
-        4097, 6145, 8193, 12289, 16385, 24577
-    };
+    constexpr std::array<uint16_t, 30> DeflateDistanceBases =
+        {1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577};
 
-    constexpr std::array<uint8_t, 30> DeflateDistanceExtraBits = {
-        0, 0, 0, 0, 1, 1, 2, 2,
-        3, 3, 4, 4, 5, 5, 6, 6,
-        7, 7, 8, 8, 9, 9, 10, 10,
-        11, 11, 12, 12, 13, 13
-    };
+    constexpr std::array<uint8_t, 30> DeflateDistanceExtraBits = {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
 
     bool CanRead(const ego::FileContent& _content, size_t _offset, size_t _size)
     {
@@ -59,16 +40,12 @@ namespace
 
     uint16_t ReadUInt16LE(const uint8_t* _data)
     {
-        return static_cast<uint16_t>(_data[0]) |
-            (static_cast<uint16_t>(_data[1]) << 8);
+        return static_cast<uint16_t>(_data[0]) | (static_cast<uint16_t>(_data[1]) << 8);
     }
 
     uint32_t ReadUInt32LE(const uint8_t* _data)
     {
-        return static_cast<uint32_t>(_data[0]) |
-            (static_cast<uint32_t>(_data[1]) << 8) |
-            (static_cast<uint32_t>(_data[2]) << 16) |
-            (static_cast<uint32_t>(_data[3]) << 24);
+        return static_cast<uint32_t>(_data[0]) | (static_cast<uint32_t>(_data[1]) << 8) | (static_cast<uint32_t>(_data[2]) << 16) | (static_cast<uint32_t>(_data[3]) << 24);
     }
 
     uint16_t ReadUInt16LE(const ego::FileContent& _content, size_t _offset)
@@ -100,10 +77,7 @@ namespace
 
     uint32_t CalculateCrc32(const ego::FileContent& _content)
     {
-        return ego::Crc32(
-            _content.empty() ? "" : reinterpret_cast<const char*>(_content.data()),
-            _content.size()
-        );
+        return ego::Crc32(_content.empty() ? "" : reinterpret_cast<const char*>(_content.data()), _content.size());
     }
 
     bool FindEndOfCentralDirectory(const ego::FileContent& _content, size_t& _eocdOffset)
@@ -114,9 +88,7 @@ namespace
         }
 
         const size_t lastOffset = _content.size() - EndOfCentralDirectorySize;
-        const size_t firstOffset = _content.size() > EndOfCentralDirectorySize + MaxZipCommentSize ?
-            _content.size() - EndOfCentralDirectorySize - MaxZipCommentSize :
-            0;
+        const size_t firstOffset = _content.size() > EndOfCentralDirectorySize + MaxZipCommentSize ? _content.size() - EndOfCentralDirectorySize - MaxZipCommentSize : 0;
 
         for (size_t offset = lastOffset;; --offset)
         {
@@ -145,7 +117,8 @@ namespace
         BitReader(const uint8_t* _data, size_t _size)
             : m_data(_data),
               m_size(_size)
-        {}
+        {
+        }
 
         bool readBits(uint8_t _count, uint32_t& _value)
         {
@@ -275,8 +248,7 @@ namespace
                     [](const HuffmanCode& _left, const HuffmanCode& _right)
                     {
                         return _left.m_code < _right.m_code;
-                    }
-                );
+                    });
             }
 
             return true;
@@ -308,8 +280,7 @@ namespace
                     [](const HuffmanCode& _left, uint32_t _code)
                     {
                         return _left.m_code < _code;
-                    }
-                );
+                    });
 
                 if (codeIter != codes.end() && codeIter->m_code == code)
                 {
@@ -354,23 +325,16 @@ namespace
 
         std::vector<uint8_t> distanceCodeLengths(32, 5);
 
-        return _literalLengthTable.build(literalLengthCodeLengths) &&
-            _distanceTable.build(distanceCodeLengths);
+        return _literalLengthTable.build(literalLengthCodeLengths) && _distanceTable.build(distanceCodeLengths);
     }
 
-    bool ReadDynamicCodeLengths(
-        BitReader& _reader,
-        std::vector<uint8_t>& _literalLengthCodeLengths,
-        std::vector<uint8_t>& _distanceCodeLengths
-    )
+    bool ReadDynamicCodeLengths(BitReader& _reader, std::vector<uint8_t>& _literalLengthCodeLengths, std::vector<uint8_t>& _distanceCodeLengths)
     {
         uint32_t literalLengthCodeCountValue = 0;
         uint32_t distanceCodeCountValue = 0;
         uint32_t codeLengthCodeCountValue = 0;
 
-        if (!_reader.readBits(5, literalLengthCodeCountValue) ||
-            !_reader.readBits(5, distanceCodeCountValue) ||
-            !_reader.readBits(4, codeLengthCodeCountValue))
+        if (!_reader.readBits(5, literalLengthCodeCountValue) || !_reader.readBits(5, distanceCodeCountValue) || !_reader.readBits(4, codeLengthCodeCountValue))
         {
             return false;
         }
@@ -379,10 +343,7 @@ namespace
         const size_t distanceCodeCount = distanceCodeCountValue + 1;
         const size_t codeLengthCodeCount = codeLengthCodeCountValue + 4;
 
-        constexpr std::array<uint8_t, 19> CodeLengthCodeOrder = {
-            16, 17, 18, 0, 8, 7, 9, 6, 10, 5,
-            11, 4, 12, 3, 13, 2, 14, 1, 15
-        };
+        constexpr std::array<uint8_t, 19> CodeLengthCodeOrder = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
 
         std::vector<uint8_t> codeLengthCodeLengths(19, 0);
         for (size_t index = 0; index < codeLengthCodeCount; ++index)
@@ -466,22 +427,12 @@ namespace
                 return false;
             }
 
-            std::fill(
-                codeLengths.begin() + codeLengthIndex,
-                codeLengths.begin() + codeLengthIndex + repeatCount,
-                repeatedCodeLength
-            );
+            std::fill(codeLengths.begin() + codeLengthIndex, codeLengths.begin() + codeLengthIndex + repeatCount, repeatedCodeLength);
             codeLengthIndex += repeatCount;
         }
 
-        _literalLengthCodeLengths.assign(
-            codeLengths.begin(),
-            codeLengths.begin() + literalLengthCodeCount
-        );
-        _distanceCodeLengths.assign(
-            codeLengths.begin() + literalLengthCodeCount,
-            codeLengths.end()
-        );
+        _literalLengthCodeLengths.assign(codeLengths.begin(), codeLengths.begin() + literalLengthCodeCount);
+        _distanceCodeLengths.assign(codeLengths.begin() + literalLengthCodeCount, codeLengths.end());
 
         return true;
     }
@@ -495,8 +446,7 @@ namespace
             return false;
         }
 
-        return _literalLengthTable.build(literalLengthCodeLengths) &&
-            _distanceTable.build(distanceCodeLengths);
+        return _literalLengthTable.build(literalLengthCodeLengths) && _distanceTable.build(distanceCodeLengths);
     }
 
     bool DecodeCompressedHuffmanBlock(
@@ -504,8 +454,7 @@ namespace
         const HuffmanTable& _literalLengthTable,
         const HuffmanTable& _distanceTable,
         size_t _expectedOutputSize,
-        ego::FileContent& _output
-    )
+        ego::FileContent& _output)
     {
         while (true)
         {
@@ -538,8 +487,7 @@ namespace
 
             const size_t lengthIndex = literalLengthSymbol - 257;
             uint32_t lengthExtraValue = 0;
-            if (DeflateLengthExtraBits[lengthIndex] > 0 &&
-                !_reader.readBits(DeflateLengthExtraBits[lengthIndex], lengthExtraValue))
+            if (DeflateLengthExtraBits[lengthIndex] > 0 && !_reader.readBits(DeflateLengthExtraBits[lengthIndex], lengthExtraValue))
             {
                 return false;
             }
@@ -553,8 +501,7 @@ namespace
             }
 
             uint32_t distanceExtraValue = 0;
-            if (DeflateDistanceExtraBits[distanceSymbol] > 0 &&
-                !_reader.readBits(DeflateDistanceExtraBits[distanceSymbol], distanceExtraValue))
+            if (DeflateDistanceExtraBits[distanceSymbol] > 0 && !_reader.readBits(DeflateDistanceExtraBits[distanceSymbol], distanceExtraValue))
             {
                 return false;
             }
@@ -577,12 +524,7 @@ namespace
         }
     }
 
-    bool InflateRawDeflate(
-        const uint8_t* _compressedData,
-        size_t _compressedSize,
-        size_t _expectedOutputSize,
-        ego::FileContent& _output
-    )
+    bool InflateRawDeflate(const uint8_t* _compressedData, size_t _compressedSize, size_t _expectedOutputSize, ego::FileContent& _output)
     {
         BitReader reader(_compressedData, _compressedSize);
 
@@ -608,8 +550,7 @@ namespace
 
                 uint16_t storedBlockSize = 0;
                 uint16_t storedBlockSizeCheck = 0;
-                if (!reader.readAlignedUInt16(storedBlockSize) ||
-                    !reader.readAlignedUInt16(storedBlockSizeCheck) ||
+                if (!reader.readAlignedUInt16(storedBlockSize) || !reader.readAlignedUInt16(storedBlockSizeCheck) ||
                     storedBlockSize != static_cast<uint16_t>(~storedBlockSizeCheck))
                 {
                     _output.clear();
@@ -664,12 +605,9 @@ namespace
 
         return true;
     }
-}
+} // namespace
 
-ego::ZipResourcePackFileSystem::ZipResourcePackFileSystem(
-    const FileSystem& _sourceFileSystem,
-    const FileName& _packPath
-)
+ego::ZipResourcePackFileSystem::ZipResourcePackFileSystem(const FileSystem& _sourceFileSystem, const FileName& _packPath)
 {
     open(_sourceFileSystem, _packPath);
 }
@@ -849,11 +787,7 @@ bool ego::ZipResourcePackFileSystem::getEntryInfo(const FileName& _path, FileSys
     return true;
 }
 
-bool ego::ZipResourcePackFileSystem::enumerate(
-    const FileName& _directoryPath,
-    FileSystemEntryCollection& _entries,
-    bool _recursive
-) const
+bool ego::ZipResourcePackFileSystem::enumerate(const FileName& _directoryPath, FileSystemEntryCollection& _entries, bool _recursive) const
 {
     _entries.clear();
 
@@ -974,8 +908,7 @@ bool ego::ZipResourcePackFileSystem::readFile(const FileName& _path, FileContent
         return false;
     }
 
-    if (entry->m_uncompressedSize > std::numeric_limits<size_t>::max() ||
-        entry->m_compressedSize > std::numeric_limits<size_t>::max())
+    if (entry->m_uncompressedSize > std::numeric_limits<size_t>::max() || entry->m_compressedSize > std::numeric_limits<size_t>::max())
     {
         return false;
     }
@@ -1067,8 +1000,7 @@ bool ego::ZipResourcePackFileSystem::unwatchDirectory(FileSystemWatchID)
     return false;
 }
 
-void ego::ZipResourcePackFileSystem::updateDirectoryWatches()
-{}
+void ego::ZipResourcePackFileSystem::updateDirectoryWatches() {}
 
 bool ego::ZipResourcePackFileSystem::IsPathSeparator(char _ch)
 {
@@ -1086,10 +1018,7 @@ std::string ego::ZipResourcePackFileSystem::GetParentPath(const std::string& _pa
     return separatorPosition == std::string::npos ? std::string() : _path.substr(0, separatorPosition);
 }
 
-bool ego::ZipResourcePackFileSystem::NormalizeArchivePath(
-    const std::string& _path,
-    std::string& _normalizedPath
-)
+bool ego::ZipResourcePackFileSystem::NormalizeArchivePath(const std::string& _path, std::string& _normalizedPath)
 {
     _normalizedPath.clear();
 
@@ -1183,9 +1112,7 @@ bool ego::ZipResourcePackFileSystem::loadArchive(FileContent&& _content, const F
         return false;
     }
 
-    if (diskEntryCount == 0xFFFF ||
-        centralDirectorySize == std::numeric_limits<uint32_t>::max() ||
-        centralDirectoryOffset == std::numeric_limits<uint32_t>::max())
+    if (diskEntryCount == 0xFFFF || centralDirectorySize == std::numeric_limits<uint32_t>::max() || centralDirectoryOffset == std::numeric_limits<uint32_t>::max())
     {
         return false;
     }
@@ -1201,8 +1128,7 @@ bool ego::ZipResourcePackFileSystem::loadArchive(FileContent&& _content, const F
     size_t currentOffset = centralDirectoryOffset;
     for (uint16_t entryIndex = 0; entryIndex < totalEntryCount; ++entryIndex)
     {
-        if (!CanRead(m_archiveData, currentOffset, CentralDirectoryHeaderSize) ||
-            ReadUInt32LE(m_archiveData, currentOffset) != CentralDirectoryHeaderSignature)
+        if (!CanRead(m_archiveData, currentOffset, CentralDirectoryHeaderSize) || ReadUInt32LE(m_archiveData, currentOffset) != CentralDirectoryHeaderSignature)
         {
             clear();
             return false;
@@ -1222,22 +1148,15 @@ bool ego::ZipResourcePackFileSystem::loadArchive(FileContent&& _content, const F
         const uint32_t externalAttributes = ReadUInt32LE(m_archiveData, currentOffset + 38);
         const uint32_t localHeaderOffset = ReadUInt32LE(m_archiveData, currentOffset + 42);
 
-        const size_t variableSize =
-            static_cast<size_t>(fileNameLength) + extraFieldLength + fileCommentLength;
-        if (!CanRead(m_archiveData, currentOffset + CentralDirectoryHeaderSize, variableSize) ||
-            fileDiskNumber != 0 ||
-            compressedSize == std::numeric_limits<uint32_t>::max() ||
-            uncompressedSize == std::numeric_limits<uint32_t>::max() ||
-            localHeaderOffset == std::numeric_limits<uint32_t>::max())
+        const size_t variableSize = static_cast<size_t>(fileNameLength) + extraFieldLength + fileCommentLength;
+        if (!CanRead(m_archiveData, currentOffset + CentralDirectoryHeaderSize, variableSize) || fileDiskNumber != 0 || compressedSize == std::numeric_limits<uint32_t>::max() ||
+            uncompressedSize == std::numeric_limits<uint32_t>::max() || localHeaderOffset == std::numeric_limits<uint32_t>::max())
         {
             clear();
             return false;
         }
 
-        std::string archivePath(
-            reinterpret_cast<const char*>(m_archiveData.data() + currentOffset + CentralDirectoryHeaderSize),
-            fileNameLength
-        );
+        std::string archivePath(reinterpret_cast<const char*>(m_archiveData.data() + currentOffset + CentralDirectoryHeaderSize), fileNameLength);
 
         std::string normalizedPath;
         if (!NormalizeArchivePath(archivePath, normalizedPath))
@@ -1363,9 +1282,7 @@ bool ego::ZipResourcePackFileSystem::resolvePath(const FileName& _path, std::str
         while (position < m_workingDirectory.size())
         {
             const size_t separatorPosition = m_workingDirectory.find('/', position);
-            const size_t partEnd = separatorPosition == std::string::npos ?
-                m_workingDirectory.size() :
-                separatorPosition;
+            const size_t partEnd = separatorPosition == std::string::npos ? m_workingDirectory.size() : separatorPosition;
 
             parts.push_back(m_workingDirectory.substr(position, partEnd - position));
 
@@ -1430,9 +1347,7 @@ bool ego::ZipResourcePackFileSystem::resolvePath(const FileName& _path, std::str
     return true;
 }
 
-const ego::ZipResourcePackFileSystem::Entry* ego::ZipResourcePackFileSystem::findEntry(
-    const std::string& _path
-) const
+const ego::ZipResourcePackFileSystem::Entry* ego::ZipResourcePackFileSystem::findEntry(const std::string& _path) const
 {
     const auto entryIter = m_entryIndices.find(_path);
     return entryIter == m_entryIndices.end() ? nullptr : &m_entries[entryIter->second];
@@ -1456,11 +1371,7 @@ void ego::ZipResourcePackFileSystem::fillEntryDesc(const Entry& _entry, FileSyst
     _desc.m_isHidden = _entry.m_isHidden;
 }
 
-bool ego::ZipResourcePackFileSystem::getEntryData(
-    const Entry& _entry,
-    const uint8_t*& _data,
-    size_t& _size
-) const
+bool ego::ZipResourcePackFileSystem::getEntryData(const Entry& _entry, const uint8_t*& _data, size_t& _size) const
 {
     _data = nullptr;
     _size = 0;
@@ -1471,16 +1382,14 @@ bool ego::ZipResourcePackFileSystem::getEntryData(
     }
 
     const size_t localHeaderOffset = static_cast<size_t>(_entry.m_localHeaderOffset);
-    if (!CanRead(m_archiveData, localHeaderOffset, LocalFileHeaderSize) ||
-        ReadUInt32LE(m_archiveData, localHeaderOffset) != LocalFileHeaderSignature)
+    if (!CanRead(m_archiveData, localHeaderOffset, LocalFileHeaderSize) || ReadUInt32LE(m_archiveData, localHeaderOffset) != LocalFileHeaderSignature)
     {
         return false;
     }
 
     const uint16_t fileNameLength = ReadUInt16LE(m_archiveData, localHeaderOffset + 26);
     const uint16_t extraFieldLength = ReadUInt16LE(m_archiveData, localHeaderOffset + 28);
-    const size_t dataOffset =
-        localHeaderOffset + LocalFileHeaderSize + static_cast<size_t>(fileNameLength) + extraFieldLength;
+    const size_t dataOffset = localHeaderOffset + LocalFileHeaderSize + static_cast<size_t>(fileNameLength) + extraFieldLength;
 
     if (_entry.m_compressedSize > std::numeric_limits<size_t>::max())
     {

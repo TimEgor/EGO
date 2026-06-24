@@ -1,4 +1,4 @@
-#include "/Assets/Shaders/Common/GBufferPass.hlsli"
+#include "/Shaders/Common/GBufferPass.hlsli"
 
 struct PSInput
 {

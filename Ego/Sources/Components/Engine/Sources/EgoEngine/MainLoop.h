@@ -38,13 +38,12 @@ namespace ego::engine
         using JobDescriptorIDCollection = JobGraphDescriptorBuilder::JobDescriptorIDCollection;
 
         MainLoop() = default;
-        ~MainLoop() { release(); }
+        ~MainLoop() override
+        {
+            release();
+        }
 
-        bool init(
-            const JobDescriptor& _renderFrameJobDescriptor,
-            const JobDescriptor& _presentFrameJobDescriptor,
-            const JobDescriptor& _prepareRenderFrameJobDescriptor
-        );
+        bool init(const JobDescriptor& _renderFrameJobDescriptor, const JobDescriptor& _presentFrameJobDescriptor, const JobDescriptor& _prepareRenderFrameJobDescriptor);
         void release();
 
         JobDescriptorID addJob(const JobDescriptor& _descriptor);
@@ -53,48 +52,20 @@ namespace ego::engine
         JobDescriptorID addJobBefore(const JobDescriptor& _descriptor, JobDescriptorID _childJobID);
         JobDescriptorID addJobBefore(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _childJobIDs);
         JobDescriptorID addJobAfter(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID);
-        JobDescriptorID addJobAfter(
-            const JobDescriptor& _descriptor,
-            const JobDescriptorIDCollection& _parentJobIDs
-        );
-        JobDescriptorID addJobBetween(
-            const JobDescriptor& _descriptor,
-            JobDescriptorID _parentJobID,
-            JobDescriptorID _childJobID
-        );
-        JobDescriptorID addJobBetween(
-            const JobDescriptor& _descriptor,
-            const JobDescriptorIDCollection& _parentJobIDs,
-            const JobDescriptorIDCollection& _childJobIDs
-        );
+        JobDescriptorID addJobAfter(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _parentJobIDs);
+        JobDescriptorID addJobBetween(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID);
+        JobDescriptorID addJobBetween(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _parentJobIDs, const JobDescriptorIDCollection& _childJobIDs);
 
         JobDescriptorID addJobGraph(const JobGraphDescriptorPointer& _descriptor);
-        JobDescriptorID addJobGraphBefore(
-            const JobGraphDescriptorPointer& _descriptor,
-            JobDescriptorID _childJobID
-        );
-        JobDescriptorID addJobGraphBefore(
-            const JobGraphDescriptorPointer& _descriptor,
-            const JobDescriptorIDCollection& _childJobIDs
-        );
-        JobDescriptorID addJobGraphAfter(
-            const JobGraphDescriptorPointer& _descriptor,
-            JobDescriptorID _parentJobID
-        );
-        JobDescriptorID addJobGraphAfter(
-            const JobGraphDescriptorPointer& _descriptor,
-            const JobDescriptorIDCollection& _parentJobIDs
-        );
-        JobDescriptorID addJobGraphBetween(
-            const JobGraphDescriptorPointer& _descriptor,
-            JobDescriptorID _parentJobID,
-            JobDescriptorID _childJobID
-        );
+        JobDescriptorID addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _childJobID);
+        JobDescriptorID addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _childJobIDs);
+        JobDescriptorID addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID);
+        JobDescriptorID addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _parentJobIDs);
+        JobDescriptorID addJobGraphBetween(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID);
         JobDescriptorID addJobGraphBetween(
             const JobGraphDescriptorPointer& _descriptor,
             const JobDescriptorIDCollection& _parentJobIDs,
-            const JobDescriptorIDCollection& _childJobIDs
-        );
+            const JobDescriptorIDCollection& _childJobIDs);
 
         void makeDependency(JobDescriptorID _parentJobID, JobDescriptorID _childJobID);
 
@@ -131,4 +102,4 @@ namespace ego::engine
 
         bool m_isInitialized = false;
     };
-}
+} // namespace ego::engine

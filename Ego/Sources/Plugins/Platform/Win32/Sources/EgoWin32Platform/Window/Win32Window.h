@@ -2,7 +2,6 @@
 
 #include <shared_mutex>
 
-
 #include "EgoCore/PlatformMacros.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 
@@ -28,22 +27,22 @@ namespace ego::win32
         Win32Window() = default;
         ~Win32Window();
 
-        virtual bool init(const char* _title, const WindowSize& _size) override;
-        virtual void release() override;
+        bool init(const char* _title, const WindowSize& _size) override;
+        void release() override;
 
-        virtual bool isValid() const override;
+        bool isValid() const override;
 
-        virtual void show() override;
-        virtual void hide() override;
-        virtual bool isShown() const override;
+        void show() override;
+        void hide() override;
+        bool isShown() const override;
 
-        virtual void* getNativeHandle() const override;
+        void* getNativeHandle() const override;
 
-        virtual bool isStable() const override;
+        bool isStable() const override;
 
-        virtual const WindowSize& getWindowSize() const override;
-        virtual const WindowSize& getClientAreaSize() const override;
-        virtual const WindowArea& getCutoutsArea() const override;
+        const WindowSize& getWindowSize() const override;
+        const WindowSize& getClientAreaSize() const override;
+        const WindowArea& getCutoutsArea() const override;
 
         HWND getHandle() const;
 
@@ -69,4 +68,4 @@ namespace ego::win32
 
     EGO_POINTER(Win32Window);
     EGO_WEAK_POINTER(Win32Window);
-}
+} // namespace ego::win32

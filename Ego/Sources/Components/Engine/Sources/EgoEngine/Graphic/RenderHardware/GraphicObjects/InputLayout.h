@@ -67,4 +67,4 @@ namespace ego::gpu
 
         InputLayoutHash getHash() const;
     };
-}
+} // namespace ego::gpu

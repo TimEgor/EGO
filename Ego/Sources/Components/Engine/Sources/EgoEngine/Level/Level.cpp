@@ -6,8 +6,8 @@
 #include "LevelController.h"
 
 ego::Level::Level(LevelID _id)
-    : m_world(new ecs::World())
-    , m_id(_id)
+    : m_world(new ecs::World()),
+      m_id(_id)
 {
     createRootNode();
 }
@@ -39,10 +39,11 @@ void ego::Level::LevelAccessor::Destroy(Level* _level)
 }
 
 ego::Level::NodeChildIterator::NodeChildIterator(const Level* _level, ecs::Entity _node)
-    : m_level(_level && _node ? _level : nullptr)
-    , m_node(_level ? _node : ecs::Entity())
-    , m_nextNode(m_level ? m_level->getNextNodeSibling(m_node) : ecs::Entity())
-{}
+    : m_level(_level && _node ? _level : nullptr),
+      m_node(_level ? _node : ecs::Entity()),
+      m_nextNode(m_level ? m_level->getNextNodeSibling(m_node) : ecs::Entity())
+{
+}
 
 ego::ecs::Entity ego::Level::NodeChildIterator::operator*() const
 {
@@ -83,15 +84,14 @@ bool ego::Level::NodeChildIterator::operator!=(const NodeChildIterator& _iterato
 }
 
 ego::Level::NodeChildRange::NodeChildRange(const Level* _level, ecs::Entity _parent)
-    : m_level(_level && _parent ? _level : nullptr)
-    , m_parent(_level ? _parent : ecs::Entity())
-{}
+    : m_level(_level && _parent ? _level : nullptr),
+      m_parent(_level ? _parent : ecs::Entity())
+{
+}
 
 ego::Level::NodeChildIterator ego::Level::NodeChildRange::begin() const
 {
-    return m_level
-        ? NodeChildIterator(m_level, m_level->getFirstNodeChild(m_parent))
-        : NodeChildIterator();
+    return m_level ? NodeChildIterator(m_level, m_level->getFirstNodeChild(m_parent)) : NodeChildIterator();
 }
 
 ego::Level::NodeChildIterator ego::Level::NodeChildRange::end() const
@@ -179,10 +179,7 @@ ego::ecs::Entity ego::Level::getRootNode() const
 
 bool ego::Level::isNode(ecs::Entity _entity) const
 {
-    return m_world &&
-        ownsEntity(_entity) &&
-        m_world->hasComponent<SceneNodeComponent>(_entity) &&
-        m_world->hasComponent<TransformComponent>(_entity);
+    return m_world && ownsEntity(_entity) && m_world->hasComponent<SceneNodeComponent>(_entity) && m_world->hasComponent<TransformComponent>(_entity);
 }
 
 ego::ecs::Entity ego::Level::createNode()
@@ -239,12 +236,7 @@ bool ego::Level::destroyNode(ecs::Entity _node)
 
 bool ego::Level::setNodeParent(ecs::Entity _node, ecs::Entity _parent)
 {
-    if (!m_world ||
-        !isNode(_node) ||
-        !isNode(_parent) ||
-        _node == _parent ||
-        _node == m_rootNode ||
-        isNodeChildOf(_parent, _node))
+    if (!m_world || !isNode(_node) || !isNode(_parent) || _node == _parent || _node == m_rootNode || isNodeChildOf(_parent, _node))
     {
         return false;
     }
@@ -464,9 +456,7 @@ bool ego::Level::attachNodeToParent(ecs::Entity _node, ecs::Entity _parent)
 
 void ego::Level::detachNodeFromParent(ecs::Entity _node)
 {
-    SceneNodeComponent* nodeComponent = m_world && isNode(_node)
-        ? m_world->tryGetComponent<SceneNodeComponent>(_node)
-        : nullptr;
+    SceneNodeComponent* nodeComponent = m_world && isNode(_node) ? m_world->tryGetComponent<SceneNodeComponent>(_node) : nullptr;
     if (!nodeComponent || !nodeComponent->m_parent)
     {
         return;
@@ -508,4 +498,3 @@ void ego::Level::detachNodeFromParent(ecs::Entity _node)
     nodeComponent->m_previousSibling = ecs::Entity();
     nodeComponent->m_nextSibling = ecs::Entity();
 }
-

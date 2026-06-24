@@ -26,10 +26,10 @@ namespace ego
         virtual PluginPointer loadPlugin(const PluginModulePointer& _module, const char* _typeName) = 0;
 
     protected:
-        using ModuleInitFunctionPtr = void(*)(const PluginModuleInfo&, PluginModuleBindingBridge&);
-        using ModuleReleaseFunctionPtr = void(*)();
+        using ModuleInitFunctionPtr = void (*)(const PluginModuleInfo&, PluginModuleBindingBridge&);
+        using ModuleReleaseFunctionPtr = void (*)();
 
-        using PluginCreatingFunctionPtr = Plugin*(*)(const PluginModulePointer&);
+        using PluginCreatingFunctionPtr = Plugin* (*)(const PluginModulePointer&);
 
         virtual void* loadNativeModule(const FileName& _moduleName) = 0;
         virtual void unloadNativeModule(void* _moduleHandle, const FileName& _moduleName) = 0;
@@ -39,4 +39,4 @@ namespace ego
     };
 
     EGO_REFERENCE(PluginLoader);
-}
+} // namespace ego

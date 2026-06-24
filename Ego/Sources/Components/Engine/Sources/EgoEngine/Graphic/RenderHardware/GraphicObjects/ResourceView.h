@@ -28,4 +28,4 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(ResourceView);
-}
+} // namespace ego::gpu

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "EgoEngine/Platform/Window/Window.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandQueue.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/SwapChain.h"
 
 #include "GraphicPresenter.h"
@@ -13,16 +15,16 @@ namespace ego
         WindowGraphicPresenter() = default;
         ~WindowGraphicPresenter() override;
 
-        bool init(const Window& _window, const gpu::SwapChainDesc& _swapChainDesc);
-        void release();
+        bool init(GraphicDevice& _graphicDevice, const Window& _window, const gpu::SwapChainDesc& _swapChainDesc, const gpu::CommandQueueReference& _presentationQueue);
+        void release() override;
 
-        virtual gpu::Texture2DReference getTargetTexture() override;
+        gpu::Texture2DReference getTargetTexture() override;
 
-        virtual void present() override;
+        void present() override;
 
     private:
         gpu::SwapChainReference m_swapChain;
     };
 
     EGO_POINTER(WindowGraphicPresenter);
-}
+} // namespace ego

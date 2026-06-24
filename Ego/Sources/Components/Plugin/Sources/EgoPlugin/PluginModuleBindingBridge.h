@@ -24,7 +24,8 @@ namespace ego
     public:
         explicit TypedPluginModuleBinding(const SharedPointer<T>& _instance)
             : m_instance(_instance)
-        {}
+        {
+        }
 
         SharedPointer<T> getInstance() const
         {
@@ -46,10 +47,7 @@ namespace ego
         template <typename T>
         void addBinding(const SharedPointer<T>& _instance)
         {
-            addBinding(
-                PluginModuleBindingPointer(new TypedPluginModuleBinding<T>(_instance)),
-                GetBindingType<T>()
-            );
+            addBinding(PluginModuleBindingPointer(new TypedPluginModuleBinding<T>(_instance)), GetBindingType<T>());
         }
 
         template <typename T>
@@ -87,4 +85,4 @@ namespace ego
 
         std::unordered_map<BindingTypeID, PluginModuleBindingPointer> m_bindings;
     };
-}
+} // namespace ego

@@ -22,4 +22,4 @@ namespace ego
     };
 
     FileName SelectOpenFile(const OpenFileDialogParams& _params);
-}
+} // namespace ego

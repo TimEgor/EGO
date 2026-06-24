@@ -68,9 +68,7 @@ namespace ego::detail
                 return InvalidVersion;
             }
 
-            VersionType nextVersion = _version >= HandleType::MaxVersion ?
-                                          static_cast<VersionType>(1) :
-                                          static_cast<VersionType>(_version + 1);
+            VersionType nextVersion = _version >= HandleType::MaxVersion ? static_cast<VersionType>(1) : static_cast<VersionType>(_version + 1);
 
             if (nextVersion == InvalidVersion)
             {
@@ -163,7 +161,10 @@ namespace ego::detail
         ObjectPoolStorage() = default;
         ObjectPoolStorage(const ObjectPoolStorage&) = delete;
         ObjectPoolStorage(ObjectPoolStorage&& _pool) noexcept;
-        ~ObjectPoolStorage() { release(); }
+        ~ObjectPoolStorage()
+        {
+            release();
+        }
 
         ObjectPoolStorage& operator=(const ObjectPoolStorage&) = delete;
         ObjectPoolStorage& operator=(ObjectPoolStorage&&) = delete;
@@ -191,10 +192,7 @@ namespace ego::detail
     private:
         struct Page final
         {
-            static constexpr size_t MemoryAlignment = std::max(
-                std::max(alignof(ValType), alignof(VersionType)),
-                alignof(bool)
-            );
+            static constexpr size_t MemoryAlignment = std::max(std::max(alignof(ValType), alignof(VersionType)), alignof(bool));
 
             void* m_mem = nullptr;
             ValType* m_valsMem = nullptr;
@@ -207,7 +205,10 @@ namespace ego::detail
             Page() = default;
             Page(const Page&) = delete;
             Page(Page&& _page) noexcept;
-            ~Page() { deallocate(); }
+            ~Page()
+            {
+                deallocate();
+            }
 
             Page& operator=(const Page&) = delete;
             Page& operator=(Page&&) = delete;
@@ -256,12 +257,7 @@ namespace ego::detail
         bool findAliveSlot(HandleElementType _handle, ConstElementSlot& _slot) const;
 
         bool prepareSlotForInsert(IndexType _storageIndex, ElementSlot& _slot);
-        bool makeHandleForSlot(
-            IndexType _storageIndex,
-            const ElementSlot& _slot,
-            VersionType& _version,
-            HandleElementType& _handle
-        );
+        bool makeHandleForSlot(IndexType _storageIndex, const ElementSlot& _slot, VersionType& _version, HandleElementType& _handle);
         void activateSlot(ElementSlot& _slot, VersionType _version);
         void removeSlot(HandleElementType _handle, ElementSlot& _slot);
         void releaseEmptyPage(Page& _page);
@@ -312,7 +308,7 @@ namespace ego::detail
         const size_t aliveMemSize = sizeof(bool) * _capacity;
         const size_t memSize = Align(valueMemSize + versionMemSize + aliveMemSize, MemoryAlignment);
 
-        uint8_t* mem = static_cast<uint8_t*>(::operator new(memSize));
+        auto mem = static_cast<uint8_t*>(::operator new(memSize));
 
         m_mem = mem;
         m_valsMem = reinterpret_cast<ValType*>(mem);
@@ -376,15 +372,13 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    typename ObjectPoolStorage<ValType, HandlePolicy>::VersionType&
-    ObjectPoolStorage<ValType, HandlePolicy>::Page::getVersion(size_t _elementIndex)
+    typename ObjectPoolStorage<ValType, HandlePolicy>::VersionType& ObjectPoolStorage<ValType, HandlePolicy>::Page::getVersion(size_t _elementIndex)
     {
         return m_versionMem[_elementIndex];
     }
 
     template <typename ValType, typename HandlePolicy>
-    const typename ObjectPoolStorage<ValType, HandlePolicy>::VersionType&
-    ObjectPoolStorage<ValType, HandlePolicy>::Page::getVersion(size_t _elementIndex) const
+    const typename ObjectPoolStorage<ValType, HandlePolicy>::VersionType& ObjectPoolStorage<ValType, HandlePolicy>::Page::getVersion(size_t _elementIndex) const
     {
         return m_versionMem[_elementIndex];
     }
@@ -408,11 +402,7 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    bool ObjectPoolStorage<ValType, HandlePolicy>::init(
-        size_t _pageSize,
-        size_t _maxFreePageCount,
-        size_t _minFreeIndexCount
-    )
+    bool ObjectPoolStorage<ValType, HandlePolicy>::init(size_t _pageSize, size_t _maxFreePageCount, size_t _minFreeIndexCount)
     {
         EGO_ASSERT(m_pageSize == 0);
         EGO_ASSERT(_pageSize != 0);
@@ -522,8 +512,7 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    typename ObjectPoolStorage<ValType, HandlePolicy>::NewElementInfo
-    ObjectPoolStorage<ValType, HandlePolicy>::addElementRaw()
+    typename ObjectPoolStorage<ValType, HandlePolicy>::NewElementInfo ObjectPoolStorage<ValType, HandlePolicy>::addElementRaw()
     {
         NewElementInfo info;
         addElementRaw(info);
@@ -541,13 +530,12 @@ namespace ego::detail
             return;
         }
 
-        new(_info.m_elementPtr) ValType(std::forward<Args>(_args)...);
+        new (_info.m_elementPtr) ValType(std::forward<Args>(_args)...);
     }
 
     template <typename ValType, typename HandlePolicy>
     template <typename... Args>
-    typename ObjectPoolStorage<ValType, HandlePolicy>::NewElementInfo
-    ObjectPoolStorage<ValType, HandlePolicy>::addElement(Args&&... _args)
+    typename ObjectPoolStorage<ValType, HandlePolicy>::NewElementInfo ObjectPoolStorage<ValType, HandlePolicy>::addElement(Args&&... _args)
     {
         NewElementInfo info;
         addElement(info, std::forward<Args>(_args)...);
@@ -610,24 +598,20 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    bool ObjectPoolStorage<ValType, HandlePolicy>::checkElementLocationWithPage(
-        const ElementLocation& _location
-    ) const
+    bool ObjectPoolStorage<ValType, HandlePolicy>::checkElementLocationWithPage(const ElementLocation& _location) const
     {
         return checkElementLocation(_location) && _location.m_pageIndex < m_pages.size();
     }
 
     template <typename ValType, typename HandlePolicy>
-    typename ObjectPoolStorage<ValType, HandlePolicy>::ElementLocation
-    ObjectPoolStorage<ValType, HandlePolicy>::getElementLocation(IndexType _index) const
+    typename ObjectPoolStorage<ValType, HandlePolicy>::ElementLocation ObjectPoolStorage<ValType, HandlePolicy>::getElementLocation(IndexType _index) const
     {
         const size_t index = static_cast<size_t>(_index);
         return ElementLocation{index / m_pageSize, index % m_pageSize};
     }
 
     template <typename ValType, typename HandlePolicy>
-    typename ObjectPoolStorage<ValType, HandlePolicy>::Page&
-    ObjectPoolStorage<ValType, HandlePolicy>::getOrCreatePage(size_t _pageIndex)
+    typename ObjectPoolStorage<ValType, HandlePolicy>::Page& ObjectPoolStorage<ValType, HandlePolicy>::getOrCreatePage(size_t _pageIndex)
     {
         while (m_pages.size() <= _pageIndex)
         {
@@ -638,10 +622,7 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    bool ObjectPoolStorage<ValType, HandlePolicy>::findAliveLocation(
-        HandleElementType _handle,
-        ElementLocation& _location
-    ) const
+    bool ObjectPoolStorage<ValType, HandlePolicy>::findAliveLocation(HandleElementType _handle, ElementLocation& _location) const
     {
         EGO_ASSERT(m_pageSize != 0);
         if (m_pageSize == 0 || HandlePolicy::isInvalid(_handle))
@@ -673,10 +654,7 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    bool ObjectPoolStorage<ValType, HandlePolicy>::findAliveSlot(
-        HandleElementType _handle,
-        ElementSlot& _slot
-    )
+    bool ObjectPoolStorage<ValType, HandlePolicy>::findAliveSlot(HandleElementType _handle, ElementSlot& _slot)
     {
         ElementLocation location;
         if (!findAliveLocation(_handle, location))
@@ -690,10 +668,7 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    bool ObjectPoolStorage<ValType, HandlePolicy>::findAliveSlot(
-        HandleElementType _handle,
-        ConstElementSlot& _slot
-    ) const
+    bool ObjectPoolStorage<ValType, HandlePolicy>::findAliveSlot(HandleElementType _handle, ConstElementSlot& _slot) const
     {
         ElementLocation location;
         if (!findAliveLocation(_handle, location))
@@ -734,12 +709,7 @@ namespace ego::detail
     }
 
     template <typename ValType, typename HandlePolicy>
-    bool ObjectPoolStorage<ValType, HandlePolicy>::makeHandleForSlot(
-        IndexType _storageIndex,
-        const ElementSlot& _slot,
-        VersionType& _version,
-        HandleElementType& _handle
-    )
+    bool ObjectPoolStorage<ValType, HandlePolicy>::makeHandleForSlot(IndexType _storageIndex, const ElementSlot& _slot, VersionType& _version, HandleElementType& _handle)
     {
         _version = VersionType();
         if constexpr (HandlePolicy::HasVersion)
@@ -869,4 +839,4 @@ namespace ego::detail
         m_maxUsedIndex = HandlePolicy::InitialIndex;
         m_isIndexRangeExhausted = false;
     }
-}
+} // namespace ego::detail

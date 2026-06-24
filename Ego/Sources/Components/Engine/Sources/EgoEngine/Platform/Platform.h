@@ -8,8 +8,8 @@
 
 namespace ego
 {
-	using PlatformType = rtti::TypeMetaInfoID;
-	constexpr PlatformType InvalidPlatformType = 0;
+    using PlatformType = rtti::TypeMetaInfoID;
+    constexpr PlatformType InvalidPlatformType = 0;
 
     class Platform
     {
@@ -33,4 +33,4 @@ namespace ego
     };
 
     EGO_POINTER(Platform);
-}
+} // namespace ego

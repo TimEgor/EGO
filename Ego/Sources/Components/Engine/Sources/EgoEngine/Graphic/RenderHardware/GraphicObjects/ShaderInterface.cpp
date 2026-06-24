@@ -2,12 +2,8 @@
 
 bool ego::gpu::ShaderParameterType::operator==(const ShaderParameterType& _other) const
 {
-    return
-        m_scalarType == _other.m_scalarType &&
-        m_rowCount == _other.m_rowCount &&
-        m_columnCount == _other.m_columnCount &&
-        m_elementCount == _other.m_elementCount &&
-        m_columnMajor == _other.m_columnMajor;
+    return m_scalarType == _other.m_scalarType && m_rowCount == _other.m_rowCount && m_columnCount == _other.m_columnCount && m_elementCount == _other.m_elementCount &&
+           m_columnMajor == _other.m_columnMajor;
 }
 
 bool ego::gpu::ShaderParameterType::operator!=(const ShaderParameterType& _other) const
@@ -70,8 +66,7 @@ bool ego::gpu::ShaderInterface::merge(const ShaderInterface& _other)
     }
 
     const ShaderParameterBufferDesc& otherBuffer = _other.m_materialParameterBuffer;
-    if (m_materialParameterBuffer.m_size != otherBuffer.m_size ||
-        m_materialParameterBuffer.m_shaderRegister != otherBuffer.m_shaderRegister ||
+    if (m_materialParameterBuffer.m_size != otherBuffer.m_size || m_materialParameterBuffer.m_shaderRegister != otherBuffer.m_shaderRegister ||
         m_materialParameterBuffer.m_registerSpace != otherBuffer.m_registerSpace)
     {
         return false;
@@ -88,9 +83,7 @@ bool ego::gpu::ShaderInterface::merge(const ShaderInterface& _other)
             continue;
         }
 
-        if (parameter->m_offset != otherParameter.m_offset ||
-            parameter->m_size != otherParameter.m_size ||
-            parameter->m_type != otherParameter.m_type)
+        if (parameter->m_offset != otherParameter.m_offset || parameter->m_size != otherParameter.m_size || parameter->m_type != otherParameter.m_type)
         {
             return false;
         }

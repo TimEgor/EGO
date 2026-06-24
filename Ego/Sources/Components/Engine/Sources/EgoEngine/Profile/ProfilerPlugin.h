@@ -10,10 +10,12 @@ namespace ego
     {
     public:
         ProfilerPlugin(const PluginModulePointer& _module, PluginType _pluginType)
-            : EnginePlugin(_module, _pluginType) {}
+            : EnginePlugin(_module, _pluginType)
+        {
+        }
 
-        virtual void onLoaded() override;
-        virtual void onUnloaded() override;
+        void onLoaded() override;
+        void onUnloaded() override;
 
         virtual profile::ProfilerPointer createProfiler() = 0;
 
@@ -24,4 +26,4 @@ namespace ego
     };
 
     EGO_POINTER(ProfilerPlugin);
-}
+} // namespace ego

@@ -38,7 +38,10 @@ namespace ego
             GraphJobData(const char* _dbgName = nullptr);
             ~GraphJobData() override = default;
 
-            JobControllerPointer getJobController() const { return m_jobController.lock(); }
+            JobControllerPointer getJobController() const
+            {
+                return m_jobController.lock();
+            }
             void completeJob();
 
             void addCompletionCallback(const CompletionCallback& _callback);
@@ -47,12 +50,24 @@ namespace ego
 
             void wait();
             bool isFinished() const;
-            JobGraphState getState() const { return m_state; }
+            JobGraphState getState() const
+            {
+                return m_state;
+            }
 
 #ifdef EGO_JOB_DEBUG
-            const char* getDbgName() const { return m_dbgName.c_str(); }
-            const char* getBeginBarrierDbgName() const { return m_beginBarrierDbgName.c_str(); }
-            const char* getEndBarrierDbgName() const { return m_endBarrierDbgName.c_str(); }
+            const char* getDbgName() const
+            {
+                return m_dbgName.c_str();
+            }
+            const char* getBeginBarrierDbgName() const
+            {
+                return m_beginBarrierDbgName.c_str();
+            }
+            const char* getEndBarrierDbgName() const
+            {
+                return m_endBarrierDbgName.c_str();
+            }
 #endif
 
         private:
@@ -96,7 +111,7 @@ namespace ego
 
             void removeChildDependencies();
 
-            void operate() final override;
+            void operate() final;
 
             DependencyCollection m_dependencyJobs;
 
@@ -134,12 +149,7 @@ namespace ego
 
         using JobCollection = std::vector<JobReference>;
 
-        JobGraph(
-            const DependencyJobReference& _entryJob,
-            const DependencyJobReference& _exitJob,
-            JobGraphCollection&& _nestedGraphs,
-            GraphJobDataReference _data
-        );
+        JobGraph(const DependencyJobReference& _entryJob, const DependencyJobReference& _exitJob, JobGraphCollection&& _nestedGraphs, GraphJobDataReference _data);
 
         GraphJobDataReference getGraphData() const;
 
@@ -200,45 +210,26 @@ namespace ego
         explicit JobGraphBuilder(const char* _dbgName = nullptr);
 
         void setDbgName(const char* _dbgName);
-        const char* getDbgName() const { return m_dbgName.c_str(); }
+        const char* getDbgName() const
+        {
+            return m_dbgName.c_str();
+        }
 
         JobGraphJobID addJob(const JobReference& _job);
         JobGraphJobID addJobBefore(const JobReference& _job, JobGraphJobID _childJobID);
         JobGraphJobID addJobBefore(const JobReference& _job, const JobGraphJobIDCollection& _childJobIDs);
         JobGraphJobID addJobAfter(const JobReference& _job, JobGraphJobID _parentJobID);
         JobGraphJobID addJobAfter(const JobReference& _job, const JobGraphJobIDCollection& _parentJobIDs);
-        JobGraphJobID addJobBetween(
-            const JobReference& _job,
-            JobGraphJobID _parentJobID,
-            JobGraphJobID _childJobID
-        );
-        JobGraphJobID addJobBetween(
-            const JobReference& _job,
-            const JobGraphJobIDCollection& _parentJobIDs,
-            const JobGraphJobIDCollection& _childJobIDs
-        );
+        JobGraphJobID addJobBetween(const JobReference& _job, JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
+        JobGraphJobID addJobBetween(const JobReference& _job, const JobGraphJobIDCollection& _parentJobIDs, const JobGraphJobIDCollection& _childJobIDs);
 
         JobGraphJobID addJobGraph(const JobGraphReference& _graph);
         JobGraphJobID addJobGraphBefore(const JobGraphReference& _graph, JobGraphJobID _childJobID);
-        JobGraphJobID addJobGraphBefore(
-            const JobGraphReference& _graph,
-            const JobGraphJobIDCollection& _childJobIDs
-        );
+        JobGraphJobID addJobGraphBefore(const JobGraphReference& _graph, const JobGraphJobIDCollection& _childJobIDs);
         JobGraphJobID addJobGraphAfter(const JobGraphReference& _graph, JobGraphJobID _parentJobID);
-        JobGraphJobID addJobGraphAfter(
-            const JobGraphReference& _graph,
-            const JobGraphJobIDCollection& _parentJobIDs
-        );
-        JobGraphJobID addJobGraphBetween(
-            const JobGraphReference& _graph,
-            JobGraphJobID _parentJobID,
-            JobGraphJobID _childJobID
-        );
-        JobGraphJobID addJobGraphBetween(
-            const JobGraphReference& _graph,
-            const JobGraphJobIDCollection& _parentJobIDs,
-            const JobGraphJobIDCollection& _childJobIDs
-        );
+        JobGraphJobID addJobGraphAfter(const JobGraphReference& _graph, const JobGraphJobIDCollection& _parentJobIDs);
+        JobGraphJobID addJobGraphBetween(const JobGraphReference& _graph, JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
+        JobGraphJobID addJobGraphBetween(const JobGraphReference& _graph, const JobGraphJobIDCollection& _parentJobIDs, const JobGraphJobIDCollection& _childJobIDs);
 
         void makeDependency(JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
 
@@ -286,4 +277,4 @@ namespace ego
         GraphBuildingContext m_buildingContext;
         std::string m_dbgName;
     };
-}
+} // namespace ego

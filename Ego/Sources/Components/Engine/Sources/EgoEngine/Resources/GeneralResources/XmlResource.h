@@ -19,12 +19,12 @@ namespace ego
         EGO_RESOURCE(XmlResource, Resource);
 
     protected:
-        virtual bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
-        virtual void onUnload() override;
+        bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
+        void onUnload() override;
 
     private:
         SharedPointer<XmlDocument> m_document;
     };
 
     EGO_POINTER(XmlResource);
-}
+} // namespace ego

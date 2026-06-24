@@ -2,10 +2,7 @@
 
 #include <utility>
 
-ego::gpu::d3d12::D3D12Fence::D3D12Fence(
-    FenceValue,
-    Microsoft::WRL::ComPtr<ID3D12Fence>&& _fence
-)
+ego::gpu::d3d12::D3D12Fence::D3D12Fence(FenceValue, Microsoft::WRL::ComPtr<ID3D12Fence>&& _fence)
     : m_fence(std::move(_fence))
 {
     m_eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);

@@ -1,6 +1,9 @@
 #include "D3D12GraphicDevice.h"
 
 #include <algorithm>
+#include <array>
+#include <cstring>
+#include <utility>
 
 #include "EgoCore/Memory/Utils.h"
 
@@ -8,499 +11,346 @@
 #include "EgoEngine/Platform/Window/Window.h"
 #include "EgoPlugin/PluginController.h"
 
+#include "Objects/D3D12AccelerationStructure.h"
 #include "Objects/D3D12Buffer.h"
 #include "Objects/D3D12CommandList.h"
 #include "Objects/D3D12CommandQueue.h"
 #include "Objects/D3D12Fence.h"
 #include "Objects/D3D12Pipeline.h"
-#include "Objects/D3D12Sampler.h"
 #include "Objects/D3D12Shader.h"
 #include "Objects/D3D12SwapChain.h"
 #include "Objects/D3D12Texture.h"
 
 namespace
 {
-    constexpr uint32_t BindlessResourceDescriptorCapacity = 1024;
-    constexpr uint32_t BindlessSamplerDescriptorCapacity = 128;
+    constexpr auto RayGenerationExportName = L"RayGenerationMain";
+    constexpr auto MissExportName = L"MissMain";
+    constexpr auto ClosestHitExportName = L"ClosestHitMain";
+    constexpr auto HitGroupExportName = L"HitGroup";
+} // namespace
 
-    template <typename TCommandListReference, typename TCommandListObject>
-    TCommandListReference CreateCommandList(
-        ego::gpu::d3d12::D3D12GraphicDevice* _device,
-        D3D12_COMMAND_LIST_TYPE _type
-    )
+template <typename TCommandListReference, typename TCommandListObject>
+TCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createCommandList(D3D12_COMMAND_LIST_TYPE _type)
+{
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
+
+    if (!getD3D12Device())
     {
-        Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
-
-        ID3D12Device* device = _device ? _device->getDevice() : nullptr;
-        if (!device)
-        {
-            return TCommandListReference();
-        }
-
-        if (FAILED(device->CreateCommandAllocator(_type, IID_PPV_ARGS(&allocator))))
-        {
-            return TCommandListReference();
-        }
-
-        if (FAILED(device->CreateCommandList(0, _type, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList))))
-        {
-            return TCommandListReference();
-        }
-
-        commandList->Close();
-        return TCommandListReference(new TCommandListObject(_device, std::move(allocator), std::move(commandList)));
+        return TCommandListReference();
     }
 
-    D3D12_HEAP_TYPE GetHeapType(const ego::gpu::GraphicResourceDesc& _desc)
+    if (FAILED(getD3D12Device()->CreateCommandAllocator(_type, IID_PPV_ARGS(&allocator))))
     {
-        if (_desc.m_access & ego::gpu::GraphicResourceAccessCpuWrite)
-        {
-            return D3D12_HEAP_TYPE_UPLOAD;
-        }
-
-        if (_desc.m_access & ego::gpu::GraphicResourceAccessCpuRead)
-        {
-            return D3D12_HEAP_TYPE_READBACK;
-        }
-
-        return D3D12_HEAP_TYPE_DEFAULT;
+        return TCommandListReference();
     }
 
-    D3D12_RESOURCE_STATES GetInitialBufferState(
-        const ego::gpu::BufferDesc& _desc,
-        const ego::gpu::InitialGraphicResourceData& _initialData
-    )
+    if (FAILED(getD3D12Device()->CreateCommandList(0, _type, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList))))
     {
-        const D3D12_HEAP_TYPE heapType = GetHeapType(_desc);
-        if (heapType == D3D12_HEAP_TYPE_UPLOAD)
-        {
-            return D3D12_RESOURCE_STATE_GENERIC_READ;
-        }
-
-        if (heapType == D3D12_HEAP_TYPE_READBACK)
-        {
-            return D3D12_RESOURCE_STATE_COPY_DEST;
-        }
-
-        if (_initialData.isValid())
-        {
-            return D3D12_RESOURCE_STATE_COPY_DEST;
-        }
-
-        return D3D12_RESOURCE_STATE_COMMON;
+        return TCommandListReference();
     }
 
-    bool CreateUploadBuffer(
-        ID3D12Device* _device,
-        uint64_t _size,
-        Microsoft::WRL::ComPtr<ID3D12Resource>& _resource
-    )
+    commandList->Close();
+    return TCommandListReference(new TCommandListObject(this, &m_descriptorFactory, std::move(allocator), std::move(commandList)));
+}
+
+bool ego::gpu::d3d12::D3D12GraphicDevice::createUploadBuffer(uint64_t _size, Microsoft::WRL::ComPtr<ID3D12Resource>& _resource) const
+{
+    if (!getD3D12Device() || !_size)
     {
-        if (!_device || !_size)
-        {
-            return false;
-        }
-
-        D3D12_HEAP_PROPERTIES heapProperties = {};
-        heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-        D3D12_RESOURCE_DESC resourceDesc = {};
-        resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        resourceDesc.Width = _size;
-        resourceDesc.Height = 1;
-        resourceDesc.DepthOrArraySize = 1;
-        resourceDesc.MipLevels = 1;
-        resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
-        resourceDesc.SampleDesc.Count = 1;
-        resourceDesc.SampleDesc.Quality = 0;
-        resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-        return SUCCEEDED(
-            _device->CreateCommittedResource(
-                &heapProperties,
-                D3D12_HEAP_FLAG_NONE,
-                &resourceDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(&_resource)
-            )
-        );
+        return false;
     }
 
-    bool WriteToUploadBuffer(
-        ID3D12Resource* _resource,
-        const void* _data,
-        uint64_t _dataSize,
-        uint64_t _resourceSize
-    )
+    D3D12_HEAP_PROPERTIES heapProperties = {};
+    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+    D3D12_RESOURCE_DESC resourceDesc = {};
+    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resourceDesc.Width = _size;
+    resourceDesc.Height = 1;
+    resourceDesc.DepthOrArraySize = 1;
+    resourceDesc.MipLevels = 1;
+    resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+    resourceDesc.SampleDesc.Count = 1;
+    resourceDesc.SampleDesc.Quality = 0;
+    resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    return SUCCEEDED(
+        getD3D12Device()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_resource)));
+}
+
+ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createUploadD3D12Buffer(uint64_t _size)
+{
+    if (!FitsUint32(_size))
     {
-        if (!_resource || !_data || !_dataSize)
-        {
-            return false;
-        }
-
-        void* mappedData = nullptr;
-        D3D12_RANGE readRange = {};
-        if (FAILED(_resource->Map(0, &readRange, &mappedData)))
-        {
-            return false;
-        }
-
-        const uint64_t bytesToCopy = (std::min)(_dataSize, _resourceSize);
-        std::memcpy(mappedData, _data, static_cast<size_t>(bytesToCopy));
-
-        D3D12_RANGE writtenRange = {};
-        writtenRange.Begin = 0;
-        writtenRange.End = static_cast<SIZE_T>(bytesToCopy);
-        _resource->Unmap(0, &writtenRange);
-        return true;
+        return ego::Reference<D3D12Buffer>();
     }
 
-    template <typename TRecordCommands>
-    bool ExecuteImmediateCommands(ID3D12Device* _device, TRecordCommands _recordCommands)
+    BufferDesc uploadDesc;
+    uploadDesc.m_usage = GraphicResourceUsageTransferSrc;
+    uploadDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessCpuWrite | GraphicResourceAccessGpuRead);
+    uploadDesc.m_size = static_cast<uint32_t>(_size);
+    uploadDesc.m_stride = 1;
+
+    return createD3D12Buffer(uploadDesc);
+}
+
+ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBufferToDefaultHeap(
+    ID3D12Resource* _dstResource,
+    uint64_t _dstSize,
+    const InitialGraphicResourceData& _initialData)
+{
+    const uint64_t uploadSize = (std::min<uint64_t>)(_initialData.m_dataSize, _dstSize);
+    ego::Reference<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(uploadSize);
+
+    if (!uploadBuffer || !WriteToUploadBuffer(uploadBuffer->getD3D12Resource(), _initialData.m_data, uploadSize, uploadSize))
     {
-        Microsoft::WRL::ComPtr<ID3D12CommandQueue> queue;
-        Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
-        Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-
-        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-        if (FAILED(_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue))) ||
-            FAILED(_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator))) ||
-            FAILED(
-                _device->CreateCommandList(
-                    0,
-                    D3D12_COMMAND_LIST_TYPE_DIRECT,
-                    allocator.Get(),
-                    nullptr,
-                    IID_PPV_ARGS(&commandList)
-                )
-            ) ||
-            FAILED(_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))))
-        {
-            return false;
-        }
-
-        _recordCommands(commandList.Get());
-
-        if (FAILED(commandList->Close()))
-        {
-            return false;
-        }
-
-        ID3D12CommandList* commandLists[] = {commandList.Get()};
-        queue->ExecuteCommandLists(1, commandLists);
-
-        constexpr uint64_t waitValue = 1;
-        if (FAILED(queue->Signal(fence.Get(), waitValue)))
-        {
-            return false;
-        }
-
-        if (fence->GetCompletedValue() >= waitValue)
-        {
-            return true;
-        }
-
-        HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        if (!eventHandle)
-        {
-            return false;
-        }
-
-        const HRESULT setEventResult = fence->SetEventOnCompletion(waitValue, eventHandle);
-        if (SUCCEEDED(setEventResult))
-        {
-            WaitForSingleObject(eventHandle, INFINITE);
-        }
-
-        CloseHandle(eventHandle);
-        return SUCCEEDED(setEventResult);
+        return GpuTaskReference();
     }
 
-    bool UploadBufferToDefaultHeap(
-        ID3D12Device* _device,
-        ID3D12Resource* _dstResource,
-        uint64_t _dstSize,
-        const ego::gpu::InitialGraphicResourceData& _initialData
-    )
-    {
-        const uint64_t uploadSize = (std::min<uint64_t>)(_initialData.m_dataSize, _dstSize);
-        Microsoft::WRL::ComPtr<ID3D12Resource> uploadResource;
-
-        if (!CreateUploadBuffer(_device, uploadSize, uploadResource) ||
-            !WriteToUploadBuffer(uploadResource.Get(), _initialData.m_data, uploadSize, uploadSize))
+    return submitImmediateCommands(
+        [&](ID3D12GraphicsCommandList* _commandList)
         {
-            return false;
-        }
+            D3D12_RESOURCE_BARRIER beforeCopyBarrier = {};
+            beforeCopyBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            beforeCopyBarrier.Transition.pResource = _dstResource;
+            beforeCopyBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+            beforeCopyBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+            beforeCopyBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            _commandList->ResourceBarrier(1, &beforeCopyBarrier);
 
-        return ExecuteImmediateCommands(
-            _device,
-            [&](ID3D12GraphicsCommandList* _commandList)
-            {
-                _commandList->CopyBufferRegion(_dstResource, 0, uploadResource.Get(), 0, uploadSize);
+            _commandList->CopyBufferRegion(_dstResource, 0, uploadBuffer->getD3D12Resource(), 0, uploadSize);
 
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = _dstResource;
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
-                barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                _commandList->ResourceBarrier(1, &barrier);
-            }
-        );
+            D3D12_RESOURCE_BARRIER afterCopyBarrier = {};
+            afterCopyBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            afterCopyBarrier.Transition.pResource = _dstResource;
+            afterCopyBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+            afterCopyBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+            afterCopyBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            _commandList->ResourceBarrier(1, &afterCopyBarrier);
+        },
+        std::vector<GraphicObjectReference>{uploadBuffer});
+}
+
+ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DToDefaultHeap(
+    ID3D12Resource* _dstResource,
+    const D3D12_RESOURCE_DESC& _dstDesc,
+    const InitialGraphicResourceData& _initialData)
+{
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
+    UINT numRows = 0;
+    UINT64 rowSizeInBytes = 0;
+    UINT64 totalBytes = 0;
+    if (!getD3D12Device())
+    {
+        return GpuTaskReference();
     }
 
-    bool UploadTexture2DToDefaultHeap(
-        ID3D12Device* _device,
-        ID3D12Resource* _dstResource,
-        const D3D12_RESOURCE_DESC& _dstDesc,
-        const ego::gpu::InitialGraphicResourceData& _initialData
-    )
+    getD3D12Device()->GetCopyableFootprints(&_dstDesc, 0, 1, 0, &footprint, &numRows, &rowSizeInBytes, &totalBytes);
+
+    ego::Reference<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(totalBytes);
+    if (!uploadBuffer)
     {
-        D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
-        UINT numRows = 0;
-        UINT64 rowSizeInBytes = 0;
-        UINT64 totalBytes = 0;
-        _device->GetCopyableFootprints(
-            &_dstDesc,
-            0,
-            1,
-            0,
-            &footprint,
-            &numRows,
-            &rowSizeInBytes,
-            &totalBytes
-        );
-
-        Microsoft::WRL::ComPtr<ID3D12Resource> uploadResource;
-        if (!CreateUploadBuffer(_device, totalBytes, uploadResource))
-        {
-            return false;
-        }
-
-        void* mappedData = nullptr;
-        D3D12_RANGE readRange = {};
-        if (FAILED(uploadResource->Map(0, &readRange, &mappedData)))
-        {
-            return false;
-        }
-
-        const uint8_t* srcBytes = static_cast<const uint8_t*>(_initialData.m_data);
-        uint8_t* dstBytes = static_cast<uint8_t*>(mappedData) + footprint.Offset;
-        const uint64_t srcRowPitch = _initialData.m_rowPitch ? _initialData.m_rowPitch : rowSizeInBytes;
-        const uint64_t rowsToCopy = (std::min<uint64_t>)(numRows, _initialData.m_dataSize / srcRowPitch);
-        const uint64_t rowBytesToCopy = (std::min<uint64_t>)(rowSizeInBytes, srcRowPitch);
-
-        for (uint64_t row = 0; row < rowsToCopy; ++row)
-        {
-            std::memcpy(
-                dstBytes + row * footprint.Footprint.RowPitch,
-                srcBytes + row * srcRowPitch,
-                static_cast<size_t>(rowBytesToCopy)
-            );
-        }
-
-        D3D12_RANGE writtenRange = {};
-        writtenRange.Begin = static_cast<SIZE_T>(footprint.Offset);
-        writtenRange.End = static_cast<SIZE_T>(footprint.Offset + totalBytes);
-        uploadResource->Unmap(0, &writtenRange);
-
-        return ExecuteImmediateCommands(
-            _device,
-            [&](ID3D12GraphicsCommandList* _commandList)
-            {
-                D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-                srcLocation.pResource = uploadResource.Get();
-                srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-                srcLocation.PlacedFootprint = footprint;
-
-                D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-                dstLocation.pResource = _dstResource;
-                dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-                dstLocation.SubresourceIndex = 0;
-
-                _commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-
-                D3D12_RESOURCE_BARRIER barrier = {};
-                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                barrier.Transition.pResource = _dstResource;
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
-                barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                _commandList->ResourceBarrier(1, &barrier);
-            }
-        );
+        return GpuTaskReference();
     }
 
-    uint64_t ResolveViewSize(uint64_t _resourceSize, uint64_t _offset, uint64_t _explicitSize)
+    void* mappedData = nullptr;
+    D3D12_RANGE readRange = {};
+    if (FAILED(uploadBuffer->getD3D12Resource()->Map(0, &readRange, &mappedData)))
     {
-        if (_explicitSize)
-        {
-            return _explicitSize;
-        }
-
-        return _offset < _resourceSize ? _resourceSize - _offset : 0;
+        return GpuTaskReference();
     }
 
-    uint32_t GetFormatStride(ego::gpu::GraphicResourceFormat _format)
+    auto srcBytes = static_cast<const uint8_t*>(_initialData.m_data);
+    uint8_t* dstBytes = static_cast<uint8_t*>(mappedData) + footprint.Offset;
+    const uint64_t srcRowPitch = _initialData.m_rowPitch ? _initialData.m_rowPitch : rowSizeInBytes;
+    const uint64_t rowsToCopy = (std::min<uint64_t>)(numRows, _initialData.m_dataSize / srcRowPitch);
+    const uint64_t rowBytesToCopy = (std::min<uint64_t>)(rowSizeInBytes, srcRowPitch);
+
+    for (uint64_t row = 0; row < rowsToCopy; ++row)
     {
-        using ego::gpu::GraphicResourceFormat;
-
-        switch (_format)
-        {
-        case GraphicResourceFormat::R8UNorm:
-        case GraphicResourceFormat::R8SNorm:
-        case GraphicResourceFormat::R8UInt:
-        case GraphicResourceFormat::R8SInt:
-            return 1;
-        case GraphicResourceFormat::R8G8UNorm:
-        case GraphicResourceFormat::R8G8SNorm:
-        case GraphicResourceFormat::R8G8UInt:
-        case GraphicResourceFormat::R8G8SInt:
-        case GraphicResourceFormat::R16UNorm:
-        case GraphicResourceFormat::R16SNorm:
-        case GraphicResourceFormat::R16UInt:
-        case GraphicResourceFormat::R16SInt:
-        case GraphicResourceFormat::R16SFloat:
-            return 2;
-        case GraphicResourceFormat::R8G8B8A8UNorm:
-        case GraphicResourceFormat::R8G8B8A8SNorm:
-        case GraphicResourceFormat::R8G8B8A8UInt:
-        case GraphicResourceFormat::R8G8B8A8SInt:
-        case GraphicResourceFormat::B8G8R8A8UNorm:
-        case GraphicResourceFormat::R16G16UNorm:
-        case GraphicResourceFormat::R16G16SNorm:
-        case GraphicResourceFormat::R16G16UInt:
-        case GraphicResourceFormat::R16G16SInt:
-        case GraphicResourceFormat::R16G16SFloat:
-        case GraphicResourceFormat::R32UInt:
-        case GraphicResourceFormat::R32SInt:
-        case GraphicResourceFormat::R32SFloat:
-        case GraphicResourceFormat::D24UNormS8UInt:
-        case GraphicResourceFormat::D32SFloat:
-            return 4;
-        case GraphicResourceFormat::R16G16B16A16UNorm:
-        case GraphicResourceFormat::R16G16B16A16SNorm:
-        case GraphicResourceFormat::R16G16B16A16UInt:
-        case GraphicResourceFormat::R16G16B16A16SInt:
-        case GraphicResourceFormat::R16G16B16A16SFloat:
-        case GraphicResourceFormat::R32G32UInt:
-        case GraphicResourceFormat::R32G32SInt:
-        case GraphicResourceFormat::R32G32SFloat:
-        case GraphicResourceFormat::D32SFloatS8UInt:
-            return 8;
-        case GraphicResourceFormat::R32G32B32UInt:
-        case GraphicResourceFormat::R32G32B32SInt:
-        case GraphicResourceFormat::R32G32B32SFloat:
-            return 12;
-        case GraphicResourceFormat::R32G32B32A32UInt:
-        case GraphicResourceFormat::R32G32B32A32SInt:
-        case GraphicResourceFormat::R32G32B32A32SFloat:
-            return 16;
-        default:
-            break;
-        }
-
-        return 0;
+        std::memcpy(dstBytes + row * footprint.Footprint.RowPitch, srcBytes + row * srcRowPitch, static_cast<size_t>(rowBytesToCopy));
     }
 
-    D3D12_TEXTURE_ADDRESS_MODE ToD3D12AddressMode(ego::gpu::SamplerAddressMode _mode)
-    {
-        switch (_mode)
-        {
-        case ego::gpu::SamplerAddressMode::Repeat:
-            return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        case ego::gpu::SamplerAddressMode::MirroredRepeat:
-            return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-        case ego::gpu::SamplerAddressMode::ClampToBorder:
-            return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-        case ego::gpu::SamplerAddressMode::ClampToEdge:
-        default:
-            break;
-        }
+    D3D12_RANGE writtenRange = {};
+    writtenRange.Begin = static_cast<SIZE_T>(footprint.Offset);
+    writtenRange.End = static_cast<SIZE_T>(footprint.Offset + totalBytes);
+    uploadBuffer->getD3D12Resource()->Unmap(0, &writtenRange);
 
-        return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    return submitImmediateCommands(
+        [&](ID3D12GraphicsCommandList* _commandList)
+        {
+            D3D12_RESOURCE_BARRIER beforeCopyBarrier = {};
+            beforeCopyBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            beforeCopyBarrier.Transition.pResource = _dstResource;
+            beforeCopyBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+            beforeCopyBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+            beforeCopyBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            _commandList->ResourceBarrier(1, &beforeCopyBarrier);
+
+            D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+            srcLocation.pResource = uploadBuffer->getD3D12Resource();
+            srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+            srcLocation.PlacedFootprint = footprint;
+
+            D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+            dstLocation.pResource = _dstResource;
+            dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+            dstLocation.SubresourceIndex = 0;
+
+            _commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+
+            D3D12_RESOURCE_BARRIER afterCopyBarrier = {};
+            afterCopyBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            afterCopyBarrier.Transition.pResource = _dstResource;
+            afterCopyBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+            afterCopyBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+            afterCopyBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            _commandList->ResourceBarrier(1, &afterCopyBarrier);
+        },
+        std::vector<GraphicObjectReference>{uploadBuffer});
+}
+
+bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
+    ID3D12StateObject* _stateObject,
+    Microsoft::WRL::ComPtr<ID3D12Resource>& _shaderTable,
+    uint64_t& _shaderRecordSize) const
+{
+    if (!getD3D12Device() || !_stateObject)
+    {
+        return false;
     }
 
-    D3D12_FILTER ToD3D12Filter(const ego::gpu::SamplerDesc& _desc)
+    Microsoft::WRL::ComPtr<ID3D12StateObjectProperties> stateObjectProperties;
+    if (FAILED(_stateObject->QueryInterface(IID_PPV_ARGS(&stateObjectProperties))))
     {
-        if (_desc.m_minFilter == ego::gpu::SamplerFilter::Anisotropic ||
-            _desc.m_magFilter == ego::gpu::SamplerFilter::Anisotropic ||
-            _desc.m_mipFilter == ego::gpu::SamplerFilter::Anisotropic)
-        {
-            return _desc.m_enableComparison ? D3D12_FILTER_COMPARISON_ANISOTROPIC : D3D12_FILTER_ANISOTROPIC;
-        }
-
-        const bool minLinear = _desc.m_minFilter == ego::gpu::SamplerFilter::Linear;
-        const bool magLinear = _desc.m_magFilter == ego::gpu::SamplerFilter::Linear;
-        const bool mipLinear = _desc.m_mipFilter == ego::gpu::SamplerFilter::Linear;
-
-        if (_desc.m_enableComparison)
-        {
-            return D3D12_ENCODE_BASIC_FILTER(
-                minLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
-                magLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
-                mipLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
-                D3D12_FILTER_REDUCTION_TYPE_COMPARISON
-            );
-        }
-
-        return D3D12_ENCODE_BASIC_FILTER(
-            minLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
-            magLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
-            mipLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
-            D3D12_FILTER_REDUCTION_TYPE_STANDARD
-        );
+        return false;
     }
 
-    D3D12_RESOURCE_FLAGS GetBufferResourceFlags(const ego::gpu::BufferDesc& _desc)
+    const void* rayGenerationIdentifier = stateObjectProperties->GetShaderIdentifier(RayGenerationExportName);
+    const void* missIdentifier = stateObjectProperties->GetShaderIdentifier(MissExportName);
+    const void* hitGroupIdentifier = stateObjectProperties->GetShaderIdentifier(HitGroupExportName);
+    if (!rayGenerationIdentifier || !missIdentifier || !hitGroupIdentifier)
     {
-        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-        if (_desc.m_usage & ego::gpu::GraphicResourceUsageAllowUnorderedAccess)
-        {
-            flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        return flags;
+        return false;
     }
 
-    bool FillBufferViewDesc(
-        const ego::gpu::d3d12::D3D12Buffer* _buffer,
-        const ego::gpu::BufferViewDesc& _desc,
-        D3D12_BUFFER_SRV& _outBufferDesc,
-        DXGI_FORMAT& _outFormat
-    )
+    _shaderRecordSize = ego::Align(static_cast<uint64_t>(D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES), static_cast<uint64_t>(D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT));
+    const uint64_t shaderTableSize = _shaderRecordSize * 3;
+    if (!createUploadBuffer(shaderTableSize, _shaderTable))
     {
-        const uint64_t size = ResolveViewSize(_buffer->getDesc().m_size, _desc.m_offset, _desc.m_size);
-        const uint32_t stride = _desc.m_format == ego::gpu::GraphicResourceFormat::Undefined ?
-                                    (_desc.m_stride ? _desc.m_stride : _buffer->getDesc().m_stride) :
-                                    GetFormatStride(_desc.m_format);
-        if (!stride || !size)
-        {
-            return false;
-        }
-
-        _outFormat = _desc.m_format == ego::gpu::GraphicResourceFormat::Undefined ?
-                         DXGI_FORMAT_UNKNOWN :
-                         ego::gpu::d3d12::ToDXGIFormat(_desc.m_format);
-        _outBufferDesc.FirstElement = static_cast<UINT64>(_desc.m_offset / stride);
-        _outBufferDesc.NumElements = static_cast<UINT>(size / stride);
-        _outBufferDesc.StructureByteStride = _outFormat == DXGI_FORMAT_UNKNOWN ? stride : 0;
-        _outBufferDesc.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-        return true;
+        return false;
     }
+
+    uint8_t* mappedData = nullptr;
+    D3D12_RANGE readRange = {};
+    if (FAILED(_shaderTable->Map(0, &readRange, reinterpret_cast<void**>(&mappedData))))
+    {
+        return false;
+    }
+
+    std::memcpy(mappedData, rayGenerationIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+    std::memcpy(mappedData + _shaderRecordSize, missIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+    std::memcpy(mappedData + _shaderRecordSize * 2, hitGroupIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+
+    D3D12_RANGE writtenRange = {};
+    writtenRange.Begin = 0;
+    writtenRange.End = static_cast<SIZE_T>(shaderTableSize);
+    _shaderTable->Unmap(0, &writtenRange);
+    return true;
+}
+
+template <typename TReference, typename TObject>
+ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::buildAccelerationStructure(
+    const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& _inputs,
+    const GpuOperationOptions& _options,
+    const std::vector<GraphicObjectReference>& _keepAliveObjects)
+{
+    if (!getD3D12Device())
+    {
+        return GpuResourceTicket<TReference>();
+    }
+
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
+    getD3D12Device()->GetRaytracingAccelerationStructurePrebuildInfo(&_inputs, &prebuildInfo);
+    if (prebuildInfo.ResultDataMaxSizeInBytes == 0 || prebuildInfo.ScratchDataSizeInBytes == 0 || !FitsUint32(prebuildInfo.ResultDataMaxSizeInBytes) ||
+        !FitsUint32(prebuildInfo.ScratchDataSizeInBytes))
+    {
+        return GpuResourceTicket<TReference>();
+    }
+
+    BufferDesc scratchDesc;
+    scratchDesc.m_usage = GraphicResourceUsageAllowUnorderedAccess;
+    scratchDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessGpuRead | GraphicResourceAccessGpuWrite);
+    scratchDesc.m_size = static_cast<uint32_t>(prebuildInfo.ScratchDataSizeInBytes);
+
+    ego::Reference<D3D12Buffer> scratchBuffer = createD3D12Buffer(scratchDesc);
+    if (!scratchBuffer)
+    {
+        return GpuResourceTicket<TReference>();
+    }
+
+    BufferDesc resultDesc;
+    resultDesc.m_usage = static_cast<GraphicResourceUsage>(GraphicResourceUsageAllowUnorderedAccess | GraphicResourceUsageRayTracingAccelerationStructure);
+    resultDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessGpuRead | GraphicResourceAccessGpuWrite);
+    resultDesc.m_size = static_cast<uint32_t>(prebuildInfo.ResultDataMaxSizeInBytes);
+
+    ego::Reference<D3D12Buffer> resultBuffer = createD3D12Buffer(resultDesc);
+    if (!resultBuffer)
+    {
+        return GpuResourceTicket<TReference>();
+    }
+
+    std::vector<GraphicObjectReference> keepAliveObjects = _keepAliveObjects;
+    keepAliveObjects.push_back(scratchBuffer);
+
+    GpuTaskReference buildTask = submitImmediateCommands(
+        [&](ID3D12GraphicsCommandList4* _commandList)
+        {
+            D3D12_RESOURCE_BARRIER scratchBarrier = {};
+            scratchBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            scratchBarrier.Transition.pResource = scratchBuffer->getD3D12Resource();
+            scratchBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+            scratchBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            scratchBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            _commandList->ResourceBarrier(1, &scratchBarrier);
+
+            D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
+            buildDesc.Inputs = _inputs;
+            buildDesc.ScratchAccelerationStructureData = scratchBuffer->getD3D12Resource()->GetGPUVirtualAddress();
+            buildDesc.DestAccelerationStructureData = resultBuffer->getD3D12Resource()->GetGPUVirtualAddress();
+
+            _commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
+
+            D3D12_RESOURCE_BARRIER resultBarrier = {};
+            resultBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+            resultBarrier.UAV.pResource = resultBuffer->getD3D12Resource();
+            _commandList->ResourceBarrier(1, &resultBarrier);
+        },
+        keepAliveObjects);
+    if (!buildTask)
+    {
+        return GpuResourceTicket<TReference>();
+    }
+
+    resultBuffer->setLastWriteTask(buildTask);
+
+    TReference accelerationStructure(new TObject(resultBuffer));
+    accelerationStructure->setLastWriteTask(buildTask);
+
+    if (_options.shouldWait())
+    {
+        buildTask->wait();
+    }
+
+    return GpuResourceTicket<TReference>{accelerationStructure, buildTask};
 }
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::init(const GraphicDevice::InitParams& _params)
 {
-    EGO_CHECK_INITIALIZATION(initializeFactory(_params));
-    EGO_CHECK_INITIALIZATION(initializeAdapter());
-    EGO_CHECK_INITIALIZATION(initializeDevice());
-    EGO_CHECK_INITIALIZATION(initializeDescriptorAllocators());
+    EGO_CHECK_INITIALIZATION(m_deviceContext.init(_params, D3D12DescriptorFactory::BindlessResourceDescriptorCapacity, D3D12DescriptorFactory::BindlessSamplerDescriptorCapacity));
+    EGO_CHECK_INITIALIZATION(m_immediateContext.init(getD3D12Device()));
+    EGO_CHECK_INITIALIZATION(m_descriptorFactory.init(getD3D12Device()));
     EGO_CHECK_INITIALIZATION(registerResourceProviders());
 
     return true;
@@ -509,21 +359,24 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::init(const GraphicDevice::InitParams& 
 void ego::gpu::d3d12::D3D12GraphicDevice::release()
 {
     unregisterResourceProviders();
+    m_immediateContext.release();
+    m_descriptorFactory.release();
+    m_deviceContext.release();
 }
 
 void* ego::gpu::d3d12::D3D12GraphicDevice::getNativeHandle() const
 {
-    return m_device.Get();
+    return getD3D12Device();
 }
 
 void ego::gpu::d3d12::D3D12GraphicDevice::setName(const char* _name)
 {
-    SetD3D12ObjectName(m_device.Get(), _name);
+    SetD3D12ObjectName(getD3D12Device(), _name);
 }
 
 ego::gpu::CommandQueueReference ego::gpu::d3d12::D3D12GraphicDevice::createCommandQueue(const CommandQueueDesc& _desc)
 {
-    if (!m_device)
+    if (!getD3D12Device())
     {
         return CommandQueueReference();
     }
@@ -535,46 +388,39 @@ ego::gpu::CommandQueueReference ego::gpu::d3d12::D3D12GraphicDevice::createComma
     queueDesc.NodeMask = 0;
 
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> queue;
-    if (FAILED(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue))))
+    if (FAILED(getD3D12Device()->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue))))
     {
         return CommandQueueReference();
     }
 
-    return CommandQueueReference(new D3D12CommandQueue(this, _desc, std::move(queue)));
+    return CommandQueueReference(new D3D12CommandQueue(_desc, std::move(queue)));
 }
 
 ego::gpu::GraphicCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createGraphicCommandList()
 {
-    return CreateCommandList<GraphicCommandListReference, D3D12GraphicCommandList>(
-        this,
-        D3D12_COMMAND_LIST_TYPE_DIRECT
-    );
+    return createCommandList<GraphicCommandListReference, D3D12GraphicCommandList>(D3D12_COMMAND_LIST_TYPE_DIRECT);
 }
 
 ego::gpu::ComputeCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createComputeCommandList()
 {
-    return CreateCommandList<ComputeCommandListReference, D3D12ComputeCommandList>(
-        this,
-        D3D12_COMMAND_LIST_TYPE_COMPUTE
-    );
+    return createCommandList<ComputeCommandListReference, D3D12ComputeCommandList>(D3D12_COMMAND_LIST_TYPE_COMPUTE);
 }
 
 ego::gpu::CopyCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createCopyCommandList()
 {
-    return CreateCommandList<CopyCommandListReference, D3D12CopyCommandList>(
-        this,
-        D3D12_COMMAND_LIST_TYPE_COPY
-    );
+    return createCommandList<CopyCommandListReference, D3D12CopyCommandList>(D3D12_COMMAND_LIST_TYPE_COPY);
 }
 
-ego::gpu::BufferReference ego::gpu::d3d12::D3D12GraphicDevice::createBuffer(
-    const BufferDesc& _desc,
-    const InitialGraphicResourceData& _initialData
-)
+ego::gpu::BufferReference ego::gpu::d3d12::D3D12GraphicDevice::createBuffer(const BufferDesc& _desc)
 {
-    if (!m_device || !_desc.m_size)
+    return createD3D12Buffer(_desc);
+}
+
+ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createD3D12Buffer(const BufferDesc& _desc)
+{
+    if (!getD3D12Device() || !_desc.m_size)
     {
-        return BufferReference();
+        return ego::Reference<D3D12Buffer>();
     }
 
     D3D12_HEAP_PROPERTIES heapProperties = {};
@@ -599,67 +445,77 @@ ego::gpu::BufferReference ego::gpu::d3d12::D3D12GraphicDevice::createBuffer(
 
     Microsoft::WRL::ComPtr<ID3D12Resource> resource;
     if (FAILED(
-        m_device->CreateCommittedResource(
-            &heapProperties,
-            D3D12_HEAP_FLAG_NONE,
-            &resourceDesc,
-            GetInitialBufferState(_desc, _initialData),
-            nullptr,
-            IID_PPV_ARGS(&resource)
-        )
-    ))
+            getD3D12Device()->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &resourceDesc,
+                GetInitialBufferState(_desc, InitialGraphicResourceData()),
+                nullptr,
+                IID_PPV_ARGS(&resource))))
     {
-        return BufferReference();
+        return ego::Reference<D3D12Buffer>();
     }
 
-    if (_initialData.isValid())
-    {
-        const D3D12_HEAP_TYPE heapType = GetHeapType(_desc);
-        bool uploaded = false;
-
-        if (heapType == D3D12_HEAP_TYPE_UPLOAD)
-        {
-            uploaded = WriteToUploadBuffer(resource.Get(), _initialData.m_data, _initialData.m_dataSize, _desc.m_size);
-        }
-        else if (heapType == D3D12_HEAP_TYPE_DEFAULT)
-        {
-            uploaded = UploadBufferToDefaultHeap(m_device.Get(), resource.Get(), _desc.m_size, _initialData);
-        }
-        else
-        {
-            EGO_ASSERT_FAIL_MESSAGE("Initial data upload to readback heap is not supported");
-        }
-
-        if (!uploaded)
-        {
-            return BufferReference();
-        }
-    }
-
-    return BufferReference(new D3D12Buffer(_desc, std::move(resource)));
+    return ego::Reference<D3D12Buffer>(new D3D12Buffer(_desc, std::move(resource)));
 }
 
-ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2D(
-    const Texture2DDesc& _desc,
-    const InitialGraphicResourceData& _initialData
-)
+ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBuffer(
+    const BufferReference& _buffer,
+    const InitialGraphicResourceData& _initialData,
+    const GpuOperationOptions& _options)
 {
-    if (!m_device)
+    ID3D12Resource* resource = _buffer ? _buffer->getNativeHandle<ID3D12Resource>() : nullptr;
+    if (!resource || !_initialData.isValid())
+    {
+        return GpuTaskReference();
+    }
+
+    const BufferDesc& desc = _buffer->getDesc();
+    const D3D12_HEAP_TYPE heapType = GetHeapType(desc);
+    if (heapType == D3D12_HEAP_TYPE_UPLOAD)
+    {
+        if (!WriteToUploadBuffer(resource, _initialData.m_data, _initialData.m_dataSize, desc.m_size))
+        {
+            return GpuTaskReference();
+        }
+
+        GpuTaskReference uploadTask(new GpuTask());
+        _buffer->setLastWriteTask(uploadTask);
+        return uploadTask;
+    }
+
+    if (heapType == D3D12_HEAP_TYPE_DEFAULT)
+    {
+        GpuTaskReference uploadTask = uploadBufferToDefaultHeap(resource, desc.m_size, _initialData);
+        if (!uploadTask)
+        {
+            return GpuTaskReference();
+        }
+
+        _buffer->setLastWriteTask(uploadTask);
+        if (_options.shouldWait())
+        {
+            uploadTask->wait();
+        }
+
+        return uploadTask;
+    }
+
+    EGO_ASSERT_FAIL_MESSAGE("Initial data upload to readback heap is not supported");
+    return GpuTaskReference();
+}
+
+ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2D(const Texture2DDesc& _desc)
+{
+    if (!getD3D12Device())
     {
         return Texture2DReference();
     }
 
-    EGO_ASSERT_MESSAGE(
-        !(_desc.m_access & (GraphicResourceAccessCpuRead | GraphicResourceAccessCpuWrite)),
-        "D3D12 textures are created in GPU-local memory by this backend"
-    );
-    EGO_ASSERT_MESSAGE(
-        !_initialData.isValid() || _desc.m_samples.m_count <= 1,
-        "Initial data upload for multisampled textures is not supported"
-    );
+    EGO_ASSERT_MESSAGE(!(_desc.m_access & (GraphicResourceAccessCpuRead | GraphicResourceAccessCpuWrite)), "D3D12 textures are created in GPU-local memory by this backend");
 
     const DXGI_FORMAT format = ToDXGIFormat(_desc.m_format);
-    if (format == DXGI_FORMAT_UNKNOWN || (_initialData.isValid() && _desc.m_samples.m_count > 1))
+    if (format == DXGI_FORMAT_UNKNOWN)
     {
         return Texture2DReference();
     }
@@ -701,21 +557,7 @@ ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2
 
     Microsoft::WRL::ComPtr<ID3D12Resource> resource;
     if (FAILED(
-        m_device->CreateCommittedResource(
-            &heapProperties,
-            D3D12_HEAP_FLAG_NONE,
-            &resourceDesc,
-            _initialData.isValid() ? D3D12_RESOURCE_STATE_COPY_DEST : D3D12_RESOURCE_STATE_COMMON,
-            clearValuePtr,
-            IID_PPV_ARGS(&resource)
-        )
-    ))
-    {
-        return Texture2DReference();
-    }
-
-    if (_initialData.isValid() &&
-        !UploadTexture2DToDefaultHeap(m_device.Get(), resource.Get(), resourceDesc, _initialData))
+            getD3D12Device()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, clearValuePtr, IID_PPV_ARGS(&resource))))
     {
         return Texture2DReference();
     }
@@ -723,255 +565,51 @@ ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2
     return Texture2DReference(new D3D12Texture2D(_desc, std::move(resource)));
 }
 
+ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2D(
+    const Texture2DReference& _texture,
+    const InitialGraphicResourceData& _initialData,
+    const GpuOperationOptions& _options)
+{
+    D3D12Texture2D* d3d12Texture = _texture ? static_cast<D3D12Texture2D*>(_texture.getObject()) : nullptr;
+    if (!d3d12Texture || !_initialData.isValid())
+    {
+        return GpuTaskReference();
+    }
+
+    EGO_ASSERT_MESSAGE(_texture->getDesc().m_samples.m_count <= 1, "Initial data upload for multisampled textures is not supported");
+    if (_texture->getDesc().m_samples.m_count > 1)
+    {
+        return GpuTaskReference();
+    }
+
+    GpuTaskReference uploadTask = uploadTexture2DToDefaultHeap(d3d12Texture->getD3D12Resource(), d3d12Texture->getD3D12Resource()->GetDesc(), _initialData);
+    if (!uploadTask)
+    {
+        return GpuTaskReference();
+    }
+
+    _texture->setLastWriteTask(uploadTask);
+    if (_options.shouldWait())
+    {
+        uploadTask->wait();
+    }
+
+    return uploadTask;
+}
+
 ego::gpu::SamplerReference ego::gpu::d3d12::D3D12GraphicDevice::createSampler(const SamplerDesc& _desc)
 {
-    const D3D12DescriptorIndex descriptorIndex = m_samplerDescriptorAllocator->allocate();
-    if (descriptorIndex == D3D12InvalidDescriptorIndex)
-    {
-        return SamplerReference();
-    }
-
-    D3D12_SAMPLER_DESC samplerDesc = {};
-    samplerDesc.Filter = ToD3D12Filter(_desc);
-    samplerDesc.AddressU = ToD3D12AddressMode(_desc.m_addressU);
-    samplerDesc.AddressV = ToD3D12AddressMode(_desc.m_addressV);
-    samplerDesc.AddressW = ToD3D12AddressMode(_desc.m_addressW);
-    samplerDesc.MipLODBias = _desc.m_mipLodBias;
-    samplerDesc.MaxAnisotropy = (std::max<uint32_t>)(_desc.m_maxAnisotropy, 1);
-    samplerDesc.ComparisonFunc = _desc.m_enableComparison ?
-                                     ToD3D12ComparisonFunc(_desc.m_comparisonOperation) :
-                                     D3D12_COMPARISON_FUNC_ALWAYS;
-    samplerDesc.MinLOD = _desc.m_minLod;
-    samplerDesc.MaxLOD = _desc.m_maxLod;
-
-    const D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = m_samplerDescriptorAllocator->getCpuHandle(descriptorIndex);
-    m_device->CreateSampler(&samplerDesc, cpuHandle);
-
-    return SamplerReference(new D3D12Sampler(_desc, descriptorIndex, m_samplerDescriptorAllocator));
+    return m_descriptorFactory.createSampler(_desc);
 }
 
-ego::gpu::BufferViewReference ego::gpu::d3d12::D3D12GraphicDevice::createBufferView(
-    const BufferReference& _buffer,
-    const BufferViewDesc& _desc
-)
+ego::gpu::BufferViewReference ego::gpu::d3d12::D3D12GraphicDevice::createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc)
 {
-    D3D12Buffer* buffer = static_cast<D3D12Buffer*>(_buffer.getObject());
-    EGO_ASSERT_MESSAGE(buffer, "Buffer must be created by D3D12 device");
-    if (!buffer)
-    {
-        return BufferViewReference();
-    }
-
-    if (_desc.m_type == GraphicResourceViewType::RenderTarget || _desc.m_type == GraphicResourceViewType::DepthStencil)
-    {
-        EGO_ASSERT_FAIL_MESSAGE("Buffers cannot be used for render-target or depth-stencil views");
-        return BufferViewReference();
-    }
-
-    D3D12DescriptorAllocatorPointer allocator = m_viewDescriptorAllocator;
-    const D3D12DescriptorIndex descriptorIndex = allocator->allocate();
-    if (descriptorIndex == D3D12InvalidDescriptorIndex)
-    {
-        return BufferViewReference();
-    }
-
-    const D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = allocator->getCpuHandle(descriptorIndex);
-
-    if (_desc.m_type == GraphicResourceViewType::ConstantBuffer)
-    {
-        const uint64_t size = ResolveViewSize(buffer->getDesc().m_size, _desc.m_offset, _desc.m_size);
-        if (!size)
-        {
-            allocator->release(descriptorIndex);
-            return BufferViewReference();
-        }
-
-        D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
-        viewDesc.BufferLocation = buffer->getD3D12Resource()->GetGPUVirtualAddress() + _desc.m_offset;
-        viewDesc.SizeInBytes = static_cast<UINT>(ego::Align(
-            size,
-            static_cast<uint64_t>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT)
-        ));
-        m_device->CreateConstantBufferView(&viewDesc, cpuHandle);
-    }
-    else if (_desc.m_type == GraphicResourceViewType::ShaderResource)
-    {
-        D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
-        viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-        viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-        if (!FillBufferViewDesc(buffer, _desc, viewDesc.Buffer, viewDesc.Format))
-        {
-            allocator->release(descriptorIndex);
-            return BufferViewReference();
-        }
-
-        m_device->CreateShaderResourceView(buffer->getD3D12Resource(), &viewDesc, cpuHandle);
-    }
-    else if (_desc.m_type == GraphicResourceViewType::UnorderedAccess)
-    {
-        D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
-        viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-
-        D3D12_BUFFER_SRV srvBufferDesc = {};
-        if (!FillBufferViewDesc(buffer, _desc, srvBufferDesc, viewDesc.Format))
-        {
-            allocator->release(descriptorIndex);
-            return BufferViewReference();
-        }
-
-        viewDesc.Buffer.FirstElement = srvBufferDesc.FirstElement;
-        viewDesc.Buffer.NumElements = srvBufferDesc.NumElements;
-        viewDesc.Buffer.StructureByteStride = srvBufferDesc.StructureByteStride;
-        viewDesc.Buffer.CounterOffsetInBytes = 0;
-        viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-
-        m_device->CreateUnorderedAccessView(buffer->getD3D12Resource(), nullptr, &viewDesc, cpuHandle);
-    }
-
-    return BufferViewReference(
-        new D3D12BufferView(_buffer, _desc, descriptorIndex, allocator)
-    );
+    return m_descriptorFactory.createBufferView(_buffer, _desc);
 }
 
-ego::gpu::TextureViewReference ego::gpu::d3d12::D3D12GraphicDevice::createTextureView(
-    const TextureReference& _texture,
-    const TextureViewDesc& _desc
-)
+ego::gpu::TextureViewReference ego::gpu::d3d12::D3D12GraphicDevice::createTextureView(const TextureReference& _texture, const TextureViewDesc& _desc)
 {
-    D3D12Resource* texture = static_cast<D3D12Texture2D*>(_texture.getObject());
-    EGO_ASSERT_MESSAGE(texture, "Texture must be created by D3D12 device");
-    if (!texture)
-    {
-        return TextureViewReference();
-    }
-
-    D3D12DescriptorAllocatorPointer allocator = nullptr;
-    D3D12_DESCRIPTOR_HEAP_TYPE heapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-
-    switch (_desc.m_type)
-    {
-    case GraphicResourceViewType::RenderTarget:
-        allocator = m_rtvDescriptorAllocator;
-        heapType = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        break;
-    case GraphicResourceViewType::DepthStencil:
-        allocator = m_dsvDescriptorAllocator;
-        heapType = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-        break;
-    case GraphicResourceViewType::ShaderResource:
-    case GraphicResourceViewType::UnorderedAccess:
-        allocator = m_viewDescriptorAllocator;
-        heapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        break;
-    default:
-        break;
-    }
-
-    if (!allocator)
-    {
-        return TextureViewReference();
-    }
-
-    const D3D12DescriptorIndex descriptorIndex = allocator->allocate();
-    if (descriptorIndex == D3D12InvalidDescriptorIndex)
-    {
-        return TextureViewReference();
-    }
-
-    const D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = allocator->getCpuHandle(descriptorIndex);
-    const D3D12_RESOURCE_DESC& resourceDesc = texture->getD3D12Resource()->GetDesc();
-    const DXGI_FORMAT format = _desc.m_format == GraphicResourceFormat::Undefined ?
-                                   resourceDesc.Format :
-                                   ToDXGIFormat(_desc.m_format);
-    const UINT mipLevels = resourceDesc.MipLevels ? resourceDesc.MipLevels : 1;
-    const UINT arrayLayers = resourceDesc.DepthOrArraySize ? resourceDesc.DepthOrArraySize : 1;
-
-    if (_desc.m_type == GraphicResourceViewType::ShaderResource)
-    {
-        D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
-        viewDesc.Format = format;
-        viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-        if (arrayLayers > 1)
-        {
-            viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-            viewDesc.Texture2DArray.MostDetailedMip = 0;
-            viewDesc.Texture2DArray.MipLevels = mipLevels;
-            viewDesc.Texture2DArray.FirstArraySlice = 0;
-            viewDesc.Texture2DArray.ArraySize = arrayLayers;
-        }
-        else
-        {
-            viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-            viewDesc.Texture2D.MostDetailedMip = 0;
-            viewDesc.Texture2D.MipLevels = mipLevels;
-        }
-
-        m_device->CreateShaderResourceView(texture->getD3D12Resource(), &viewDesc, cpuHandle);
-    }
-    else if (_desc.m_type == GraphicResourceViewType::UnorderedAccess)
-    {
-        D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
-        viewDesc.Format = format;
-
-        if (arrayLayers > 1)
-        {
-            viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-            viewDesc.Texture2DArray.MipSlice = 0;
-            viewDesc.Texture2DArray.FirstArraySlice = 0;
-            viewDesc.Texture2DArray.ArraySize = arrayLayers;
-        }
-        else
-        {
-            viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-            viewDesc.Texture2D.MipSlice = 0;
-        }
-
-        m_device->CreateUnorderedAccessView(texture->getD3D12Resource(), nullptr, &viewDesc, cpuHandle);
-    }
-    else if (_desc.m_type == GraphicResourceViewType::RenderTarget)
-    {
-        D3D12_RENDER_TARGET_VIEW_DESC viewDesc = {};
-        viewDesc.Format = format;
-
-        if (arrayLayers > 1)
-        {
-            viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-            viewDesc.Texture2DArray.MipSlice = 0;
-            viewDesc.Texture2DArray.FirstArraySlice = 0;
-            viewDesc.Texture2DArray.ArraySize = arrayLayers;
-        }
-        else
-        {
-            viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-            viewDesc.Texture2D.MipSlice = 0;
-        }
-
-        m_device->CreateRenderTargetView(texture->getD3D12Resource(), &viewDesc, cpuHandle);
-    }
-    else if (_desc.m_type == GraphicResourceViewType::DepthStencil)
-    {
-        D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
-        viewDesc.Format = format;
-
-        if (arrayLayers > 1)
-        {
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-            viewDesc.Texture2DArray.MipSlice = 0;
-            viewDesc.Texture2DArray.FirstArraySlice = 0;
-            viewDesc.Texture2DArray.ArraySize = arrayLayers;
-        }
-        else
-        {
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            viewDesc.Texture2D.MipSlice = 0;
-        }
-
-        m_device->CreateDepthStencilView(texture->getD3D12Resource(), &viewDesc, cpuHandle);
-    }
-
-    return TextureViewReference(new D3D12TextureView(_texture, _desc, descriptorIndex, allocator));
+    return m_descriptorFactory.createTextureView(_texture, _desc);
 }
 
 ego::gpu::VertexShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createVertexShader(const ShaderCodeReference& _code)
@@ -996,7 +634,7 @@ ego::gpu::PixelShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createPixelS
 
 ego::gpu::ComputeShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createComputeShader(const ShaderCodeReference& _code)
 {
-    if (!_code || !_code->getCode() || !_code->getCodeSize())
+    if (!IsValidShaderCode(_code))
     {
         return ComputeShaderReference();
     }
@@ -1004,24 +642,187 @@ ego::gpu::ComputeShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createComp
     return ComputeShaderReference(new D3D12ComputeShader(_code));
 }
 
-ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGraphicPipeline(
-    const GraphicPipelineDesc& _desc
-)
+ego::gpu::RayGenerationShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createRayGenerationShader(const ShaderCodeReference& _code)
 {
-    const bool hasValidVertexShader =
-        !_desc.m_vertexShader || _desc.m_vertexShader->getShaderType() == ShaderStage::Vertex;
-    const bool hasValidPixelShader =
-        !_desc.m_pixelShader || _desc.m_pixelShader->getShaderType() == ShaderStage::Pixel;
+    if (!IsValidShaderCode(_code))
+    {
+        return RayGenerationShaderReference();
+    }
 
-    D3D12BindingLayout* layout = _desc.m_bindingLayout ?
-                                     static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) :
-                                     nullptr;
-    D3D12VertexShader* vertexShader = _desc.m_vertexShader && hasValidVertexShader ?
-                                          static_cast<D3D12VertexShader*>(_desc.m_vertexShader.getObject()) :
-                                          nullptr;
-    D3D12PixelShader* pixelShader = _desc.m_pixelShader && hasValidPixelShader ?
-                                        static_cast<D3D12PixelShader*>(_desc.m_pixelShader.getObject()) :
-                                        nullptr;
+    return RayGenerationShaderReference(new D3D12RayGenerationShader(_code));
+}
+
+ego::gpu::MissShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createMissShader(const ShaderCodeReference& _code)
+{
+    if (!IsValidShaderCode(_code))
+    {
+        return MissShaderReference();
+    }
+
+    return MissShaderReference(new D3D12MissShader(_code));
+}
+
+ego::gpu::ClosestHitShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createClosestHitShader(const ShaderCodeReference& _code)
+{
+    if (!IsValidShaderCode(_code))
+    {
+        return ClosestHitShaderReference();
+    }
+
+    return ClosestHitShaderReference(new D3D12ClosestHitShader(_code));
+}
+
+ego::gpu::GpuGeometryAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDevice::buildGeometryAccelerationStructure(
+    const MeshAccelerationStructureBuildDesc& _desc,
+    const GpuOperationOptions& _options)
+{
+    if (!getD3D12Device() || _desc.m_geometries.empty())
+    {
+        return GpuGeometryAccelerationStructureTicket();
+    }
+
+    std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> geometryDescs;
+    geometryDescs.reserve(_desc.m_geometries.size());
+
+    for (const GeometryAccelerationStructureDesc& geometry : _desc.m_geometries)
+    {
+        ID3D12Resource* vertexBuffer = geometry.m_vertexBuffer ? geometry.m_vertexBuffer->getNativeHandle<ID3D12Resource>() : nullptr;
+        ID3D12Resource* indexBuffer = geometry.m_indexBuffer ? geometry.m_indexBuffer->getNativeHandle<ID3D12Resource>() : nullptr;
+
+        if (!vertexBuffer || geometry.m_vertexStride == 0 || geometry.m_vertexCount == 0 || !IsSupportedRayTracingIndexFormat(geometry.m_indexFormat) ||
+            (geometry.m_indexCount != 0 && !indexBuffer))
+        {
+            return GpuGeometryAccelerationStructureTicket();
+        }
+
+        if (!geometry.m_vertexBuffer->isGpuReady() || (geometry.m_indexBuffer && !geometry.m_indexBuffer->isGpuReady()))
+        {
+            return GpuGeometryAccelerationStructureTicket();
+        }
+
+        D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
+        geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+        geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+        geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBuffer->GetGPUVirtualAddress() + geometry.m_vertexOffset;
+        geometryDesc.Triangles.VertexBuffer.StrideInBytes = geometry.m_vertexStride;
+        geometryDesc.Triangles.VertexCount = geometry.m_vertexCount;
+        geometryDesc.Triangles.VertexFormat = ToDXGIFormat(geometry.m_vertexFormat);
+        geometryDesc.Triangles.IndexFormat = ToDXGIFormat(geometry.m_indexFormat);
+        geometryDesc.Triangles.IndexCount = geometry.m_indexCount;
+        geometryDesc.Triangles.IndexBuffer = indexBuffer ? indexBuffer->GetGPUVirtualAddress() + geometry.m_indexOffset : 0;
+        if (geometryDesc.Triangles.VertexFormat == DXGI_FORMAT_UNKNOWN)
+        {
+            return GpuGeometryAccelerationStructureTicket();
+        }
+
+        geometryDescs.push_back(geometryDesc);
+    }
+
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs = {};
+    inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+    inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    inputs.NumDescs = static_cast<UINT>(geometryDescs.size());
+    inputs.pGeometryDescs = geometryDescs.data();
+
+    GpuGeometryAccelerationStructureTicket accelerationStructure =
+        buildAccelerationStructure<GeometryAccelerationStructureReference, D3D12GeometryAccelerationStructure>(inputs, _options);
+
+    return accelerationStructure;
+}
+
+ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDevice::buildInstanceAccelerationStructure(
+    const InstanceAccelerationStructureBuildDesc& _desc,
+    const GpuOperationOptions& _options)
+{
+    if (!getD3D12Device() || _desc.m_instances.empty())
+    {
+        return GpuInstanceAccelerationStructureTicket();
+    }
+
+    std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescs;
+    instanceDescs.reserve(_desc.m_instances.size());
+
+    for (const InstanceGeometryAccelerationStructureBuildDesc& instance : _desc.m_instances)
+    {
+        ID3D12Resource* geometry = instance.m_geometry ? instance.m_geometry->getNativeHandle<ID3D12Resource>() : nullptr;
+        if (!geometry || !instance.m_geometry->isGpuReady())
+        {
+            return GpuInstanceAccelerationStructureTicket();
+        }
+
+        D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
+        for (uint32_t row = 0; row < 3; ++row)
+        {
+            for (uint32_t column = 0; column < 4; ++column)
+            {
+                instanceDesc.Transform[row][column] = instance.m_transform.m_values[row][column];
+            }
+        }
+
+        instanceDesc.InstanceID = instance.m_instanceId;
+        instanceDesc.InstanceMask = instance.m_instanceMask & 0xff;
+        instanceDesc.InstanceContributionToHitGroupIndex = instance.m_hitGroupIndex;
+        instanceDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+        instanceDesc.AccelerationStructure = geometry->GetGPUVirtualAddress();
+        instanceDescs.push_back(instanceDesc);
+    }
+
+    const uint64_t instanceBufferSize = sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * instanceDescs.size();
+    if (!FitsUint32(instanceBufferSize))
+    {
+        return GpuInstanceAccelerationStructureTicket();
+    }
+
+    BufferDesc instanceBufferDesc;
+    instanceBufferDesc.m_usage = GraphicResourceUsageShaderResource;
+    instanceBufferDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessCpuWrite | GraphicResourceAccessGpuRead);
+    instanceBufferDesc.m_size = static_cast<uint32_t>(instanceBufferSize);
+    instanceBufferDesc.m_stride = sizeof(D3D12_RAYTRACING_INSTANCE_DESC);
+
+    const InitialGraphicResourceData instanceData(instanceDescs.data(), static_cast<uint32_t>(instanceBufferSize));
+    const GpuOperationOptions uploadOptions{GpuCompletionMode::WaitForCompletion};
+    ego::Reference<D3D12Buffer> instanceBuffer = createD3D12Buffer(instanceBufferDesc);
+    if (!instanceBuffer)
+    {
+        return GpuInstanceAccelerationStructureTicket();
+    }
+
+    GpuTaskReference instanceUploadTask = uploadBuffer(instanceBuffer, instanceData, uploadOptions);
+    if (!instanceUploadTask)
+    {
+        return GpuInstanceAccelerationStructureTicket();
+    }
+
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs = {};
+    inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+    inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    inputs.NumDescs = static_cast<UINT>(instanceDescs.size());
+    inputs.InstanceDescs = instanceBuffer->getD3D12Resource()->GetGPUVirtualAddress();
+
+    GpuInstanceAccelerationStructureTicket accelerationStructure = buildAccelerationStructure<InstanceAccelerationStructureReference, D3D12InstanceAccelerationStructure>(
+        inputs,
+        _options,
+        std::vector<GraphicObjectReference>{instanceBuffer});
+
+    return accelerationStructure;
+}
+
+ego::gpu::AccelerationStructureViewReference ego::gpu::d3d12::D3D12GraphicDevice::createAccelerationStructureView(
+    const InstanceAccelerationStructureReference& _accelerationStructure)
+{
+    return m_descriptorFactory.createAccelerationStructureView(_accelerationStructure);
+}
+
+ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGraphicPipeline(const GraphicPipelineDesc& _desc)
+{
+    const bool hasValidVertexShader = !_desc.m_vertexShader || _desc.m_vertexShader->getShaderType() == ShaderStage::Vertex;
+    const bool hasValidPixelShader = !_desc.m_pixelShader || _desc.m_pixelShader->getShaderType() == ShaderStage::Pixel;
+
+    D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
+    D3D12VertexShader* vertexShader = _desc.m_vertexShader && hasValidVertexShader ? static_cast<D3D12VertexShader*>(_desc.m_vertexShader.getObject()) : nullptr;
+    D3D12PixelShader* pixelShader = _desc.m_pixelShader && hasValidPixelShader ? static_cast<D3D12PixelShader*>(_desc.m_pixelShader.getObject()) : nullptr;
 
     EGO_ASSERT_MESSAGE(!_desc.m_bindingLayout || layout, "BindingLayout must be created by D3D12 device");
     EGO_ASSERT_MESSAGE(!_desc.m_vertexShader || vertexShader, "Vertex shader must be created by D3D12 device");
@@ -1029,11 +830,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     EGO_ASSERT_MESSAGE(hasValidVertexShader, "Graphic pipeline vertex shader has invalid shader stage");
     EGO_ASSERT_MESSAGE(hasValidPixelShader, "Graphic pipeline pixel shader has invalid shader stage");
 
-    if ((_desc.m_bindingLayout && !layout) ||
-        (_desc.m_vertexShader && !vertexShader) ||
-        (_desc.m_pixelShader && !pixelShader) ||
-        !hasValidVertexShader ||
-        !hasValidPixelShader)
+    if ((_desc.m_bindingLayout && !layout) || (_desc.m_vertexShader && !vertexShader) || (_desc.m_pixelShader && !pixelShader) || !hasValidVertexShader || !hasValidPixelShader)
     {
         return GraphicPipelineReference();
     }
@@ -1056,12 +853,9 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
         {
             if (binding.m_slot == element.m_slot)
             {
-                inputElement.InputSlotClass = binding.m_type == InputLayoutBindingType::InstanceBinding ?
-                                                  D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA :
-                                                  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-                inputElement.InstanceDataStepRate = binding.m_type == InputLayoutBindingType::InstanceBinding ?
-                                                        binding.m_instanceStepRate :
-                                                        0;
+                inputElement.InputSlotClass =
+                    binding.m_type == InputLayoutBindingType::InstanceBinding ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA : D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                inputElement.InstanceDataStepRate = binding.m_type == InputLayoutBindingType::InstanceBinding ? binding.m_instanceStepRate : 0;
                 break;
             }
         }
@@ -1090,10 +884,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
         renderTargetBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
     }
 
-    const size_t blendTargetCount = (std::min<size_t>)(
-        _desc.m_blendStateDesc.m_renderTargets.size(),
-        D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT
-    );
+    const size_t blendTargetCount = (std::min<size_t>)(_desc.m_blendStateDesc.m_renderTargets.size(), D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
     for (size_t renderTargetIndex = 0; renderTargetIndex < blendTargetCount; ++renderTargetIndex)
     {
         const RenderTargetBlendDesc& blendDesc = _desc.m_blendStateDesc.m_renderTargets[renderTargetIndex];
@@ -1114,9 +905,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     psoDesc.RasterizerState.FillMode = ToD3D12FillMode(_desc.m_rasterizationStateDesc.m_fillMode);
     psoDesc.RasterizerState.CullMode = ToD3D12CullMode(_desc.m_rasterizationStateDesc.m_cullMode);
     psoDesc.RasterizerState.FrontCounterClockwise = _desc.m_rasterizationStateDesc.m_frontCounterClockwise;
-    psoDesc.RasterizerState.DepthBias = _desc.m_rasterizationStateDesc.m_depthBiasEnable ?
-                                            _desc.m_rasterizationStateDesc.m_depthBias :
-                                            0;
+    psoDesc.RasterizerState.DepthBias = _desc.m_rasterizationStateDesc.m_depthBiasEnable ? _desc.m_rasterizationStateDesc.m_depthBias : 0;
     psoDesc.RasterizerState.DepthBiasClamp = _desc.m_rasterizationStateDesc.m_depthBiasClamp;
     psoDesc.RasterizerState.SlopeScaledDepthBias = _desc.m_rasterizationStateDesc.m_depthBiasSlopeScale;
     psoDesc.RasterizerState.DepthClipEnable = _desc.m_rasterizationStateDesc.m_depthClip;
@@ -1127,9 +916,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
 
     const bool hasDepth = _desc.m_depthFormat != GraphicResourceFormat::Undefined;
     psoDesc.DepthStencilState.DepthEnable = hasDepth && _desc.m_depthStencilStateDesc.m_depthTestEnable;
-    psoDesc.DepthStencilState.DepthWriteMask = hasDepth && _desc.m_depthStencilStateDesc.m_depthWrite ?
-                                                   D3D12_DEPTH_WRITE_MASK_ALL :
-                                                   D3D12_DEPTH_WRITE_MASK_ZERO;
+    psoDesc.DepthStencilState.DepthWriteMask = hasDepth && _desc.m_depthStencilStateDesc.m_depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     psoDesc.DepthStencilState.DepthFunc = ToD3D12ComparisonFunc(_desc.m_depthStencilStateDesc.m_depthCompareOperation);
     psoDesc.DepthStencilState.StencilEnable = hasDepth && _desc.m_depthStencilStateDesc.m_stencilEnable;
     psoDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
@@ -1145,10 +932,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     psoDesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
     psoDesc.PrimitiveTopologyType = ToD3D12PrimitiveTopologyType(_desc.m_topology);
 
-    const size_t colorFormatCount = (std::min<size_t>)(
-        _desc.m_colorFormats.size(),
-        D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT
-    );
+    const size_t colorFormatCount = (std::min<size_t>)(_desc.m_colorFormats.size(), D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
     psoDesc.NumRenderTargets = static_cast<UINT>(colorFormatCount);
     for (size_t i = 0; i < colorFormatCount; ++i)
     {
@@ -1163,7 +947,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-    if (FAILED(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
+    if (FAILED(getD3D12Device()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
     {
         return GraphicPipelineReference();
     }
@@ -1171,27 +955,18 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     return GraphicPipelineReference(new D3D12GraphicPipeline(_desc, std::move(pipelineState), layout));
 }
 
-ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createComputePipeline(
-    const ComputePipelineDesc& _desc
-)
+ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createComputePipeline(const ComputePipelineDesc& _desc)
 {
-    const bool hasValidComputeShader =
-        !_desc.m_computeShader || _desc.m_computeShader->getShaderType() == ShaderStage::Compute;
+    const bool hasValidComputeShader = !_desc.m_computeShader || _desc.m_computeShader->getShaderType() == ShaderStage::Compute;
 
-    D3D12BindingLayout* layout = _desc.m_bindingLayout ?
-                                     static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) :
-                                     nullptr;
-    D3D12ComputeShader* computeShader = _desc.m_computeShader && hasValidComputeShader ?
-                                            static_cast<D3D12ComputeShader*>(_desc.m_computeShader.getObject()) :
-                                            nullptr;
+    D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
+    D3D12ComputeShader* computeShader = _desc.m_computeShader && hasValidComputeShader ? static_cast<D3D12ComputeShader*>(_desc.m_computeShader.getObject()) : nullptr;
 
     EGO_ASSERT_MESSAGE(!_desc.m_bindingLayout || layout, "BindingLayout must be created by D3D12 device");
     EGO_ASSERT_MESSAGE(!_desc.m_computeShader || computeShader, "Compute shader must be created by D3D12 device");
     EGO_ASSERT_MESSAGE(hasValidComputeShader, "Compute pipeline shader has invalid shader stage");
 
-    if ((_desc.m_bindingLayout && !layout) ||
-        (_desc.m_computeShader && !computeShader) ||
-        !hasValidComputeShader)
+    if ((_desc.m_bindingLayout && !layout) || (_desc.m_computeShader && !computeShader) || !hasValidComputeShader)
     {
         return ComputePipelineReference();
     }
@@ -1204,7 +979,7 @@ ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createCo
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-    if (FAILED(m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
+    if (FAILED(getD3D12Device()->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
     {
         return ComputePipelineReference();
     }
@@ -1212,9 +987,120 @@ ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createCo
     return ComputePipelineReference(new D3D12ComputePipeline(_desc, std::move(pipelineState), layout));
 }
 
-ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(
-    const BindingLayoutDesc& _desc
-)
+ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createRayTracingPipeline(const RayTracingPipelineDesc& _desc)
+{
+    if (!getD3D12Device() || !m_deviceContext.getCapabilities().m_supportsRayTracing)
+    {
+        return RayTracingPipelineReference();
+    }
+
+    D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
+    D3D12RayGenerationShader* rayGenerationShader = _desc.m_rayGenerationShader ? static_cast<D3D12RayGenerationShader*>(_desc.m_rayGenerationShader.getObject()) : nullptr;
+    D3D12MissShader* missShader = _desc.m_missShader ? static_cast<D3D12MissShader*>(_desc.m_missShader.getObject()) : nullptr;
+    D3D12ClosestHitShader* closestHitShader = _desc.m_closestHitShader ? static_cast<D3D12ClosestHitShader*>(_desc.m_closestHitShader.getObject()) : nullptr;
+
+    EGO_ASSERT_MESSAGE(layout, "Ray tracing pipeline requires a D3D12 binding layout");
+    EGO_ASSERT_MESSAGE(rayGenerationShader, "Ray tracing pipeline has invalid ray generation shader");
+    EGO_ASSERT_MESSAGE(missShader, "Ray tracing pipeline has invalid miss shader");
+    EGO_ASSERT_MESSAGE(closestHitShader, "Ray tracing pipeline has invalid closest hit shader");
+
+    if (!layout || !rayGenerationShader || !missShader || !closestHitShader)
+    {
+        return RayTracingPipelineReference();
+    }
+
+    D3D12_EXPORT_DESC rayGenerationExport = {};
+    rayGenerationExport.Name = RayGenerationExportName;
+    rayGenerationExport.ExportToRename = nullptr;
+    rayGenerationExport.Flags = D3D12_EXPORT_FLAG_NONE;
+
+    D3D12_EXPORT_DESC missExport = {};
+    missExport.Name = MissExportName;
+    missExport.ExportToRename = nullptr;
+    missExport.Flags = D3D12_EXPORT_FLAG_NONE;
+
+    D3D12_EXPORT_DESC closestHitExport = {};
+    closestHitExport.Name = ClosestHitExportName;
+    closestHitExport.ExportToRename = nullptr;
+    closestHitExport.Flags = D3D12_EXPORT_FLAG_NONE;
+
+    D3D12_DXIL_LIBRARY_DESC rayGenerationLibraryDesc = {};
+    rayGenerationLibraryDesc.DXILLibrary = rayGenerationShader->getD3D12ByteCode();
+    rayGenerationLibraryDesc.NumExports = 1;
+    rayGenerationLibraryDesc.pExports = &rayGenerationExport;
+
+    D3D12_DXIL_LIBRARY_DESC missLibraryDesc = {};
+    missLibraryDesc.DXILLibrary = missShader->getD3D12ByteCode();
+    missLibraryDesc.NumExports = 1;
+    missLibraryDesc.pExports = &missExport;
+
+    D3D12_DXIL_LIBRARY_DESC closestHitLibraryDesc = {};
+    closestHitLibraryDesc.DXILLibrary = closestHitShader->getD3D12ByteCode();
+    closestHitLibraryDesc.NumExports = 1;
+    closestHitLibraryDesc.pExports = &closestHitExport;
+
+    D3D12_HIT_GROUP_DESC hitGroupDesc = {};
+    hitGroupDesc.HitGroupExport = HitGroupExportName;
+    hitGroupDesc.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
+    hitGroupDesc.ClosestHitShaderImport = ClosestHitExportName;
+
+    D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = {};
+    shaderConfig.MaxPayloadSizeInBytes = _desc.m_maxPayloadSize;
+    shaderConfig.MaxAttributeSizeInBytes = _desc.m_maxAttributeSize;
+
+    const wchar_t* shaderConfigExports[] = {RayGenerationExportName, MissExportName, HitGroupExportName};
+
+    D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderConfigAssociation = {};
+    shaderConfigAssociation.NumExports = static_cast<UINT>(sizeof(shaderConfigExports) / sizeof(shaderConfigExports[0]));
+    shaderConfigAssociation.pExports = shaderConfigExports;
+
+    D3D12_GLOBAL_ROOT_SIGNATURE globalRootSignature = {};
+    globalRootSignature.pGlobalRootSignature = layout->getRootSignature();
+
+    D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {};
+    pipelineConfig.MaxTraceRecursionDepth = (std::max<uint32_t>)(_desc.m_maxRecursionDepth, 1);
+
+    std::array<D3D12_STATE_SUBOBJECT, 8> subobjects = {};
+    subobjects[0].Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+    subobjects[0].pDesc = &rayGenerationLibraryDesc;
+    subobjects[1].Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+    subobjects[1].pDesc = &missLibraryDesc;
+    subobjects[2].Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+    subobjects[2].pDesc = &closestHitLibraryDesc;
+    subobjects[3].Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+    subobjects[3].pDesc = &hitGroupDesc;
+    subobjects[4].Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
+    subobjects[4].pDesc = &shaderConfig;
+    shaderConfigAssociation.pSubobjectToAssociate = &subobjects[4];
+    subobjects[5].Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
+    subobjects[5].pDesc = &shaderConfigAssociation;
+    subobjects[6].Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
+    subobjects[6].pDesc = &globalRootSignature;
+    subobjects[7].Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
+    subobjects[7].pDesc = &pipelineConfig;
+
+    D3D12_STATE_OBJECT_DESC stateObjectDesc = {};
+    stateObjectDesc.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE;
+    stateObjectDesc.NumSubobjects = static_cast<UINT>(subobjects.size());
+    stateObjectDesc.pSubobjects = subobjects.data();
+
+    Microsoft::WRL::ComPtr<ID3D12StateObject> stateObject;
+    if (FAILED(getD3D12Device()->CreateStateObject(&stateObjectDesc, IID_PPV_ARGS(&stateObject))))
+    {
+        return RayTracingPipelineReference();
+    }
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> shaderTable;
+    uint64_t shaderRecordSize = 0;
+    if (!createShaderTable(stateObject.Get(), shaderTable, shaderRecordSize))
+    {
+        return RayTracingPipelineReference();
+    }
+
+    return RayTracingPipelineReference(new D3D12RayTracingPipeline(_desc, std::move(stateObject), std::move(shaderTable), shaderRecordSize, layout));
+}
+
+ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(const BindingLayoutDesc& _desc)
 {
     std::vector<D3D12_ROOT_PARAMETER1> rootParameters;
     std::vector<D3D12BindingLayout::PushConstantInfo> pushConstants;
@@ -1222,10 +1108,7 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
 
     for (const PushConstantRangeDesc& pushConstantRange : _desc.m_pushConstants)
     {
-        EGO_ASSERT_MESSAGE(
-            (pushConstantRange.m_size % sizeof(uint32_t)) == 0,
-            "D3D12 push constants must be 32-bit aligned"
-        );
+        EGO_ASSERT_MESSAGE((pushConstantRange.m_size % sizeof(uint32_t)) == 0, "D3D12 push constants must be 32-bit aligned");
 
         if (!pushConstantRange.m_size || (pushConstantRange.m_size % sizeof(uint32_t)) != 0)
         {
@@ -1257,11 +1140,9 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
     rootSignatureDesc.Desc_1_1.pStaticSamplers = nullptr;
     rootSignatureDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-    if (m_capabilities.m_supportsBindlessResources)
+    if (m_deviceContext.getCapabilities().m_supportsBindlessResources)
     {
-        rootSignatureDesc.Desc_1_1.Flags |=
-            D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
-            D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+        rootSignatureDesc.Desc_1_1.Flags |= D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
     }
 
     Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSignature;
@@ -1272,32 +1153,23 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
     }
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
-    if (FAILED(
-        m_device->CreateRootSignature(
-            0,
-            serializedRootSignature->GetBufferPointer(),
-            serializedRootSignature->GetBufferSize(),
-            IID_PPV_ARGS(&rootSignature)
-        )
-    ))
+    if (FAILED(getD3D12Device()->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(&rootSignature))))
     {
         return BindingLayoutReference();
     }
 
-    return BindingLayoutReference(
-        new D3D12BindingLayout(_desc, std::move(rootSignature), std::move(pushConstants))
-    );
+    return BindingLayoutReference(new D3D12BindingLayout(_desc, std::move(rootSignature), std::move(pushConstants)));
 }
 
 ego::gpu::FenceReference ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence::FenceValue _initialValue)
 {
-    if (!m_device)
+    if (!getD3D12Device())
     {
         return FenceReference();
     }
 
     Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-    if (FAILED(m_device->CreateFence(_initialValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))))
+    if (FAILED(getD3D12Device()->CreateFence(_initialValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))))
     {
         return FenceReference();
     }
@@ -1307,10 +1179,10 @@ ego::gpu::FenceReference ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence:
 
 ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
     const SwapChainDesc& _swapChainDesc,
-    const Window& _window
-)
+    const Window& _window,
+    const CommandQueueReference& _presentationQueue)
 {
-    if (!m_factory || !m_device || !_window.getNativeHandle())
+    if (!m_deviceContext.getFactory() || !getD3D12Device() || !_window.getNativeHandle())
     {
         return SwapChainReference();
     }
@@ -1326,39 +1198,12 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
         return SwapChainReference();
     }
 
-    ID3D12CommandQueue* presentationQueue = nullptr;
-    for (D3D12CommandQueue* queue : m_queues)
+    if (!_presentationQueue || _presentationQueue->getCommandType() != CommandType::Graphic || !_presentationQueue->getDesc().m_supportsPresentation)
     {
-        if (queue &&
-            queue->getDesc().m_type == CommandType::Graphic &&
-            queue->getDesc().m_supportsPresentation)
-        {
-            presentationQueue = queue->getQueue();
-            break;
-        }
+        return SwapChainReference();
     }
 
-    for (D3D12CommandQueue* queue : m_queues)
-    {
-        if (!presentationQueue && queue && queue->getDesc().m_type == CommandType::Graphic)
-        {
-            presentationQueue = queue->getQueue();
-            break;
-        }
-    }
-
-    CommandQueueReference ownedPresentationQueue;
-    if (!presentationQueue)
-    {
-        CommandQueueDesc queueDesc;
-        queueDesc.m_type = CommandType::Graphic;
-        queueDesc.m_supportsPresentation = true;
-        ownedPresentationQueue = createCommandQueue(queueDesc);
-
-        D3D12CommandQueue* d3d12Queue = static_cast<D3D12CommandQueue*>(ownedPresentationQueue.getObject());
-        presentationQueue = d3d12Queue ? d3d12Queue->getQueue() : nullptr;
-    }
-
+    ID3D12CommandQueue* presentationQueue = _presentationQueue->getNativeHandle<ID3D12CommandQueue>();
     if (!presentationQueue)
     {
         return SwapChainReference();
@@ -1387,23 +1232,14 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     swapChainDesc.Flags = 0;
 
-    HWND windowHandle = reinterpret_cast<HWND>(_window.getNativeHandle());
+    auto windowHandle = reinterpret_cast<HWND>(_window.getNativeHandle());
     Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain;
-    if (FAILED(
-        m_factory->CreateSwapChainForHwnd(
-            presentationQueue,
-            windowHandle,
-            &swapChainDesc,
-            nullptr,
-            nullptr,
-            &swapChain
-        )
-    ))
+    if (FAILED(m_deviceContext.getFactory()->CreateSwapChainForHwnd(presentationQueue, windowHandle, &swapChainDesc, nullptr, nullptr, &swapChain)))
     {
         return SwapChainReference();
     }
 
-    m_factory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_ALT_ENTER);
+    m_deviceContext.getFactory()->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_ALT_ENTER);
 
     Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain3;
     if (FAILED(swapChain.As(&swapChain3)))
@@ -1434,186 +1270,39 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
         targetTextures.push_back(Texture2DReference(new D3D12Texture2D(textureDesc, std::move(resource))));
     }
 
-    return SwapChainReference(
-        new D3D12SwapChain(
-            _swapChainDesc,
-            std::move(swapChain3),
-            std::move(targetTextures),
-            std::move(ownedPresentationQueue)
-        )
-    );
+    return SwapChainReference(new D3D12SwapChain(_swapChainDesc, std::move(swapChain3), std::move(targetTextures), _presentationQueue));
 }
 
 const ego::GraphicDevice::Capabilities& ego::gpu::d3d12::D3D12GraphicDevice::getCapabilities() const
 {
-    return m_capabilities;
-}
-
-void ego::gpu::d3d12::D3D12GraphicDevice::waitIdle()
-{
-    for (D3D12CommandQueue* queue : m_queues)
-    {
-        if (queue)
-        {
-            queue->waitIdle();
-        }
-    }
+    return m_deviceContext.getCapabilities();
 }
 
 ID3D12Device* ego::gpu::d3d12::D3D12GraphicDevice::getDevice() const
 {
-    return m_device.Get();
+    return getD3D12Device();
 }
 
 IDXGIAdapter1* ego::gpu::d3d12::D3D12GraphicDevice::getAdapter() const
 {
-    return m_adapter.Get();
+    return m_deviceContext.getAdapter();
 }
 
-ego::gpu::d3d12::D3D12DescriptorAllocatorPointer ego::gpu::d3d12::D3D12GraphicDevice::getViewDescriptorAllocator()
+ID3D12Device5* ego::gpu::d3d12::D3D12GraphicDevice::getD3D12Device() const
 {
-    return m_viewDescriptorAllocator;
+    return m_deviceContext.getDevice();
 }
 
-ego::gpu::d3d12::D3D12DescriptorAllocatorPointer ego::gpu::d3d12::D3D12GraphicDevice::getSamplerDescriptorAllocator()
+ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::submitImmediateCommands(
+    const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands,
+    const std::vector<GraphicObjectReference>& _keepAliveObjects)
 {
-    return m_samplerDescriptorAllocator;
+    return m_immediateContext.submit(_recordCommands, _keepAliveObjects);
 }
 
-ego::gpu::d3d12::D3D12DescriptorAllocatorPointer ego::gpu::d3d12::D3D12GraphicDevice::getRtvDescriptorAllocator()
+bool ego::gpu::d3d12::D3D12GraphicDevice::executeImmediateCommands(const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands)
 {
-    return m_rtvDescriptorAllocator;
-}
-
-ego::gpu::d3d12::D3D12DescriptorAllocatorPointer ego::gpu::d3d12::D3D12GraphicDevice::getDsvDescriptorAllocator()
-{
-    return m_dsvDescriptorAllocator;
-}
-
-void ego::gpu::d3d12::D3D12GraphicDevice::registerQueue(D3D12CommandQueue* _queue)
-{
-    if (_queue && std::find(m_queues.begin(), m_queues.end(), _queue) == m_queues.end())
-    {
-        m_queues.push_back(_queue);
-    }
-}
-
-void ego::gpu::d3d12::D3D12GraphicDevice::unregisterQueue(D3D12CommandQueue* _queue)
-{
-    const auto iterator = std::find(m_queues.begin(), m_queues.end(), _queue);
-    if (iterator != m_queues.end())
-    {
-        m_queues.erase(iterator);
-    }
-}
-
-bool ego::gpu::d3d12::D3D12GraphicDevice::initializeFactory(const GraphicDevice::InitParams& _params)
-{
-    UINT factoryFlags = 0;
-
-    if (_params.m_debugEnable)
-    {
-        Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
-        if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-        {
-            debugController->EnableDebugLayer();
-            debugController->SetEnableGPUBasedValidation(_params.m_gpuValidation);
-            factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-        }
-    }
-
-    return SUCCEEDED(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&m_factory)));
-}
-
-bool ego::gpu::d3d12::D3D12GraphicDevice::initializeAdapter()
-{
-    for (UINT adapterIndex = 0;; ++adapterIndex)
-    {
-        Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
-        if (FAILED(
-            m_factory->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&
-                adapter))
-        ))
-        {
-            break;
-        }
-
-        DXGI_ADAPTER_DESC1 adapterDesc = {};
-        adapter->GetDesc1(&adapterDesc);
-        if (adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-        {
-            continue;
-        }
-
-        if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), nullptr)))
-        {
-            m_adapter = adapter;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool ego::gpu::d3d12::D3D12GraphicDevice::initializeDevice()
-{
-    if (FAILED(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device))))
-    {
-        return false;
-    }
-
-    initializeCapabilities();
-
-    return true;
-}
-
-bool ego::gpu::d3d12::D3D12GraphicDevice::initializeDescriptorAllocators()
-{
-    m_viewDescriptorAllocator.reset(new D3D12DescriptorAllocator());
-    EGO_CHECK_INITIALIZATION(
-        m_viewDescriptorAllocator &&
-        m_viewDescriptorAllocator->init(
-            m_device.Get(),
-            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-            BindlessResourceDescriptorCapacity,
-            true
-        )
-    );
-
-    m_samplerDescriptorAllocator.reset(new D3D12DescriptorAllocator());
-    EGO_CHECK_INITIALIZATION(
-        m_samplerDescriptorAllocator &&
-        m_samplerDescriptorAllocator->init(
-            m_device.Get(),
-            D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-            BindlessSamplerDescriptorCapacity,
-            true
-        )
-    );
-
-    m_rtvDescriptorAllocator.reset(new D3D12DescriptorAllocator());
-    EGO_CHECK_INITIALIZATION(
-        m_rtvDescriptorAllocator &&
-        m_rtvDescriptorAllocator->init(
-            m_device.Get(),
-            D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-            256,
-            false
-        )
-    );
-
-    m_dsvDescriptorAllocator.reset(new D3D12DescriptorAllocator());
-    EGO_CHECK_INITIALIZATION(
-        m_dsvDescriptorAllocator &&
-        m_dsvDescriptorAllocator->init(
-            m_device.Get(),
-            D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-            256,
-            false
-        )
-    );
-
-    return true;
+    return m_immediateContext.execute(_recordCommands);
 }
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::registerResourceProviders()
@@ -1626,8 +1315,7 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::registerResourceProviders()
     const PluginControllerPointer pluginController = PluginControllerCore::GetInstance().getPluginController();
     EGO_CHECK_RETURN_FALSE(pluginController);
 
-    const FileName dxcModuleName =
-        engine::GetEngine().getPluginCatalog().getModulePath(ResourceProviderPlugin::GetPluginType(), "DXC");
+    const FileName dxcModuleName = engine::GetEngine().getPluginCatalog().getModulePath(ResourceProviderPlugin::GetPluginType(), "DXC");
     EGO_CHECK_RETURN_FALSE(dxcModuleName);
 
     m_resourceProviderPlugin = pluginController->loadPlugin<ResourceProviderPlugin>(dxcModuleName);
@@ -1646,46 +1334,4 @@ void ego::gpu::d3d12::D3D12GraphicDevice::unregisterResourceProviders()
     }
 
     m_resourceProviderPlugin = nullptr;
-}
-
-void ego::gpu::d3d12::D3D12GraphicDevice::initializeCapabilities()
-{
-    m_capabilities.m_maxColorAttachments = D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
-    m_capabilities.m_supportsPresentation = true;
-    m_capabilities.m_supportsIndependentComputeQueue = true;
-    m_capabilities.m_supportsSamplerAnisotropy = true;
-    m_capabilities.m_supportsMeshShaders = false;
-    m_capabilities.m_supportsRayTracing = false;
-    m_capabilities.m_supportsBindlessResources = false;
-    m_capabilities.m_bindlessResourceDescriptorCount = BindlessResourceDescriptorCapacity;
-    m_capabilities.m_bindlessSamplerDescriptorCount = BindlessSamplerDescriptorCapacity;
-
-    bool supportsResourceBindingTier = false;
-    D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
-    if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))))
-    {
-        supportsResourceBindingTier = options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_2;
-    }
-
-    bool supportsDirectHeapIndexing = false;
-    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {};
-    shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_6;
-    if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
-    {
-        supportsDirectHeapIndexing = shaderModel.HighestShaderModel >= D3D_SHADER_MODEL_6_6;
-    }
-
-    m_capabilities.m_supportsBindlessResources = supportsResourceBindingTier && supportsDirectHeapIndexing;
-
-    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = {};
-    if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))))
-    {
-        m_capabilities.m_supportsMeshShaders = options7.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
-    }
-
-    D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
-    if (SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5))))
-    {
-        m_capabilities.m_supportsRayTracing = options5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
-    }
 }

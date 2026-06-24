@@ -2,11 +2,7 @@
 
 #include "EgoCore/Assert/AssertCore.h"
 
-ego::rtti::TypeMetaInfo::TypeMetaInfo(
-    TypeMetaInfoID _id,
-    size_t _size,
-    ParentTypeMetaInfoCollection&& _parentTypeMetaInfos
-)
+ego::rtti::TypeMetaInfo::TypeMetaInfo(TypeMetaInfoID _id, size_t _size, ParentTypeMetaInfoCollection&& _parentTypeMetaInfos)
     : m_parentTypeMetaInfos(std::move(_parentTypeMetaInfos)),
       m_size(_size),
       m_id(_id)

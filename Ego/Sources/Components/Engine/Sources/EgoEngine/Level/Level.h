@@ -72,7 +72,7 @@ namespace ego
         };
 
         explicit Level(LevelID _id);
-        ~Level();
+        ~Level() override;
 
         LevelID getID() const;
         bool isValid() const;
@@ -130,7 +130,7 @@ namespace ego
         ecs::Entity m_rootNode;
         LevelID m_id = InvalidLevelID;
     };
-}
+} // namespace ego
 
 template <typename TComponent, typename... Args>
 TComponent* ego::Level::addOrReplaceComponent(ego::ecs::Entity _entity, Args&&... _args)

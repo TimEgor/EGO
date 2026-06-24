@@ -34,4 +34,4 @@ namespace ego
         FileSystemCollection m_fileSystems;
         ResourceProviderCollection m_resourceProviders;
     };
-}
+} // namespace ego

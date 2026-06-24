@@ -1,12 +1,10 @@
 #include "ResourceController.h"
 
-ego::ResourceLoadingOperation::ResourceLoadingOperation(
-    const ResourceControllerWeakPointer& _controller,
-    const ResourcePointer& _resource
-)
-    : m_controller(_controller)
-    , m_resource(_resource)
-{}
+ego::ResourceLoadingOperation::ResourceLoadingOperation(const ResourceControllerWeakPointer& _controller, const ResourcePointer& _resource)
+    : m_controller(_controller),
+      m_resource(_resource)
+{
+}
 
 ego::ResourcePointer ego::ResourceLoadingOperation::getResource() const
 {

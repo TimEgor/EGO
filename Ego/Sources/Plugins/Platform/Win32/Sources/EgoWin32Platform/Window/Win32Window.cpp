@@ -29,13 +29,12 @@ bool ego::win32::Win32Window::init(const char* _title, const WindowSize& _size)
             NULL,
             NULL,
             win32Platform.getInstanceHandle(),
-            NULL
-        );
+            NULL);
     }
 
     EGO_CHECK_INITIALIZATION(m_handle);
 
-    Win32WindowWeakPointer* windowData = new Win32WindowWeakPointer(weakFromThis());
+    auto windowData = new Win32WindowWeakPointer(weakFromThis());
     SetWindowLongPtr(m_handle, 0, reinterpret_cast<LONG_PTR>(windowData));
 
     ShowCursor(true);
@@ -147,7 +146,7 @@ void ego::win32::Win32Window::invalidate()
 {
     std::scoped_lock locker(m_mutex);
 
-    Win32WindowWeakPointer* windowData = reinterpret_cast<Win32WindowWeakPointer*>(GetWindowLongPtr(m_handle, 0));
+    auto windowData = reinterpret_cast<Win32WindowWeakPointer*>(GetWindowLongPtr(m_handle, 0));
     EGO_SAFE_DESTROY(windowData);
 
     SetWindowLongPtr(m_handle, 0, 0);

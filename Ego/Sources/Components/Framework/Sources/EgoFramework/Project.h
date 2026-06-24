@@ -32,7 +32,7 @@ namespace ego::framework
         using GameLogicPluginCollection = std::vector<GameLogicPlugin>;
 
         Project() = default;
-        ~Project() = default;
+        ~Project() override = default;
 
         bool addAssetDirectory(const FileName& _directory);
         bool addPluginDirectory(const FileName& _directory);
@@ -56,4 +56,4 @@ namespace ego::framework
     };
 
     EGO_POINTER(Project);
-}
+} // namespace ego::framework

@@ -24,7 +24,10 @@ namespace ego
         IndexObjectPool() = default;
         IndexObjectPool(const IndexObjectPool&) = delete;
         IndexObjectPool(IndexObjectPool&& _pool);
-        ~IndexObjectPool() { release(); }
+        ~IndexObjectPool()
+        {
+            release();
+        }
 
         IndexObjectPool& operator=(const IndexObjectPool&) = delete;
         IndexObjectPool& operator=(IndexObjectPool&&) = delete;
@@ -60,6 +63,6 @@ namespace ego
 
         Storage m_storage;
     };
-}
+} // namespace ego
 
 #include "IndexObjectPool.hpp"

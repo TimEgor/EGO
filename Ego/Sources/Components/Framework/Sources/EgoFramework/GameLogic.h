@@ -9,14 +9,16 @@ namespace ego::framework
     {
     public:
         GameLogic() = default;
-        virtual ~GameLogic() = default;
+        ~GameLogic() override = default;
 
-        virtual bool init() { return true; }
+        virtual bool init()
+        {
+            return true;
+        }
         virtual void update(float) {}
         virtual void release() {}
     };
 
     EGO_POINTER(GameLogic);
     EGO_WEAK_POINTER(GameLogic);
-}
-
+} // namespace ego::framework

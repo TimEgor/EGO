@@ -26,7 +26,10 @@ namespace ego
         PluginModule(const PluginModuleInfo& _info);
         virtual ~PluginModule();
 
-        const PluginModuleInfo& getInfo() const { return m_info; }
+        const PluginModuleInfo& getInfo() const
+        {
+            return m_info;
+        }
 
     private:
         PluginModuleInfo m_info;
@@ -40,8 +43,8 @@ namespace ego
     EGO_POINTER(PluginModule);
     EGO_WEAK_POINTER(PluginModule);
 
-    using PluginModuleInitializerFunction = void(*)(const PluginModuleBindingBridge&);
-    using PluginModuleReleaserFunction = void(*)();
+    using PluginModuleInitializerFunction = void (*)(const PluginModuleBindingBridge&);
+    using PluginModuleReleaserFunction = void (*)();
 
     class PluginModuleCore final : public Singleton<PluginModuleCore>
     {
@@ -70,4 +73,4 @@ namespace ego
     public:
         PluginModuleRegistrator(PluginModuleInitializerFunction _init, PluginModuleReleaserFunction _release);
     };
-}
+} // namespace ego

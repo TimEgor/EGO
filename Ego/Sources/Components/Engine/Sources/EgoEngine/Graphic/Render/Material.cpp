@@ -1,10 +1,17 @@
 #include "Material.h"
 
-ego::render::Material::Material(const RenderGraphicPipeline& _pipeline)
-    : m_pipeline(_pipeline)
-{}
-
-const ego::render::RenderGraphicPipeline& ego::render::Material::getPipeline() const
+ego::render::Material::Material(const RenderVertexShader& _vertexShader, const RenderPixelShader& _pixelShader)
+    : m_vertexShader(_vertexShader),
+      m_pixelShader(_pixelShader)
 {
-    return m_pipeline;
+}
+
+const ego::render::RenderVertexShader& ego::render::Material::getVertexShader() const
+{
+    return m_vertexShader;
+}
+
+const ego::render::RenderPixelShader& ego::render::Material::getPixelShader() const
+{
+    return m_pixelShader;
 }

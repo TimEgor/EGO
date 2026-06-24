@@ -2,13 +2,11 @@
 
 #include <utility>
 
-ego::gpu::d3d12::D3D12Buffer::D3D12Buffer(
-    const BufferDesc& _desc,
-    Microsoft::WRL::ComPtr<ID3D12Resource>&& _resource
-)
+ego::gpu::d3d12::D3D12Buffer::D3D12Buffer(const BufferDesc& _desc, Microsoft::WRL::ComPtr<ID3D12Resource>&& _resource)
     : Buffer(_desc),
       m_resource(std::move(_resource))
-{}
+{
+}
 
 void* ego::gpu::d3d12::D3D12Buffer::getNativeHandle() const
 {
@@ -75,12 +73,12 @@ ego::gpu::d3d12::D3D12BufferView::D3D12BufferView(
     const BufferReference& _buffer,
     const BufferViewDesc& _desc,
     D3D12DescriptorIndex _descriptorIndex,
-    D3D12DescriptorAllocatorPointer& _allocator
-)
+    D3D12DescriptorAllocatorPointer& _allocator)
     : BufferView(_buffer, _desc),
       m_allocator(_allocator),
       m_descriptorIndex(_descriptorIndex)
-{}
+{
+}
 
 ego::gpu::d3d12::D3D12BufferView::~D3D12BufferView()
 {
@@ -97,10 +95,7 @@ void* ego::gpu::d3d12::D3D12BufferView::getNativeHandle() const
     return reinterpret_cast<void*>(static_cast<uintptr_t>(m_descriptorIndex));
 }
 
-void ego::gpu::d3d12::D3D12BufferView::setName(const char*)
-{
-    
-}
+void ego::gpu::d3d12::D3D12BufferView::setName(const char*) {}
 
 ego::gpu::d3d12::D3D12DescriptorIndex ego::gpu::d3d12::D3D12BufferView::getDescriptorIndex() const
 {

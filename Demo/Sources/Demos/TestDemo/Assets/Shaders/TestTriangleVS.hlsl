@@ -1,5 +1,5 @@
-#include "/Assets/Shaders/Common/GBufferPass.hlsli"
-#include "/Assets/Shaders/Common/ObjectTransform.hlsli"
+#include "/Shaders/Common/GBufferPass.hlsli"
+#include "/Shaders/Common/ObjectTransform.hlsli"
 
 struct VSInput
 {

@@ -68,4 +68,4 @@ namespace ego::gpu
     private:
         ShaderParameterBufferDesc m_materialParameterBuffer;
     };
-}
+} // namespace ego::gpu

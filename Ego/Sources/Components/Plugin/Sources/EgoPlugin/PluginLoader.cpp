@@ -5,11 +5,7 @@ ego::FileName ego::PluginLoader::selectPluginModule(const char* _typeName)
     return FileName();
 }
 
-ego::PluginModulePointer ego::PluginLoader::loadModule(
-    PluginModuleID _moduleID,
-    const FileName& _moduleName,
-    PluginModuleBindingBridge& _bindings
-)
+ego::PluginModulePointer ego::PluginLoader::loadModule(PluginModuleID _moduleID, const FileName& _moduleName, PluginModuleBindingBridge& _bindings)
 {
     void* moduleHandle = loadNativeModule(_moduleName);
     if (!moduleHandle)

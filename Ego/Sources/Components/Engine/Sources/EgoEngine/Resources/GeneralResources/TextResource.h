@@ -16,12 +16,12 @@ namespace ego
         EGO_RESOURCE(TextResource, Resource);
 
     protected:
-        virtual bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
-        virtual void onUnload() override;
+        bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
+        void onUnload() override;
 
     private:
         std::string m_text;
     };
 
     EGO_POINTER(TextResource);
-}
+} // namespace ego

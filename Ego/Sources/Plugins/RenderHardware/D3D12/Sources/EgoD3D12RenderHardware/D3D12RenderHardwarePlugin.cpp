@@ -12,7 +12,6 @@ EGO_PLUGIN_CREATE(ego::gpu::d3d12::D3D12RenderHardwarePlugin, RenderHardwarePlug
 ego::gpu::d3d12::D3D12RenderHardwarePlugin::D3D12RenderHardwarePlugin(const PluginModulePointer& _module, PluginType _pluginType)
     : RenderHardwarePlugin(_module, _pluginType)
 {
-    
 }
 
 ego::GraphicDevicePointer ego::gpu::d3d12::D3D12RenderHardwarePlugin::createGraphicDevice()

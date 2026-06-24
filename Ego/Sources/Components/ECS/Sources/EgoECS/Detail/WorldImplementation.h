@@ -24,4 +24,4 @@ namespace ego::ecs::detail
         entt::registry m_registry;
         size_t m_entityCount = 0;
     };
-}
+} // namespace ego::ecs::detail

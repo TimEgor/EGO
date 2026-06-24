@@ -17,53 +17,37 @@ namespace ego::win32
         Win32FileSystem() = default;
         ~Win32FileSystem() override;
 
-        virtual bool init() override;
-        virtual void release() override;
+        bool init() override;
+        void release() override;
 
-        virtual bool exists(const FileName& _path) const override;
-        virtual bool isFile(const FileName& _path) const override;
-        virtual bool isDirectory(const FileName& _path) const override;
+        bool exists(const FileName& _path) const override;
+        bool isFile(const FileName& _path) const override;
+        bool isDirectory(const FileName& _path) const override;
 
-        virtual FileName getWorkingDirectory() const override;
-        virtual bool setWorkingDirectory(const FileName& _path) override;
-        virtual FileName getAbsolutePath(const FileName& _path) const override;
+        FileName getWorkingDirectory() const override;
+        bool setWorkingDirectory(const FileName& _path) override;
+        FileName getAbsolutePath(const FileName& _path) const override;
 
-        virtual bool getEntryInfo(const FileName& _path, FileSystemEntryDesc& _entry) const override;
-        virtual bool enumerate(
-            const FileName& _directoryPath,
-            FileSystemEntryCollection& _entries,
-            bool _recursive = false
-        ) const override;
+        bool getEntryInfo(const FileName& _path, FileSystemEntryDesc& _entry) const override;
+        bool enumerate(const FileName& _directoryPath, FileSystemEntryCollection& _entries, bool _recursive = false) const override;
 
-        virtual bool createDirectory(const FileName& _path, bool _recursive = true) override;
-        virtual bool removeFile(const FileName& _path) override;
-        virtual bool removeDirectory(const FileName& _path, bool _recursive = false) override;
-        virtual bool remove(const FileName& _path, bool _recursive = false) override;
-        virtual bool copyFile(
-            const FileName& _sourcePath,
-            const FileName& _destinationPath,
-            bool _overwrite = true
-        ) override;
-        virtual bool move(
-            const FileName& _sourcePath,
-            const FileName& _destinationPath,
-            bool _overwrite = true
-        ) override;
+        bool createDirectory(const FileName& _path, bool _recursive = true) override;
+        bool removeFile(const FileName& _path) override;
+        bool removeDirectory(const FileName& _path, bool _recursive = false) override;
+        bool remove(const FileName& _path, bool _recursive = false) override;
+        bool copyFile(const FileName& _sourcePath, const FileName& _destinationPath, bool _overwrite = true) override;
+        bool move(const FileName& _sourcePath, const FileName& _destinationPath, bool _overwrite = true) override;
 
-        virtual bool readFile(const FileName& _path, FileContent& _content) const override;
-        virtual bool readTextFile(const FileName& _path, std::string& _content) const override;
-        virtual bool writeFile(const FileName& _path, const FileContent& _content, bool _overwrite = true) override;
-        virtual bool writeTextFile(const FileName& _path, const std::string& _content, bool _overwrite = true) override;
-        virtual bool appendFile(const FileName& _path, const FileContent& _content) override;
-        virtual bool appendTextFile(const FileName& _path, const std::string& _content) override;
+        bool readFile(const FileName& _path, FileContent& _content) const override;
+        bool readTextFile(const FileName& _path, std::string& _content) const override;
+        bool writeFile(const FileName& _path, const FileContent& _content, bool _overwrite = true) override;
+        bool writeTextFile(const FileName& _path, const std::string& _content, bool _overwrite = true) override;
+        bool appendFile(const FileName& _path, const FileContent& _content) override;
+        bool appendTextFile(const FileName& _path, const std::string& _content) override;
 
-        virtual FileSystemWatchID watchDirectory(
-            const FileName& _directoryPath,
-            FileSystemWatchFilter _filter = FileSystemWatchFilter::Default,
-            bool _recursive = false
-        ) override;
-        virtual bool unwatchDirectory(FileSystemWatchID _watchID) override;
-        virtual void updateDirectoryWatches() override;
+        FileSystemWatchID watchDirectory(const FileName& _directoryPath, FileSystemWatchFilter _filter = FileSystemWatchFilter::Default, bool _recursive = false) override;
+        bool unwatchDirectory(FileSystemWatchID _watchID) override;
+        void updateDirectoryWatches() override;
 
         EGO_RTTI_VIRTUAL(Win32FileSystem, FileSystem);
 
@@ -75,7 +59,8 @@ namespace ego::win32
 
             explicit FileHandle(HANDLE _handle)
                 : m_handle(_handle)
-            {}
+            {
+            }
 
             ~FileHandle()
             {
@@ -113,7 +98,8 @@ namespace ego::win32
         public:
             explicit FindHandle(HANDLE _handle)
                 : m_handle(_handle)
-            {}
+            {
+            }
 
             ~FindHandle()
             {
@@ -185,20 +171,11 @@ namespace ego::win32
             const FILETIME& _lastAccessTime,
             const FILETIME& _lastWriteTime,
             uint64_t _size,
-            FileSystemEntryDesc& _entry
-        );
-        static void FillEntryDescFromFindData(
-            const std::wstring& _path,
-            const WIN32_FIND_DATAW& _findData,
-            FileSystemEntryDesc& _entry
-        );
+            FileSystemEntryDesc& _entry);
+        static void FillEntryDescFromFindData(const std::wstring& _path, const WIN32_FIND_DATAW& _findData, FileSystemEntryDesc& _entry);
         static bool IsSelfOrParentDirectory(const wchar_t* _name);
         static bool CreateDirectoryRecursive(const std::wstring& _path);
-        static bool EnumerateDirectory(
-            const std::wstring& _directoryPath,
-            bool _recursive,
-            FileSystemEntryCollection& _entries
-        );
+        static bool EnumerateDirectory(const std::wstring& _directoryPath, bool _recursive, FileSystemEntryCollection& _entries);
         static bool RemoveDirectoryRecursive(const std::wstring& _directoryPath);
         static bool ReadFileContent(HANDLE _fileHandle, FileContent& _content);
         static bool WriteFileContent(HANDLE _fileHandle, const FileContent& _content);
@@ -210,16 +187,11 @@ namespace ego::win32
             const FileName& _directoryPath,
             const FileName& _path,
             FileSystemChangeType _changeType,
-            std::vector<PendingFileSystemChangeEvent>& _events
-        );
+            std::vector<PendingFileSystemChangeEvent>& _events);
         static bool IsWatchHandleValid(const WatchRecord& _watch);
         static void CloseDirectoryWatch(WatchRecord& _watch);
         static bool StartDirectoryWatchRead(WatchRecord& _watch);
-        static void ParseDirectoryWatchBuffer(
-            const WatchRecord& _watch,
-            DWORD _bytesTransferred,
-            std::vector<PendingFileSystemChangeEvent>& _events
-        );
+        static void ParseDirectoryWatchBuffer(const WatchRecord& _watch, DWORD _bytesTransferred, std::vector<PendingFileSystemChangeEvent>& _events);
 
         WatchCollection m_watches;
         bool m_isChangeEventRegistered = false;
@@ -227,4 +199,4 @@ namespace ego::win32
     };
 
     EGO_POINTER(Win32FileSystem)
-}
+} // namespace ego::win32

@@ -15,4 +15,4 @@ namespace ego::demo
     };
 
     EGO_POINTER(TestDemoPlugin);
-}
+} // namespace ego::demo

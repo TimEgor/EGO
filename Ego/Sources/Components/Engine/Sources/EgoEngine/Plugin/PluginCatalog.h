@@ -42,14 +42,10 @@ namespace ego::engine
 
         Entry* findEntry(const FileName& _moduleName);
         Plugin* findPlugin(Entry& _entry, PluginType _pluginType, const char* _pluginName);
-        const Plugin* findPlugin(
-            const Entry& _entry,
-            PluginType _pluginType,
-            const char* _pluginName
-        ) const;
+        const Plugin* findPlugin(const Entry& _entry, PluginType _pluginType, const char* _pluginName) const;
 
         EntryCollection m_entries;
     };
 
     EGO_POINTER(PluginCatalog);
-}
+} // namespace ego::engine

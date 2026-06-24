@@ -26,4 +26,4 @@ namespace ego::demo
     };
 
     EGO_POINTER(TestDemo);
-}
+} // namespace ego::demo

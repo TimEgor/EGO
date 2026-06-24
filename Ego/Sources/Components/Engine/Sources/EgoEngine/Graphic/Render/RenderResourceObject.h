@@ -11,7 +11,10 @@ namespace ego::gpu
     class VertexShaderResource;
     class PixelShaderResource;
     class ComputeShaderResource;
-}
+    class RayGenerationShaderResource;
+    class MissShaderResource;
+    class ClosestHitShaderResource;
+} // namespace ego::gpu
 
 namespace ego::render
 {
@@ -19,4 +22,7 @@ namespace ego::render
     RenderVertexShader CreateVertexShaderHandler(const SharedPointer<gpu::VertexShaderResource>& _resource);
     RenderPixelShader CreatePixelShaderHandler(const SharedPointer<gpu::PixelShaderResource>& _resource);
     RenderComputeShader CreateComputeShaderHandler(const SharedPointer<gpu::ComputeShaderResource>& _resource);
-}
+    RenderRayGenerationShader CreateRayGenerationShaderHandler(const SharedPointer<gpu::RayGenerationShaderResource>& _resource);
+    RenderMissShader CreateMissShaderHandler(const SharedPointer<gpu::MissShaderResource>& _resource);
+    RenderClosestHitShader CreateClosestHitShaderHandler(const SharedPointer<gpu::ClosestHitShaderResource>& _resource);
+} // namespace ego::render

@@ -30,7 +30,10 @@ namespace ego
         ObjectPool() = default;
         ObjectPool(const ObjectPool&) = delete;
         ObjectPool(ObjectPool&& _pool);
-        ~ObjectPool() { release(); }
+        ~ObjectPool()
+        {
+            release();
+        }
 
         ObjectPool& operator=(const ObjectPool&) = delete;
         ObjectPool& operator=(ObjectPool&&) = delete;
@@ -66,6 +69,6 @@ namespace ego
 
         Storage m_storage;
     };
-}
+} // namespace ego
 
 #include "ObjectPool.hpp"

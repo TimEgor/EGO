@@ -63,4 +63,4 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(Sampler);
-}
+} // namespace ego::gpu

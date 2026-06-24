@@ -9,10 +9,10 @@ namespace ego::win32
     public:
         Win32PlatformPlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        virtual PlatformPointer createPlatform(void* _platformNativeInstance) override;
+        PlatformPointer createPlatform(void* _platformNativeInstance) override;
 
         EGO_PLUGIN(Win32PlatformPlugin, PlatformPlugin);
     };
 
     EGO_POINTER(Win32PlatformPlugin);
-}
+} // namespace ego::win32

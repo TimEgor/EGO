@@ -1,7 +1,7 @@
 #ifndef EGO_DEFAULT_RENDER_OBJECT_TRANSFORM_HLSLI
 #define EGO_DEFAULT_RENDER_OBJECT_TRANSFORM_HLSLI
 
-#include "/Assets/Shaders/Common/GBufferPass.hlsli"
+#include "/Shaders/Common/GBufferPass.hlsli"
 
 struct ObjectShaderData
 {

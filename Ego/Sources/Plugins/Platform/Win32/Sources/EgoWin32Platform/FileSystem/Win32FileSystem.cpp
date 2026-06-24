@@ -102,10 +102,7 @@ std::wstring ego::win32::Win32FileSystem::AppendSearchWildcard(const std::wstrin
     return searchPath;
 }
 
-std::wstring ego::win32::Win32FileSystem::BuildChildPath(
-    const std::wstring& _directoryPath,
-    const wchar_t* _childName
-)
+std::wstring ego::win32::Win32FileSystem::BuildChildPath(const std::wstring& _directoryPath, const wchar_t* _childName)
 {
     std::wstring childPath = TrimTrailingSeparators(_directoryPath);
     if (!childPath.empty() && !IsPathSeparator(childPath.back()))
@@ -136,9 +133,7 @@ ego::FileSystemEntryType ego::win32::Win32FileSystem::GetEntryType(DWORD _attrib
         return FileSystemEntryType::Unknown;
     }
 
-    return (_attributes & FILE_ATTRIBUTE_DIRECTORY) ?
-               FileSystemEntryType::Directory :
-               FileSystemEntryType::File;
+    return (_attributes & FILE_ATTRIBUTE_DIRECTORY) ? FileSystemEntryType::Directory : FileSystemEntryType::File;
 }
 
 uint64_t ego::win32::Win32FileSystem::GetFileTimeValue(const FILETIME& _fileTime)
@@ -164,8 +159,7 @@ void ego::win32::Win32FileSystem::FillEntryDesc(
     const FILETIME& _lastAccessTime,
     const FILETIME& _lastWriteTime,
     uint64_t _size,
-    FileSystemEntryDesc& _entry
-)
+    FileSystemEntryDesc& _entry)
 {
     _entry.m_path = ToFileName(_path);
     _entry.m_type = GetEntryType(_attributes);
@@ -177,11 +171,7 @@ void ego::win32::Win32FileSystem::FillEntryDesc(
     _entry.m_isHidden = (_attributes & FILE_ATTRIBUTE_HIDDEN) != 0;
 }
 
-void ego::win32::Win32FileSystem::FillEntryDescFromFindData(
-    const std::wstring& _path,
-    const WIN32_FIND_DATAW& _findData,
-    FileSystemEntryDesc& _entry
-)
+void ego::win32::Win32FileSystem::FillEntryDescFromFindData(const std::wstring& _path, const WIN32_FIND_DATAW& _findData, FileSystemEntryDesc& _entry)
 {
     FillEntryDesc(
         _path,
@@ -190,8 +180,7 @@ void ego::win32::Win32FileSystem::FillEntryDescFromFindData(
         _findData.ftLastAccessTime,
         _findData.ftLastWriteTime,
         GetFileSizeValue(_findData.nFileSizeLow, _findData.nFileSizeHigh),
-        _entry
-    );
+        _entry);
 }
 
 bool ego::win32::Win32FileSystem::IsSelfOrParentDirectory(const wchar_t* _name)
@@ -228,11 +217,7 @@ bool ego::win32::Win32FileSystem::CreateDirectoryRecursive(const std::wstring& _
     return GetLastError() == ERROR_ALREADY_EXISTS && IsDirectoryPath(_path);
 }
 
-bool ego::win32::Win32FileSystem::EnumerateDirectory(
-    const std::wstring& _directoryPath,
-    bool _recursive,
-    FileSystemEntryCollection& _entries
-)
+bool ego::win32::Win32FileSystem::EnumerateDirectory(const std::wstring& _directoryPath, bool _recursive, FileSystemEntryCollection& _entries)
 {
     WIN32_FIND_DATAW findData;
     FindHandle findHandle(FindFirstFileW(AppendSearchWildcard(_directoryPath).c_str(), &findData));
@@ -264,8 +249,7 @@ bool ego::win32::Win32FileSystem::EnumerateDirectory(
                 return false;
             }
         }
-    }
-    while (FindNextFileW(findHandle.get(), &findData));
+    } while (FindNextFileW(findHandle.get(), &findData));
 
     return GetLastError() == ERROR_NO_MORE_FILES;
 }
@@ -311,8 +295,7 @@ bool ego::win32::Win32FileSystem::RemoveDirectoryRecursive(const std::wstring& _
             {
                 return false;
             }
-        }
-        while (FindNextFileW(findHandle.get(), &findData));
+        } while (FindNextFileW(findHandle.get(), &findData));
 
         if (GetLastError() != ERROR_NO_MORE_FILES)
         {
@@ -348,9 +331,7 @@ bool ego::win32::Win32FileSystem::ReadFileContent(HANDLE _fileHandle, FileConten
 
     while (remainingSize > 0)
     {
-        const DWORD readSize = static_cast<DWORD>(
-            std::min<size_t>(remainingSize, std::numeric_limits<DWORD>::max())
-        );
+        const DWORD readSize = static_cast<DWORD>(std::min<size_t>(remainingSize, std::numeric_limits<DWORD>::max()));
         DWORD processedSize = 0;
 
         if (!ReadFile(_fileHandle, writePosition, readSize, &processedSize, nullptr) || processedSize == 0)
@@ -372,9 +353,7 @@ bool ego::win32::Win32FileSystem::WriteFileContent(HANDLE _fileHandle, const Fil
 
     while (remainingSize > 0)
     {
-        const DWORD writeSize = static_cast<DWORD>(
-            std::min<size_t>(remainingSize, std::numeric_limits<DWORD>::max())
-        );
+        const DWORD writeSize = static_cast<DWORD>(std::min<size_t>(remainingSize, std::numeric_limits<DWORD>::max()));
         DWORD processedSize = 0;
 
         if (!WriteFile(_fileHandle, readPosition, writeSize, &processedSize, nullptr) || processedSize == 0)
@@ -465,8 +444,7 @@ void ego::win32::Win32FileSystem::PushPendingFileSystemChangeEvent(
     const FileName& _directoryPath,
     const FileName& _path,
     FileSystemChangeType _changeType,
-    std::vector<PendingFileSystemChangeEvent>& _events
-)
+    std::vector<PendingFileSystemChangeEvent>& _events)
 {
     _events.push_back(PendingFileSystemChangeEvent{_watchID, _directoryPath, _path, _changeType});
 }
@@ -516,8 +494,7 @@ bool ego::win32::Win32FileSystem::StartDirectoryWatchRead(WatchRecord& _watch)
         ToWin32NotifyFilter(_watch.m_filter),
         nullptr,
         &_watch.m_overlapped,
-        nullptr
-    );
+        nullptr);
 
     if (isStarted)
     {
@@ -536,21 +513,11 @@ bool ego::win32::Win32FileSystem::StartDirectoryWatchRead(WatchRecord& _watch)
     return false;
 }
 
-void ego::win32::Win32FileSystem::ParseDirectoryWatchBuffer(
-    const WatchRecord& _watch,
-    DWORD _bytesTransferred,
-    std::vector<PendingFileSystemChangeEvent>& _events
-)
+void ego::win32::Win32FileSystem::ParseDirectoryWatchBuffer(const WatchRecord& _watch, DWORD _bytesTransferred, std::vector<PendingFileSystemChangeEvent>& _events)
 {
     if (_bytesTransferred == 0)
     {
-        PushPendingFileSystemChangeEvent(
-            _watch.m_watchID,
-            _watch.m_directoryPath,
-            _watch.m_directoryPath,
-            FileSystemChangeType::Unknown,
-            _events
-        );
+        PushPendingFileSystemChangeEvent(_watch.m_watchID, _watch.m_directoryPath, _watch.m_directoryPath, FileSystemChangeType::Unknown, _events);
         return;
     }
 
@@ -559,22 +526,12 @@ void ego::win32::Win32FileSystem::ParseDirectoryWatchBuffer(
 
     while (currentEntryPtr < bufferEnd)
     {
-        const FILE_NOTIFY_INFORMATION* notifyInfo =
-            reinterpret_cast<const FILE_NOTIFY_INFORMATION*>(currentEntryPtr);
+        auto notifyInfo = reinterpret_cast<const FILE_NOTIFY_INFORMATION*>(currentEntryPtr);
 
-        const std::wstring relativePath(
-            notifyInfo->FileName,
-            notifyInfo->FileNameLength / sizeof(wchar_t)
-        );
+        const std::wstring relativePath(notifyInfo->FileName, notifyInfo->FileNameLength / sizeof(wchar_t));
         const std::wstring fullPath = BuildChildPath(_watch.m_directoryPathW, relativePath.c_str());
 
-        PushPendingFileSystemChangeEvent(
-            _watch.m_watchID,
-            _watch.m_directoryPath,
-            ToFileName(fullPath),
-            ToFileSystemChangeType(notifyInfo->Action),
-            _events
-        );
+        PushPendingFileSystemChangeEvent(_watch.m_watchID, _watch.m_directoryPath, ToFileName(fullPath), ToFileSystemChangeType(notifyInfo->Action), _events);
 
         if (notifyInfo->NextEntryOffset == 0)
         {
@@ -700,24 +657,12 @@ bool ego::win32::Win32FileSystem::getEntryInfo(const FileName& _path, FileSystem
         return false;
     }
 
-    FillEntryDesc(
-        path,
-        data.dwFileAttributes,
-        data.ftCreationTime,
-        data.ftLastAccessTime,
-        data.ftLastWriteTime,
-        GetFileSizeValue(data.nFileSizeLow, data.nFileSizeHigh),
-        _entry
-    );
+    FillEntryDesc(path, data.dwFileAttributes, data.ftCreationTime, data.ftLastAccessTime, data.ftLastWriteTime, GetFileSizeValue(data.nFileSizeLow, data.nFileSizeHigh), _entry);
 
     return true;
 }
 
-bool ego::win32::Win32FileSystem::enumerate(
-    const FileName& _directoryPath,
-    FileSystemEntryCollection& _entries,
-    bool _recursive
-) const
+bool ego::win32::Win32FileSystem::enumerate(const FileName& _directoryPath, FileSystemEntryCollection& _entries, bool _recursive) const
 {
     _entries.clear();
 
@@ -769,20 +714,12 @@ bool ego::win32::Win32FileSystem::remove(const FileName& _path, bool _recursive)
     return (attributes & FILE_ATTRIBUTE_DIRECTORY) ? removeDirectory(_path, _recursive) : removeFile(_path);
 }
 
-bool ego::win32::Win32FileSystem::copyFile(
-    const FileName& _sourcePath,
-    const FileName& _destinationPath,
-    bool _overwrite
-)
+bool ego::win32::Win32FileSystem::copyFile(const FileName& _sourcePath, const FileName& _destinationPath, bool _overwrite)
 {
     return CopyFileW(ToWidePath(_sourcePath).c_str(), ToWidePath(_destinationPath).c_str(), !_overwrite) != FALSE;
 }
 
-bool ego::win32::Win32FileSystem::move(
-    const FileName& _sourcePath,
-    const FileName& _destinationPath,
-    bool _overwrite
-)
+bool ego::win32::Win32FileSystem::move(const FileName& _sourcePath, const FileName& _destinationPath, bool _overwrite)
 {
     DWORD flags = MOVEFILE_COPY_ALLOWED;
     if (_overwrite)
@@ -795,17 +732,7 @@ bool ego::win32::Win32FileSystem::move(
 
 bool ego::win32::Win32FileSystem::readFile(const FileName& _path, FileContent& _content) const
 {
-    FileHandle fileHandle(
-        CreateFileW(
-            ToWidePath(_path).c_str(),
-            GENERIC_READ,
-            FILE_SHARE_READ,
-            nullptr,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr
-        )
-    );
+    FileHandle fileHandle(CreateFileW(ToWidePath(_path).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
 
     if (!fileHandle.isValid())
     {
@@ -844,17 +771,7 @@ bool ego::win32::Win32FileSystem::readTextFile(const FileName& _path, std::strin
 
 bool ego::win32::Win32FileSystem::writeFile(const FileName& _path, const FileContent& _content, bool _overwrite)
 {
-    FileHandle fileHandle(
-        CreateFileW(
-            ToWidePath(_path).c_str(),
-            GENERIC_WRITE,
-            0,
-            nullptr,
-            _overwrite ? CREATE_ALWAYS : CREATE_NEW,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr
-        )
-    );
+    FileHandle fileHandle(CreateFileW(ToWidePath(_path).c_str(), GENERIC_WRITE, 0, nullptr, _overwrite ? CREATE_ALWAYS : CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr));
 
     return fileHandle.isValid() && WriteFileContent(fileHandle.get(), _content);
 }
@@ -866,17 +783,7 @@ bool ego::win32::Win32FileSystem::writeTextFile(const FileName& _path, const std
 
 bool ego::win32::Win32FileSystem::appendFile(const FileName& _path, const FileContent& _content)
 {
-    FileHandle fileHandle(
-        CreateFileW(
-            ToWidePath(_path).c_str(),
-            FILE_APPEND_DATA,
-            0,
-            nullptr,
-            OPEN_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr
-        )
-    );
+    FileHandle fileHandle(CreateFileW(ToWidePath(_path).c_str(), FILE_APPEND_DATA, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));
 
     return fileHandle.isValid() && WriteFileContent(fileHandle.get(), _content);
 }
@@ -886,11 +793,7 @@ bool ego::win32::Win32FileSystem::appendTextFile(const FileName& _path, const st
     return appendFile(_path, ToFileContent(_content));
 }
 
-ego::FileSystemWatchID ego::win32::Win32FileSystem::watchDirectory(
-    const FileName& _directoryPath,
-    FileSystemWatchFilter _filter,
-    bool _recursive
-)
+ego::FileSystemWatchID ego::win32::Win32FileSystem::watchDirectory(const FileName& _directoryPath, FileSystemWatchFilter _filter, bool _recursive)
 {
     const std::wstring directoryPath = ToWidePath(_directoryPath);
     if (!IsDirectoryPath(directoryPath))
@@ -898,14 +801,13 @@ ego::FileSystemWatchID ego::win32::Win32FileSystem::watchDirectory(
         return InvalidFileSystemWatchID;
     }
 
-    FileSystemWatchID watchID =
-        engine::GetEngine().getEventController().registerInstancedEvent<FileSystemChangeEvent>();
+    FileSystemWatchID watchID = engine::GetEngine().getEventController().registerInstancedEvent<FileSystemChangeEvent>();
     if (watchID == InvalidFileSystemWatchID)
     {
         return InvalidFileSystemWatchID;
     }
 
-    std::unique_ptr<WatchRecord> watch = std::make_unique<WatchRecord>();
+    auto watch = std::make_unique<WatchRecord>();
     watch->m_directoryHandle = CreateFileW(
         directoryPath.c_str(),
         FILE_LIST_DIRECTORY,
@@ -913,8 +815,7 @@ ego::FileSystemWatchID ego::win32::Win32FileSystem::watchDirectory(
         nullptr,
         OPEN_EXISTING,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-        nullptr
-    );
+        nullptr);
 
     if (!IsWatchHandleValid(*watch))
     {
@@ -1025,11 +926,7 @@ void ego::win32::Win32FileSystem::updateDirectoryWatches()
     EventController& eventController = engine::GetEngine().getEventController();
     for (const PendingFileSystemChangeEvent& pendingEvent : pendingEvents)
     {
-        const FileSystemChangeEvent event(
-            pendingEvent.m_directoryPath,
-            pendingEvent.m_path,
-            pendingEvent.m_changeType
-        );
+        const FileSystemChangeEvent event(pendingEvent.m_directoryPath, pendingEvent.m_path, pendingEvent.m_changeType);
 
         eventController.emitEvent(event);
         eventController.emitInstancedEvent(pendingEvent.m_watchID, event);

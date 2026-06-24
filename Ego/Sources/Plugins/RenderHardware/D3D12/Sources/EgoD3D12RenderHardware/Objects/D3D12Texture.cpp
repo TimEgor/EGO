@@ -1,12 +1,10 @@
 #include "D3D12Texture.h"
 
-ego::gpu::d3d12::D3D12Texture2D::D3D12Texture2D(
-    const Texture2DDesc& _desc,
-    Microsoft::WRL::ComPtr<ID3D12Resource>&& _resource
-)
+ego::gpu::d3d12::D3D12Texture2D::D3D12Texture2D(const Texture2DDesc& _desc, Microsoft::WRL::ComPtr<ID3D12Resource>&& _resource)
     : Texture2D(_desc),
       m_resource(std::move(_resource))
-{}
+{
+}
 
 void* ego::gpu::d3d12::D3D12Texture2D::getNativeHandle() const
 {
@@ -27,12 +25,12 @@ ego::gpu::d3d12::D3D12TextureView::D3D12TextureView(
     const TextureReference& _texture,
     const TextureViewDesc& _desc,
     D3D12DescriptorIndex _descriptorIndex,
-    D3D12DescriptorAllocatorPointer& _allocator
-)
+    D3D12DescriptorAllocatorPointer& _allocator)
     : TextureView(_texture, _desc),
-      m_descriptorIndex(_descriptorIndex),
-      m_allocator(_allocator)
-{}
+      m_allocator(_allocator),
+      m_descriptorIndex(_descriptorIndex)
+{
+}
 
 ego::gpu::d3d12::D3D12TextureView::~D3D12TextureView()
 {
@@ -49,8 +47,7 @@ void* ego::gpu::d3d12::D3D12TextureView::getNativeHandle() const
     return reinterpret_cast<void*>(static_cast<uintptr_t>(m_descriptorIndex));
 }
 
-void ego::gpu::d3d12::D3D12TextureView::setName(const char*)
-{}
+void ego::gpu::d3d12::D3D12TextureView::setName(const char*) {}
 
 ego::gpu::d3d12::D3D12DescriptorIndex ego::gpu::d3d12::D3D12TextureView::getDescriptorIndex() const
 {

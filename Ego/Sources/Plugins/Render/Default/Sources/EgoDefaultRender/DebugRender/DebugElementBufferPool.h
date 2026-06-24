@@ -20,26 +20,26 @@ namespace ego::render
         DebugElementBufferPool() = default;
         ~DebugElementBufferPool();
 
-        bool init(
-            const BufferDesc& _bufferDesc,
-            uint32_t _elementCountPerBuffer
-        );
+        bool init(const BufferDesc& _bufferDesc, uint32_t _elementCountPerBuffer);
         void release();
 
-        bool updateBuffers(
-            float _deltaTime,
-            uint32_t _requiredElementCount
-        );
+        bool updateBuffers(float _deltaTime, uint32_t _requiredElementCount);
         void updateBuffers(float _deltaTime);
 
         bool prepareSpace(uint32_t _requiredElementCount);
         void freeUnusedSpace();
 
-        uint32_t getElementCountPerBuffer() const { return m_elementCountPerBuffer; }
+        uint32_t getElementCountPerBuffer() const
+        {
+            return m_elementCountPerBuffer;
+        }
         uint32_t getBufferCount() const;
         const RenderBuffer& getBuffer(uint32_t _bufferIndex) const;
 
-        const gpu::BufferDesc& getBufferDesc() const { return m_bufferDesc; }
+        const gpu::BufferDesc& getBufferDesc() const
+        {
+            return m_bufferDesc;
+        }
 
     private:
         struct BufferData final
@@ -55,10 +55,7 @@ namespace ego::render
         bool activateBuffers(uint32_t _requiredBufferCount);
         void deactivateBuffers(uint32_t _requiredBufferCount);
 
-        static uint32_t CalculateRequiredBufferCount(
-            uint32_t _requiredElementCount,
-            uint32_t _elementCountPerBuffer
-        );
+        static uint32_t CalculateRequiredBufferCount(uint32_t _requiredElementCount, uint32_t _elementCountPerBuffer);
 
         BufferCollection m_buffers;
         gpu::BufferDesc m_bufferDesc;
@@ -71,13 +68,13 @@ namespace ego::render
     class DebugElementBufferPoolIterator final
     {
     public:
-        DebugElementBufferPoolIterator(
-            const DebugElementBufferPool& _bufferPool,
-            bool _iterateOnInit = true
-        );
+        DebugElementBufferPoolIterator(const DebugElementBufferPool& _bufferPool, bool _iterateOnInit = true);
         ~DebugElementBufferPoolIterator();
 
-        void* getCurrentElement() const { return m_currentElement; }
+        void* getCurrentElement() const
+        {
+            return m_currentElement;
+        }
 
         template <typename T>
         T* getCurrentTypedElement() const
@@ -100,4 +97,4 @@ namespace ego::render
         uint32_t m_currentElementIndex = 0;
         bool m_iterationStarted = false;
     };
-}
+} // namespace ego::render

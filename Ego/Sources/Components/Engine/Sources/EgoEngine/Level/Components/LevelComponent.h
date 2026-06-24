@@ -27,4 +27,4 @@ namespace ego
 
         std::string m_name;
     };
-}
+} // namespace ego

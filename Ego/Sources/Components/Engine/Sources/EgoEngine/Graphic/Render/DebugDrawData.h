@@ -15,4 +15,4 @@ namespace ego::render
         DebugDrawPointData m_start;
         DebugDrawPointData m_end;
     };
-}
+} // namespace ego::render

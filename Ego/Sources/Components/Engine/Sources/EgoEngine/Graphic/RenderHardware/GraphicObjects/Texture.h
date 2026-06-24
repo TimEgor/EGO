@@ -94,4 +94,4 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(TextureView);
-}
+} // namespace ego::gpu

@@ -10,7 +10,9 @@ namespace ego
     {
     public:
         RenderHardwarePlugin(const PluginModulePointer& _module, PluginType _pluginType)
-            : EnginePlugin(_module, _pluginType) {}
+            : EnginePlugin(_module, _pluginType)
+        {
+        }
 
         virtual GraphicDevicePointer createGraphicDevice() = 0;
 
@@ -18,4 +20,4 @@ namespace ego
     };
 
     EGO_POINTER(RenderHardwarePlugin);
-}
+} // namespace ego

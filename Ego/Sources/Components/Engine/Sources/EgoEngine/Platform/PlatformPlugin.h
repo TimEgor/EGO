@@ -10,7 +10,9 @@ namespace ego
     {
     public:
         PlatformPlugin(const PluginModulePointer& _module, PluginType _pluginType)
-            : EnginePlugin(_module, _pluginType) {}
+            : EnginePlugin(_module, _pluginType)
+        {
+        }
 
         virtual PlatformPointer createPlatform(void* _platformNativeInstance) = 0;
 
@@ -18,4 +20,4 @@ namespace ego
     };
 
     EGO_POINTER(PlatformPlugin);
-}
+} // namespace ego

@@ -8,7 +8,9 @@ namespace ego
     {
     public:
         ResourceProviderPlugin(const PluginModulePointer& _module, PluginType _pluginType)
-            : EnginePlugin(_module, _pluginType) {}
+            : EnginePlugin(_module, _pluginType)
+        {
+        }
 
         virtual void registerResourceProviders() = 0;
         virtual void unregisterResourceProviders() = 0;
@@ -17,4 +19,4 @@ namespace ego
     };
 
     EGO_POINTER(ResourceProviderPlugin);
-}
+} // namespace ego

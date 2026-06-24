@@ -5,7 +5,8 @@
 ego::Plugin::Plugin(const PluginModulePointer& _module, PluginType _pluginType)
     : m_module(_module),
       m_loadedType(_pluginType)
-{}
+{
+}
 
 ego::Plugin::~Plugin() = default;
 

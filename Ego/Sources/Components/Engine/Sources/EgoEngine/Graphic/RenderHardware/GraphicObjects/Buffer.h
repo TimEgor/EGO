@@ -60,4 +60,4 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(BufferView);
-}
+} // namespace ego::gpu

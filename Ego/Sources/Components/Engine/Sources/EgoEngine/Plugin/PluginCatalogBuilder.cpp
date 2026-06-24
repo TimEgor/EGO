@@ -11,11 +11,11 @@
 #include "EgoEngine/Platform/FileSystem/FileSystem.h"
 
 #ifndef EGO_MODULE_PLATFORM_NAME
-#define EGO_MODULE_PLATFORM_NAME ""
+    #define EGO_MODULE_PLATFORM_NAME ""
 #endif
 
 #ifndef EGO_MODULE_CONFIGURATION_NAME
-#define EGO_MODULE_CONFIGURATION_NAME ""
+    #define EGO_MODULE_CONFIGURATION_NAME ""
 #endif
 
 namespace
@@ -65,9 +65,7 @@ namespace
             return false;
         }
 
-        return EqualsNoCase(ego::file_name_utils::GetFileExtension(
-            ego::file_name_utils::RemoveExtension(fileName)
-        ).c_str(), ".plugin");
+        return EqualsNoCase(ego::file_name_utils::GetFileExtension(ego::file_name_utils::RemoveExtension(fileName)).c_str(), ".plugin");
     }
 
     ego::FileName GetManifestModuleFileName(const ego::FileName& _manifestPath)
@@ -77,9 +75,7 @@ namespace
             return ego::FileName();
         }
 
-        return ego::file_name_utils::RemoveExtension(
-            ego::file_name_utils::RemoveExtension(ego::file_name_utils::GetFileName(_manifestPath))
-        );
+        return ego::file_name_utils::RemoveExtension(ego::file_name_utils::RemoveExtension(ego::file_name_utils::GetFileName(_manifestPath)));
     }
 
     ego::FileName CombinePath(const ego::FileName& _directoryPath, const ego::FileName& _fileName)
@@ -117,17 +113,11 @@ namespace
     {
         const std::string platform = _manifestNode.getAttributeOr<std::string>("Platform", "");
         const std::string configuration = _manifestNode.getAttributeOr<std::string>("Configuration", "");
-        return EqualsNoCase(platform.c_str(), EGO_MODULE_PLATFORM_NAME) &&
-            EqualsNoCase(configuration.c_str(), EGO_MODULE_CONFIGURATION_NAME);
+        return EqualsNoCase(platform.c_str(), EGO_MODULE_PLATFORM_NAME) && EqualsNoCase(configuration.c_str(), EGO_MODULE_CONFIGURATION_NAME);
     }
-}
+} // namespace
 
-size_t ego::engine::PluginCatalogBuilder::AddPluginsFromPath(
-    PluginCatalog& _catalog,
-    const FileSystem& _fileSystem,
-    const FileName& _path,
-    bool _recursive
-)
+size_t ego::engine::PluginCatalogBuilder::AddPluginsFromPath(PluginCatalog& _catalog, const FileSystem& _fileSystem, const FileName& _path, bool _recursive)
 {
     if (!_path)
     {
@@ -162,11 +152,7 @@ size_t ego::engine::PluginCatalogBuilder::AddPluginsFromPath(
     return addedCount;
 }
 
-size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifest(
-    PluginCatalog& _catalog,
-    const FileSystem& _fileSystem,
-    const FileName& _manifestPath
-)
+size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifest(PluginCatalog& _catalog, const FileSystem& _fileSystem, const FileName& _manifestPath)
 {
     std::string content;
     if (!_fileSystem.readTextFile(_manifestPath, content))
@@ -180,18 +166,10 @@ size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifest(
         return 0;
     }
 
-    return AddPluginsFromManifestNode(
-        _catalog,
-        document.getRootNode(),
-        ResolveModuleName(_fileSystem, _manifestPath)
-    );
+    return AddPluginsFromManifestNode(_catalog, document.getRootNode(), ResolveModuleName(_fileSystem, _manifestPath));
 }
 
-size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifestNode(
-    PluginCatalog& _catalog,
-    const XmlNode& _manifestNode,
-    const FileName& _moduleName
-)
+size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifestNode(PluginCatalog& _catalog, const XmlNode& _manifestNode, const FileName& _moduleName)
 {
     if (!_manifestNode || !_moduleName)
     {
@@ -215,10 +193,7 @@ size_t ego::engine::PluginCatalogBuilder::AddPluginsFromManifestNode(
     return _catalog.add(entry) ? addedCount : 0;
 }
 
-bool ego::engine::PluginCatalogBuilder::AddPluginFromNode(
-    PluginCatalog::Entry& _entry,
-    const XmlNode& _pluginNode
-)
+bool ego::engine::PluginCatalogBuilder::AddPluginFromNode(PluginCatalog::Entry& _entry, const XmlNode& _pluginNode)
 {
     const std::string typeName = _pluginNode.getAttributeOr<std::string>("Type", "");
     const std::string name = _pluginNode.getAttributeOr<std::string>("Name", "");

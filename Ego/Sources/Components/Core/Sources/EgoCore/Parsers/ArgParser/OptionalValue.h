@@ -24,17 +24,23 @@ namespace ego
         using LegacySetterType = std::function<void(const char*, OptionValType&)>;
 
         OptionValue(OptionValType& _value)
-            : m_value(_value) {}
+            : m_value(_value)
+        {
+        }
 
         OptionValue(OptionValType& _value, SetterType _setter)
             : m_value(_value),
-              m_setter(_setter) {}
+              m_setter(_setter)
+        {
+        }
 
         OptionValue(OptionValType& _value, LegacySetterType _setter)
             : m_value(_value),
-              m_legacySetter(_setter) {}
+              m_legacySetter(_setter)
+        {
+        }
 
-        virtual void parse(std::string_view _valStr) override
+        void parse(std::string_view _valStr) override
         {
             if (m_setter)
             {
@@ -57,4 +63,4 @@ namespace ego
         SetterType m_setter;
         LegacySetterType m_legacySetter;
     };
-}
+} // namespace ego

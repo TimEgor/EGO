@@ -12,13 +12,7 @@ namespace ego
         ResourceProvider() = default;
         virtual ~ResourceProvider() = default;
 
-        bool provideContent(
-            const Resource& _resource,
-            const FileName& _path,
-            ResourceLoadingContext& _loadingContext,
-            FileContent& _content,
-            std::string& _loadingError
-        );
+        bool provideContent(const Resource& _resource, const FileName& _path, ResourceLoadingContext& _loadingContext, FileContent& _content, std::string& _loadingError);
 
     protected:
         virtual bool onProvideContent(
@@ -26,9 +20,8 @@ namespace ego
             const FileName& _path,
             ResourceLoadingContext& _loadingContext,
             FileContent& _content,
-            std::string& _loadingError
-        ) = 0;
+            std::string& _loadingError) = 0;
     };
 
     EGO_POINTER(ResourceProvider);
-}
+} // namespace ego

@@ -50,6 +50,12 @@ void ego::framework::Framework::run()
     m_engine->run();
 }
 
+bool ego::framework::Framework::runFrame()
+{
+    EGO_ASSERT(m_engine);
+    return m_engine->runFrame();
+}
+
 ego::PluginController& ego::framework::Framework::getPluginController() const
 {
     EGO_ASSERT(m_pluginController);
@@ -121,11 +127,9 @@ bool ego::framework::Framework::registerGameLogicMainLoopJob()
             {
                 updateCurrentGameLogic(m_engine->getDeltaTime());
             },
-            "Game logic update"
-        ),
+            "Game logic update"),
         frameLogicBeginJobID,
-        frameLogicEndJobID
-    );
+        frameLogicEndJobID);
 
     return m_updateGameLogicJobID.isValid();
 }
@@ -165,8 +169,7 @@ void ego::framework::Framework::appendProjectPluginDirectories(engine::Engine::I
     _engineInitData.m_pluginDirectories.insert(
         _engineInitData.m_pluginDirectories.end(),
         pluginDirectories.begin(),
-        pluginDirectories.end()
-    );
+        pluginDirectories.end());
 }
 
 bool ego::framework::Framework::registerProjectAssetFileSystems()
@@ -197,13 +200,10 @@ bool ego::framework::Framework::registerProjectAssetFileSystems()
 
 ego::FileSystemPointer ego::framework::Framework::createProjectAssetFileSystem(
     const FileSystemPointer& _sourceFileSystem,
-    const FileName& _rootPath
-) const
+    const FileName& _rootPath) const
 {
     RootedFileSystemPointer fileSystem = new RootedFileSystem(_sourceFileSystem, _rootPath);
-    return fileSystem && fileSystem->init()
-        ? fileSystem
-        : nullptr;
+    return fileSystem && fileSystem->init() ? fileSystem : nullptr;
 }
 
 bool ego::framework::Framework::loadProfilerPlugin(const InitData& _initData)
@@ -267,8 +267,7 @@ ego::FileName ego::framework::Framework::resolvePluginModuleName(const Project::
     {
         return m_engine->getPluginCatalog().getModulePath(
             GetPluginType(_plugin.m_type.c_str()),
-            _plugin.m_name.c_str()
-        );
+            _plugin.m_name.c_str());
     }
 
     return FileName();
@@ -333,9 +332,7 @@ ego::FileName ego::framework::Framework::selectProjectGameLogicPluginModule() co
     return FileName();
 }
 
-ego::FileName ego::framework::Framework::resolveGameLogicPluginModuleName(
-    const Project::GameLogicPlugin& _plugin
-) const
+ego::FileName ego::framework::Framework::resolveGameLogicPluginModuleName(const Project::GameLogicPlugin& _plugin) const
 {
     if (_plugin.m_moduleName)
     {
@@ -344,10 +341,7 @@ ego::FileName ego::framework::Framework::resolveGameLogicPluginModuleName(
 
     if (!_plugin.m_name.empty() && m_engine)
     {
-        return m_engine->getPluginCatalog().getModulePath(
-            GameLogicPlugin::GetPluginType(),
-            _plugin.m_name.c_str()
-        );
+        return m_engine->getPluginCatalog().getModulePath(GameLogicPlugin::GetPluginType(), _plugin.m_name.c_str());
     }
 
     return FileName();

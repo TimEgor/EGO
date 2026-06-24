@@ -24,9 +24,7 @@ const ego::XmlDocument* ego::XmlResource::getDocument() const
 
 ego::XmlNode ego::XmlResource::getRootNode() const
 {
-    return m_document
-        ? m_document->getRootNode()
-        : XmlNode();
+    return m_document ? m_document->getRootNode() : XmlNode();
 }
 
 bool ego::XmlResource::onLoad(FileContent&& _content, ResourceLoadingContext&)

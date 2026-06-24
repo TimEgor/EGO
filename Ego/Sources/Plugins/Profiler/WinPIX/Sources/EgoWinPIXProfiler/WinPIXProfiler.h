@@ -9,9 +9,9 @@ namespace ego::winpix
     public:
         WinPIXProfiler() = default;
 
-        virtual void beginEvent(const char* _titleName, const char* _contextName = nullptr) override;
-        virtual void endEvent() override;
+        void beginEvent(const char* _titleName, const char* _contextName = nullptr) override;
+        void endEvent() override;
     };
 
     EGO_POINTER(WinPIXProfiler);
-}
+} // namespace ego::winpix

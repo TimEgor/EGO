@@ -4,15 +4,12 @@
 
 #include "ResourceController.h"
 
-ego::ResourceLoadingContext::ResourceLoadingContext(
-    ResourceController& _controller,
-    Resource& _ownerResource,
-    bool _isAsyncLoading
-)
-    : m_controller(_controller)
-    , m_ownerResource(_ownerResource)
-    , m_isAsyncLoading(_isAsyncLoading)
-{}
+ego::ResourceLoadingContext::ResourceLoadingContext(ResourceController& _controller, Resource& _ownerResource, bool _isAsyncLoading)
+    : m_controller(_controller),
+      m_ownerResource(_ownerResource),
+      m_isAsyncLoading(_isAsyncLoading)
+{
+}
 
 bool ego::ResourceLoadingContext::addDependency(const ResourcePointer& _dependency)
 {
@@ -21,11 +18,7 @@ bool ego::ResourceLoadingContext::addDependency(const ResourcePointer& _dependen
         return false;
     }
 
-    if (!ResourceController::ResourceControllerAccessor::AddDependency(
-        m_controller,
-        m_ownerResource,
-        _dependency
-    ))
+    if (!ResourceController::ResourceControllerAccessor::AddDependency(m_controller, m_ownerResource, _dependency))
     {
         return false;
     }

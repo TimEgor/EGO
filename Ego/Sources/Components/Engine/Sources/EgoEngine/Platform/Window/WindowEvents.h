@@ -10,7 +10,10 @@ namespace ego
     {
         WindowPointer m_window;
 
-        WindowEvent(const WindowPointer& _window): m_window(_window) {}
+        WindowEvent(const WindowPointer& _window)
+            : m_window(_window)
+        {
+        }
 
         EGO_EVENT(WindowEvent, Event);
     };
@@ -18,7 +21,9 @@ namespace ego
     struct WindowDestroyingEvent final : public WindowEvent
     {
         WindowDestroyingEvent(const WindowPointer& _window)
-            : WindowEvent(_window) {}
+            : WindowEvent(_window)
+        {
+        }
 
         EGO_EVENT(WindowDestroyingEvent, WindowEvent);
     };
@@ -29,7 +34,9 @@ namespace ego
 
         WindowActivationEvent(const WindowPointer& _window, bool _isActive)
             : WindowEvent(_window),
-              m_isActive(_isActive) {}
+              m_isActive(_isActive)
+        {
+        }
 
         EGO_EVENT(WindowActivationEvent, WindowEvent);
     };
@@ -40,8 +47,10 @@ namespace ego
 
         WindowSizeEvent(const WindowPointer& _window, const WindowSize& _prevSize)
             : WindowEvent(_window),
-              m_prevWindowSize(_prevSize) {}
+              m_prevWindowSize(_prevSize)
+        {
+        }
 
         EGO_EVENT(WindowSizeEvent, WindowEvent);
     };
-}
+} // namespace ego

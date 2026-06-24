@@ -11,13 +11,13 @@ ego::gpu::d3d12::D3D12SwapChain::D3D12SwapChain(
     const SwapChainDesc& _desc,
     Microsoft::WRL::ComPtr<IDXGISwapChain3>&& _swapChain,
     std::vector<Texture2DReference>&& _targetTextures,
-    CommandQueueReference&& _ownedPresentationQueue
-)
+    const CommandQueueReference& _presentationQueue)
     : SwapChain(_desc),
       m_swapChain(std::move(_swapChain)),
       m_targetTextures(std::move(_targetTextures)),
-      m_ownedPresentationQueue(std::move(_ownedPresentationQueue))
-{}
+      m_presentationQueue(_presentationQueue)
+{
+}
 
 void* ego::gpu::d3d12::D3D12SwapChain::getNativeHandle() const
 {

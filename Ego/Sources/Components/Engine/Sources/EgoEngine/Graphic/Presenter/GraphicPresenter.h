@@ -6,14 +6,16 @@ namespace ego
 {
     class GraphicPresenter
     {
-	public:
-		GraphicPresenter() = default;
-		virtual ~GraphicPresenter() = default;
+    public:
+        GraphicPresenter() = default;
+        virtual ~GraphicPresenter() = default;
 
-		virtual gpu::Texture2DReference getTargetTexture() = 0;
+        virtual void release() = 0;
 
-		virtual void present() = 0;
+        virtual gpu::Texture2DReference getTargetTexture() = 0;
+
+        virtual void present() = 0;
     };
 
     EGO_POINTER(GraphicPresenter);
-}
+} // namespace ego

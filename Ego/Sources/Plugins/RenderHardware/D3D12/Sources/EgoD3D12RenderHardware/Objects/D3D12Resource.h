@@ -29,4 +29,4 @@ namespace ego::gpu::d3d12
     protected:
         ~D3D12Descriptor() = default;
     };
-}
+} // namespace ego::gpu::d3d12

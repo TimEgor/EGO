@@ -30,12 +30,16 @@ namespace ego::framework
         };
 
         Framework() = default;
-        virtual ~Framework() { release(); }
+        ~Framework() override
+        {
+            release();
+        }
 
         bool init(const InitData& _initData);
         void release();
 
         void run();
+        bool runFrame();
 
         PluginController& getPluginController() const;
         engine::Engine& getEngine() const;
@@ -56,10 +60,7 @@ namespace ego::framework
         // Project resources
         void appendProjectPluginDirectories(engine::Engine::InitData& _engineInitData) const;
         bool registerProjectAssetFileSystems();
-        FileSystemPointer createProjectAssetFileSystem(
-            const FileSystemPointer& _sourceFileSystem,
-            const FileName& _rootPath
-        ) const;
+        FileSystemPointer createProjectAssetFileSystem(const FileSystemPointer& _sourceFileSystem, const FileName& _rootPath) const;
 
         // Plugin loading
         bool loadProfilerPlugin(const InitData& _initData);
@@ -108,5 +109,4 @@ namespace ego::framework
     };
 
     Framework& GetFramework();
-}
-
+} // namespace ego::framework

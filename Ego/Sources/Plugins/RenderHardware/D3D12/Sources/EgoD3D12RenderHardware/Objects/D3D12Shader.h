@@ -16,8 +16,7 @@ namespace ego::gpu::d3d12
     };
 
     template <typename TBaseShader>
-    class D3D12Shader final : public TBaseShader,
-                              public D3D12ShaderAccess
+    class D3D12Shader final : public TBaseShader, public D3D12ShaderAccess
     {
     public:
         D3D12Shader(const ShaderCodeReference& _code);
@@ -25,10 +24,13 @@ namespace ego::gpu::d3d12
         virtual void* getNativeHandle() const override;
         virtual void setName(const char* _name) override;
 
-        virtual D3D12_SHADER_BYTECODE getD3D12ByteCode() const override;
+        D3D12_SHADER_BYTECODE getD3D12ByteCode() const override;
     };
 
     using D3D12VertexShader = D3D12Shader<VertexShader>;
     using D3D12PixelShader = D3D12Shader<PixelShader>;
     using D3D12ComputeShader = D3D12Shader<ComputeShader>;
-}
+    using D3D12RayGenerationShader = D3D12Shader<RayGenerationShader>;
+    using D3D12MissShader = D3D12Shader<MissShader>;
+    using D3D12ClosestHitShader = D3D12Shader<ClosestHitShader>;
+} // namespace ego::gpu::d3d12

@@ -4,7 +4,8 @@
 
 ego::profile::ProfilerController::ProfilerController()
     : m_profilerRaw(nullptr)
-{}
+{
+}
 
 bool ego::profile::ProfilerController::setProfiler(const ProfilerPointer& _profiler)
 {
@@ -62,7 +63,8 @@ void ego::profile::ProfilerController::endEvent() const
 
 ego::profile::ProfileCore::ProfileCore()
     : m_controller(new ProfilerController())
-{}
+{
+}
 
 void ego::profile::ProfileCore::setController(const ProfilerControllerPointer& _controller)
 {

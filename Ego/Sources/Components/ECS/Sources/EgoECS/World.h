@@ -20,7 +20,7 @@ namespace ego::ecs
     {
     public:
         World();
-        ~World();
+        ~World() override;
 
         Entity createEntity();
         void destroyEntity(Entity _entity);
@@ -65,6 +65,6 @@ namespace ego::ecs
 
     EGO_POINTER(World);
     EGO_WEAK_POINTER(World);
-}
+} // namespace ego::ecs
 
 #include "World.hpp"

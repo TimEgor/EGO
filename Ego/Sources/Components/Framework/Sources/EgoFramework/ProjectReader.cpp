@@ -14,10 +14,7 @@ namespace
         const std::string moduleName = _pluginNode.getAttributeOr<std::string>("Module", "");
         if (!name.empty() || !moduleName.empty())
         {
-            _project.addGameLogicPlugin(
-                name.c_str(),
-                moduleName.empty() ? ego::FileName() : ego::FileName(moduleName)
-            );
+            _project.addGameLogicPlugin(name.c_str(), moduleName.empty() ? ego::FileName() : ego::FileName(moduleName));
         }
     }
 
@@ -28,14 +25,10 @@ namespace
         const std::string moduleName = _pluginNode.getAttributeOr<std::string>("Module", "");
         if (!type.empty() && (!name.empty() || !moduleName.empty()))
         {
-            _project.addPlugin(
-                type.c_str(),
-                name.c_str(),
-                moduleName.empty() ? ego::FileName() : ego::FileName(moduleName)
-            );
+            _project.addPlugin(type.c_str(), name.c_str(), moduleName.empty() ? ego::FileName() : ego::FileName(moduleName));
         }
     }
-}
+} // namespace
 
 bool ego::framework::ProjectReader::ReadFromFile(const FileName& _fileName, Project& _project)
 {

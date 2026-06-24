@@ -1,24 +1,53 @@
-#include "DXCResourceIncludeHandler.h"
+#include <algorithm>
+#include <cstdint>
+#include <limits>
 
-#include "DXCResourceUtils.h"
+#include "DXCResourceIncludeHandler.h"
 
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/String/StringConverter.h"
 
-#include <algorithm>
-#include <cstdint>
-#include <limits>
-#include <string>
-#include <vector>
+#include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
 
-namespace
+namespace ego::resources::dxc
 {
-    ego::FileName ToFileName(LPCWSTR _filename)
+    DXCResourceIncludeHandler::DXCResourceIncludeHandler(IDxcUtils* _utils, ResourceLoadingContext& _loadingContext, const FileName& _sourcePath)
+        : m_utils(_utils),
+          m_loadingContext(_loadingContext)
     {
-        return ego::FileName(ego::ConvertWStringToString(std::wstring(_filename)));
+        addIncludeDirectory(file_name_utils::GetFileDirPath(_sourcePath));
     }
 
-    std::string NormalizeIncludePath(const ego::FileName& _path)
+    HRESULT STDMETHODCALLTYPE DXCResourceIncludeHandler::LoadSource(LPCWSTR _filename, IDxcBlob** _includeSource)
+    {
+        if (!_includeSource)
+        {
+            return E_POINTER;
+        }
+
+        *_includeSource = nullptr;
+        if (!_filename || !m_utils)
+        {
+            return E_INVALIDARG;
+        }
+
+        FileName loadedPath;
+        FileContent includeContent;
+        if (!loadIncludeContent(toFileName(_filename), loadedPath, includeContent))
+        {
+            return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+        }
+
+        addIncludeDirectory(file_name_utils::GetFileDirPath(loadedPath));
+        return createBlob(includeContent, _includeSource);
+    }
+
+    FileName DXCResourceIncludeHandler::toFileName(LPCWSTR _filename) const
+    {
+        return FileName(ConvertWStringToString(std::wstring(_filename)));
+    }
+
+    std::string DXCResourceIncludeHandler::normalizeIncludePath(const FileName& _path) const
     {
         std::string path = _path.c_str();
         std::replace(path.begin(), path.end(), '\\', '/');
@@ -31,26 +60,31 @@ namespace
         return path;
     }
 
-    ego::FileName StripIncludeDirectoryPrefix(
-        const ego::FileName& _path,
-        const ego::FileName& _directory
-    )
+    bool DXCResourceIncludeHandler::isRootedPath(std::string_view _path) const
     {
-        const std::string path = NormalizeIncludePath(_path);
-        const std::string directory = NormalizeIncludePath(_directory);
-
-        if (directory.empty() ||
-            path.size() <= directory.size() ||
-            path.compare(0, directory.size(), directory) != 0 ||
-            path[directory.size()] != '/')
-        {
-            return ego::FileName();
-        }
-
-        return ego::FileName(path.substr(directory.size() + 1));
+        return (!_path.empty() && (_path[0] == '/' || _path[0] == '\\')) || (_path.size() > 1 && _path[1] == ':');
     }
 
-    void AddCandidate(std::vector<ego::FileName>& _candidates, const ego::FileName& _candidate)
+    bool DXCResourceIncludeHandler::loadContent(const FileName& _path, FileContent& _content) const
+    {
+        _content.clear();
+        return _path && m_loadingContext.loadContent(_path, _content);
+    }
+
+    FileName DXCResourceIncludeHandler::stripIncludeDirectoryPrefix(const FileName& _path, const FileName& _directory) const
+    {
+        const std::string path = normalizeIncludePath(_path);
+        const std::string directory = normalizeIncludePath(_directory);
+
+        if (directory.empty() || path.size() <= directory.size() || path.compare(0, directory.size(), directory) != 0 || path[directory.size()] != '/')
+        {
+            return FileName();
+        }
+
+        return FileName(path.substr(directory.size() + 1));
+    }
+
+    void DXCResourceIncludeHandler::addCandidate(std::vector<FileName>& _candidates, const FileName& _candidate) const
     {
         if (!_candidate)
         {
@@ -63,130 +97,76 @@ namespace
             _candidates.push_back(_candidate);
         }
     }
-}
 
-ego::resources::dxc::DXCResourceIncludeHandler::DXCResourceIncludeHandler(
-    IDxcUtils* _utils,
-    ResourceLoadingContext& _loadingContext,
-    const FileName& _sourcePath
-)
-    : m_utils(_utils)
-    , m_loadingContext(&_loadingContext)
-{
-    AddIncludeDirectory(file_name_utils::GetFileDirPath(_sourcePath));
-}
-
-HRESULT STDMETHODCALLTYPE ego::resources::dxc::DXCResourceIncludeHandler::LoadSource(
-    LPCWSTR _filename,
-    IDxcBlob** _includeSource
-)
-{
-    if (!_includeSource)
+    void DXCResourceIncludeHandler::addIncludeDirectory(const FileName& _directory)
     {
-        return E_POINTER;
+        if (!_directory)
+        {
+            return;
+        }
+
+        const auto foundIt = std::find(m_includeDirectories.begin(), m_includeDirectories.end(), _directory);
+        if (foundIt == m_includeDirectories.end())
+        {
+            m_includeDirectories.push_back(_directory);
+        }
     }
 
-    *_includeSource = nullptr;
-    if (!_filename || !m_utils || !m_loadingContext)
+    bool DXCResourceIncludeHandler::loadIncludeContent(const FileName& _includePath, FileName& _loadedPath, FileContent& _content) const
     {
-        return E_INVALIDARG;
-    }
+        if (!_includePath)
+        {
+            _content.clear();
+            return false;
+        }
 
-    FileName loadedPath;
-    FileContent includeContent;
-    if (!LoadIncludeContent(ToFileName(_filename), loadedPath, includeContent))
-    {
-        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-    }
+        std::vector<FileName> candidates;
+        addCandidate(candidates, _includePath);
 
-    AddIncludeDirectory(file_name_utils::GetFileDirPath(loadedPath));
-    return CreateBlob(includeContent, _includeSource);
-}
+        for (auto directoryIt = m_includeDirectories.rbegin(); directoryIt != m_includeDirectories.rend(); ++directoryIt)
+        {
+            addCandidate(candidates, stripIncludeDirectoryPrefix(_includePath, *directoryIt));
+        }
 
-void ego::resources::dxc::DXCResourceIncludeHandler::AddIncludeDirectory(const FileName& _directory)
-{
-    if (!_directory)
-    {
-        return;
-    }
+        if (!isRootedPath(_includePath.c_str()))
+        {
+            for (auto directoryIt = m_includeDirectories.rbegin(); directoryIt != m_includeDirectories.rend(); ++directoryIt)
+            {
+                addCandidate(candidates, *directoryIt + "/" + _includePath);
+            }
+        }
 
-    const auto foundIt = std::find(m_includeDirectories.begin(), m_includeDirectories.end(), _directory);
-    if (foundIt == m_includeDirectories.end())
-    {
-        m_includeDirectories.push_back(_directory);
-    }
-}
+        for (const FileName& candidate : candidates)
+        {
+            if (loadContent(candidate, _content))
+            {
+                _loadedPath = candidate;
+                return true;
+            }
+        }
 
-bool ego::resources::dxc::DXCResourceIncludeHandler::LoadIncludeContent(
-    const FileName& _includePath,
-    FileName& _loadedPath,
-    FileContent& _content
-) const
-{
-    if (!_includePath)
-    {
         _content.clear();
         return false;
     }
 
-    std::vector<FileName> candidates;
-    AddCandidate(candidates, _includePath);
-
-    for (auto directoryIt = m_includeDirectories.rbegin();
-        directoryIt != m_includeDirectories.rend();
-        ++directoryIt)
+    HRESULT DXCResourceIncludeHandler::createBlob(const FileContent& _content, IDxcBlob** _includeSource) const
     {
-        AddCandidate(candidates, StripIncludeDirectoryPrefix(_includePath, *directoryIt));
-    }
-
-    if (!IsRootedPath(_includePath.c_str()))
-    {
-        for (auto directoryIt = m_includeDirectories.rbegin();
-            directoryIt != m_includeDirectories.rend();
-            ++directoryIt)
+        if (_content.size() > (std::numeric_limits<uint32_t>::max)())
         {
-            AddCandidate(candidates, *directoryIt + "/" + _includePath);
+            return E_OUTOFMEMORY;
         }
-    }
 
-    for (const FileName& candidate : candidates)
-    {
-        if (TryLoadContent(*m_loadingContext, candidate, _content))
+        static constexpr uint8_t EmptyData = 0;
+        const void* data = _content.empty() ? &EmptyData : _content.data();
+
+        Microsoft::WRL::ComPtr<IDxcBlobEncoding> includeSource;
+        const HRESULT result = m_utils->CreateBlob(data, static_cast<uint32_t>(_content.size()), DXC_CP_UTF8, &includeSource);
+        if (FAILED(result) || !includeSource)
         {
-            _loadedPath = candidate;
-            return true;
+            return FAILED(result) ? result : E_FAIL;
         }
+
+        *_includeSource = includeSource.Detach();
+        return S_OK;
     }
-
-    _content.clear();
-    return false;
-}
-
-HRESULT ego::resources::dxc::DXCResourceIncludeHandler::CreateBlob(
-    const FileContent& _content,
-    IDxcBlob** _includeSource
-) const
-{
-    if (_content.size() > (std::numeric_limits<uint32_t>::max)())
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    static constexpr uint8_t EmptyData = 0;
-    const void* data = _content.empty() ? &EmptyData : _content.data();
-
-    Microsoft::WRL::ComPtr<IDxcBlobEncoding> includeSource;
-    const HRESULT result = m_utils->CreateBlob(
-        data,
-        static_cast<uint32_t>(_content.size()),
-        DXC_CP_UTF8,
-        &includeSource
-    );
-    if (FAILED(result) || !includeSource)
-    {
-        return FAILED(result) ? result : E_FAIL;
-    }
-
-    *_includeSource = includeSource.Detach();
-    return S_OK;
-}
+} // namespace ego::resources::dxc

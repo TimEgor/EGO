@@ -8,7 +8,7 @@
 
 namespace
 {
-    constexpr const char* DefaultJobGraphDbgName = "JobGraph";
+    constexpr auto DefaultJobGraphDbgName = "JobGraph";
 
     const char* NormalizeJobGraphDbgName(const char* _dbgName)
     {
@@ -23,24 +23,17 @@ namespace
         return dbgName;
     }
 
-    const char* GetJobGraphBarrierDbgName(
-        const ego::JobGraph::GraphJobDataReference& _graphData,
-        ego::JobGraph::BarrierDependencyJob::Type _type
-    )
+    const char* GetJobGraphBarrierDbgName(const ego::JobGraph::GraphJobDataReference& _graphData, ego::JobGraph::BarrierDependencyJob::Type _type)
     {
         if (!_graphData)
         {
-            return _type == ego::JobGraph::BarrierDependencyJob::Type::Begin
-                ? "JobGraph begin"
-                : "JobGraph end";
+            return _type == ego::JobGraph::BarrierDependencyJob::Type::Begin ? "JobGraph begin" : "JobGraph end";
         }
 
-        return _type == ego::JobGraph::BarrierDependencyJob::Type::Begin
-            ? _graphData->getBeginBarrierDbgName()
-            : _graphData->getEndBarrierDbgName();
+        return _type == ego::JobGraph::BarrierDependencyJob::Type::Begin ? _graphData->getBeginBarrierDbgName() : _graphData->getEndBarrierDbgName();
     }
 #endif
-}
+} // namespace
 
 ego::JobGraph::GraphJobData::GraphJobData(const char* _dbgName)
 {
@@ -129,7 +122,12 @@ void ego::JobGraph::GraphJobData::wait()
         return;
     }
 
-    m_completionNotifier.wait(locker, [this]() { return m_state == JobGraphState::Finished; });
+    m_completionNotifier.wait(
+        locker,
+        [this]()
+        {
+            return m_state == JobGraphState::Finished;
+        });
 }
 
 bool ego::JobGraph::GraphJobData::isFinished() const
@@ -172,7 +170,8 @@ bool ego::JobGraph::DependencyJob::removeParentDependency()
 ego::JobGraph::DependencyJob::DependencyJob(const GraphJobDataReference& _graphData, const char* _dbgName)
     : Job(_dbgName),
       m_graphData(_graphData)
-{}
+{
+}
 
 void ego::JobGraph::DependencyJob::operate()
 {
@@ -186,13 +185,11 @@ void ego::JobGraph::DependencyJob::operate()
     m_graphData->completeJob();
 }
 
-ego::JobGraph::JobDependencyJob::JobDependencyJob(
-    const JobReference& _job,
-    const GraphJobDataReference& _graphData
-)
+ego::JobGraph::JobDependencyJob::JobDependencyJob(const JobReference& _job, const GraphJobDataReference& _graphData)
     : DependencyJob(_graphData, "GraphJob"),
       m_job(_job)
-{}
+{
+}
 
 bool ego::JobGraph::JobDependencyJob::executeDependencyJob()
 {
@@ -214,10 +211,7 @@ bool ego::JobGraph::JobDependencyJob::executeDependencyJob()
     return m_job->isFinished();
 }
 
-ego::JobGraph::BarrierDependencyJob::BarrierDependencyJob(
-    const GraphJobDataReference& _graphData,
-    Type _type
-)
+ego::JobGraph::BarrierDependencyJob::BarrierDependencyJob(const GraphJobDataReference& _graphData, Type _type)
     : DependencyJob(
           _graphData,
 #ifdef EGO_JOB_DEBUG
@@ -225,26 +219,23 @@ ego::JobGraph::BarrierDependencyJob::BarrierDependencyJob(
 #else
           "GraphBarrier"
 #endif
-      ),
+              ),
       m_type(_type)
-{}
+{
+}
 
 bool ego::JobGraph::BarrierDependencyJob::executeDependencyJob()
 {
     return true;
 }
 
-ego::JobGraph::JobGraph(
-    const DependencyJobReference& _entryJob,
-    const DependencyJobReference& _exitJob,
-    JobGraphCollection&& _nestedGraphs,
-    GraphJobDataReference _data
-)
+ego::JobGraph::JobGraph(const DependencyJobReference& _entryJob, const DependencyJobReference& _exitJob, JobGraphCollection&& _nestedGraphs, GraphJobDataReference _data)
     : m_entryJob(_entryJob),
       m_exitJob(_exitJob),
       m_nestedGraphs(std::move(_nestedGraphs)),
       m_graphData(_data)
-{}
+{
+}
 
 ego::JobGraph::GraphJobDataReference ego::JobGraph::getGraphData() const
 {
@@ -285,7 +276,7 @@ bool ego::JobGraph::trySetExecutionContext(const JobControllerWeakPointer& _jobC
         }
     }
 
-    JobGraphState expectedState = JobGraphState::Undefined;
+    auto expectedState = JobGraphState::Undefined;
     if (!m_graphData->m_state.compare_exchange_strong(expectedState, JobGraphState::Pending))
     {
         EGO_ASSERT_FAIL_MESSAGE("Job graph has been already scheduled.");
@@ -363,15 +354,12 @@ bool ego::JobGraph::isScheduled() const
     return m_graphData && m_graphData->getState() != JobGraphState::Undefined;
 }
 
-ego::JobGraphBuilder::JobGraphJobID::JobGraphJobID(
-    const void* _owner,
-    uint32_t _generation,
-    uint32_t _index
-)
+ego::JobGraphBuilder::JobGraphJobID::JobGraphJobID(const void* _owner, uint32_t _generation, uint32_t _index)
     : m_owner(_owner),
       m_generation(_generation),
       m_index(_index)
-{}
+{
+}
 
 bool ego::JobGraphBuilder::JobGraphJobID::isValid() const
 {
@@ -385,9 +373,7 @@ uint32_t ego::JobGraphBuilder::JobGraphJobID::getIndex() const
 
 bool ego::JobGraphBuilder::JobGraphJobID::operator==(JobGraphJobID _id) const
 {
-    return m_owner == _id.m_owner
-        && m_generation == _id.m_generation
-        && m_index == _id.m_index;
+    return m_owner == _id.m_owner && m_generation == _id.m_generation && m_index == _id.m_index;
 }
 
 bool ego::JobGraphBuilder::JobGraphJobID::operator!=(JobGraphJobID _id) const
@@ -426,9 +412,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::GraphBuildingContext::
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::GraphBuildingContext::addJobGraph(
-    const JobGraphReference& _jobGraph
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::GraphBuildingContext::addJobGraph(const JobGraphReference& _jobGraph)
 {
     Node node;
     node.m_type = NodeType::JobGraph;
@@ -442,10 +426,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::GraphBuildingContext::
 
 bool ego::JobGraphBuilder::GraphBuildingContext::isValid(JobGraphJobID _jobID) const
 {
-    return _jobID.isValid()
-        && _jobID.m_owner == this
-        && _jobID.m_generation == m_generation
-        && _jobID.m_index < m_nodes.size();
+    return _jobID.isValid() && _jobID.m_owner == this && _jobID.m_generation == m_generation && _jobID.m_index < m_nodes.size();
 }
 
 ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJob(const JobReference& _job)
@@ -465,10 +446,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJob(const JobRefere
     return m_buildingContext.addJob(_job);
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBefore(
-    const JobReference& _job,
-    JobGraphJobID _childJobID
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBefore(const JobReference& _job, JobGraphJobID _childJobID)
 {
     const JobGraphJobID jobID = addJob(_job);
     makeDependency(jobID, _childJobID);
@@ -476,10 +454,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBefore(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBefore(
-    const JobReference& _job,
-    const JobGraphJobIDCollection& _childJobIDs
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBefore(const JobReference& _job, const JobGraphJobIDCollection& _childJobIDs)
 {
     const JobGraphJobID jobID = addJob(_job);
     makeDependenciesBefore(jobID, _childJobIDs);
@@ -487,10 +462,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBefore(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobAfter(
-    const JobReference& _job,
-    JobGraphJobID _parentJobID
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobAfter(const JobReference& _job, JobGraphJobID _parentJobID)
 {
     const JobGraphJobID jobID = addJob(_job);
     makeDependency(_parentJobID, jobID);
@@ -498,10 +470,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobAfter(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobAfter(
-    const JobReference& _job,
-    const JobGraphJobIDCollection& _parentJobIDs
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobAfter(const JobReference& _job, const JobGraphJobIDCollection& _parentJobIDs)
 {
     const JobGraphJobID jobID = addJob(_job);
     makeDependenciesAfter(_parentJobIDs, jobID);
@@ -509,11 +478,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobAfter(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBetween(
-    const JobReference& _job,
-    JobGraphJobID _parentJobID,
-    JobGraphJobID _childJobID
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBetween(const JobReference& _job, JobGraphJobID _parentJobID, JobGraphJobID _childJobID)
 {
     const JobGraphJobID jobID = addJob(_job);
     if (!jobID.isValid())
@@ -530,8 +495,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBetween(
 ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobBetween(
     const JobReference& _job,
     const JobGraphJobIDCollection& _parentJobIDs,
-    const JobGraphJobIDCollection& _childJobIDs
-)
+    const JobGraphJobIDCollection& _childJobIDs)
 {
     const JobGraphJobID jobID = addJob(_job);
     if (!jobID.isValid())
@@ -573,8 +537,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraph(const JobG
 
     for (const GraphBuildingContext::Node& node : m_buildingContext.m_nodes)
     {
-        if (node.m_type == GraphBuildingContext::NodeType::JobGraph
-            && node.m_jobGraph.get() == _graph.get())
+        if (node.m_type == GraphBuildingContext::NodeType::JobGraph && node.m_jobGraph.get() == _graph.get())
         {
             EGO_ASSERT_FAIL_MESSAGE("Job graph has been already added to this builder.");
             return JobGraphJobID();
@@ -584,10 +547,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraph(const JobG
     return m_buildingContext.addJobGraph(_graph);
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBefore(
-    const JobGraphReference& _graph,
-    JobGraphJobID _childJobID
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBefore(const JobGraphReference& _graph, JobGraphJobID _childJobID)
 {
     const JobGraphJobID jobID = addJobGraph(_graph);
     makeDependency(jobID, _childJobID);
@@ -595,10 +555,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBefore(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBefore(
-    const JobGraphReference& _graph,
-    const JobGraphJobIDCollection& _childJobIDs
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBefore(const JobGraphReference& _graph, const JobGraphJobIDCollection& _childJobIDs)
 {
     const JobGraphJobID jobID = addJobGraph(_graph);
     makeDependenciesBefore(jobID, _childJobIDs);
@@ -606,10 +563,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBefore(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphAfter(
-    const JobGraphReference& _graph,
-    JobGraphJobID _parentJobID
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphAfter(const JobGraphReference& _graph, JobGraphJobID _parentJobID)
 {
     const JobGraphJobID jobID = addJobGraph(_graph);
     makeDependency(_parentJobID, jobID);
@@ -617,10 +571,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphAfter(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphAfter(
-    const JobGraphReference& _graph,
-    const JobGraphJobIDCollection& _parentJobIDs
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphAfter(const JobGraphReference& _graph, const JobGraphJobIDCollection& _parentJobIDs)
 {
     const JobGraphJobID jobID = addJobGraph(_graph);
     makeDependenciesAfter(_parentJobIDs, jobID);
@@ -628,11 +579,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphAfter(
     return jobID;
 }
 
-ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBetween(
-    const JobGraphReference& _graph,
-    JobGraphJobID _parentJobID,
-    JobGraphJobID _childJobID
-)
+ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBetween(const JobGraphReference& _graph, JobGraphJobID _parentJobID, JobGraphJobID _childJobID)
 {
     const JobGraphJobID jobID = addJobGraph(_graph);
     if (!jobID.isValid())
@@ -649,8 +596,7 @@ ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBetween(
 ego::JobGraphBuilder::JobGraphJobID ego::JobGraphBuilder::addJobGraphBetween(
     const JobGraphReference& _graph,
     const JobGraphJobIDCollection& _parentJobIDs,
-    const JobGraphJobIDCollection& _childJobIDs
-)
+    const JobGraphJobIDCollection& _childJobIDs)
 {
     const JobGraphJobID jobID = addJobGraph(_graph);
     if (!jobID.isValid())
@@ -692,15 +638,10 @@ void ego::JobGraphBuilder::makeDependency(JobGraphJobID _parentJobID, JobGraphJo
         }
     }
 
-    m_buildingContext.m_dependencies.push_back(
-        GraphBuildingContext::Dependency{_parentJobID, _childJobID}
-    );
+    m_buildingContext.m_dependencies.push_back(GraphBuildingContext::Dependency{_parentJobID, _childJobID});
 }
 
-void ego::JobGraphBuilder::makeDependenciesBefore(
-    JobGraphJobID _parentJobID,
-    const JobGraphJobIDCollection& _childJobIDs
-)
+void ego::JobGraphBuilder::makeDependenciesBefore(JobGraphJobID _parentJobID, const JobGraphJobIDCollection& _childJobIDs)
 {
     for (const JobGraphJobID childJobID : _childJobIDs)
     {
@@ -708,10 +649,7 @@ void ego::JobGraphBuilder::makeDependenciesBefore(
     }
 }
 
-void ego::JobGraphBuilder::makeDependenciesAfter(
-    const JobGraphJobIDCollection& _parentJobIDs,
-    JobGraphJobID _childJobID
-)
+void ego::JobGraphBuilder::makeDependenciesAfter(const JobGraphJobIDCollection& _parentJobIDs, JobGraphJobID _childJobID)
 {
     for (const JobGraphJobID parentJobID : _parentJobIDs)
     {
@@ -761,8 +699,7 @@ ego::JobGraphReference ego::JobGraphBuilder::getGraph()
             return nullptr;
         }
 
-        if (node.m_jobGraph->m_entryJob->m_parentCounter.load() != 0
-            || !node.m_jobGraph->m_exitJob->m_dependencyJobs.empty())
+        if (node.m_jobGraph->m_entryJob->m_parentCounter.load() != 0 || !node.m_jobGraph->m_exitJob->m_dependencyJobs.empty())
         {
             EGO_ASSERT_FAIL_MESSAGE("Job graph node graph has external dependencies.");
             m_buildingContext.clear();
@@ -775,8 +712,7 @@ ego::JobGraphReference ego::JobGraphBuilder::getGraph()
 
     for (const GraphBuildingContext::Dependency& dependency : m_buildingContext.m_dependencies)
     {
-        if (!m_buildingContext.isValid(dependency.m_parentJobID)
-            || !m_buildingContext.isValid(dependency.m_childJobID))
+        if (!m_buildingContext.isValid(dependency.m_parentJobID) || !m_buildingContext.isValid(dependency.m_childJobID))
         {
             EGO_ASSERT_FAIL_MESSAGE("Graph dependency data is invalid.");
             m_buildingContext.clear();
@@ -827,14 +763,8 @@ ego::JobGraphReference ego::JobGraphBuilder::getGraph()
     };
 
     const JobGraph::GraphJobDataReference graphData = new JobGraph::GraphJobData(getDbgName());
-    const JobGraph::DependencyJobReference graphEntryJob = new JobGraph::BarrierDependencyJob(
-        graphData,
-        JobGraph::BarrierDependencyJob::Type::Begin
-    );
-    const JobGraph::DependencyJobReference graphExitJob = new JobGraph::BarrierDependencyJob(
-        graphData,
-        JobGraph::BarrierDependencyJob::Type::End
-    );
+    const JobGraph::DependencyJobReference graphEntryJob = new JobGraph::BarrierDependencyJob(graphData, JobGraph::BarrierDependencyJob::Type::Begin);
+    const JobGraph::DependencyJobReference graphExitJob = new JobGraph::BarrierDependencyJob(graphData, JobGraph::BarrierDependencyJob::Type::End);
 
     std::vector<NodeFragment> nodeFragments;
     nodeFragments.reserve(m_buildingContext.m_nodes.size());
@@ -897,10 +827,5 @@ ego::JobGraphReference ego::JobGraphBuilder::getGraph()
         return nullptr;
     }
 
-    return new JobGraph(
-        graphEntryJob,
-        graphExitJob,
-        std::move(nestedGraphs),
-        graphData
-    );
+    return new JobGraph(graphEntryJob, graphExitJob, std::move(nestedGraphs), graphData);
 }

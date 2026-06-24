@@ -15,8 +15,8 @@ namespace ego::render
         EGO_RESOURCE(MeshResource, Resource);
 
     protected:
-        virtual bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
-        virtual void onUnload() override;
+        bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
+        void onUnload() override;
 
     private:
         RenderMesh m_mesh = nullptr;
@@ -25,4 +25,4 @@ namespace ego::render
     EGO_POINTER(MeshResource);
 
     RenderMesh CreateMeshHandler(const MeshResourcePointer& _resource);
-}
+} // namespace ego::render

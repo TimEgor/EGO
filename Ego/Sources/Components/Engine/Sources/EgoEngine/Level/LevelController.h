@@ -21,7 +21,7 @@ namespace ego
         };
 
         LevelController() = default;
-        ~LevelController();
+        ~LevelController() override;
 
         bool init();
         void release();
@@ -50,4 +50,4 @@ namespace ego
 
     EGO_POINTER(LevelController);
     EGO_WEAK_POINTER(LevelController);
-}
+} // namespace ego

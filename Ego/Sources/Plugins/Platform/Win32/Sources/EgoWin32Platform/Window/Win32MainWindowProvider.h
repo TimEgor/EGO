@@ -9,16 +9,16 @@ namespace ego::win32
     public:
         Win32MainWindowProvider() = default;
 
-        virtual bool prepareMainWindow(const char* _title, const WindowSize& _size) override;
+        bool prepareMainWindow(const char* _title, const WindowSize& _size) override;
 
-        virtual bool isWindowPlatformProvided() const override;
-        virtual WindowPointer getMainWindow() const override;
+        bool isWindowPlatformProvided() const override;
+        WindowPointer getMainWindow() const override;
 
         EGO_RTTI_VIRTUAL(Win32MainWindowProvider, MainWindowProvider);
 
     private:
         WindowPointer m_mainWindow;
-    };  
+    };
 
     EGO_POINTER(Win32MainWindowProvider);
-}
+} // namespace ego::win32

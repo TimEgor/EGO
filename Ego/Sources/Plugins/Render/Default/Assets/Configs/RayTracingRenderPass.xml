@@ -1,0 +1,5 @@
+<RayTracingRenderPass>
+    <RayGenerationShader>Shaders/RayTracing/RayGeneration.hlsl</RayGenerationShader>
+    <MissShader>Shaders/RayTracing/Miss.hlsl</MissShader>
+    <ClosestHitShader>Shaders/RayTracing/ClosestHit.hlsl</ClosestHitShader>
+</RayTracingRenderPass>

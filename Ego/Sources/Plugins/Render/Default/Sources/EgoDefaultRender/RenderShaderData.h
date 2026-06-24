@@ -11,13 +11,21 @@ namespace ego::render
 {
     inline constexpr uint32_t RenderBindlessRootConstantsOffset = 0;
     inline constexpr uint32_t RenderBindlessRootConstantsSize = sizeof(uint32_t) * 4;
-    inline constexpr gpu::ShaderStageFlag RenderBindlessRootConstantsStageFlag = gpu::ShaderStageFlagAllGraphics;
+    inline constexpr gpu::ShaderStageFlag RenderBindlessRootConstantsStageFlag = gpu::ShaderStageFlagAll;
 
     struct RenderBindlessRootConstants final
     {
         uint32_t m_cameraDataIndex = 0;
         uint32_t m_objectDataIndex = 0;
         uint32_t m_objectIndex = 0;
+        uint32_t m_padding = 0;
+    };
+
+    struct RayTracingBindlessRootConstants final
+    {
+        uint32_t m_cameraDataIndex = 0;
+        uint32_t m_sceneDataIndex = 0;
+        uint32_t m_outputDataIndex = 0;
         uint32_t m_padding = 0;
     };
 
@@ -28,6 +36,7 @@ namespace ego::render
         FloatMatrix4x4 m_viewProjection = FloatMatrix4x4Identity;
         FloatVector4 m_position = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);
         FloatVector4 m_screenSize = FloatVector4(1.0f, 1.0f, 0.0f, 0.0f);
+        FloatMatrix4x4 m_inverseViewProjection = FloatMatrix4x4Identity;
     };
 
     struct ObjectShaderData final
@@ -36,4 +45,5 @@ namespace ego::render
     };
 
     static_assert(sizeof(RenderBindlessRootConstants) == RenderBindlessRootConstantsSize);
-}
+    static_assert(sizeof(RayTracingBindlessRootConstants) == RenderBindlessRootConstantsSize);
+} // namespace ego::render

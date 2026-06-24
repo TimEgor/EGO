@@ -18,4 +18,4 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(Fence);
-}
+} // namespace ego::gpu

@@ -1,13 +1,15 @@
 inline ego::ControlBlockBase::ControlBlockBase()
-    : m_sharedCount(1)
-    , m_weakCount(1)
-{}
+    : m_sharedCount(1),
+      m_weakCount(1)
+{
+}
 
 template <typename TObject, typename TDeleter>
 ego::ControlBlock<TObject, TDeleter>::ControlBlock(TObject* _object, TDeleter _deleter)
-    : m_object(_object)
-    , m_deleter(std::move(_deleter))
-{}
+    : m_object(_object),
+      m_deleter(std::move(_deleter))
+{
+}
 
 template <typename TObject, typename TDeleter>
 void ego::ControlBlock<TObject, TDeleter>::destroyObject()
@@ -33,20 +35,22 @@ const void* ego::ControlBlock<TObject, TDeleter>::getObject() const
 
 template <typename T>
 ego::SharedPointer<T>::SharedPointer()
-    : m_object(nullptr)
-    , m_controlBlock(nullptr)
-{}
+    : m_object(nullptr),
+      m_controlBlock(nullptr)
+{
+}
 
 template <typename T>
 ego::SharedPointer<T>::SharedPointer(std::nullptr_t)
-    : m_object(nullptr)
-    , m_controlBlock(nullptr)
-{}
+    : m_object(nullptr),
+      m_controlBlock(nullptr)
+{
+}
 
 template <typename T>
 ego::SharedPointer<T>::SharedPointer(T* _object)
-    : m_object(nullptr)
-    , m_controlBlock(nullptr)
+    : m_object(nullptr),
+      m_controlBlock(nullptr)
 {
     if (!_object)
     {
@@ -63,8 +67,8 @@ ego::SharedPointer<T>::SharedPointer(T* _object)
 template <typename T>
 template <typename TDeleter>
 ego::SharedPointer<T>::SharedPointer(T* _object, TDeleter _deleter)
-    : m_object(nullptr)
-    , m_controlBlock(nullptr)
+    : m_object(nullptr),
+      m_controlBlock(nullptr)
 {
     if (!_object)
     {
@@ -72,10 +76,7 @@ ego::SharedPointer<T>::SharedPointer(T* _object, TDeleter _deleter)
     }
 
     using TStoredDeleter = std::decay_t<TDeleter>;
-    m_controlBlock = new ControlBlock<T, TStoredDeleter>(
-        _object,
-        std::forward<TDeleter>(_deleter)
-    );
+    m_controlBlock = new ControlBlock<T, TStoredDeleter>(_object, std::forward<TDeleter>(_deleter));
     m_object = _object;
 
     initializeEnableSharedFromThis(_object);
@@ -83,16 +84,16 @@ ego::SharedPointer<T>::SharedPointer(T* _object, TDeleter _deleter)
 
 template <typename T>
 ego::SharedPointer<T>::SharedPointer(const SharedPointer& _pointer)
-    : m_object(_pointer.m_object)
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(_pointer.m_object),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     incrementSharedCount();
 }
 
 template <typename T>
 ego::SharedPointer<T>::SharedPointer(SharedPointer&& _pointer) noexcept
-    : m_object(_pointer.m_object)
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(_pointer.m_object),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     _pointer.m_object = nullptr;
     _pointer.m_controlBlock = nullptr;
@@ -101,8 +102,8 @@ ego::SharedPointer<T>::SharedPointer(SharedPointer&& _pointer) noexcept
 template <typename T>
 template <typename U, typename>
 ego::SharedPointer<T>::SharedPointer(const SharedPointer<U>& _pointer)
-    : m_object(static_cast<T*>(_pointer.m_object))
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(static_cast<T*>(_pointer.m_object)),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     incrementSharedCount();
 }
@@ -110,8 +111,8 @@ ego::SharedPointer<T>::SharedPointer(const SharedPointer<U>& _pointer)
 template <typename T>
 template <typename U, typename>
 ego::SharedPointer<T>::SharedPointer(SharedPointer<U>&& _pointer) noexcept
-    : m_object(static_cast<T*>(_pointer.m_object))
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(static_cast<T*>(_pointer.m_object)),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     _pointer.m_object = nullptr;
     _pointer.m_controlBlock = nullptr;
@@ -119,8 +120,8 @@ ego::SharedPointer<T>::SharedPointer(SharedPointer<U>&& _pointer) noexcept
 
 template <typename T>
 ego::SharedPointer<T>::SharedPointer(T* _object, ControlBlockBase* _controlBlock, bool _incrementReference)
-    : m_object(_object)
-    , m_controlBlock(_controlBlock)
+    : m_object(_object),
+      m_controlBlock(_controlBlock)
 {
     if (_incrementReference)
     {
@@ -240,9 +241,7 @@ T* ego::SharedPointer<T>::operator->() const
 template <typename T>
 uint32_t ego::SharedPointer<T>::getUsingCount() const
 {
-    return m_controlBlock
-        ? m_controlBlock->m_sharedCount.load(std::memory_order_acquire)
-        : 0u;
+    return m_controlBlock ? m_controlBlock->m_sharedCount.load(std::memory_order_acquire) : 0u;
 }
 
 template <typename T>
@@ -316,36 +315,38 @@ void ego::SharedPointer<T>::initializeEnableSharedFromThis(T* _object)
 
 template <typename T>
 ego::WeakPointer<T>::WeakPointer()
-    : m_object(nullptr)
-    , m_controlBlock(nullptr)
-{}
+    : m_object(nullptr),
+      m_controlBlock(nullptr)
+{
+}
 
 template <typename T>
 ego::WeakPointer<T>::WeakPointer(std::nullptr_t)
-    : m_object(nullptr)
-    , m_controlBlock(nullptr)
-{}
+    : m_object(nullptr),
+      m_controlBlock(nullptr)
+{
+}
 
 template <typename T>
 ego::WeakPointer<T>::WeakPointer(const SharedPointer<T>& _pointer)
-    : m_object(_pointer.m_object)
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(_pointer.m_object),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     incrementWeakCount();
 }
 
 template <typename T>
 ego::WeakPointer<T>::WeakPointer(const WeakPointer& _pointer)
-    : m_object(_pointer.m_object)
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(_pointer.m_object),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     incrementWeakCount();
 }
 
 template <typename T>
 ego::WeakPointer<T>::WeakPointer(WeakPointer&& _pointer) noexcept
-    : m_object(_pointer.m_object)
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(_pointer.m_object),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     _pointer.m_object = nullptr;
     _pointer.m_controlBlock = nullptr;
@@ -354,8 +355,8 @@ ego::WeakPointer<T>::WeakPointer(WeakPointer&& _pointer) noexcept
 template <typename T>
 template <typename U, typename>
 ego::WeakPointer<T>::WeakPointer(const SharedPointer<U>& _pointer)
-    : m_object(static_cast<T*>(_pointer.m_object))
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(static_cast<T*>(_pointer.m_object)),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     incrementWeakCount();
 }
@@ -363,8 +364,8 @@ ego::WeakPointer<T>::WeakPointer(const SharedPointer<U>& _pointer)
 template <typename T>
 template <typename U, typename>
 ego::WeakPointer<T>::WeakPointer(const WeakPointer<U>& _pointer)
-    : m_object(static_cast<T*>(_pointer.m_object))
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(static_cast<T*>(_pointer.m_object)),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     incrementWeakCount();
 }
@@ -372,8 +373,8 @@ ego::WeakPointer<T>::WeakPointer(const WeakPointer<U>& _pointer)
 template <typename T>
 template <typename U, typename>
 ego::WeakPointer<T>::WeakPointer(WeakPointer<U>&& _pointer) noexcept
-    : m_object(static_cast<T*>(_pointer.m_object))
-    , m_controlBlock(_pointer.m_controlBlock)
+    : m_object(static_cast<T*>(_pointer.m_object)),
+      m_controlBlock(_pointer.m_controlBlock)
 {
     _pointer.m_object = nullptr;
     _pointer.m_controlBlock = nullptr;
@@ -493,16 +494,13 @@ void ego::WeakPointer<T>::swap(WeakPointer& _pointer)
 template <typename T>
 uint32_t ego::WeakPointer<T>::getUsingCount() const
 {
-    return m_controlBlock
-        ? m_controlBlock->m_sharedCount.load(std::memory_order_acquire)
-        : 0u;
+    return m_controlBlock ? m_controlBlock->m_sharedCount.load(std::memory_order_acquire) : 0u;
 }
 
 template <typename T>
 bool ego::WeakPointer<T>::isExpired() const
 {
-    return !m_controlBlock
-        || m_controlBlock->m_sharedCount.load(std::memory_order_acquire) == 0u;
+    return !m_controlBlock || m_controlBlock->m_sharedCount.load(std::memory_order_acquire) == 0u;
 }
 
 template <typename T>
@@ -517,11 +515,7 @@ ego::SharedPointer<T> ego::WeakPointer<T>::lock() const
 
     while (count != 0u)
     {
-        if (m_controlBlock->m_sharedCount.compare_exchange_weak(
-            count,
-            count + 1,
-            std::memory_order_acq_rel,
-            std::memory_order_acquire))
+        if (m_controlBlock->m_sharedCount.compare_exchange_weak(count, count + 1, std::memory_order_acq_rel, std::memory_order_acquire))
         {
             return SharedPointer<T>(m_object, m_controlBlock, false);
         }

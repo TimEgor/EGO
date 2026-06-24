@@ -6,7 +6,6 @@
 #include "EgoCore/Profile/Profile.h"
 
 #include "Event/EventController.h"
-#include "Graphic/Presenter/WindowGraphicPresenter.h"
 #include "Graphic/Render/RenderPlugin.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Level/LevelController.h"
@@ -36,6 +35,7 @@ bool ego::engine::Engine::init(const Engine::InitData& _initData)
 
     EGO_CHECK_INITIALIZATION(initPluginCatalog(_initData));
     EGO_CHECK_INITIALIZATION(initGraphicDevice(_initData));
+    EGO_CHECK_INITIALIZATION(initGraphicPresenter(_initData));
 
     m_levelController = new LevelController();
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
@@ -53,6 +53,7 @@ void ego::engine::Engine::release()
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
+    m_renderDeviceContext.release();
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
@@ -72,51 +73,57 @@ void ego::engine::Engine::release()
 
 void ego::engine::Engine::run()
 {
-    if (!m_platform->getMainWindowProvider().isWindowPlatformProvided())
-    {
-        m_platform->getMainWindowProvider().prepareMainWindow("EGO", WindowSize(500, 500));
-    }
-
-    if (!prepareMainWindowPresenter())
-    {
-        return;
-    }
-
     while (!m_isStopped)
     {
-        EGO_PROFILE_BLOCK_EVENT("Frame");
-
-        beginFrame();
-
-        if (!m_platform->getMainWindowProvider().getMainWindow()->isValid())
+        if (!runFrame())
         {
-            stop();
-            continue;
+            break;
         }
-
-        m_platform->getPlatformEventController().updateNativeEvents();
-        //m_inputDeviceController->update();
-
-        JobGraphReference mainLoopJobGraph = getMainLoopJobGraph();
-        if (!mainLoopJobGraph)
-        {
-            EGO_ASSERT_FAIL_MESSAGE("Main loop job graph is invalid.");
-            stop();
-            continue;
-        }
-
-        m_jobController->addJobGraph(mainLoopJobGraph);
-        m_jobController->waitAndExecute(mainLoopJobGraph);
-
-        endFrame();
-
-        ++m_currentFrame;
     }
 
-    if (m_render)
+    completeRun();
+}
+
+bool ego::engine::Engine::runFrame()
+{
+    if (m_isStopped)
     {
-        m_render->clearResources();
+        return false;
     }
+
+    EGO_PROFILE_BLOCK_EVENT("Frame");
+
+    beginFrame();
+
+    m_platform->getPlatformEventController().updateNativeEvents();
+    // m_inputDeviceController->update();
+
+    if (m_isStopped)
+    {
+        return false;
+    }
+
+    JobGraphReference mainLoopJobGraph = getMainLoopJobGraph();
+    if (!mainLoopJobGraph)
+    {
+        EGO_ASSERT_FAIL_MESSAGE("Main loop job graph is invalid.");
+
+        stop();
+        return false;
+    }
+
+    m_jobController->addJobGraph(mainLoopJobGraph);
+    m_jobController->waitAndExecute(mainLoopJobGraph);
+
+    endFrame();
+
+    ++m_currentFrame;
+    if (m_isStopped)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void ego::engine::Engine::stop()
@@ -182,6 +189,12 @@ ego::GraphicDevice& ego::engine::Engine::getGraphicDevice()
 {
     EGO_ASSERT(m_graphicDevice);
     return *m_graphicDevice;
+}
+
+const ego::render::RenderDeviceContext& ego::engine::Engine::getRenderDeviceContext() const
+{
+    EGO_ASSERT(m_renderDeviceContext.isValid());
+    return m_renderDeviceContext;
 }
 
 const ego::EventController& ego::engine::Engine::getEventController() const
@@ -352,6 +365,14 @@ bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
     graphicDeviceInitParams.m_gpuValidation = true;
     EGO_CHECK_RETURN_FALSE(m_graphicDevice && m_graphicDevice->init(graphicDeviceInitParams));
 
+    EGO_CHECK_RETURN_FALSE(m_renderDeviceContext.init(*m_graphicDevice));
+
+    return true;
+}
+
+bool ego::engine::Engine::initGraphicPresenter(const InitData& _initData)
+{
+    m_graphicPresenter = _initData.m_graphicPresenter;
     return true;
 }
 
@@ -384,23 +405,19 @@ bool ego::engine::Engine::initMainLoop()
             {
                 renderFrame();
             },
-            "Render frame"
-        ),
+            "Render frame"),
         CreateJobDescriptor(
             [this]()
             {
                 presentFrame();
             },
-            "Present frame"
-        ),
+            "Present frame"),
         CreateJobDescriptor(
             [this]()
             {
                 prepareRenderFrame();
             },
-            "Prepare render frame"
-        )
-    );
+            "Prepare render frame"));
 }
 
 void ego::engine::Engine::beginFrame()
@@ -414,24 +431,12 @@ void ego::engine::Engine::endFrame()
     m_prevFrameStartTime = m_currentFrameTime;
 }
 
-bool ego::engine::Engine::prepareMainWindowPresenter()
+void ego::engine::Engine::completeRun()
 {
-    if (m_graphicPresenter)
+    if (m_render)
     {
-        return true;
+        m_render->clearResources();
     }
-
-    const WindowPointer mainWindow = m_platform->getMainWindowProvider().getMainWindow();
-    EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
-
-    gpu::SwapChainDesc swapChainDesc;
-    swapChainDesc.m_format = gpu::GraphicResourceFormat::B8G8R8A8UNorm;
-    swapChainDesc.m_bufferCount = 2;
-
-    m_graphicPresenter = new WindowGraphicPresenter();
-    EGO_CHECK_RETURN_FALSE(m_graphicPresenter && m_graphicPresenter->init(*mainWindow, swapChainDesc));
-
-    return true;
 }
 
 void ego::engine::Engine::renderFrame()

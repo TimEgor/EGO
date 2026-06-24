@@ -22,4 +22,4 @@ namespace ego::render
         Transform m_transform;
         ComputeMatrix4x4 m_projection = ComputeMatrix4x4Identity;
     };
-}
+} // namespace ego::render

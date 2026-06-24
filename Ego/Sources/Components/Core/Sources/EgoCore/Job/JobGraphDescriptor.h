@@ -45,7 +45,10 @@ namespace ego
         JobGraphReference createJobGraph() const;
 
         bool isEmpty() const;
-        const char* getDbgName() const { return m_dbgName.c_str(); }
+        const char* getDbgName() const
+        {
+            return m_dbgName.c_str();
+        }
 
     private:
         friend class JobGraphDescriptorBuilder;
@@ -73,11 +76,7 @@ namespace ego
         using NodeCollection = std::vector<Node>;
         using DependencyCollection = std::vector<Dependency>;
 
-        JobGraphDescriptor(
-            const NodeCollection& _nodes,
-            const DependencyCollection& _dependencies,
-            const char* _dbgName
-        );
+        JobGraphDescriptor(const NodeCollection& _nodes, const DependencyCollection& _dependencies, const char* _dbgName);
 
         NodeCollection m_nodes;
         DependencyCollection m_dependencies;
@@ -92,7 +91,10 @@ namespace ego
         explicit JobGraphDescriptorBuilder(const char* _dbgName = nullptr);
 
         void setDbgName(const char* _dbgName);
-        const char* getDbgName() const { return m_dbgName.c_str(); }
+        const char* getDbgName() const
+        {
+            return m_dbgName.c_str();
+        }
 
         JobDescriptorID addJob(const JobDescriptor& _descriptor);
         bool removeJob(JobDescriptorID _jobID);
@@ -100,48 +102,20 @@ namespace ego
         JobDescriptorID addJobBefore(const JobDescriptor& _descriptor, JobDescriptorID _childJobID);
         JobDescriptorID addJobBefore(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _childJobIDs);
         JobDescriptorID addJobAfter(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID);
-        JobDescriptorID addJobAfter(
-            const JobDescriptor& _descriptor,
-            const JobDescriptorIDCollection& _parentJobIDs
-        );
-        JobDescriptorID addJobBetween(
-            const JobDescriptor& _descriptor,
-            JobDescriptorID _parentJobID,
-            JobDescriptorID _childJobID
-        );
-        JobDescriptorID addJobBetween(
-            const JobDescriptor& _descriptor,
-            const JobDescriptorIDCollection& _parentJobIDs,
-            const JobDescriptorIDCollection& _childJobIDs
-        );
+        JobDescriptorID addJobAfter(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _parentJobIDs);
+        JobDescriptorID addJobBetween(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID);
+        JobDescriptorID addJobBetween(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _parentJobIDs, const JobDescriptorIDCollection& _childJobIDs);
 
         JobDescriptorID addJobGraph(const JobGraphDescriptorPointer& _descriptor);
-        JobDescriptorID addJobGraphBefore(
-            const JobGraphDescriptorPointer& _descriptor,
-            JobDescriptorID _childJobID
-        );
-        JobDescriptorID addJobGraphBefore(
-            const JobGraphDescriptorPointer& _descriptor,
-            const JobDescriptorIDCollection& _childJobIDs
-        );
-        JobDescriptorID addJobGraphAfter(
-            const JobGraphDescriptorPointer& _descriptor,
-            JobDescriptorID _parentJobID
-        );
-        JobDescriptorID addJobGraphAfter(
-            const JobGraphDescriptorPointer& _descriptor,
-            const JobDescriptorIDCollection& _parentJobIDs
-        );
-        JobDescriptorID addJobGraphBetween(
-            const JobGraphDescriptorPointer& _descriptor,
-            JobDescriptorID _parentJobID,
-            JobDescriptorID _childJobID
-        );
+        JobDescriptorID addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _childJobID);
+        JobDescriptorID addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _childJobIDs);
+        JobDescriptorID addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID);
+        JobDescriptorID addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _parentJobIDs);
+        JobDescriptorID addJobGraphBetween(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID);
         JobDescriptorID addJobGraphBetween(
             const JobGraphDescriptorPointer& _descriptor,
             const JobDescriptorIDCollection& _parentJobIDs,
-            const JobDescriptorIDCollection& _childJobIDs
-        );
+            const JobDescriptorIDCollection& _childJobIDs);
 
         void makeDependency(JobDescriptorID _parentJobID, JobDescriptorID _childJobID);
 
@@ -183,4 +157,4 @@ namespace ego
         std::vector<JobGraphDescriptor::Dependency> m_dependencies;
         std::string m_dbgName;
     };
-}
+} // namespace ego

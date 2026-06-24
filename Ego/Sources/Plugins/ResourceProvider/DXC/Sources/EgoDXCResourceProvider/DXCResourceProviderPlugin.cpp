@@ -11,22 +11,23 @@ EGO_ENGINE_MODULE();
 
 EGO_PLUGIN_CREATE(ego::resources::dxc::DXCResourceProviderPlugin, ResourceProviderPlugin, ego::ResourceProviderPlugin);
 
-ego::resources::dxc::DXCResourceProviderPlugin::DXCResourceProviderPlugin(
-    const PluginModulePointer& _module,
-    PluginType _pluginType
-)
-    : ResourceProviderPlugin(_module, _pluginType)
-{}
-
-void ego::resources::dxc::DXCResourceProviderPlugin::registerResourceProviders()
+namespace ego::resources::dxc
 {
-    const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
-    engine::GetEngine().getResourceController().addResourceProvider(".shader", shaderProvider);
-    engine::GetEngine().getResourceController().addResourceProvider(".hlsl", shaderProvider);
-}
+    DXCResourceProviderPlugin::DXCResourceProviderPlugin(const PluginModulePointer& _module, PluginType _pluginType)
+        : ResourceProviderPlugin(_module, _pluginType)
+    {
+    }
 
-void ego::resources::dxc::DXCResourceProviderPlugin::unregisterResourceProviders()
-{
-    engine::GetEngine().getResourceController().removeResourceProvider(".hlsl");
-    engine::GetEngine().getResourceController().removeResourceProvider(".shader");
-}
+    void DXCResourceProviderPlugin::registerResourceProviders()
+    {
+        const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
+        engine::GetEngine().getResourceController().addResourceProvider(".shader", shaderProvider);
+        engine::GetEngine().getResourceController().addResourceProvider(".hlsl", shaderProvider);
+    }
+
+    void DXCResourceProviderPlugin::unregisterResourceProviders()
+    {
+        engine::GetEngine().getResourceController().removeResourceProvider(".hlsl");
+        engine::GetEngine().getResourceController().removeResourceProvider(".shader");
+    }
+} // namespace ego::resources::dxc

@@ -1,19 +1,16 @@
 #include "FileDialog.h"
 
 #if defined(WIN32) || defined(_WIN32)
-#include "EgoCore/String/Format.h"
+    #include "EgoCore/String/Format.h"
 
-#include <Windows.h>
-#include <commdlg.h>
+    #include <Windows.h>
+    #include <commdlg.h>
 
-#include <string>
+    #include <string>
 
 namespace
 {
-    std::string BuildWin32Filter(
-        const ego::OpenFileDialogFilter* _filters,
-        const std::size_t _filterCount
-    )
+    std::string BuildWin32Filter(const ego::OpenFileDialogFilter* _filters, const std::size_t _filterCount)
     {
         std::string result;
 
@@ -45,7 +42,7 @@ namespace
         result.push_back('\0');
         return result;
     }
-}
+} // namespace
 #endif
 
 ego::FileName ego::SelectOpenFile(const OpenFileDialogParams& _params)
@@ -56,9 +53,7 @@ ego::FileName ego::SelectOpenFile(const OpenFileDialogParams& _params)
 
     OPENFILENAMEA openFileName = {};
     openFileName.lStructSize = sizeof(openFileName);
-    openFileName.hwndOwner = _params.m_ownerWindowHandle
-        ? static_cast<HWND>(_params.m_ownerWindowHandle)
-        : GetActiveWindow();
+    openFileName.hwndOwner = _params.m_ownerWindowHandle ? static_cast<HWND>(_params.m_ownerWindowHandle) : GetActiveWindow();
     openFileName.lpstrFile = fileName;
     openFileName.nMaxFile = MAX_PATH;
     openFileName.lpstrFilter = filter.c_str();

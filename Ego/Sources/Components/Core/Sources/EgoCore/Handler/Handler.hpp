@@ -76,27 +76,31 @@ namespace ego::handler_details
     {
         return _object.getObject();
     }
-}
+} // namespace ego::handler_details
 
 template <typename T>
 ego::Handler<T>::Handler(std::nullptr_t)
     : m_source(nullptr)
-{}
+{
+}
 
 template <typename T>
 ego::Handler<T>::Handler(const SourceReference& _source)
     : m_source(_source)
-{}
+{
+}
 
 template <typename T>
 ego::Handler<T>::Handler(const ObjectResult& _object)
     : Handler(MakeHandler<ObjectResult>(_object).getSource())
-{}
+{
+}
 
 template <typename T>
 ego::Handler<T>::Handler(ObjectResult&& _object)
     : Handler(MakeHandler<ObjectResult>(std::move(_object)).getSource())
-{}
+{
+}
 
 template <typename T>
 ego::Handler<T>& ego::Handler<T>::operator=(std::nullptr_t)
@@ -132,7 +136,7 @@ const typename ego::Handler<T>::SourceReference& ego::Handler<T>::getSource() co
 }
 
 template <typename T>
-auto ego::Handler<T>::operator*() const -> ObjectType&
+typename ego::Handler<T>::ObjectType& ego::Handler<T>::operator*() const
     requires ego::handler_details::HasObjectAccessV<T>
 {
     ObjectResult object = getObject();
@@ -142,7 +146,7 @@ auto ego::Handler<T>::operator*() const -> ObjectType&
 }
 
 template <typename T>
-auto ego::Handler<T>::operator->() const -> ObjectType*
+typename ego::Handler<T>::ObjectType* ego::Handler<T>::operator->() const
     requires ego::handler_details::HasObjectAccessV<T>
 {
     ObjectResult object = getObject();
@@ -177,13 +181,11 @@ void ego::Handler<T>::reset()
 
 template <typename TResult, typename TOwner, typename TResolver>
 template <typename TOwnerArg, typename TResolverArg>
-ego::ResolvedHandlerSource<TResult, TOwner, TResolver>::ResolvedHandlerSource(
-    TOwnerArg&& _owner,
-    TResolverArg&& _resolver
-)
+ego::ResolvedHandlerSource<TResult, TOwner, TResolver>::ResolvedHandlerSource(TOwnerArg&& _owner, TResolverArg&& _resolver)
     : m_owner(std::forward<TOwnerArg>(_owner)),
       m_resolver(std::forward<TResolverArg>(_resolver))
-{}
+{
+}
 
 template <typename TResult, typename TOwner, typename TResolver>
 TResult ego::ResolvedHandlerSource<TResult, TOwner, TResolver>::getObject() const
@@ -198,14 +200,7 @@ ego::Handler<TResult> ego::MakeHandler(TOwner&& _owner, TResolver&& _resolver)
     using SourceResolverType = std::decay_t<TResolver>;
     using SourceType = ResolvedHandlerSource<TResult, SourceOwnerType, SourceResolverType>;
 
-    return Handler<TResult>(
-        typename Handler<TResult>::SourceReference(
-            new SourceType(
-                std::forward<TOwner>(_owner),
-                std::forward<TResolver>(_resolver)
-            )
-        )
-    );
+    return Handler<TResult>(typename Handler<TResult>::SourceReference(new SourceType(std::forward<TOwner>(_owner), std::forward<TResolver>(_resolver))));
 }
 
 template <typename TResult>
@@ -216,6 +211,5 @@ ego::Handler<TResult> ego::MakeHandler(const TResult& _object)
         [](const TResult& _storedObject) -> TResult
         {
             return _storedObject;
-        }
-    );
+        });
 }

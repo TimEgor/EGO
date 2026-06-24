@@ -5,7 +5,8 @@ namespace ego
     template <typename ValType, typename HandleType>
     ObjectPool<ValType, HandleType>::ObjectPool(ObjectPool&& _pool)
         : m_storage(std::move(_pool.m_storage))
-    {}
+    {
+    }
 
     template <typename ValType, typename HandleType>
     bool ObjectPool<ValType, HandleType>::init(size_t _pageSize, size_t _maxFreePageCount, size_t _minFreeIndexCount)
@@ -66,9 +67,7 @@ namespace ego
 
     template <typename ValType, typename HandleType>
     template <typename... Args>
-    typename ObjectPool<ValType, HandleType>::NewElementInfo ObjectPool<ValType, HandleType>::addElement(
-        Args&&... _args
-    )
+    typename ObjectPool<ValType, HandleType>::NewElementInfo ObjectPool<ValType, HandleType>::addElement(Args&&... _args)
     {
         NewElementInfo info;
         addElement(info, std::forward<Args>(_args)...);
@@ -83,10 +82,8 @@ namespace ego
     }
 
     template <typename ValType, typename HandleType>
-    typename ObjectPool<ValType, HandleType>::NewElementInfo ObjectPool<ValType, HandleType>::makeElementInfo(
-        const StorageNewElementInfo& _info
-    )
+    typename ObjectPool<ValType, HandleType>::NewElementInfo ObjectPool<ValType, HandleType>::makeElementInfo(const StorageNewElementInfo& _info)
     {
         return NewElementInfo{_info.m_handle, _info.m_elementPtr};
     }
-}
+} // namespace ego

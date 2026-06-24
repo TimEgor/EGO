@@ -20,13 +20,11 @@ namespace ego::render
 
             PointData() = default;
 
-            PointData(
-                const FloatVector3& _position,
-                const FloatVector4& _color
-            )
+            PointData(const FloatVector3& _position, const FloatVector4& _color)
                 : m_position(_position),
                   m_color(_color)
-            {}
+            {
+            }
         };
 
         using PointCollection = std::vector<PointData>;
@@ -46,13 +44,11 @@ namespace ego::render
 
             VertexData() = default;
 
-            VertexData(
-                const FloatVector3& _position,
-                const FloatVector4& _color
-            )
+            VertexData(const FloatVector3& _position, const FloatVector4& _color)
                 : m_position(_position),
                   m_color(_color)
-            {}
+            {
+            }
         };
 
         struct LineData final
@@ -62,13 +58,11 @@ namespace ego::render
 
             LineData() = default;
 
-            LineData(
-                const VertexData& _start,
-                const VertexData& _end
-            )
+            LineData(const VertexData& _start, const VertexData& _end)
                 : m_start(_start),
                   m_end(_end)
-            {}
+            {
+            }
         };
 
         using LineCollection = std::vector<LineData>;
@@ -78,4 +72,4 @@ namespace ego::render
         LineCollection m_lineCommands;
         uint32_t m_lineCount = 0;
     };
-}
+} // namespace ego::render

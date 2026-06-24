@@ -27,4 +27,4 @@ namespace ego::demo
     };
 
     EGO_POINTER(DebugDrawDemo);
-}
+} // namespace ego::demo

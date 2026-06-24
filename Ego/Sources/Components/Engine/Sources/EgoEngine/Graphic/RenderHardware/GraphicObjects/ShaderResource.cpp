@@ -7,10 +7,7 @@
 namespace
 {
     template <typename TShader>
-    ego::Reference<TShader> MakeTypedShaderReference(
-        const ego::gpu::ShaderReference& _shader,
-        ego::gpu::ShaderStage _stage
-    )
+    ego::Reference<TShader> MakeTypedShaderReference(const ego::gpu::ShaderReference& _shader, ego::gpu::ShaderStage _stage)
     {
         ego::gpu::Shader* shader = _shader.getObject();
         if (!shader || shader->getShaderType() != _stage)
@@ -20,7 +17,7 @@ namespace
 
         return static_cast<TShader*>(shader);
     }
-}
+} // namespace
 
 ego::gpu::ShaderReference ego::gpu::ShaderResource::getShader() const
 {
@@ -89,4 +86,49 @@ ego::gpu::ShaderStage ego::gpu::ComputeShaderResource::getShaderStage() const
 ego::gpu::ShaderReference ego::gpu::ComputeShaderResource::createShader(const ShaderCodeReference& _code)
 {
     return engine::GetEngine().getGraphicDevice().createComputeShader(_code);
+}
+
+ego::gpu::RayGenerationShaderReference ego::gpu::RayGenerationShaderResource::getRayGenerationShader() const
+{
+    return MakeTypedShaderReference<RayGenerationShader>(getShader(), ShaderStage::RayGeneration);
+}
+
+ego::gpu::ShaderStage ego::gpu::RayGenerationShaderResource::getShaderStage() const
+{
+    return ShaderStage::RayGeneration;
+}
+
+ego::gpu::ShaderReference ego::gpu::RayGenerationShaderResource::createShader(const ShaderCodeReference& _code)
+{
+    return engine::GetEngine().getGraphicDevice().createRayGenerationShader(_code);
+}
+
+ego::gpu::MissShaderReference ego::gpu::MissShaderResource::getMissShader() const
+{
+    return MakeTypedShaderReference<MissShader>(getShader(), ShaderStage::Miss);
+}
+
+ego::gpu::ShaderStage ego::gpu::MissShaderResource::getShaderStage() const
+{
+    return ShaderStage::Miss;
+}
+
+ego::gpu::ShaderReference ego::gpu::MissShaderResource::createShader(const ShaderCodeReference& _code)
+{
+    return engine::GetEngine().getGraphicDevice().createMissShader(_code);
+}
+
+ego::gpu::ClosestHitShaderReference ego::gpu::ClosestHitShaderResource::getClosestHitShader() const
+{
+    return MakeTypedShaderReference<ClosestHitShader>(getShader(), ShaderStage::ClosestHit);
+}
+
+ego::gpu::ShaderStage ego::gpu::ClosestHitShaderResource::getShaderStage() const
+{
+    return ShaderStage::ClosestHit;
+}
+
+ego::gpu::ShaderReference ego::gpu::ClosestHitShaderResource::createShader(const ShaderCodeReference& _code)
+{
+    return engine::GetEngine().getGraphicDevice().createClosestHitShader(_code);
 }

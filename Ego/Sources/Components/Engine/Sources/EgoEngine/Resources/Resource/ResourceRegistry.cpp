@@ -30,9 +30,7 @@ ego::ResourcePointer ego::ResourceRegistry::getRegisteredResource(Resource& _res
     std::lock_guard locker(m_mutex);
 
     const auto resourceIt = m_resources.find(resourceID);
-    ResourcePointer resource = resourceIt != m_resources.end()
-        ? resourceIt->second.m_resource.lock()
-        : nullptr;
+    ResourcePointer resource = resourceIt != m_resources.end() ? resourceIt->second.m_resource.lock() : nullptr;
 
     if (!resource || resource.get() != &_resource)
     {
@@ -43,13 +41,7 @@ ego::ResourcePointer ego::ResourceRegistry::getRegisteredResource(Resource& _res
     return resource;
 }
 
-ego::ResourcePointer ego::ResourceRegistry::getOrCreateResource(
-    ResourceType _type,
-    const FileName& _path,
-    ResourceID _id,
-    const ResourceFactory& _factory,
-    bool& _needLoading
-)
+ego::ResourcePointer ego::ResourceRegistry::getOrCreateResource(ResourceType _type, const FileName& _path, ResourceID _id, const ResourceFactory& _factory, bool& _needLoading)
 {
     _needLoading = false;
 
@@ -194,9 +186,7 @@ ego::JobReference ego::ResourceRegistry::getLoadingJob(const ResourcePointer& _r
     std::lock_guard locker(m_mutex);
 
     const auto resourceIt = m_resources.find(resourceID);
-    return resourceIt != m_resources.end() && resourceIt->second.m_resourcePtr == _resource.get()
-        ? resourceIt->second.m_loadingJob.lock()
-        : nullptr;
+    return resourceIt != m_resources.end() && resourceIt->second.m_resourcePtr == _resource.get() ? resourceIt->second.m_loadingJob.lock() : nullptr;
 }
 
 void ego::ResourceRegistry::collectLoadingJobs(std::vector<JobReference>& _jobs) const

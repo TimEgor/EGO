@@ -13,20 +13,14 @@ ego::PluginModuleID ego::PluginController::GetModuleID(const FileName& _moduleNa
     return _moduleName.hash();
 }
 
-void ego::PluginController::PluginControllerAccessor::ReleasePluginModule(
-    PluginController& _controller,
-    PluginModule* _pluginModule
-)
+void ego::PluginController::PluginControllerAccessor::ReleasePluginModule(PluginController& _controller, PluginModule* _pluginModule)
 {
     EGO_ASSERT(_pluginModule);
 
     _controller.unloadModule(_pluginModule);
 }
 
-void ego::PluginController::PluginControllerAccessor::ReleasePlugin(
-    PluginController& _controller,
-    Plugin* _plugin
-)
+void ego::PluginController::PluginControllerAccessor::ReleasePlugin(PluginController& _controller, Plugin* _plugin)
 {
     EGO_ASSERT(_plugin);
 
@@ -96,11 +90,7 @@ ego::FileName ego::PluginController::selectPluginModule(const char* _pluginTypeN
     return loader->selectPluginModule(_pluginTypeName);
 }
 
-ego::PluginPointer ego::PluginController::loadPlugin(
-    const FileName& _moduleName,
-    PluginType _pluginType,
-    const char* _pluginTypeName
-)
+ego::PluginPointer ego::PluginController::loadPlugin(const FileName& _moduleName, PluginType _pluginType, const char* _pluginTypeName)
 {
     EGO_ASSERT(m_loader);
     EGO_ASSERT(_moduleName);

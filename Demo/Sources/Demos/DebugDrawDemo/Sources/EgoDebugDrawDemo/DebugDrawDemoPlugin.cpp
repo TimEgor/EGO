@@ -14,7 +14,8 @@ EGO_PLUGIN_CREATE(ego::demo::DebugDrawDemoPlugin, GameLogicPlugin, ego::framewor
 
 ego::demo::DebugDrawDemoPlugin::DebugDrawDemoPlugin(const PluginModulePointer& _module, PluginType _pluginType)
     : framework::GameLogicPlugin(_module, _pluginType)
-{}
+{
+}
 
 ego::framework::GameLogicPointer ego::demo::DebugDrawDemoPlugin::createGameLogic()
 {

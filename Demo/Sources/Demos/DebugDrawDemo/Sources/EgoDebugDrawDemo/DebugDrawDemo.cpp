@@ -12,14 +12,14 @@ namespace
 {
     constexpr float FullRotation = 6.28318530718f;
 
-    constexpr ego::FloatVector4 Red = ego::FloatVector4(1.0f, 0.1f, 0.1f, 1.0f);
-    constexpr ego::FloatVector4 Green = ego::FloatVector4(0.1f, 1.0f, 0.1f, 1.0f);
-    constexpr ego::FloatVector4 Blue = ego::FloatVector4(0.1f, 0.3f, 1.0f, 1.0f);
-    constexpr ego::FloatVector4 Cyan = ego::FloatVector4(0.0f, 0.9f, 1.0f, 1.0f);
-    constexpr ego::FloatVector4 Yellow = ego::FloatVector4(1.0f, 0.9f, 0.0f, 1.0f);
-    constexpr ego::FloatVector4 Magenta = ego::FloatVector4(1.0f, 0.0f, 0.9f, 1.0f);
-    constexpr ego::FloatVector4 White = ego::FloatVector4(1.0f, 1.0f, 1.0f, 1.0f);
-}
+    constexpr auto Red = ego::FloatVector4(1.0f, 0.1f, 0.1f, 1.0f);
+    constexpr auto Green = ego::FloatVector4(0.1f, 1.0f, 0.1f, 1.0f);
+    constexpr auto Blue = ego::FloatVector4(0.1f, 0.3f, 1.0f, 1.0f);
+    constexpr auto Cyan = ego::FloatVector4(0.0f, 0.9f, 1.0f, 1.0f);
+    constexpr auto Yellow = ego::FloatVector4(1.0f, 0.9f, 0.0f, 1.0f);
+    constexpr auto Magenta = ego::FloatVector4(1.0f, 0.0f, 0.9f, 1.0f);
+    constexpr auto White = ego::FloatVector4(1.0f, 1.0f, 1.0f, 1.0f);
+} // namespace
 
 bool ego::demo::DebugDrawDemo::init()
 {

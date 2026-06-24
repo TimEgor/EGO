@@ -7,7 +7,7 @@
 
 namespace
 {
-    constexpr const char* DefaultJobGraphDescriptorDbgName = "JobGraph";
+    constexpr auto DefaultJobGraphDescriptorDbgName = "JobGraph";
 
     std::atomic<uint32_t> g_lastJobGraphDescriptorBuilderOwnerID = 0;
 
@@ -23,18 +23,18 @@ namespace
 
         return ownerID;
     }
-}
+} // namespace
 
 ego::JobDescriptorID::JobDescriptorID(uint32_t _ownerID, uint32_t _index, uint64_t _generation)
     : m_ownerID(_ownerID),
       m_index(_index),
       m_generation(_generation)
-{}
+{
+}
 
 bool ego::JobDescriptorID::isValid() const
 {
-    return m_ownerID != 0
-        && m_index != InvalidIndex;
+    return m_ownerID != 0 && m_index != InvalidIndex;
 }
 
 uint32_t ego::JobDescriptorID::getIndex() const
@@ -44,9 +44,7 @@ uint32_t ego::JobDescriptorID::getIndex() const
 
 bool ego::JobDescriptorID::operator==(JobDescriptorID _id) const
 {
-    return m_ownerID == _id.m_ownerID
-        && m_index == _id.m_index
-        && m_generation == _id.m_generation;
+    return m_ownerID == _id.m_ownerID && m_index == _id.m_index && m_generation == _id.m_generation;
 }
 
 bool ego::JobDescriptorID::operator!=(JobDescriptorID _id) const
@@ -54,15 +52,12 @@ bool ego::JobDescriptorID::operator!=(JobDescriptorID _id) const
     return !(*this == _id);
 }
 
-ego::JobGraphDescriptor::JobGraphDescriptor(
-    const NodeCollection& _nodes,
-    const DependencyCollection& _dependencies,
-    const char* _dbgName
-)
+ego::JobGraphDescriptor::JobGraphDescriptor(const NodeCollection& _nodes, const DependencyCollection& _dependencies, const char* _dbgName)
     : m_nodes(_nodes),
       m_dependencies(_dependencies),
       m_dbgName(NormalizeJobGraphDescriptorDbgName(_dbgName))
-{}
+{
+}
 
 ego::JobGraphReference ego::JobGraphDescriptor::createJobGraph() const
 {
@@ -119,17 +114,13 @@ ego::JobGraphReference ego::JobGraphDescriptor::createJobGraph() const
 
     for (const Dependency& dependency : m_dependencies)
     {
-        if (dependency.m_parentJobID.getIndex() >= graphJobIDs.size()
-            || dependency.m_childJobID.getIndex() >= graphJobIDs.size())
+        if (dependency.m_parentJobID.getIndex() >= graphJobIDs.size() || dependency.m_childJobID.getIndex() >= graphJobIDs.size())
         {
             EGO_ASSERT_FAIL_MESSAGE("Job graph descriptor dependency is invalid.");
             return nullptr;
         }
 
-        graphBuilder.makeDependency(
-            graphJobIDs[dependency.m_parentJobID.getIndex()],
-            graphJobIDs[dependency.m_childJobID.getIndex()]
-        );
+        graphBuilder.makeDependency(graphJobIDs[dependency.m_parentJobID.getIndex()], graphJobIDs[dependency.m_childJobID.getIndex()]);
     }
 
     return graphBuilder.getGraph();
@@ -211,10 +202,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraph(const JobGraphD
     return addNode(node);
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBefore(
-    const JobDescriptor& _descriptor,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBefore(const JobDescriptor& _descriptor, JobDescriptorID _childJobID)
 {
     const JobDescriptorID jobID = addJob(_descriptor);
     makeDependency(jobID, _childJobID);
@@ -222,10 +210,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBefore(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBefore(
-    const JobDescriptor& _descriptor,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBefore(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _childJobIDs)
 {
     const JobDescriptorID jobID = addJob(_descriptor);
     makeDependenciesBefore(jobID, _childJobIDs);
@@ -233,10 +218,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBefore(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobAfter(
-    const JobDescriptor& _descriptor,
-    JobDescriptorID _parentJobID
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobAfter(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID)
 {
     const JobDescriptorID jobID = addJob(_descriptor);
     makeDependency(_parentJobID, jobID);
@@ -244,10 +226,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobAfter(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobAfter(
-    const JobDescriptor& _descriptor,
-    const JobDescriptorIDCollection& _parentJobIDs
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobAfter(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _parentJobIDs)
 {
     const JobDescriptorID jobID = addJob(_descriptor);
     makeDependenciesAfter(_parentJobIDs, jobID);
@@ -255,11 +234,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobAfter(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBetween(
-    const JobDescriptor& _descriptor,
-    JobDescriptorID _parentJobID,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBetween(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID)
 {
     const JobDescriptorID jobID = addJob(_descriptor);
     if (!jobID.isValid())
@@ -276,8 +251,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBetween(
 ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBetween(
     const JobDescriptor& _descriptor,
     const JobDescriptorIDCollection& _parentJobIDs,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+    const JobDescriptorIDCollection& _childJobIDs)
 {
     const JobDescriptorID jobID = addJob(_descriptor);
     if (!jobID.isValid())
@@ -291,10 +265,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobBetween(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBefore(
-    const JobGraphDescriptorPointer& _descriptor,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _childJobID)
 {
     const JobDescriptorID jobID = addJobGraph(_descriptor);
     makeDependency(jobID, _childJobID);
@@ -302,10 +273,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBefore(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBefore(
-    const JobGraphDescriptorPointer& _descriptor,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _childJobIDs)
 {
     const JobDescriptorID jobID = addJobGraph(_descriptor);
     makeDependenciesBefore(jobID, _childJobIDs);
@@ -313,10 +281,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBefore(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphAfter(
-    const JobGraphDescriptorPointer& _descriptor,
-    JobDescriptorID _parentJobID
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID)
 {
     const JobDescriptorID jobID = addJobGraph(_descriptor);
     makeDependency(_parentJobID, jobID);
@@ -324,10 +289,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphAfter(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphAfter(
-    const JobGraphDescriptorPointer& _descriptor,
-    const JobDescriptorIDCollection& _parentJobIDs
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _parentJobIDs)
 {
     const JobDescriptorID jobID = addJobGraph(_descriptor);
     makeDependenciesAfter(_parentJobIDs, jobID);
@@ -335,11 +297,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphAfter(
     return jobID;
 }
 
-ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBetween(
-    const JobGraphDescriptorPointer& _descriptor,
-    JobDescriptorID _parentJobID,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBetween(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID)
 {
     const JobDescriptorID jobID = addJobGraph(_descriptor);
     if (!jobID.isValid())
@@ -356,8 +314,7 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBetween(
 ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addJobGraphBetween(
     const JobGraphDescriptorPointer& _descriptor,
     const JobDescriptorIDCollection& _parentJobIDs,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+    const JobDescriptorIDCollection& _childJobIDs)
 {
     const JobDescriptorID jobID = addJobGraph(_descriptor);
     if (!jobID.isValid())
@@ -460,11 +417,8 @@ ego::JobGraphDescriptorPointer ego::JobGraphDescriptorBuilder::build() const
         }
 
         dependencies.push_back(
-            JobGraphDescriptor::Dependency{
-                JobDescriptorID(m_ownerID, parentJobIndex, JobDescriptorID::BaseGeneration),
-                JobDescriptorID(m_ownerID, childJobIndex, JobDescriptorID::BaseGeneration)
-            }
-        );
+            JobGraphDescriptor::Dependency{JobDescriptorID(m_ownerID, parentJobIndex, JobDescriptorID::BaseGeneration),
+                JobDescriptorID(m_ownerID, childJobIndex, JobDescriptorID::BaseGeneration)});
     }
 
     return JobGraphDescriptorPointer(new JobGraphDescriptor(nodes, dependencies, getDbgName()));
@@ -488,10 +442,7 @@ bool ego::JobGraphDescriptorBuilder::hasDependency(JobDescriptorID _parentJobID,
     return false;
 }
 
-void ego::JobGraphDescriptorBuilder::makeDependenciesBefore(
-    JobDescriptorID _parentJobID,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+void ego::JobGraphDescriptorBuilder::makeDependenciesBefore(JobDescriptorID _parentJobID, const JobDescriptorIDCollection& _childJobIDs)
 {
     for (const JobDescriptorID childJobID : _childJobIDs)
     {
@@ -499,10 +450,7 @@ void ego::JobGraphDescriptorBuilder::makeDependenciesBefore(
     }
 }
 
-void ego::JobGraphDescriptorBuilder::makeDependenciesAfter(
-    const JobDescriptorIDCollection& _parentJobIDs,
-    JobDescriptorID _childJobID
-)
+void ego::JobGraphDescriptorBuilder::makeDependenciesAfter(const JobDescriptorIDCollection& _parentJobIDs, JobDescriptorID _childJobID)
 {
     for (const JobDescriptorID parentJobID : _parentJobIDs)
     {
@@ -567,8 +515,7 @@ bool ego::JobGraphDescriptorBuilder::validate() const
             return false;
         }
 
-        if (node.m_type == JobGraphDescriptor::NodeType::JobGraph
-            && (!node.m_jobGraphDescriptor || node.m_jobGraphDescriptor->isEmpty()))
+        if (node.m_type == JobGraphDescriptor::NodeType::JobGraph && (!node.m_jobGraphDescriptor || node.m_jobGraphDescriptor->isEmpty()))
         {
             EGO_ASSERT_FAIL_MESSAGE("Job graph descriptor contains invalid nested graph descriptor.");
             return false;
@@ -646,27 +593,22 @@ ego::JobDescriptorID ego::JobGraphDescriptorBuilder::addNode(const JobGraphDescr
 
 bool ego::JobGraphDescriptorBuilder::isNodeSlotIndexOwned(JobDescriptorID _id) const
 {
-    return _id.isValid()
-        && _id.m_ownerID == m_ownerID
-        && _id.m_index < m_nodeSlots.size();
+    return _id.isValid() && _id.m_ownerID == m_ownerID && _id.m_index < m_nodeSlots.size();
 }
 
 bool ego::JobGraphDescriptorBuilder::isOwnedNodeID(JobDescriptorID _id) const
 {
-    return isNodeSlotIndexOwned(_id)
-        && m_nodeSlots[_id.m_index].m_generation == _id.m_generation;
+    return isNodeSlotIndexOwned(_id) && m_nodeSlots[_id.m_index].m_generation == _id.m_generation;
 }
 
 bool ego::JobGraphDescriptorBuilder::isActiveNodeID(JobDescriptorID _id) const
 {
-    return isOwnedNodeID(_id)
-        && m_nodeSlots[_id.m_index].m_nodeIndex != InvalidNodeIndex;
+    return isOwnedNodeID(_id) && m_nodeSlots[_id.m_index].m_nodeIndex != InvalidNodeIndex;
 }
 
 bool ego::JobGraphDescriptorBuilder::isActiveDependency(const JobGraphDescriptor::Dependency& _dependency) const
 {
-    return isActiveNodeID(_dependency.m_parentJobID)
-        && isActiveNodeID(_dependency.m_childJobID);
+    return isActiveNodeID(_dependency.m_parentJobID) && isActiveNodeID(_dependency.m_childJobID);
 }
 
 uint32_t ego::JobGraphDescriptorBuilder::getActiveNodeCount() const

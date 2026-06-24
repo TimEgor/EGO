@@ -4,25 +4,29 @@
 
 #include "EgoEngine/Platform/PlatformEventController.h"
 
-namespace ego {
-	class Window;
+namespace ego
+{
+    class Window;
 }
 
 namespace ego::win32
 {
-	class Win32WindowEventController final : public PlatformEventController
-	{
-	public:
-		Win32WindowEventController() = default;
+    class Win32WindowEventController final : public PlatformEventController
+    {
+    public:
+        Win32WindowEventController() = default;
 
-		virtual void updateNativeEvents() override;
+        void updateNativeEvents() override;
 
-		static WNDPROC GetWndProcPtr() { return WndProc; }
+        static WNDPROC GetWndProcPtr()
+        {
+            return WndProc;
+        }
 
-	private:
-		static LRESULT CALLBACK WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam);
-		static void UpdateNativeWindowEvents(HWND _hwnd);
-	};
+    private:
+        static LRESULT CALLBACK WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam);
+        static void UpdateNativeWindowEvents(HWND _hwnd);
+    };
 
-	EGO_POINTER(Win32WindowEventController);
-}
+    EGO_POINTER(Win32WindowEventController);
+} // namespace ego::win32

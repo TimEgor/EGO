@@ -33,16 +33,22 @@ namespace ego
         constexpr WindowArea() = default;
 
         constexpr WindowArea(const VectorValueType& _vector)
-            : m_vector(_vector) {}
+            : m_vector(_vector)
+        {
+        }
 
         constexpr WindowArea(ValueType _top, ValueType _bottom, ValueType _right, ValueType _left)
             : m_top(_top),
               m_bottom(_bottom),
               m_right(_right),
-              m_left(_left) {}
+              m_left(_left)
+        {
+        }
 
         constexpr WindowArea(const WindowArea& _area)
-            : m_vector(_area.m_vector) {}
+            : m_vector(_area.m_vector)
+        {
+        }
 
         WindowArea& operator=(const WindowArea& _area)
         {
@@ -51,7 +57,7 @@ namespace ego
         }
     };
 
-    constexpr WindowArea DefaultWindowArea = WindowArea(0, 0, 0, 0);
+    constexpr auto DefaultWindowArea = WindowArea(0, 0, 0, 0);
 
     class Window
     {
@@ -88,4 +94,4 @@ namespace ego
     };
 
     EGO_POINTER(Window)
-}
+} // namespace ego

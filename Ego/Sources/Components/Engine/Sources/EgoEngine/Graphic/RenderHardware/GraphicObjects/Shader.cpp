@@ -33,7 +33,8 @@ uint32_t ego::gpu::ShaderCode::getCodeSize() const
 
 ego::gpu::Shader::Shader(const ShaderCodeReference& _code)
     : m_code(_code)
-{}
+{
+}
 
 ego::gpu::ShaderCodeReference ego::gpu::Shader::getCode() const
 {
@@ -42,7 +43,8 @@ ego::gpu::ShaderCodeReference ego::gpu::Shader::getCode() const
 
 ego::gpu::VertexShader::VertexShader(const ShaderCodeReference& _code)
     : Shader(_code)
-{}
+{
+}
 
 ego::gpu::ShaderStage ego::gpu::VertexShader::getShaderType() const
 {
@@ -51,7 +53,8 @@ ego::gpu::ShaderStage ego::gpu::VertexShader::getShaderType() const
 
 ego::gpu::PixelShader::PixelShader(const ShaderCodeReference& _code)
     : Shader(_code)
-{}
+{
+}
 
 ego::gpu::ShaderStage ego::gpu::PixelShader::getShaderType() const
 {
@@ -60,9 +63,40 @@ ego::gpu::ShaderStage ego::gpu::PixelShader::getShaderType() const
 
 ego::gpu::ComputeShader::ComputeShader(const ShaderCodeReference& _code)
     : Shader(_code)
-{}
+{
+}
 
 ego::gpu::ShaderStage ego::gpu::ComputeShader::getShaderType() const
 {
     return ShaderStage::Compute;
+}
+
+ego::gpu::RayGenerationShader::RayGenerationShader(const ShaderCodeReference& _code)
+    : Shader(_code)
+{
+}
+
+ego::gpu::ShaderStage ego::gpu::RayGenerationShader::getShaderType() const
+{
+    return ShaderStage::RayGeneration;
+}
+
+ego::gpu::MissShader::MissShader(const ShaderCodeReference& _code)
+    : Shader(_code)
+{
+}
+
+ego::gpu::ShaderStage ego::gpu::MissShader::getShaderType() const
+{
+    return ShaderStage::Miss;
+}
+
+ego::gpu::ClosestHitShader::ClosestHitShader(const ShaderCodeReference& _code)
+    : Shader(_code)
+{
+}
+
+ego::gpu::ShaderStage ego::gpu::ClosestHitShader::getShaderType() const
+{
+    return ShaderStage::ClosestHit;
 }

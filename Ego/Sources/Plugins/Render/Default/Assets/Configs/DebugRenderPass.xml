@@ -1,0 +1,10 @@
+<DebugRenderPass>
+    <Point>
+        <VertexShader>Shaders/DebugRender/PointVS.hlsl</VertexShader>
+        <PixelShader>Shaders/DebugRender/PointPS.hlsl</PixelShader>
+    </Point>
+    <Line>
+        <VertexShader>Shaders/DebugRender/LineVS.hlsl</VertexShader>
+        <PixelShader>Shaders/DebugRender/LinePS.hlsl</PixelShader>
+    </Line>
+</DebugRenderPass>

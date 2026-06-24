@@ -12,8 +12,9 @@ const ego::gpu::BufferDesc& ego::gpu::Buffer::getDesc() const
 
 ego::gpu::BufferView::BufferView(const BufferReference& _buffer, const BufferViewDesc& _desc)
     : ResourceView(_buffer),
-    m_desc(_desc)
-{}
+      m_desc(_desc)
+{
+}
 
 const ego::gpu::BufferViewDesc& ego::gpu::BufferView::getDesc() const
 {

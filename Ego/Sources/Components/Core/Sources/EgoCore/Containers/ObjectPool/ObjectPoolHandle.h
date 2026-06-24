@@ -37,11 +37,13 @@ namespace ego
         constexpr ObjectPoolHandleStorageBase() noexcept = default;
         constexpr ObjectPoolHandleStorageBase(KeyType _key) noexcept
             : m_key(_key)
-        {}
+        {
+        }
 
         constexpr ObjectPoolHandleStorageBase(IndexType _index, VersionType _version) noexcept
             : m_key(makeKey(_index, _version))
-        {}
+        {
+        }
 
         constexpr ObjectPoolHandleStorageBase(const ObjectPoolHandleStorageBase&) noexcept = default;
         constexpr ObjectPoolHandleStorageBase& operator=(const ObjectPoolHandleStorageBase&) noexcept = default;
@@ -63,8 +65,14 @@ namespace ego
             return static_cast<VersionType>((_key >> IndexBits) & VersionMask);
         }
 
-        constexpr IndexType getIndex() const noexcept { return getIndex(m_key); }
-        constexpr VersionType getVersion() const noexcept { return getVersion(m_key); }
+        constexpr IndexType getIndex() const noexcept
+        {
+            return getIndex(m_key);
+        }
+        constexpr VersionType getVersion() const noexcept
+        {
+            return getVersion(m_key);
+        }
     };
 
     struct ObjectPoolHandleStorage8 final : ObjectPoolHandleStorageBase<uint8_t, uint8_t, uint8_t, 4>
@@ -126,25 +134,43 @@ namespace ego
         constexpr ObjectPoolHandle() noexcept = default;
         constexpr ObjectPoolHandle(KeyType _key) noexcept
             : m_handle(_key)
-        {}
+        {
+        }
 
         constexpr ObjectPoolHandle(IndexType _index, VersionType _version) noexcept
             : m_handle(_index, _version)
-        {}
+        {
+        }
 
         constexpr ObjectPoolHandle(HandleStorageType _handle) noexcept
             : m_handle(_handle)
-        {}
+        {
+        }
 
         constexpr ObjectPoolHandle(const ObjectPoolHandle&) noexcept = default;
         constexpr ObjectPoolHandle& operator=(const ObjectPoolHandle&) noexcept = default;
 
-        constexpr KeyType getKey() const noexcept { return m_handle.m_key; }
-        constexpr IndexType getIndex() const noexcept { return m_handle.getIndex(); }
-        constexpr VersionType getVersion() const noexcept { return m_handle.getVersion(); }
-        constexpr bool isValid() const noexcept { return getKey() != InvalidKey; }
+        constexpr KeyType getKey() const noexcept
+        {
+            return m_handle.m_key;
+        }
+        constexpr IndexType getIndex() const noexcept
+        {
+            return m_handle.getIndex();
+        }
+        constexpr VersionType getVersion() const noexcept
+        {
+            return m_handle.getVersion();
+        }
+        constexpr bool isValid() const noexcept
+        {
+            return getKey() != InvalidKey;
+        }
 
-        constexpr explicit operator bool() const noexcept { return isValid(); }
+        constexpr explicit operator bool() const noexcept
+        {
+            return isValid();
+        }
 
         friend constexpr bool operator==(ObjectPoolHandle _left, ObjectPoolHandle _right) noexcept
         {
@@ -200,4 +226,4 @@ namespace ego
     static_assert(ObjectPoolHandle8::makeKey(0x0F, 0x0F) == 0xFF);
     static_assert(ObjectPoolHandle16::makeKey(0xFF, 0xFF) == 0xFFFF);
     static_assert(ObjectPoolHandle32::makeKey(0xFFFF, 0xFFFF) == 0xFFFFFFFF);
-}
+} // namespace ego

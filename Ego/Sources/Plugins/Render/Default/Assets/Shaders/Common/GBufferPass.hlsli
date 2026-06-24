@@ -8,6 +8,7 @@ struct CameraShaderData
     column_major float4x4 ViewProjection;
     float4 Position;
     float4 ScreenSize;
+    column_major float4x4 InverseViewProjection;
 };
 
 struct GBufferRenderData
@@ -28,6 +29,7 @@ CameraShaderData LoadCameraShaderData(uint _cameraDataIndex)
     result.ViewProjection = cameraData.ViewProjection;
     result.Position = cameraData.Position;
     result.ScreenSize = cameraData.ScreenSize;
+    result.InverseViewProjection = cameraData.InverseViewProjection;
     return result;
 }
 

@@ -43,12 +43,7 @@ namespace ego::render
             uint32_t m_offset = 0;
         };
 
-        Mesh(
-            const VertexBufferBinding& _vertexBuffer,
-            uint32_t _vertexCount,
-            const IndexBufferBinding& _indexBuffer = IndexBufferBinding(),
-            uint32_t _indexCount = 0
-        );
+        Mesh(const VertexBufferBinding& _vertexBuffer, uint32_t _vertexCount, const IndexBufferBinding& _indexBuffer = IndexBufferBinding(), uint32_t _indexCount = 0);
 
         const VertexBufferBinding& getVertexBuffer() const;
         uint32_t getVertexCount() const;
@@ -67,4 +62,4 @@ namespace ego::render
     EGO_NAMED_HANDLER(MeshReference, Mesh);
 
     MeshHandler CreateMeshFromRawData(ego::GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
-}
+} // namespace ego::render

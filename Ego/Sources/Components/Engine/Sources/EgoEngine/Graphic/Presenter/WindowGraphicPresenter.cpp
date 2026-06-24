@@ -1,18 +1,22 @@
 #include "WindowGraphicPresenter.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoCore/UtilsMacros.h"
 
 ego::WindowGraphicPresenter::~WindowGraphicPresenter()
 {
     release();
 }
 
-bool ego::WindowGraphicPresenter::init(const Window& _window, const gpu::SwapChainDesc& _swapChainDesc)
+bool ego::WindowGraphicPresenter::init(
+    GraphicDevice& _graphicDevice,
+    const Window& _window,
+    const gpu::SwapChainDesc& _swapChainDesc,
+    const gpu::CommandQueueReference& _presentationQueue)
 {
-	m_swapChain = engine::GetEngine().getGraphicDevice().createSwapChain(_swapChainDesc, _window);
-	EGO_CHECK_RETURN_FALSE(m_swapChain);
+    m_swapChain = _graphicDevice.createSwapChain(_swapChainDesc, _window, _presentationQueue);
+    EGO_CHECK_RETURN_FALSE(m_swapChain);
 
-	return true;
+    return true;
 }
 
 void ego::WindowGraphicPresenter::release()

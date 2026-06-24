@@ -10,7 +10,9 @@ namespace ego::framework
     {
     public:
         GameLogicPlugin(const PluginModulePointer& _module, PluginType _pluginType)
-            : Plugin(_module, _pluginType) {}
+            : Plugin(_module, _pluginType)
+        {
+        }
 
         virtual GameLogicPointer createGameLogic() = 0;
 
@@ -18,5 +20,4 @@ namespace ego::framework
     };
 
     EGO_POINTER(GameLogicPlugin);
-}
-
+} // namespace ego::framework

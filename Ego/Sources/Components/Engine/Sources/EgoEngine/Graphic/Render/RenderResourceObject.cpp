@@ -1,6 +1,6 @@
 #include "RenderResourceObject.h"
 
-#include "EgoEngine/Graphic/RenderHardware/Resources/ShaderResource.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ShaderResource.h"
 
 ego::render::RenderShader ego::render::CreateShaderHandler(const SharedPointer<gpu::ShaderResource>& _resource)
 {
@@ -9,46 +9,65 @@ ego::render::RenderShader ego::render::CreateShaderHandler(const SharedPointer<g
         [](const SharedPointer<gpu::ShaderResource>& _storedResource) -> gpu::ShaderReference
         {
             return _storedResource ? _storedResource->getShader() : nullptr;
-        }
-    );
+        });
 }
 
-ego::render::RenderVertexShader ego::render::CreateVertexShaderHandler(
-    const SharedPointer<gpu::VertexShaderResource>& _resource
-)
+ego::render::RenderVertexShader ego::render::CreateVertexShaderHandler(const SharedPointer<gpu::VertexShaderResource>& _resource)
 {
     return MakeHandler<gpu::VertexShaderReference>(
         _resource,
         [](const SharedPointer<gpu::VertexShaderResource>& _storedResource) -> gpu::VertexShaderReference
         {
             return _storedResource ? _storedResource->getVertexShader() : nullptr;
-        }
-    );
+        });
 }
 
-ego::render::RenderPixelShader ego::render::CreatePixelShaderHandler(
-    const SharedPointer<gpu::PixelShaderResource>& _resource
-)
+ego::render::RenderPixelShader ego::render::CreatePixelShaderHandler(const SharedPointer<gpu::PixelShaderResource>& _resource)
 {
     return MakeHandler<gpu::PixelShaderReference>(
         _resource,
         [](const SharedPointer<gpu::PixelShaderResource>& _storedResource) -> gpu::PixelShaderReference
         {
             return _storedResource ? _storedResource->getPixelShader() : nullptr;
-        }
-    );
+        });
 }
 
-ego::render::RenderComputeShader ego::render::CreateComputeShaderHandler(
-    const SharedPointer<gpu::ComputeShaderResource>& _resource
-)
+ego::render::RenderComputeShader ego::render::CreateComputeShaderHandler(const SharedPointer<gpu::ComputeShaderResource>& _resource)
 {
     return MakeHandler<gpu::ComputeShaderReference>(
         _resource,
         [](const SharedPointer<gpu::ComputeShaderResource>& _storedResource) -> gpu::ComputeShaderReference
         {
             return _storedResource ? _storedResource->getComputeShader() : nullptr;
-        }
-    );
+        });
 }
 
+ego::render::RenderRayGenerationShader ego::render::CreateRayGenerationShaderHandler(const SharedPointer<gpu::RayGenerationShaderResource>& _resource)
+{
+    return MakeHandler<gpu::RayGenerationShaderReference>(
+        _resource,
+        [](const SharedPointer<gpu::RayGenerationShaderResource>& _storedResource) -> gpu::RayGenerationShaderReference
+        {
+            return _storedResource ? _storedResource->getRayGenerationShader() : nullptr;
+        });
+}
+
+ego::render::RenderMissShader ego::render::CreateMissShaderHandler(const SharedPointer<gpu::MissShaderResource>& _resource)
+{
+    return MakeHandler<gpu::MissShaderReference>(
+        _resource,
+        [](const SharedPointer<gpu::MissShaderResource>& _storedResource) -> gpu::MissShaderReference
+        {
+            return _storedResource ? _storedResource->getMissShader() : nullptr;
+        });
+}
+
+ego::render::RenderClosestHitShader ego::render::CreateClosestHitShaderHandler(const SharedPointer<gpu::ClosestHitShaderResource>& _resource)
+{
+    return MakeHandler<gpu::ClosestHitShaderReference>(
+        _resource,
+        [](const SharedPointer<gpu::ClosestHitShaderResource>& _storedResource) -> gpu::ClosestHitShaderReference
+        {
+            return _storedResource ? _storedResource->getClosestHitShader() : nullptr;
+        });
+}

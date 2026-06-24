@@ -18,13 +18,7 @@ namespace ego
         ResourcePointer getResource(FileNameID _id) const;
         ResourcePointer getRegisteredResource(Resource& _resource) const;
 
-        ResourcePointer getOrCreateResource(
-            ResourceType _type,
-            const FileName& _path,
-            ResourceID _id,
-            const ResourceFactory& _factory,
-            bool& _needLoading
-        );
+        ResourcePointer getOrCreateResource(ResourceType _type, const FileName& _path, ResourceID _id, const ResourceFactory& _factory, bool& _needLoading);
 
         bool removeResource(Resource* _resource);
         void setLoadingJob(const ResourcePointer& _resource, const JobReference& _job);
@@ -48,4 +42,4 @@ namespace ego
         mutable std::mutex m_mutex;
         ResourceCollection m_resources;
     };
-}
+} // namespace ego

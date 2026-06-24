@@ -22,16 +22,35 @@ namespace ego
             uint32_t m_key;
         };
 
-        constexpr InstancedEventID(uint64_t _id) : m_id(_id) {}
-        constexpr InstancedEventID(EventType _type, uint32_t _key) : m_type(_type), m_key(_key) {}
+        constexpr InstancedEventID(uint64_t _id)
+            : m_id(_id)
+        {
+        }
+        constexpr InstancedEventID(EventType _type, uint32_t _key)
+            : m_type(_type),
+              m_key(_key)
+        {
+        }
 
-        bool operator==(const InstancedEventID& _id) const { return m_id == _id.m_id; }
-        bool operator!=(const InstancedEventID& _id) const { return m_id != _id.m_id; }
+        bool operator==(const InstancedEventID& _id) const
+        {
+            return m_id == _id.m_id;
+        }
+        bool operator!=(const InstancedEventID& _id) const
+        {
+            return m_id != _id.m_id;
+        }
 
-        bool operator<(const InstancedEventID& _id) const { return m_id < _id.m_id; }
-        bool operator>(const InstancedEventID& _id) const { return m_id > _id.m_id; }
+        bool operator<(const InstancedEventID& _id) const
+        {
+            return m_id < _id.m_id;
+        }
+        bool operator>(const InstancedEventID& _id) const
+        {
+            return m_id > _id.m_id;
+        }
     };
-}
+} // namespace ego
 
 namespace std
 {
@@ -43,7 +62,7 @@ namespace std
             return std::hash<uint64_t>()(_instance.m_id);
         }
     };
-}
+} // namespace std
 
 namespace ego
 {
@@ -58,7 +77,10 @@ namespace ego
     {
     public:
         EventController() = default;
-        ~EventController() { release(); }
+        ~EventController()
+        {
+            release();
+        }
 
         bool init();
         void release();
@@ -95,8 +117,7 @@ namespace ego
                 [callback = _callback](const Event& _event)
                 {
                     callback(static_cast<const TEvent&>(_event));
-                }
-            );
+                });
         }
 
         template <typename TEvent>
@@ -122,10 +143,7 @@ namespace ego
         bool unregisterInstancedEvent(InstancedEventID _eventID);
 
         template <typename TEvent>
-        InstancedEventCallbackID addInstanceEventCallback(
-            InstancedEventID _eventID,
-            const std::function<void(const TEvent&)>& _callback
-        )
+        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, const std::function<void(const TEvent&)>& _callback)
         {
             return addInstanceEventCallback(
                 _eventID,
@@ -133,8 +151,7 @@ namespace ego
                 {
                     EGO_ASSERT((rtti::IsObjectBasedOn(_event, EGO_EVENT_TYPE(TEvent))));
                     callback(static_cast<const TEvent&>(_event));
-                }
-            );
+                });
         }
 
         void removeInstancedEventDispatcher(InstancedEventCallbackID _dispatcherID);
@@ -180,10 +197,7 @@ namespace ego
 
         InstancedEventID registerInstancedEvent(EventType _type);
 
-        InstancedEventCallbackID addInstanceEventCallback(
-            InstancedEventID _eventID,
-            const InstancedEventCallback& _callback
-        );
+        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, const InstancedEventCallback& _callback);
 
         bool emitEvent(InstancedEventID _eventID, const Event& _event) const;
 
@@ -196,4 +210,4 @@ namespace ego
     };
 
     EGO_POINTER(EventController);
-}
+} // namespace ego

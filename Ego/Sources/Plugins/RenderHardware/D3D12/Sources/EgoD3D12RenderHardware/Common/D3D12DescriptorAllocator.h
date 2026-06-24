@@ -41,4 +41,4 @@ namespace ego::gpu::d3d12
 
     EGO_POINTER(D3D12DescriptorAllocator);
     EGO_WEAK_POINTER(D3D12DescriptorAllocator);
-}
+} // namespace ego::gpu::d3d12

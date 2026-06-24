@@ -108,9 +108,7 @@ ego::FileName ego::RootedFileSystem::getAbsolutePath(const FileName& _path) cons
     }
 
     FileName sourcePath;
-    return resolveSourcePath(_path, sourcePath)
-        ? m_fileSystem->getAbsolutePath(sourcePath)
-        : FileName();
+    return resolveSourcePath(_path, sourcePath) ? m_fileSystem->getAbsolutePath(sourcePath) : FileName();
 }
 
 bool ego::RootedFileSystem::getEntryInfo(const FileName& _path, FileSystemEntryDesc& _entry) const
@@ -132,11 +130,7 @@ bool ego::RootedFileSystem::getEntryInfo(const FileName& _path, FileSystemEntryD
     return true;
 }
 
-bool ego::RootedFileSystem::enumerate(
-    const FileName& _directoryPath,
-    FileSystemEntryCollection& _entries,
-    bool _recursive
-) const
+bool ego::RootedFileSystem::enumerate(const FileName& _directoryPath, FileSystemEntryCollection& _entries, bool _recursive) const
 {
     _entries.clear();
 
@@ -184,32 +178,20 @@ bool ego::RootedFileSystem::remove(const FileName& _path, bool _recursive)
     return m_isInitialized && resolveSourcePath(_path, sourcePath) && m_fileSystem->remove(sourcePath, _recursive);
 }
 
-bool ego::RootedFileSystem::copyFile(
-    const FileName& _sourcePath,
-    const FileName& _destinationPath,
-    bool _overwrite
-)
+bool ego::RootedFileSystem::copyFile(const FileName& _sourcePath, const FileName& _destinationPath, bool _overwrite)
 {
     FileName sourcePath;
     FileName destinationPath;
-    return m_isInitialized &&
-        resolveSourcePath(_sourcePath, sourcePath) &&
-        resolveSourcePath(_destinationPath, destinationPath) &&
-        m_fileSystem->copyFile(sourcePath, destinationPath, _overwrite);
+    return m_isInitialized && resolveSourcePath(_sourcePath, sourcePath) && resolveSourcePath(_destinationPath, destinationPath) &&
+           m_fileSystem->copyFile(sourcePath, destinationPath, _overwrite);
 }
 
-bool ego::RootedFileSystem::move(
-    const FileName& _sourcePath,
-    const FileName& _destinationPath,
-    bool _overwrite
-)
+bool ego::RootedFileSystem::move(const FileName& _sourcePath, const FileName& _destinationPath, bool _overwrite)
 {
     FileName sourcePath;
     FileName destinationPath;
-    return m_isInitialized &&
-        resolveSourcePath(_sourcePath, sourcePath) &&
-        resolveSourcePath(_destinationPath, destinationPath) &&
-        m_fileSystem->move(sourcePath, destinationPath, _overwrite);
+    return m_isInitialized && resolveSourcePath(_sourcePath, sourcePath) && resolveSourcePath(_destinationPath, destinationPath) &&
+           m_fileSystem->move(sourcePath, destinationPath, _overwrite);
 }
 
 bool ego::RootedFileSystem::readFile(const FileName& _path, FileContent& _content) const
@@ -248,16 +230,10 @@ bool ego::RootedFileSystem::appendTextFile(const FileName& _path, const std::str
     return m_isInitialized && resolveSourcePath(_path, sourcePath) && m_fileSystem->appendTextFile(sourcePath, _content);
 }
 
-ego::FileSystemWatchID ego::RootedFileSystem::watchDirectory(
-    const FileName& _directoryPath,
-    FileSystemWatchFilter _filter,
-    bool _recursive
-)
+ego::FileSystemWatchID ego::RootedFileSystem::watchDirectory(const FileName& _directoryPath, FileSystemWatchFilter _filter, bool _recursive)
 {
     FileName sourcePath;
-    return m_isInitialized && resolveSourcePath(_directoryPath, sourcePath)
-        ? m_fileSystem->watchDirectory(sourcePath, _filter, _recursive)
-        : InvalidFileSystemWatchID;
+    return m_isInitialized && resolveSourcePath(_directoryPath, sourcePath) ? m_fileSystem->watchDirectory(sourcePath, _filter, _recursive) : InvalidFileSystemWatchID;
 }
 
 bool ego::RootedFileSystem::unwatchDirectory(FileSystemWatchID _watchID)
@@ -338,9 +314,7 @@ bool ego::RootedFileSystem::resolveVirtualPath(const FileName& _path, std::strin
         while (position < m_workingDirectory.size())
         {
             const size_t separatorPosition = m_workingDirectory.find('/', position);
-            const size_t partEnd = separatorPosition == std::string::npos
-                ? m_workingDirectory.size()
-                : separatorPosition;
+            const size_t partEnd = separatorPosition == std::string::npos ? m_workingDirectory.size() : separatorPosition;
 
             parts.push_back(m_workingDirectory.substr(position, partEnd - position));
 
@@ -449,12 +423,8 @@ ego::FileName ego::RootedFileSystem::buildVirtualPath(const FileName& _sourcePat
 
     const std::string rootAbsolute = NormalizeRootPath(m_fileSystem->getAbsolutePath(m_rootPath));
     const std::string sourceAbsolute = NormalizeRootPath(m_fileSystem->getAbsolutePath(_sourcePath));
-    const std::string rootPath = rootAbsolute.empty()
-        ? NormalizeRootPath(m_rootPath)
-        : rootAbsolute;
-    const std::string sourcePath = sourceAbsolute.empty()
-        ? NormalizeRootPath(_sourcePath)
-        : sourceAbsolute;
+    const std::string rootPath = rootAbsolute.empty() ? NormalizeRootPath(m_rootPath) : rootAbsolute;
+    const std::string sourcePath = sourceAbsolute.empty() ? NormalizeRootPath(_sourcePath) : sourceAbsolute;
 
     if (sourcePath == rootPath)
     {

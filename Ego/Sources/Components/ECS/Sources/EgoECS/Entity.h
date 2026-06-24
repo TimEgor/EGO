@@ -13,18 +13,39 @@ namespace ego::ecs
     {
     public:
         constexpr Entity() = default;
-        explicit constexpr Entity(EntityID _id) : m_id(_id) {}
+        explicit constexpr Entity(EntityID _id)
+            : m_id(_id)
+        {
+        }
 
-        constexpr EntityID getID() const { return m_id; }
-        constexpr bool isValid() const { return m_id != InvalidEntityID; }
+        constexpr EntityID getID() const
+        {
+            return m_id;
+        }
+        constexpr bool isValid() const
+        {
+            return m_id != InvalidEntityID;
+        }
 
-        explicit constexpr operator bool() const { return isValid(); }
+        explicit constexpr operator bool() const
+        {
+            return isValid();
+        }
 
-        constexpr bool operator==(Entity _entity) const { return m_id == _entity.m_id; }
-        constexpr bool operator!=(Entity _entity) const { return m_id != _entity.m_id; }
-        constexpr bool operator<(Entity _entity) const { return m_id < _entity.m_id; }
+        constexpr bool operator==(Entity _entity) const
+        {
+            return m_id == _entity.m_id;
+        }
+        constexpr bool operator!=(Entity _entity) const
+        {
+            return m_id != _entity.m_id;
+        }
+        constexpr bool operator<(Entity _entity) const
+        {
+            return m_id < _entity.m_id;
+        }
 
     private:
         EntityID m_id = InvalidEntityID;
     };
-}
+} // namespace ego::ecs

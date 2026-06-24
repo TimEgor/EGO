@@ -34,4 +34,4 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(CommandQueue);
-}
+} // namespace ego::gpu

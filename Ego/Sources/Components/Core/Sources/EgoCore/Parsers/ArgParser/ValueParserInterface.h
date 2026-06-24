@@ -34,5 +34,5 @@ namespace ego
         {
             ParseValue(_str != nullptr ? std::string_view(_str) : std::string_view(), _val);
         }
-    }
-}
+    } // namespace arg_parser_interface
+} // namespace ego

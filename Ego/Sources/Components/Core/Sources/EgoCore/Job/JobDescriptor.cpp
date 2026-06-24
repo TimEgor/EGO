@@ -4,7 +4,8 @@
 
 ego::JobDescriptor::JobDescriptor(JobFactory _factory)
     : m_factory(std::move(_factory))
-{}
+{
+}
 
 ego::JobReference ego::JobDescriptor::createJob() const
 {
@@ -56,12 +57,8 @@ ego::JobDescriptor ego::CreateJobDescriptor(const LambdaJob::JobFunction& _funct
         JobDescriptor::JobFactory(
             [_function, _dbgName]()
             {
-                return _dbgName
-                    ? CreateLambdaJob(_function, _dbgName)
-                    : CreateLambdaJob(_function);
-            }
-        )
-    );
+                return _dbgName ? CreateLambdaJob(_function, _dbgName) : CreateLambdaJob(_function);
+            }));
 }
 
 ego::JobDescriptor ego::CreateEmptyJobDescriptor(const char* _dbgName)

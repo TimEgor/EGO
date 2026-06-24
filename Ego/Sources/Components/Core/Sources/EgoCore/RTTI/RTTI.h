@@ -21,16 +21,14 @@ namespace ego::rtti
 
             ParentTypeMetaInfoContext(const TypeMetaInfo* _info, size_t _offset)
                 : m_info(_info),
-                  m_typeOffset(_offset) {}
+                  m_typeOffset(_offset)
+            {
+            }
         };
 
         using ParentTypeMetaInfoCollection = std::vector<ParentTypeMetaInfoContext>;
 
-        TypeMetaInfo(
-            TypeMetaInfoID _id,
-            size_t _size,
-            ParentTypeMetaInfoCollection&& _parentTypeMetaInfos = ParentTypeMetaInfoCollection()
-        );
+        TypeMetaInfo(TypeMetaInfoID _id, size_t _size, ParentTypeMetaInfoCollection&& _parentTypeMetaInfos = ParentTypeMetaInfoCollection());
         TypeMetaInfo(const TypeMetaInfo&) = default;
         TypeMetaInfo(TypeMetaInfo&&) = default;
 
@@ -71,20 +69,13 @@ namespace ego::rtti
     size_t GetBaseTypeOffset()
     {
         static_assert(std::is_base_of_v<Base, Type>);
-        return reinterpret_cast<uint8_t*>(static_cast<Base*>(reinterpret_cast<Type*>(0x10000))) -
-            reinterpret_cast<uint8_t*>(reinterpret_cast<Type*>(0x10000));
+        return reinterpret_cast<uint8_t*>(static_cast<Base*>(reinterpret_cast<Type*>(0x10000))) - reinterpret_cast<uint8_t*>(reinterpret_cast<Type*>(0x10000));
     }
 
     template <typename Type, typename... Bases>
     TypeMetaInfo RegistryTypeMetaInfo()
     {
-        return std::move(
-            TypeMetaInfo(
-                GetTypeMetaInfoID<Type>(),
-                sizeof(Type),
-                {{&(GetTypeMetaInfo<Bases>()), GetBaseTypeOffset<Type, Bases>()}...}
-            )
-        );
+        return std::move(TypeMetaInfo(GetTypeMetaInfoID<Type>(), sizeof(Type), {{&(GetTypeMetaInfo<Bases>()), GetBaseTypeOffset<Type, Bases>()}...}));
     }
 
     template <typename Type, typename Base>
@@ -116,50 +107,49 @@ namespace ego::rtti
     {
         return GetTypeMetaInfo<Type>().castTo(_object, GetTypeMetaInfo<Base>());
     }
-}
+} // namespace ego::rtti
 
-#define EGO_RTTI(_TYPE, ...)													                \
-	static const char* GetMetaInfoTypeName()									                \
-	{																			                \
-		return #_TYPE;															                \
-	}																			                \
-																				                \
-	static ego::rtti::TypeMetaInfoID GetMetaInfoID()										    \
-	{																			                \
-		static constexpr ego::rtti::TypeMetaInfoID ID = ego::rtti::GetTypeMetaInfoID(#_TYPE);   \
-		return ID;																                \
-	}																			                \
-																				                \
-	static const ego::rtti::TypeMetaInfo& GetMetaInfo()							                \
-	{																			                \
-		static const ego::rtti::TypeMetaInfo TypeMetaInfo =						                \
-			std::move(ego::rtti::RegistryTypeMetaInfo<_TYPE __VA_OPT__(,) __VA_ARGS__>());	    \
-		return TypeMetaInfo;																    \
-	}
+#define EGO_RTTI(_TYPE, ...)                                                                                                                                                       \
+    static const char* GetMetaInfoTypeName()                                                                                                                                       \
+    {                                                                                                                                                                              \
+        return #_TYPE;                                                                                                                                                             \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    static ego::rtti::TypeMetaInfoID GetMetaInfoID()                                                                                                                               \
+    {                                                                                                                                                                              \
+        static constexpr ego::rtti::TypeMetaInfoID ID = ego::rtti::GetTypeMetaInfoID(#_TYPE);                                                                                      \
+        return ID;                                                                                                                                                                 \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    static const ego::rtti::TypeMetaInfo& GetMetaInfo()                                                                                                                            \
+    {                                                                                                                                                                              \
+        static const ego::rtti::TypeMetaInfo TypeMetaInfo = std::move(ego::rtti::RegistryTypeMetaInfo<_TYPE __VA_OPT__(, ) __VA_ARGS__>());                                        \
+        return TypeMetaInfo;                                                                                                                                                       \
+    }
 
-#define EGO_RTTI_OBJECT(_PRE_MODIFICATOR, _POST_MODIFICATOR)											\
-	_PRE_MODIFICATOR const char * getObjectTypeInfoName() const _POST_MODIFICATOR						\
-	{																									\
-		return GetMetaInfoTypeName();																	\
-	}																									\
-																										\
-	_PRE_MODIFICATOR ego::rtti::TypeMetaInfoID getObjectTypeMetaInfoID() const _POST_MODIFICATOR		\
-	{																									\
-		return GetMetaInfoID();																			\
-	}																									\
-																										\
-	_PRE_MODIFICATOR const ego::rtti::TypeMetaInfo& getObjectTypeMetaInfo() const _POST_MODIFICATOR	    \
-	{																									\
-		return GetMetaInfo();																			\
-	}
+#define EGO_RTTI_OBJECT(_PRE_MODIFICATOR, _POST_MODIFICATOR)                                                                                                                       \
+    _PRE_MODIFICATOR const char* getObjectTypeInfoName() const _POST_MODIFICATOR                                                                                                   \
+    {                                                                                                                                                                              \
+        return GetMetaInfoTypeName();                                                                                                                                              \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    _PRE_MODIFICATOR ego::rtti::TypeMetaInfoID getObjectTypeMetaInfoID() const _POST_MODIFICATOR                                                                                   \
+    {                                                                                                                                                                              \
+        return GetMetaInfoID();                                                                                                                                                    \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    _PRE_MODIFICATOR const ego::rtti::TypeMetaInfo& getObjectTypeMetaInfo() const _POST_MODIFICATOR                                                                                \
+    {                                                                                                                                                                              \
+        return GetMetaInfo();                                                                                                                                                      \
+    }
 
-#define EGO_RTTI_VIRTUAL(_TYPE, ...)	\
-	EGO_RTTI(_TYPE, __VA_ARGS__)		\
-	EGO_RTTI_OBJECT(virtual, override)
+#define EGO_RTTI_VIRTUAL(_TYPE, ...)                                                                                                                                               \
+    EGO_RTTI(_TYPE, __VA_ARGS__)                                                                                                                                                   \
+    EGO_RTTI_OBJECT(virtual, override)
 
-#define EGO_RTTI_VIRTUAL_BASE(_TYPE)	\
-	EGO_RTTI(_TYPE)						\
-	EGO_RTTI_OBJECT(virtual, )
+#define EGO_RTTI_VIRTUAL_BASE(_TYPE)                                                                                                                                               \
+    EGO_RTTI(_TYPE)                                                                                                                                                                \
+    EGO_RTTI_OBJECT(virtual, )
 
 #define EGO_RTTI_TYPE_NAME(_TYPE) (ego::rtti::GetTypeMetaInfoName<_TYPE>())
 #define EGO_RTTI_TYPE_ID(_TYPE) (ego::rtti::GetTypeMetaInfoID<_TYPE>())

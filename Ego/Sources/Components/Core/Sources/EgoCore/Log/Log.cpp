@@ -8,10 +8,10 @@
 #include <string>
 
 #if defined(WIN32) || defined(_WIN32)
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <Windows.h>
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #include <Windows.h>
 #endif
 
 namespace ego::log
@@ -19,32 +19,17 @@ namespace ego::log
     class DefaultLogger final : public Logger
     {
     public:
-        void write(
-            LogCategory _category,
-            std::string_view _message,
-            const char* _file,
-            uint32_t _line
-        ) override;
+        void write(LogCategory _category, std::string_view _message, const char* _file, uint32_t _line) override;
 
     private:
-        static std::string BuildOutputText(
-            LogCategory _category,
-            std::string_view _message,
-            const char* _file,
-            uint32_t _line
-        );
+        static std::string BuildOutputText(LogCategory _category, std::string_view _message, const char* _file, uint32_t _line);
 
         void writeImpl(LogCategory _category, const std::string& _text) const;
 
         mutable std::mutex m_lock;
     };
 
-    std::string DefaultLogger::BuildOutputText(
-        LogCategory _category,
-        std::string_view _message,
-        const char* _file,
-        uint32_t _line
-    )
+    std::string DefaultLogger::BuildOutputText(LogCategory _category, std::string_view _message, const char* _file, uint32_t _line)
     {
         std::string result;
         result.reserve(_message.size() + 64);
@@ -65,12 +50,7 @@ namespace ego::log
         return result;
     }
 
-    void DefaultLogger::write(
-        LogCategory _category,
-        std::string_view _message,
-        const char* _file,
-        uint32_t _line
-    )
+    void DefaultLogger::write(LogCategory _category, std::string_view _message, const char* _file, uint32_t _line)
     {
         const std::string text = BuildOutputText(_category, _message, _file, _line);
 
@@ -116,13 +96,7 @@ namespace ego::log
         DWORD written = 0;
         const std::size_t maxChunkSize = static_cast<std::size_t>(std::numeric_limits<DWORD>::max());
         const std::size_t writeSize = std::min(_text.size(), maxChunkSize);
-        WriteConsoleA(
-            console,
-            _text.data(),
-            static_cast<DWORD>(writeSize),
-            &written,
-            nullptr
-        );
+        WriteConsoleA(console, _text.data(), static_cast<DWORD>(writeSize), &written, nullptr);
 
         SetConsoleTextAttribute(console, defaultAttributes);
     }
@@ -144,7 +118,7 @@ namespace ego::log
         }
     }
 #endif
-}
+} // namespace ego::log
 
 ego::log::LoggerPointer ego::log::CreateDefaultLogger()
 {
@@ -153,7 +127,8 @@ ego::log::LoggerPointer ego::log::CreateDefaultLogger()
 
 ego::log::LogCore::LogCore()
     : m_ideLogger(CreateDefaultLogger())
-{}
+{
+}
 
 void ego::log::LogCore::setLogger(const LoggerPointer& _logger)
 {
@@ -193,12 +168,7 @@ const char* ego::log::GetLogCategoryName(LogCategory _category)
     }
 }
 
-void ego::log::Write(
-    LogCategory _category,
-    std::string_view _message,
-    const char* _file,
-    uint32_t _line
-)
+void ego::log::Write(LogCategory _category, std::string_view _message, const char* _file, uint32_t _line)
 {
 #if EGO_ENABLE_LOGS
     LogCore& core = LogCore::GetInstance();

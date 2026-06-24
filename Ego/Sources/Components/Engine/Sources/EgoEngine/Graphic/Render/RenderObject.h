@@ -10,4 +10,4 @@ namespace ego::render
     // Render domain objects.
     using RenderMaterial = MaterialHandler;
     using RenderMesh = MeshHandler;
-}
+} // namespace ego::render

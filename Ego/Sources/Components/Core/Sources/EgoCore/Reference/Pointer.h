@@ -190,7 +190,10 @@ namespace ego
     protected:
         constexpr EnableSharedFromThis() = default;
         EnableSharedFromThis(const EnableSharedFromThis&) {}
-        EnableSharedFromThis& operator=(const EnableSharedFromThis&) { return *this; }
+        EnableSharedFromThis& operator=(const EnableSharedFromThis&)
+        {
+            return *this;
+        }
         ~EnableSharedFromThis() = default;
 
     private:
@@ -201,24 +204,18 @@ namespace ego
 
     template <typename To, typename From>
     SharedPointer<To> StaticPointerCast(const SharedPointer<From>& _pointer);
-}
+} // namespace ego
 
-#define EGO_POINTER_DECLARATION(_TYPE, _NAME, _POSTFIX)	\
-	using _NAME##_POSTFIX = ego::SharedPointer<_TYPE>;
+#define EGO_POINTER_DECLARATION(_TYPE, _NAME, _POSTFIX) using _NAME##_POSTFIX = ego::SharedPointer<_TYPE>;
 
-#define EGO_POINTER(_TYPE)	\
-	EGO_POINTER_DECLARATION(_TYPE, _TYPE, Pointer)
+#define EGO_POINTER(_TYPE) EGO_POINTER_DECLARATION(_TYPE, _TYPE, Pointer)
 
-#define EGO_NAMED_POINTER(_TYPE, _NAME)	\
-	EGO_POINTER_DECLARATION(_TYPE, _NAME, Pointer)
+#define EGO_NAMED_POINTER(_TYPE, _NAME) EGO_POINTER_DECLARATION(_TYPE, _NAME, Pointer)
 
-#define EGO_WEAK_POINTER_DECLARATION(_TYPE, _NAME, _POSTFIX)	\
-	using _NAME##_POSTFIX = ego::WeakPointer<_TYPE>;
+#define EGO_WEAK_POINTER_DECLARATION(_TYPE, _NAME, _POSTFIX) using _NAME##_POSTFIX = ego::WeakPointer<_TYPE>;
 
-#define EGO_WEAK_POINTER(_TYPE)	\
-	EGO_WEAK_POINTER_DECLARATION(_TYPE, _TYPE, WeakPointer)
+#define EGO_WEAK_POINTER(_TYPE) EGO_WEAK_POINTER_DECLARATION(_TYPE, _TYPE, WeakPointer)
 
-#define EGO_NAMED_WEAK_POINTER(_TYPE, _NAME)	\
-	EGO_WEAK_POINTER_DECLARATION(_TYPE, _NAME, WeakPointer)
+#define EGO_NAMED_WEAK_POINTER(_TYPE, _NAME) EGO_WEAK_POINTER_DECLARATION(_TYPE, _NAME, WeakPointer)
 
 #include "Pointer.hpp"

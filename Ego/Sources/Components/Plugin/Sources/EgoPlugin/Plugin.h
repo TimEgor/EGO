@@ -24,13 +24,12 @@ namespace ego
         return static_cast<PluginID>(_moduleId) << 32 | _pluginType;
     }
 
-    class Plugin
-        : public NonCopyable
+    class Plugin : public NonCopyable
     {
     public:
         Plugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        virtual ~Plugin();
+        ~Plugin() override;
 
         virtual void onLoaded() {}
         virtual void onUnloaded() {}
@@ -55,32 +54,32 @@ namespace ego
 
     EGO_POINTER(Plugin);
     EGO_WEAK_POINTER(Plugin);
-}
+} // namespace ego
 
-#define EGO_PLUGIN_TYPE_INFO()				\
-	static const char* GetPluginTypeName()	\
-	{										\
-		return GetMetaInfoTypeName();		\
-	}										\
-											\
-	static ego::PluginType GetPluginType()	\
-	{										\
-		return GetMetaInfoID();				\
-	}
+#define EGO_PLUGIN_TYPE_INFO()                                                                                                                                                     \
+    static const char* GetPluginTypeName()                                                                                                                                         \
+    {                                                                                                                                                                              \
+        return GetMetaInfoTypeName();                                                                                                                                              \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    static ego::PluginType GetPluginType()                                                                                                                                         \
+    {                                                                                                                                                                              \
+        return GetMetaInfoID();                                                                                                                                                    \
+    }
 
-#define EGO_PLUGIN(_TYPE, ...)							\
-	EGO_RTTI_VIRTUAL(_TYPE, __VA_ARGS__);				\
-	EGO_PLUGIN_TYPE_INFO();								\
-														\
-	virtual const char* getTypeName() const override	\
-	{												    \
-		return GetPluginTypeName();					    \
-	}												    \
-													    \
-	virtual ego::PluginType getType() const override	\
-	{												    \
-		return GetPluginType();						    \
-	}
+#define EGO_PLUGIN(_TYPE, ...)                                                                                                                                                     \
+    EGO_RTTI_VIRTUAL(_TYPE, __VA_ARGS__);                                                                                                                                          \
+    EGO_PLUGIN_TYPE_INFO();                                                                                                                                                        \
+                                                                                                                                                                                   \
+    virtual const char* getTypeName() const override                                                                                                                               \
+    {                                                                                                                                                                              \
+        return GetPluginTypeName();                                                                                                                                                \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    virtual ego::PluginType getType() const override                                                                                                                               \
+    {                                                                                                                                                                              \
+        return GetPluginType();                                                                                                                                                    \
+    }
 
 #define EGO_PLUGIN_TYPE(_PLUGIN) (_PLUGIN::GetPluginType())
 #define EGO_PLUGIN_TYPE_NAME(_PLUGIN) (_PLUGIN::GetPluginTypeName())

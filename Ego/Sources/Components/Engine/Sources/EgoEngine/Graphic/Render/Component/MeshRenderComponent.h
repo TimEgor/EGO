@@ -14,4 +14,4 @@ namespace ego::render
         RenderMesh m_mesh = nullptr;
         RenderMaterial m_material = nullptr;
     };
-}
+} // namespace ego::render

@@ -9,10 +9,10 @@ namespace ego::render::default_render
     public:
         DefaultRenderPlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        virtual RenderPointer createRender() override;
+        RenderPointer createRender() override;
 
         EGO_PLUGIN(DefaultRenderPlugin, RenderPlugin);
     };
 
     EGO_POINTER(DefaultRenderPlugin);
-}
+} // namespace ego::render::default_render

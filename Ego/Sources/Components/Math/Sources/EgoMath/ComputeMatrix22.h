@@ -30,35 +30,30 @@ namespace ego
 
     public:
         constexpr ComputeMatrix2x2Base()
-            : m_matrix() {}
+            : m_matrix()
+        {
+        }
 
-        constexpr ComputeMatrix2x2Base(
-            ValueType _m11,
-            ValueType _m12,
-            ValueType _m21,
-            ValueType _m22
-        )
-            : m_matrix(
-                _m11,
-                _m12,
-                _m21,
-                _m22
-            )
-        {}
+        constexpr ComputeMatrix2x2Base(ValueType _m11, ValueType _m12, ValueType _m21, ValueType _m22)
+            : m_matrix(_m11, _m12, _m21, _m22)
+        {
+        }
 
         constexpr ComputeMatrix2x2Base(const MatrixType& _matrix)
-            : m_matrix(_matrix) {}
+            : m_matrix(_matrix)
+        {
+        }
 
-        constexpr ComputeMatrix2x2Base(
-            const ComputeVector2Base<ValueType>& _column1,
-            const ComputeVector2Base<ValueType>& _column2
-        )
+        constexpr ComputeMatrix2x2Base(const ComputeVector2Base<ValueType>& _column1, const ComputeVector2Base<ValueType>& _column2)
             : m_column1(_column1),
               m_column2(_column2)
-        {}
+        {
+        }
 
         constexpr ComputeMatrix2x2Base(const ComputeMatrix2x2Base& _matrix)
-            : m_matrix(_matrix.m_matrix) {}
+            : m_matrix(_matrix.m_matrix)
+        {
+        }
 
         ComputeMatrix2x2Base& operator=(const ComputeMatrix2x2Base& _matrix);
 
@@ -72,10 +67,19 @@ namespace ego
         bool operator!=(const ComputeMatrix2x2Base& _matrix) const;
 
         FloatMatrix2x2 getFloatMatrix2x2() const;
-        void getFloatMatrix2x2(FloatMatrix2x2& _out) const { _out = m_matrix; }
+        void getFloatMatrix2x2(FloatMatrix2x2& _out) const
+        {
+            _out = m_matrix;
+        }
 
-        ValueType getElement(uint32_t _row, uint32_t _column) const { return m_matrix.getElement(_column, _row); }
-        ValueType& getElement(uint32_t _row, uint32_t _column) { return m_matrix.getElement(_column, _row); }
+        ValueType getElement(uint32_t _row, uint32_t _column) const
+        {
+            return m_matrix.getElement(_column, _row);
+        }
+        ValueType& getElement(uint32_t _row, uint32_t _column)
+        {
+            return m_matrix.getElement(_column, _row);
+        }
 
         void setElement(uint32_t _row, uint32_t _column, ValueType _value)
         {
@@ -130,23 +134,13 @@ namespace ego
     template <typename T>
     constexpr ComputeMatrix2x2Base<T> ComputeMatrix2x2ZeroBase()
     {
-        return ComputeMatrix2x2Base<T>(
-            T(0.0),
-            T(0.0),
-            T(0.0),
-            T(0.0)
-        );
+        return ComputeMatrix2x2Base<T>(T(0.0), T(0.0), T(0.0), T(0.0));
     }
 
     template <typename T>
     constexpr ComputeMatrix2x2Base<T> ComputeMatrix2x2IdentityBase()
     {
-        return ComputeMatrix2x2Base<T>(
-            T(1.0),
-            T(0.0),
-            T(0.0),
-            T(1.0)
-        );
+        return ComputeMatrix2x2Base<T>(T(1.0), T(0.0), T(0.0), T(1.0));
     }
 
     using ComputeMatrix2x2 = ComputeMatrix2x2Base<ComputeValueType>;
@@ -157,6 +151,6 @@ namespace ego
 
     constexpr FloatComputeMatrix2x2 FloatComputeMatrix2x2Zero = ComputeMatrix2x2ZeroBase<float>();
     constexpr FloatComputeMatrix2x2 FloatComputeMatrix2x2Identity = ComputeMatrix2x2IdentityBase<float>();
-}
+} // namespace ego
 
 #include "ComputeMatrix22.hpp"

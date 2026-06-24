@@ -24,7 +24,7 @@ namespace
             return;
         }
 
-        const uint8_t* bytes = static_cast<const uint8_t*>(_data);
+        auto bytes = static_cast<const uint8_t*>(_data);
         _content.insert(_content.end(), bytes, bytes + _size);
     }
 
@@ -41,11 +41,8 @@ namespace
             return false;
         }
 
-        _value =
-            static_cast<uint32_t>(_content[_offset]) |
-            (static_cast<uint32_t>(_content[_offset + 1]) << 8) |
-            (static_cast<uint32_t>(_content[_offset + 2]) << 16) |
-            (static_cast<uint32_t>(_content[_offset + 3]) << 24);
+        _value = static_cast<uint32_t>(_content[_offset]) | (static_cast<uint32_t>(_content[_offset + 1]) << 8) | (static_cast<uint32_t>(_content[_offset + 2]) << 16) |
+                 (static_cast<uint32_t>(_content[_offset + 3]) << 24);
         _offset += sizeof(uint32_t);
         return true;
     }
@@ -58,30 +55,19 @@ namespace
             return false;
         }
 
-        _value.assign(
-            reinterpret_cast<const char*>(_content.data() + _offset),
-            reinterpret_cast<const char*>(_content.data() + _offset + size)
-        );
+        _value.assign(reinterpret_cast<const char*>(_content.data() + _offset), reinterpret_cast<const char*>(_content.data() + _offset + size));
         _offset += size;
         return true;
     }
-}
+} // namespace
 
-ego::FileContent ego::gpu::PackShaderContent(
-    const FileContent& _shaderCode,
-    const ShaderInterface& _shaderInterface
-)
+ego::FileContent ego::gpu::PackShaderContent(const FileContent& _shaderCode, const ShaderInterface& _shaderInterface)
 {
     FileContent content;
     const ShaderParameterBufferDesc& materialBuffer = _shaderInterface.getMaterialParameterBuffer();
     const uint32_t parameterCount = static_cast<uint32_t>(materialBuffer.m_parameters.size());
 
-    content.reserve(
-        sizeof(uint32_t) * 8 +
-        materialBuffer.m_name.size() +
-        parameterCount * sizeof(uint32_t) * 9 +
-        _shaderCode.size()
-    );
+    content.reserve(sizeof(uint32_t) * 8 + materialBuffer.m_name.size() + parameterCount * sizeof(uint32_t) * 9 + _shaderCode.size());
 
     AppendUInt32(content, ShaderPackageMagic);
     AppendUInt32(content, ShaderPackageVersion);
@@ -122,11 +108,7 @@ bool ego::gpu::IsShaderPackageContent(const FileContent& _content)
     return ReadUInt32(_content, offset, magic) && magic == ShaderPackageMagic;
 }
 
-bool ego::gpu::TryUnpackShaderContent(
-    const FileContent& _content,
-    FileContent& _shaderCode,
-    ShaderInterface& _shaderInterface
-)
+bool ego::gpu::TryUnpackShaderContent(const FileContent& _content, FileContent& _shaderCode, ShaderInterface& _shaderInterface)
 {
     _shaderCode.clear();
     _shaderInterface = ShaderInterface();
@@ -141,16 +123,10 @@ bool ego::gpu::TryUnpackShaderContent(
     uint32_t materialBufferStageFlags = 0;
     uint32_t parameterCount = 0;
 
-    if (!ReadUInt32(_content, offset, magic) ||
-        !ReadUInt32(_content, offset, version) ||
-        !ReadUInt32(_content, offset, shaderCodeSize) ||
-        !ReadUInt32(_content, offset, materialBufferSize) ||
-        !ReadUInt32(_content, offset, materialBufferShaderRegister) ||
-        !ReadUInt32(_content, offset, materialBufferRegisterSpace) ||
-        !ReadUInt32(_content, offset, materialBufferStageFlags) ||
-        !ReadUInt32(_content, offset, parameterCount) ||
-        magic != ShaderPackageMagic ||
-        version != ShaderPackageVersion)
+    if (!ReadUInt32(_content, offset, magic) || !ReadUInt32(_content, offset, version) || !ReadUInt32(_content, offset, shaderCodeSize) ||
+        !ReadUInt32(_content, offset, materialBufferSize) || !ReadUInt32(_content, offset, materialBufferShaderRegister) ||
+        !ReadUInt32(_content, offset, materialBufferRegisterSpace) || !ReadUInt32(_content, offset, materialBufferStageFlags) || !ReadUInt32(_content, offset, parameterCount) ||
+        magic != ShaderPackageMagic || version != ShaderPackageVersion)
     {
         return false;
     }
@@ -173,14 +149,9 @@ bool ego::gpu::TryUnpackShaderContent(
         uint32_t scalarType = 0;
         uint32_t columnMajor = 0;
 
-        if (!ReadString(_content, offset, parameter.m_name) ||
-            !ReadUInt32(_content, offset, parameter.m_offset) ||
-            !ReadUInt32(_content, offset, parameter.m_size) ||
-            !ReadUInt32(_content, offset, parameter.m_stageFlags) ||
-            !ReadUInt32(_content, offset, scalarType) ||
-            !ReadUInt32(_content, offset, parameter.m_type.m_rowCount) ||
-            !ReadUInt32(_content, offset, parameter.m_type.m_columnCount) ||
-            !ReadUInt32(_content, offset, parameter.m_type.m_elementCount) ||
+        if (!ReadString(_content, offset, parameter.m_name) || !ReadUInt32(_content, offset, parameter.m_offset) || !ReadUInt32(_content, offset, parameter.m_size) ||
+            !ReadUInt32(_content, offset, parameter.m_stageFlags) || !ReadUInt32(_content, offset, scalarType) || !ReadUInt32(_content, offset, parameter.m_type.m_rowCount) ||
+            !ReadUInt32(_content, offset, parameter.m_type.m_columnCount) || !ReadUInt32(_content, offset, parameter.m_type.m_elementCount) ||
             !ReadUInt32(_content, offset, columnMajor))
         {
             return false;

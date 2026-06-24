@@ -25,7 +25,7 @@ namespace
 
         return result;
     }
-}
+} // namespace
 
 void ego::ArgParser::parse(int _argc, char** _argv)
 {

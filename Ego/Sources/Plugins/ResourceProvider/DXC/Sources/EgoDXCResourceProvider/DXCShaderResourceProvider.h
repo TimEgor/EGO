@@ -12,14 +12,9 @@ namespace ego::resources::dxc
         DXCShaderResourceProvider() = default;
 
     protected:
-        virtual bool onProvideContent(
-            const Resource& _resource,
-            const FileName& _path,
-            ResourceLoadingContext& _loadingContext,
-            FileContent& _content,
-            std::string& _loadingError
-        ) override;
+        bool onProvideContent(const Resource& _resource, const FileName& _path, ResourceLoadingContext& _loadingContext, FileContent& _content, std::string& _loadingError)
+            override;
     };
 
     EGO_POINTER(DXCShaderResourceProvider);
-}
+} // namespace ego::resources::dxc

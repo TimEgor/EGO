@@ -4,22 +4,22 @@
 
 namespace ego
 {
-	template <typename T>
-	class Singleton : public NonCopyable
-	{
-	protected:
-		Singleton() = default;
+    template <typename T>
+    class Singleton : public NonCopyable
+    {
+    protected:
+        Singleton() = default;
 
-	public:
-		virtual ~Singleton() = default;
+    public:
+        ~Singleton() override = default;
 
-		static T& GetInstance();
-	};
+        static T& GetInstance();
+    };
 
-	template<typename T>
-	inline T& Singleton<T>::GetInstance()
-	{
-		static T uniqueInstance;
-		return uniqueInstance;
-	}
-}
+    template <typename T>
+    inline T& Singleton<T>::GetInstance()
+    {
+        static T uniqueInstance;
+        return uniqueInstance;
+    }
+} // namespace ego

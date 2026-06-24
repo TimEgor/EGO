@@ -6,8 +6,7 @@
 bool ego::engine::MainLoop::init(
     const JobDescriptor& _renderFrameJobDescriptor,
     const JobDescriptor& _presentFrameJobDescriptor,
-    const JobDescriptor& _prepareRenderFrameJobDescriptor
-)
+    const JobDescriptor& _prepareRenderFrameJobDescriptor)
 {
     release();
     m_jobGraphDescriptorBuilder.setDbgName("Main loop");
@@ -15,64 +14,36 @@ bool ego::engine::MainLoop::init(
     m_frameJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJob(ego::CreateEmptyJobDescriptor("Frame begin"));
     EGO_CHECK_RETURN_FALSE(m_frameJobs.m_beginJobID.isValid());
 
-    m_renderJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Render begin"),
-        m_frameJobs.m_beginJobID
-    );
+    m_renderJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(ego::CreateEmptyJobDescriptor("Render begin"), m_frameJobs.m_beginJobID);
     EGO_CHECK_RETURN_FALSE(m_renderJobs.m_beginJobID.isValid());
 
-    m_renderJobs.m_renderJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        _renderFrameJobDescriptor,
-        m_renderJobs.m_beginJobID
-    );
+    m_renderJobs.m_renderJobID = m_jobGraphDescriptorBuilder.addJobAfter(_renderFrameJobDescriptor, m_renderJobs.m_beginJobID);
     EGO_CHECK_RETURN_FALSE(m_renderJobs.m_renderJobID.isValid());
 
-    m_renderJobs.m_presentJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        _presentFrameJobDescriptor,
-        m_renderJobs.m_renderJobID
-    );
+    m_renderJobs.m_presentJobID = m_jobGraphDescriptorBuilder.addJobAfter(_presentFrameJobDescriptor, m_renderJobs.m_renderJobID);
     EGO_CHECK_RETURN_FALSE(m_renderJobs.m_presentJobID.isValid());
 
-    m_renderJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Render end"),
-        m_renderJobs.m_presentJobID
-    );
+    m_renderJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(ego::CreateEmptyJobDescriptor("Render end"), m_renderJobs.m_presentJobID);
     EGO_CHECK_RETURN_FALSE(m_renderJobs.m_endJobID.isValid());
 
-    m_frameLogicJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Frame logic begin"),
-        m_frameJobs.m_beginJobID
-    );
+    m_frameLogicJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(ego::CreateEmptyJobDescriptor("Frame logic begin"), m_frameJobs.m_beginJobID);
     EGO_CHECK_RETURN_FALSE(m_frameLogicJobs.m_beginJobID.isValid());
 
-    m_frameLogicJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Frame logic end"),
-        m_frameLogicJobs.m_beginJobID
-    );
+    m_frameLogicJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(ego::CreateEmptyJobDescriptor("Frame logic end"), m_frameLogicJobs.m_beginJobID);
     EGO_CHECK_RETURN_FALSE(m_frameLogicJobs.m_endJobID.isValid());
 
     m_prepareRenderJobs.m_beginJobID = m_jobGraphDescriptorBuilder.addJobAfter(
         ego::CreateEmptyJobDescriptor("Prepare render begin"),
-        JobDescriptorIDCollection{ m_renderJobs.m_endJobID, m_frameLogicJobs.m_endJobID }
-    );
+        JobDescriptorIDCollection{m_renderJobs.m_endJobID, m_frameLogicJobs.m_endJobID});
     EGO_CHECK_RETURN_FALSE(m_prepareRenderJobs.m_beginJobID.isValid());
 
-    m_prepareRenderJobs.m_prepareJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        _prepareRenderFrameJobDescriptor,
-        m_prepareRenderJobs.m_beginJobID
-    );
+    m_prepareRenderJobs.m_prepareJobID = m_jobGraphDescriptorBuilder.addJobAfter(_prepareRenderFrameJobDescriptor, m_prepareRenderJobs.m_beginJobID);
     EGO_CHECK_RETURN_FALSE(m_prepareRenderJobs.m_prepareJobID.isValid());
 
-    m_prepareRenderJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Prepare render end"),
-        m_prepareRenderJobs.m_prepareJobID
-    );
+    m_prepareRenderJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(ego::CreateEmptyJobDescriptor("Prepare render end"), m_prepareRenderJobs.m_prepareJobID);
     EGO_CHECK_RETURN_FALSE(m_prepareRenderJobs.m_endJobID.isValid());
 
-    m_frameJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(
-        ego::CreateEmptyJobDescriptor("Frame end"),
-        m_prepareRenderJobs.m_endJobID
-    );
+    m_frameJobs.m_endJobID = m_jobGraphDescriptorBuilder.addJobAfter(ego::CreateEmptyJobDescriptor("Frame end"), m_prepareRenderJobs.m_endJobID);
     EGO_CHECK_RETURN_FALSE(m_frameJobs.m_endJobID.isValid());
 
     m_isInitialized = true;
@@ -101,47 +72,31 @@ bool ego::engine::MainLoop::removeJob(JobDescriptorID _jobID)
     return m_jobGraphDescriptorBuilder.removeJob(_jobID);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobBefore(
-    const JobDescriptor& _descriptor,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobBefore(const JobDescriptor& _descriptor, JobDescriptorID _childJobID)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobBefore(_descriptor, _childJobID);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobBefore(
-    const JobDescriptor& _descriptor,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobBefore(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _childJobIDs)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobBefore(_descriptor, _childJobIDs);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobAfter(
-    const JobDescriptor& _descriptor,
-    JobDescriptorID _parentJobID
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobAfter(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobAfter(_descriptor, _parentJobID);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobAfter(
-    const JobDescriptor& _descriptor,
-    const JobDescriptorIDCollection& _parentJobIDs
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobAfter(const JobDescriptor& _descriptor, const JobDescriptorIDCollection& _parentJobIDs)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobAfter(_descriptor, _parentJobIDs);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobBetween(
-    const JobDescriptor& _descriptor,
-    JobDescriptorID _parentJobID,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobBetween(const JobDescriptor& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobBetween(_descriptor, _parentJobID, _childJobID);
@@ -150,8 +105,7 @@ ego::JobDescriptorID ego::engine::MainLoop::addJobBetween(
 ego::JobDescriptorID ego::engine::MainLoop::addJobBetween(
     const JobDescriptor& _descriptor,
     const JobDescriptorIDCollection& _parentJobIDs,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+    const JobDescriptorIDCollection& _childJobIDs)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobBetween(_descriptor, _parentJobIDs, _childJobIDs);
@@ -163,47 +117,31 @@ ego::JobDescriptorID ego::engine::MainLoop::addJobGraph(const JobGraphDescriptor
     return m_jobGraphDescriptorBuilder.addJobGraph(_descriptor);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBefore(
-    const JobGraphDescriptorPointer& _descriptor,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _childJobID)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobGraphBefore(_descriptor, _childJobID);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBefore(
-    const JobGraphDescriptorPointer& _descriptor,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBefore(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _childJobIDs)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobGraphBefore(_descriptor, _childJobIDs);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobGraphAfter(
-    const JobGraphDescriptorPointer& _descriptor,
-    JobDescriptorID _parentJobID
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobGraphAfter(_descriptor, _parentJobID);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobGraphAfter(
-    const JobGraphDescriptorPointer& _descriptor,
-    const JobDescriptorIDCollection& _parentJobIDs
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobGraphAfter(const JobGraphDescriptorPointer& _descriptor, const JobDescriptorIDCollection& _parentJobIDs)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobGraphAfter(_descriptor, _parentJobIDs);
 }
 
-ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBetween(
-    const JobGraphDescriptorPointer& _descriptor,
-    JobDescriptorID _parentJobID,
-    JobDescriptorID _childJobID
-)
+ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBetween(const JobGraphDescriptorPointer& _descriptor, JobDescriptorID _parentJobID, JobDescriptorID _childJobID)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobGraphBetween(_descriptor, _parentJobID, _childJobID);
@@ -212,8 +150,7 @@ ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBetween(
 ego::JobDescriptorID ego::engine::MainLoop::addJobGraphBetween(
     const JobGraphDescriptorPointer& _descriptor,
     const JobDescriptorIDCollection& _parentJobIDs,
-    const JobDescriptorIDCollection& _childJobIDs
-)
+    const JobDescriptorIDCollection& _childJobIDs)
 {
     EGO_ASSERT(m_isInitialized);
     return m_jobGraphDescriptorBuilder.addJobGraphBetween(_descriptor, _parentJobIDs, _childJobIDs);

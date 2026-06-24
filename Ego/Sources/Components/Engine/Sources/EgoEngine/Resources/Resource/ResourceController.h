@@ -24,10 +24,7 @@ namespace ego
     class ResourceLoadingOperation final
     {
     public:
-        ResourceLoadingOperation(
-            const ResourceControllerWeakPointer& _controller,
-            const ResourcePointer& _resource
-        );
+        ResourceLoadingOperation(const ResourceControllerWeakPointer& _controller, const ResourcePointer& _resource);
 
         ResourcePointer getResource() const;
 
@@ -36,9 +33,7 @@ namespace ego
         {
             static_assert(std::is_base_of_v<Resource, TResource>);
 
-            return m_resource && m_resource->getType() == EGO_RESOURCE_TYPE(TResource)
-                ? StaticPointerCast<TResource>(m_resource)
-                : nullptr;
+            return m_resource && m_resource->getType() == EGO_RESOURCE_TYPE(TResource) ? StaticPointerCast<TResource>(m_resource) : nullptr;
         }
 
         ResourceState getState() const;
@@ -66,16 +61,8 @@ namespace ego
             friend class ResourceLoadingContext;
 
             static bool RemoveResource(ResourceController& _controller, Resource* _resource);
-            static bool LoadResourceContent(
-                const ResourceController& _controller,
-                const FileName& _path,
-                FileContent& _content
-            );
-            static bool AddDependency(
-                ResourceController& _controller,
-                Resource& _resource,
-                const ResourcePointer& _dependency
-            );
+            static bool LoadResourceContent(const ResourceController& _controller, const FileName& _path, FileContent& _content);
+            static bool AddDependency(ResourceController& _controller, Resource& _resource, const ResourcePointer& _dependency);
         };
 
         ResourceController() = default;
@@ -99,13 +86,13 @@ namespace ego
         {
             static_assert(std::is_base_of_v<Resource, TResource>);
 
-            return StaticPointerCast<TResource>(
-                loadResource(
-                    EGO_RESOURCE_TYPE(TResource),
-                    _path,
-                    []() { return CreateResource<TResource>(); }
-                )
-            );
+            return StaticPointerCast<TResource>(loadResource(
+                EGO_RESOURCE_TYPE(TResource),
+                _path,
+                []()
+                {
+                    return CreateResource<TResource>();
+                }));
         }
 
         template <typename TResource>
@@ -116,8 +103,10 @@ namespace ego
             return loadResourceAsync(
                 EGO_RESOURCE_TYPE(TResource),
                 _path,
-                []() { return CreateResource<TResource>(); }
-            );
+                []()
+                {
+                    return CreateResource<TResource>();
+                });
         }
 
         template <typename TResource>
@@ -126,9 +115,7 @@ namespace ego
             static_assert(std::is_base_of_v<Resource, TResource>);
 
             ResourcePointer resource = getResource(_path);
-            return resource && resource->getType() == EGO_RESOURCE_TYPE(TResource)
-                ? StaticPointerCast<TResource>(resource)
-                : nullptr;
+            return resource && resource->getType() == EGO_RESOURCE_TYPE(TResource) ? StaticPointerCast<TResource>(resource) : nullptr;
         }
 
         template <typename TResource>
@@ -137,9 +124,7 @@ namespace ego
             static_assert(std::is_base_of_v<Resource, TResource>);
 
             ResourcePointer resource = getResource(_id);
-            return resource && resource->getType() == EGO_RESOURCE_TYPE(TResource)
-                ? StaticPointerCast<TResource>(resource)
-                : nullptr;
+            return resource && resource->getType() == EGO_RESOURCE_TYPE(TResource) ? StaticPointerCast<TResource>(resource) : nullptr;
         }
 
         ResourcePointer getResource(const FileName& _path) const;
@@ -164,48 +149,22 @@ namespace ego
         JobController& getJobController();
 
     private:
-        ResourcePointer loadResource(
-            ResourceType _type,
-            const FileName& _path,
-            const ResourceFactory& _factory
-        );
+        ResourcePointer loadResource(ResourceType _type, const FileName& _path, const ResourceFactory& _factory);
 
-        ResourceLoadingOperationPointer loadResourceAsync(
-            ResourceType _type,
-            const FileName& _path,
-            const ResourceFactory& _factory
-        );
+        ResourceLoadingOperationPointer loadResourceAsync(ResourceType _type, const FileName& _path, const ResourceFactory& _factory);
 
         bool removeResource(Resource* _resource);
         bool addDependency(Resource& _resource, const ResourcePointer& _dependency);
 
         bool loadResourceContent(const FileName& _path, FileContent& _content) const;
-        bool readResourceContent(
-            const ResourcePointer& _resource,
-            const FileName& _path,
-            ResourceLoadingContext& _loadingContext,
-            FileContent& _content
-        );
-        bool loadResourceData(
-            const ResourcePointer& _resource,
-            const FileName& _path,
-            bool _isAsyncLoading
-        );
-        bool completeResourceLoad(
-            const ResourcePointer& _resource,
-            bool _isLoadSuccessful,
-            ResourceLoadingContext& _loadingContext
-        );
+        bool readResourceContent(const ResourcePointer& _resource, const FileName& _path, ResourceLoadingContext& _loadingContext, FileContent& _content);
+        bool loadResourceData(const ResourcePointer& _resource, const FileName& _path, bool _isAsyncLoading);
+        bool completeResourceLoad(const ResourcePointer& _resource, bool _isLoadSuccessful, ResourceLoadingContext& _loadingContext);
         void finishResourceLoaded(const ResourcePointer& _resource);
         void finishResourceFailed(const ResourcePointer& _resource, std::string _loadingError = {});
-        bool beginResourceDependenciesLoading(
-            Resource& _resource,
-            Resource::DependencyCollection&& _dependencies
-        );
+        bool beginResourceDependenciesLoading(Resource& _resource, Resource::DependencyCollection&& _dependencies);
         void notifyResourceLoadingFinished(const ResourcePointer& _resource);
-        void schedulePendingLoadingCompletion(
-            const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading
-        );
+        void schedulePendingLoadingCompletion(const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading);
         void completePendingLoading(const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading);
         bool waitResourceLoading(const ResourcePointer& _resource);
 
@@ -218,4 +177,4 @@ namespace ego
         JobControllerPointer m_jobController = nullptr;
         bool m_isInitialized = false;
     };
-}
+} // namespace ego

@@ -1,0 +1,52 @@
+---
+Language: Cpp
+BasedOnStyle: Microsoft
+Standard: c++20
+LineEnding: CRLF
+
+ColumnLimit: 180
+MaxEmptyLinesToKeep: 1
+
+AccessModifierOffset: -4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+NamespaceIndentation: All
+IndentPPDirectives: BeforeHash
+
+BreakBeforeBraces: Allman
+IndentExternBlock: Indent
+AllowShortBlocksOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseExpressionOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Empty
+
+AlignOperands: Align
+BreakBeforeTernaryOperators: false
+
+AlignAfterOpenBracket: false
+BreakAfterOpenBracketFunction: true
+BreakBeforeCloseBracketFunction: false
+BinPackArguments: false
+BinPackLongBracedList: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: Never
+BreakInheritanceList: BeforeColon
+BreakTemplateDeclarations: Yes
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
+IncludeBlocks: Preserve
+SortIncludes: Never
+...

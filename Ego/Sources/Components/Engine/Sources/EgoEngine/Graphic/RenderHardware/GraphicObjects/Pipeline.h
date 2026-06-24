@@ -66,11 +66,7 @@ namespace ego::gpu
         GraphicColorWriteMaskGreen = 1 << 1,
         GraphicColorWriteMaskBlue = 1 << 2,
         GraphicColorWriteMaskAlpha = 1 << 3,
-        GraphicColorWriteMaskAll =
-            GraphicColorWriteMaskRed |
-            GraphicColorWriteMaskGreen |
-            GraphicColorWriteMaskBlue |
-            GraphicColorWriteMaskAlpha
+        GraphicColorWriteMaskAll = GraphicColorWriteMaskRed | GraphicColorWriteMaskGreen | GraphicColorWriteMaskBlue | GraphicColorWriteMaskAlpha
     };
 
     struct RasterizationStateDesc final
@@ -137,10 +133,22 @@ namespace ego::gpu
         ComputeShaderReference m_computeShader = nullptr;
     };
 
+    struct RayTracingPipelineDesc final
+    {
+        BindingLayoutReference m_bindingLayout = nullptr;
+        RayGenerationShaderReference m_rayGenerationShader = nullptr;
+        MissShaderReference m_missShader = nullptr;
+        ClosestHitShaderReference m_closestHitShader = nullptr;
+        uint32_t m_maxPayloadSize = 0;
+        uint32_t m_maxAttributeSize = 0;
+        uint32_t m_maxRecursionDepth = 1;
+    };
+
     enum class PipelineType
     {
         Graphic,
-        Compute
+        Compute,
+        RayTracing
     };
 
     class Pipeline : public GraphicResource
@@ -188,4 +196,21 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(ComputePipeline);
-}
+
+    class RayTracingPipeline : public Pipeline
+    {
+    public:
+        RayTracingPipeline(const RayTracingPipelineDesc& _desc);
+
+        const RayTracingPipelineDesc& getDesc() const;
+
+        PipelineType getPipelineType() const override;
+
+        EGO_GRAPHIC_RESOURCE(RayTracingPipeline, Pipeline);
+
+    private:
+        RayTracingPipelineDesc m_desc;
+    };
+
+    EGO_REFERENCE(RayTracingPipeline);
+} // namespace ego::gpu

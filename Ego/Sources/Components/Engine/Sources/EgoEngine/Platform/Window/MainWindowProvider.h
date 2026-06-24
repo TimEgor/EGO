@@ -17,4 +17,4 @@ namespace ego
 
         EGO_RTTI_VIRTUAL_BASE(MainWindowProvider);
     };
-}
+} // namespace ego

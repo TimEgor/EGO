@@ -64,10 +64,7 @@ ego::LevelPointer ego::LevelController::createLevel()
     }
 
     const LevelID levelID = allocateLevelID();
-    LevelPointer level(
-        new Level(levelID),
-        LevelDeleter{}
-    );
+    LevelPointer level(new Level(levelID), LevelDeleter{});
     if (!level)
     {
         return nullptr;
@@ -123,8 +120,7 @@ ego::LevelID ego::LevelController::allocateLevelID()
         {
             m_nextLevelID = FirstLevelID;
         }
-    }
-    while (levelID == InvalidLevelID || m_levels.find(levelID) != m_levels.end());
+    } while (levelID == InvalidLevelID || m_levels.find(levelID) != m_levels.end());
 
     return levelID;
 }

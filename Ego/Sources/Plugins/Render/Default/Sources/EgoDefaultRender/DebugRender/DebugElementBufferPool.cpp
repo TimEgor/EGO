@@ -12,16 +12,11 @@ ego::render::DebugElementBufferPool::~DebugElementBufferPool()
     release();
 }
 
-bool ego::render::DebugElementBufferPool::init(
-    const BufferDesc& _bufferDesc,
-    uint32_t _elementCountPerBuffer
-)
+bool ego::render::DebugElementBufferPool::init(const BufferDesc& _bufferDesc, uint32_t _elementCountPerBuffer)
 {
     EGO_CHECK_RETURN_FALSE(_bufferDesc.m_stride > 0);
     EGO_CHECK_RETURN_FALSE(_elementCountPerBuffer > 0);
-    EGO_CHECK_RETURN_FALSE(
-        _elementCountPerBuffer <= (std::numeric_limits<uint32_t>::max)() / _bufferDesc.m_stride
-    );
+    EGO_CHECK_RETURN_FALSE(_elementCountPerBuffer <= (std::numeric_limits<uint32_t>::max)() / _bufferDesc.m_stride);
 
     release();
 
@@ -41,10 +36,7 @@ void ego::render::DebugElementBufferPool::release()
     m_activeBufferCount = 0;
 }
 
-bool ego::render::DebugElementBufferPool::updateBuffers(
-    float _deltaTime,
-    uint32_t _requiredElementCount
-)
+bool ego::render::DebugElementBufferPool::updateBuffers(float _deltaTime, uint32_t _requiredElementCount)
 {
     addDelayTime(_deltaTime);
     EGO_CHECK_RETURN_FALSE(prepareSpace(_requiredElementCount));
@@ -61,10 +53,7 @@ bool ego::render::DebugElementBufferPool::prepareSpace(uint32_t _requiredElement
 {
     EGO_CHECK_RETURN_FALSE(m_elementCountPerBuffer > 0);
 
-    const uint32_t requiredBufferCount = CalculateRequiredBufferCount(
-        _requiredElementCount,
-        m_elementCountPerBuffer
-    );
+    const uint32_t requiredBufferCount = CalculateRequiredBufferCount(_requiredElementCount, m_elementCountPerBuffer);
     EGO_ASSERT(m_activeBufferCount <= m_buffers.size());
 
     if (requiredBufferCount > m_activeBufferCount)
@@ -171,10 +160,7 @@ void ego::render::DebugElementBufferPool::deactivateBuffers(uint32_t _requiredBu
     m_activeBufferCount = _requiredBufferCount;
 }
 
-uint32_t ego::render::DebugElementBufferPool::CalculateRequiredBufferCount(
-    uint32_t _requiredElementCount,
-    uint32_t _elementCountPerBuffer
-)
+uint32_t ego::render::DebugElementBufferPool::CalculateRequiredBufferCount(uint32_t _requiredElementCount, uint32_t _elementCountPerBuffer)
 {
     if (_requiredElementCount == 0)
     {
@@ -184,10 +170,7 @@ uint32_t ego::render::DebugElementBufferPool::CalculateRequiredBufferCount(
     return (_requiredElementCount - 1) / _elementCountPerBuffer + 1;
 }
 
-ego::render::DebugElementBufferPoolIterator::DebugElementBufferPoolIterator(
-    const DebugElementBufferPool& _bufferPool,
-    bool _iterateOnInit
-)
+ego::render::DebugElementBufferPoolIterator::DebugElementBufferPoolIterator(const DebugElementBufferPool& _bufferPool, bool _iterateOnInit)
     : m_bufferPool(_bufferPool)
 {
     if (_iterateOnInit)
@@ -203,11 +186,7 @@ ego::render::DebugElementBufferPoolIterator::~DebugElementBufferPoolIterator()
 
 bool ego::render::DebugElementBufferPoolIterator::isInInitialState() const
 {
-    return
-        !m_iterationStarted &&
-        m_currentElement == nullptr &&
-        m_currentBufferIndex == 0 &&
-        m_currentElementIndex == 0;
+    return !m_iterationStarted && m_currentElement == nullptr && m_currentBufferIndex == 0 && m_currentElementIndex == 0;
 }
 
 bool ego::render::DebugElementBufferPoolIterator::next()
@@ -231,8 +210,7 @@ bool ego::render::DebugElementBufferPoolIterator::next()
         return mapCurrentBuffer();
     }
 
-    m_currentElement = static_cast<uint8_t*>(m_currentBufferData) +
-        m_currentElementIndex * m_bufferPool.getBufferDesc().m_stride;
+    m_currentElement = static_cast<uint8_t*>(m_currentBufferData) + m_currentElementIndex * m_bufferPool.getBufferDesc().m_stride;
     return true;
 }
 

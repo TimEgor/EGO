@@ -26,19 +26,15 @@ namespace
 
         return _stride != 0 ? _dataSize / _stride : 0;
     }
-}
+} // namespace
 
-ego::render::Mesh::Mesh(
-    const VertexBufferBinding& _vertexBuffer,
-    uint32_t _vertexCount,
-    const IndexBufferBinding& _indexBuffer,
-    uint32_t _indexCount
-)
+ego::render::Mesh::Mesh(const VertexBufferBinding& _vertexBuffer, uint32_t _vertexCount, const IndexBufferBinding& _indexBuffer, uint32_t _indexCount)
     : m_vertexBuffer(_vertexBuffer),
       m_indexBuffer(_indexBuffer),
       m_vertexCount(_vertexCount),
       m_indexCount(_indexCount)
-{}
+{
+}
 
 const ego::render::Mesh::VertexBufferBinding& ego::render::Mesh::getVertexBuffer() const
 {
@@ -60,21 +56,14 @@ uint32_t ego::render::Mesh::getIndexCount() const
     return m_indexCount;
 }
 
-ego::render::MeshHandler ego::render::CreateMeshFromRawData(
-    ego::GraphicDevice& _graphicDevice,
-    const MeshRawData& _rawData
-)
+ego::render::MeshHandler ego::render::CreateMeshFromRawData(ego::GraphicDevice& _graphicDevice, const MeshRawData& _rawData)
 {
     if (!_rawData.m_vertexData || _rawData.m_vertexDataSize == 0 || _rawData.m_vertexStride == 0)
     {
         return nullptr;
     }
 
-    const uint32_t vertexCount = ResolveElementCount(
-        _rawData.m_vertexCount,
-        _rawData.m_vertexDataSize,
-        _rawData.m_vertexStride
-    );
+    const uint32_t vertexCount = ResolveElementCount(_rawData.m_vertexCount, _rawData.m_vertexDataSize, _rawData.m_vertexStride);
     if (vertexCount == 0)
     {
         return nullptr;
@@ -87,7 +76,8 @@ ego::render::MeshHandler ego::render::CreateMeshFromRawData(
     vertexBufferDesc.m_stride = _rawData.m_vertexStride;
 
     const gpu::InitialGraphicResourceData vertexData(_rawData.m_vertexData, _rawData.m_vertexDataSize);
-    const RenderBuffer vertexBuffer = _graphicDevice.createBuffer(vertexBufferDesc, vertexData);
+    const gpu::GpuOperationOptions uploadOptions{gpu::GpuCompletionMode::WaitForCompletion};
+    const RenderBuffer vertexBuffer = _graphicDevice.createAndUploadBuffer(vertexBufferDesc, vertexData, uploadOptions).m_resource;
     if (!vertexBuffer)
     {
         return nullptr;
@@ -116,7 +106,7 @@ ego::render::MeshHandler ego::render::CreateMeshFromRawData(
         indexBufferDesc.m_stride = indexStride;
 
         const gpu::InitialGraphicResourceData indexData(_rawData.m_indexData, _rawData.m_indexDataSize);
-        indexBuffer = _graphicDevice.createBuffer(indexBufferDesc, indexData);
+        indexBuffer = _graphicDevice.createAndUploadBuffer(indexBufferDesc, indexData, uploadOptions).m_resource;
         if (!indexBuffer)
         {
             return nullptr;
@@ -133,10 +123,5 @@ ego::render::MeshHandler ego::render::CreateMeshFromRawData(
     indexBufferBinding.m_format = indexBuffer ? _rawData.m_indexFormat : gpu::GraphicResourceFormat::Undefined;
     indexBufferBinding.m_offset = indexBuffer ? _rawData.m_indexOffset : 0;
 
-    return MeshReference(new Mesh(
-        vertexBufferBinding,
-        vertexCount,
-        indexBufferBinding,
-        indexCount
-    ));
+    return MeshReference(new Mesh(vertexBufferBinding, vertexCount, indexBufferBinding, indexCount));
 }

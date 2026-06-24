@@ -24,4 +24,4 @@ namespace ego
     {
         return _size + GetAdjustment(_size, _alignment);
     }
-}
+} // namespace ego

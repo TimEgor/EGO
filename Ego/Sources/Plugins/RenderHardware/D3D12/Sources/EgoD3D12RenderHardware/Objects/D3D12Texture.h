@@ -6,14 +6,10 @@
 
 namespace ego::gpu::d3d12
 {
-    class D3D12Texture2D final : public Texture2D,
-                                 public D3D12Resource
+    class D3D12Texture2D final : public Texture2D, public D3D12Resource
     {
     public:
-        D3D12Texture2D(
-            const Texture2DDesc& _desc,
-            Microsoft::WRL::ComPtr<ID3D12Resource>&& _resource
-        );
+        D3D12Texture2D(const Texture2DDesc& _desc, Microsoft::WRL::ComPtr<ID3D12Resource>&& _resource);
 
         void* getNativeHandle() const override;
         void setName(const char* _name) override;
@@ -24,16 +20,10 @@ namespace ego::gpu::d3d12
         Microsoft::WRL::ComPtr<ID3D12Resource> m_resource;
     };
 
-    class D3D12TextureView final : public TextureView,
-                                   public D3D12Descriptor
+    class D3D12TextureView final : public TextureView, public D3D12Descriptor
     {
     public:
-        D3D12TextureView(
-            const TextureReference& _texture,
-            const TextureViewDesc& _desc,
-            D3D12DescriptorIndex _descriptorIndex,
-            D3D12DescriptorAllocatorPointer& _allocator
-        );
+        D3D12TextureView(const TextureReference& _texture, const TextureViewDesc& _desc, D3D12DescriptorIndex _descriptorIndex, D3D12DescriptorAllocatorPointer& _allocator);
         ~D3D12TextureView() override;
 
         void* getNativeHandle() const override;
@@ -48,4 +38,4 @@ namespace ego::gpu::d3d12
         D3D12DescriptorAllocatorWeakPointer m_allocator;
         D3D12DescriptorIndex m_descriptorIndex = D3D12InvalidDescriptorIndex;
     };
-}
+} // namespace ego::gpu::d3d12

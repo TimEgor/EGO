@@ -1,6 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
+#include <cstring>
+#include <limits>
 #include <string>
 
 #include <Windows.h>
@@ -9,12 +12,14 @@
 #include <wrl/client.h>
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/BindingLayout.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Buffer.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandList.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Format.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/GraphicResource.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/InputLayout.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Pipeline.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Sampler.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Texture.h"
 
 namespace ego::gpu::d3d12
@@ -23,6 +28,11 @@ namespace ego::gpu::d3d12
     inline constexpr D3D12DescriptorIndex D3D12InvalidDescriptorIndex = -1;
 
     inline constexpr uint32_t InvalidRootParameterIndex = -1;
+
+    inline bool FitsUint32(uint64_t _value)
+    {
+        return _value <= (std::numeric_limits<uint32_t>::max)();
+    }
 
     inline std::wstring ToWideString(const char* _value)
     {
@@ -85,6 +95,56 @@ namespace ego::gpu::d3d12
         return D3D12_SHADER_VISIBILITY_ALL;
     }
 
+    inline bool IsValidShaderCode(const ShaderCodeReference& _code)
+    {
+        return _code && _code->getCode() && _code->getCodeSize();
+    }
+
+    inline D3D12_TEXTURE_ADDRESS_MODE ToD3D12AddressMode(SamplerAddressMode _mode)
+    {
+        switch (_mode)
+        {
+        case SamplerAddressMode::Repeat:
+            return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        case SamplerAddressMode::MirroredRepeat:
+            return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+        case SamplerAddressMode::ClampToBorder:
+            return D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+        case SamplerAddressMode::ClampToEdge:
+        default:
+            break;
+        }
+
+        return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    }
+
+    inline D3D12_FILTER ToD3D12Filter(const SamplerDesc& _desc)
+    {
+        if (_desc.m_minFilter == SamplerFilter::Anisotropic || _desc.m_magFilter == SamplerFilter::Anisotropic || _desc.m_mipFilter == SamplerFilter::Anisotropic)
+        {
+            return _desc.m_enableComparison ? D3D12_FILTER_COMPARISON_ANISOTROPIC : D3D12_FILTER_ANISOTROPIC;
+        }
+
+        const bool minLinear = _desc.m_minFilter == SamplerFilter::Linear;
+        const bool magLinear = _desc.m_magFilter == SamplerFilter::Linear;
+        const bool mipLinear = _desc.m_mipFilter == SamplerFilter::Linear;
+
+        if (_desc.m_enableComparison)
+        {
+            return D3D12_ENCODE_BASIC_FILTER(
+                minLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+                magLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+                mipLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+                D3D12_FILTER_REDUCTION_TYPE_COMPARISON);
+        }
+
+        return D3D12_ENCODE_BASIC_FILTER(
+            minLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+            magLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+            mipLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+            D3D12_FILTER_REDUCTION_TYPE_STANDARD);
+    }
+
     inline D3D12_RESOURCE_STATES ToD3D12ResourceState(GraphicResourceState _state)
     {
         switch (_state)
@@ -114,6 +174,8 @@ namespace ego::gpu::d3d12
             return D3D12_RESOURCE_STATE_DEPTH_READ;
         case GraphicResourceState::IndirectBuffer:
             return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+        case GraphicResourceState::RayTracingAccelerationStructure:
+            return D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
         case GraphicResourceState::Present:
             return D3D12_RESOURCE_STATE_PRESENT;
         default:
@@ -145,12 +207,96 @@ namespace ego::gpu::d3d12
         return result;
     }
 
+    inline D3D12_HEAP_TYPE GetHeapType(const GraphicResourceDesc& _desc)
+    {
+        if (_desc.m_access & GraphicResourceAccessCpuWrite)
+        {
+            return D3D12_HEAP_TYPE_UPLOAD;
+        }
+
+        if (_desc.m_access & GraphicResourceAccessCpuRead)
+        {
+            return D3D12_HEAP_TYPE_READBACK;
+        }
+
+        return D3D12_HEAP_TYPE_DEFAULT;
+    }
+
+    inline D3D12_RESOURCE_STATES GetInitialBufferState(const BufferDesc& _desc, const InitialGraphicResourceData& _initialData)
+    {
+        const D3D12_HEAP_TYPE heapType = GetHeapType(_desc);
+        if (heapType == D3D12_HEAP_TYPE_UPLOAD)
+        {
+            return D3D12_RESOURCE_STATE_GENERIC_READ;
+        }
+
+        if (heapType == D3D12_HEAP_TYPE_READBACK)
+        {
+            return D3D12_RESOURCE_STATE_COPY_DEST;
+        }
+
+        if (_initialData.isValid())
+        {
+            return D3D12_RESOURCE_STATE_COPY_DEST;
+        }
+
+        if (_desc.m_usage & GraphicResourceUsageRayTracingAccelerationStructure)
+        {
+            return D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+        }
+
+        return D3D12_RESOURCE_STATE_COMMON;
+    }
+
+    inline D3D12_RESOURCE_FLAGS GetBufferResourceFlags(const BufferDesc& _desc)
+    {
+        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+        if (_desc.m_usage & GraphicResourceUsageAllowUnorderedAccess)
+        {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        return flags;
+    }
+
+    inline bool WriteToUploadBuffer(ID3D12Resource* _resource, const void* _data, uint64_t _dataSize, uint64_t _resourceSize)
+    {
+        if (!_resource || !_data || !_dataSize)
+        {
+            return false;
+        }
+
+        void* mappedData = nullptr;
+        D3D12_RANGE readRange = {};
+        if (FAILED(_resource->Map(0, &readRange, &mappedData)))
+        {
+            return false;
+        }
+
+        const uint64_t bytesToCopy = (std::min)(_dataSize, _resourceSize);
+        std::memcpy(mappedData, _data, static_cast<size_t>(bytesToCopy));
+
+        D3D12_RANGE writtenRange = {};
+        writtenRange.Begin = 0;
+        writtenRange.End = static_cast<SIZE_T>(bytesToCopy);
+        _resource->Unmap(0, &writtenRange);
+        return true;
+    }
+
+    inline uint64_t ResolveViewSize(uint64_t _resourceSize, uint64_t _offset, uint64_t _explicitSize)
+    {
+        if (_explicitSize)
+        {
+            return _explicitSize;
+        }
+
+        return _offset < _resourceSize ? _resourceSize - _offset : 0;
+    }
+
     inline bool IsDepthFormat(GraphicResourceFormat _format)
     {
-        return _format == GraphicResourceFormat::D16UNorm ||
-            _format == GraphicResourceFormat::D24UNormS8UInt ||
-            _format == GraphicResourceFormat::D32SFloat ||
-            _format == GraphicResourceFormat::D32SFloatS8UInt;
+        return _format == GraphicResourceFormat::D16UNorm || _format == GraphicResourceFormat::D24UNormS8UInt || _format == GraphicResourceFormat::D32SFloat ||
+               _format == GraphicResourceFormat::D32SFloatS8UInt;
     }
 
     inline DXGI_FORMAT ToDXGIFormat(GraphicResourceFormat _format)
@@ -255,6 +401,71 @@ namespace ego::gpu::d3d12
         }
 
         return DXGI_FORMAT_UNKNOWN;
+    }
+
+    inline uint32_t GetFormatStride(GraphicResourceFormat _format)
+    {
+        switch (_format)
+        {
+        case GraphicResourceFormat::R8UNorm:
+        case GraphicResourceFormat::R8SNorm:
+        case GraphicResourceFormat::R8UInt:
+        case GraphicResourceFormat::R8SInt:
+            return 1;
+        case GraphicResourceFormat::R8G8UNorm:
+        case GraphicResourceFormat::R8G8SNorm:
+        case GraphicResourceFormat::R8G8UInt:
+        case GraphicResourceFormat::R8G8SInt:
+        case GraphicResourceFormat::R16UNorm:
+        case GraphicResourceFormat::R16SNorm:
+        case GraphicResourceFormat::R16UInt:
+        case GraphicResourceFormat::R16SInt:
+        case GraphicResourceFormat::R16SFloat:
+            return 2;
+        case GraphicResourceFormat::R8G8B8A8UNorm:
+        case GraphicResourceFormat::R8G8B8A8SNorm:
+        case GraphicResourceFormat::R8G8B8A8UInt:
+        case GraphicResourceFormat::R8G8B8A8SInt:
+        case GraphicResourceFormat::B8G8R8A8UNorm:
+        case GraphicResourceFormat::R16G16UNorm:
+        case GraphicResourceFormat::R16G16SNorm:
+        case GraphicResourceFormat::R16G16UInt:
+        case GraphicResourceFormat::R16G16SInt:
+        case GraphicResourceFormat::R16G16SFloat:
+        case GraphicResourceFormat::R32UInt:
+        case GraphicResourceFormat::R32SInt:
+        case GraphicResourceFormat::R32SFloat:
+        case GraphicResourceFormat::D24UNormS8UInt:
+        case GraphicResourceFormat::D32SFloat:
+            return 4;
+        case GraphicResourceFormat::R16G16B16A16UNorm:
+        case GraphicResourceFormat::R16G16B16A16SNorm:
+        case GraphicResourceFormat::R16G16B16A16UInt:
+        case GraphicResourceFormat::R16G16B16A16SInt:
+        case GraphicResourceFormat::R16G16B16A16SFloat:
+        case GraphicResourceFormat::R32G32UInt:
+        case GraphicResourceFormat::R32G32SInt:
+        case GraphicResourceFormat::R32G32SFloat:
+        case GraphicResourceFormat::D32SFloatS8UInt:
+            return 8;
+        case GraphicResourceFormat::R32G32B32UInt:
+        case GraphicResourceFormat::R32G32B32SInt:
+        case GraphicResourceFormat::R32G32B32SFloat:
+            return 12;
+        case GraphicResourceFormat::R32G32B32A32UInt:
+        case GraphicResourceFormat::R32G32B32A32SInt:
+        case GraphicResourceFormat::R32G32B32A32SFloat:
+            return 16;
+        default:
+            break;
+        }
+
+        return 0;
+    }
+
+    inline bool IsSupportedRayTracingIndexFormat(GraphicResourceFormat _format)
+    {
+        return _format == GraphicResourceFormat::Undefined || _format == GraphicResourceFormat::R16UInt || _format == GraphicResourceFormat::R32UInt;
     }
 
     inline DXGI_FORMAT ToDXGIFormat(InputLayoutElementType _type, uint32_t _componentsCount)
@@ -516,4 +727,4 @@ namespace ego::gpu::d3d12
 
         return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     }
-}
+} // namespace ego::gpu::d3d12

@@ -12,7 +12,6 @@ EGO_PLUGIN_CREATE(ego::win32::Win32PlatformPlugin, PlatformPlugin, ego::Platform
 ego::win32::Win32PlatformPlugin::Win32PlatformPlugin(const PluginModulePointer& _module, PluginType _pluginType)
     : PlatformPlugin(_module, _pluginType)
 {
-    
 }
 
 ego::PlatformPointer ego::win32::Win32PlatformPlugin::createPlatform(void* _platformNativeInstance)

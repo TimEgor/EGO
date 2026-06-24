@@ -8,21 +8,12 @@ void ego::render::Render::drawPoint(const FloatVector3& _position, const FloatVe
     drawPoint(point);
 }
 
-void ego::render::Render::drawLine(
-    const FloatVector3& _startPosition,
-    const FloatVector3& _endPosition,
-    const FloatVector4& _color
-)
+void ego::render::Render::drawLine(const FloatVector3& _startPosition, const FloatVector3& _endPosition, const FloatVector4& _color)
 {
     drawLine(_startPosition, _color, _endPosition, _color);
 }
 
-void ego::render::Render::drawLine(
-    const FloatVector3& _startPosition,
-    const FloatVector4& _startColor,
-    const FloatVector3& _endPosition,
-    const FloatVector4& _endColor
-)
+void ego::render::Render::drawLine(const FloatVector3& _startPosition, const FloatVector4& _startColor, const FloatVector3& _endPosition, const FloatVector4& _endColor)
 {
     DebugDrawLineData line;
     line.m_start.m_position = _startPosition;

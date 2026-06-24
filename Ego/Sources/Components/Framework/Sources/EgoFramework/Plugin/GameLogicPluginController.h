@@ -10,7 +10,10 @@ namespace ego::framework
     {
     public:
         GameLogicPluginController() = default;
-        ~GameLogicPluginController() { release(); }
+        ~GameLogicPluginController()
+        {
+            release();
+        }
 
         bool init();
         void release();
@@ -41,5 +44,4 @@ namespace ego::framework
     };
 
     EGO_POINTER(GameLogicPluginController);
-}
-
+} // namespace ego::framework

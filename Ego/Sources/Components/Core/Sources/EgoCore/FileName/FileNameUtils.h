@@ -6,18 +6,18 @@
 
 namespace ego::file_name_utils
 {
-	void GetFileName(const FileName& _path, FileName& _resultName);
-	FileName GetFileName(const FileName& _path);
+    void GetFileName(const FileName& _path, FileName& _resultName);
+    FileName GetFileName(const FileName& _path);
 
-	void GetFileDirPath(const FileName& _path, FileName& _resultPath);
-	FileName GetFileDirPath(const FileName& _path);
+    void GetFileDirPath(const FileName& _path, FileName& _resultPath);
+    FileName GetFileDirPath(const FileName& _path);
 
-	void GetFileExtension(const FileName& _path, FileName& _resultExtension);
-	FileName GetFileExtension(const FileName& _path);
+    void GetFileExtension(const FileName& _path, FileName& _resultExtension);
+    FileName GetFileExtension(const FileName& _path);
 
-	void RemoveExtension(FileName& _name);
-	FileName RemoveExtension(const FileName& _name);
-}
+    void RemoveExtension(FileName& _name);
+    FileName RemoveExtension(const FileName& _name);
+} // namespace ego::file_name_utils
 
 namespace ego
 {
@@ -29,7 +29,7 @@ namespace ego
             _val = _str.empty() ? std::string() : std::string(_str.data(), _str.size());
         }
     };
-}
+} // namespace ego
 
 namespace ego::arg_parser_interface
 {
@@ -37,4 +37,4 @@ namespace ego::arg_parser_interface
     {
         ParseArgValue(_str != nullptr ? std::string_view(_str) : std::string_view(), _val);
     }
-}
+} // namespace ego::arg_parser_interface

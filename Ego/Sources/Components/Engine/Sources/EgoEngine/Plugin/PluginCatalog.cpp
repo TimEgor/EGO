@@ -35,7 +35,7 @@ namespace
 
         return true;
     }
-}
+} // namespace
 
 bool ego::engine::PluginCatalog::add(const Entry& _entry)
 {
@@ -72,10 +72,7 @@ void ego::engine::PluginCatalog::clear()
     m_entries.clear();
 }
 
-ego::FileName ego::engine::PluginCatalog::getModulePath(
-    PluginType _pluginType,
-    const char* _pluginName
-) const
+ego::FileName ego::engine::PluginCatalog::getModulePath(PluginType _pluginType, const char* _pluginName) const
 {
     if (_pluginType == rtti::InvalidTypeMetaInfoID || IsEmptyString(_pluginName))
     {
@@ -134,11 +131,7 @@ ego::engine::PluginCatalog::Entry* ego::engine::PluginCatalog::findEntry(const F
     return nullptr;
 }
 
-ego::engine::PluginCatalog::Plugin* ego::engine::PluginCatalog::findPlugin(
-    Entry& _entry,
-    PluginType _pluginType,
-    const char* _pluginName
-)
+ego::engine::PluginCatalog::Plugin* ego::engine::PluginCatalog::findPlugin(Entry& _entry, PluginType _pluginType, const char* _pluginName)
 {
     for (Plugin& plugin : _entry.m_plugins)
     {
@@ -151,11 +144,7 @@ ego::engine::PluginCatalog::Plugin* ego::engine::PluginCatalog::findPlugin(
     return nullptr;
 }
 
-const ego::engine::PluginCatalog::Plugin* ego::engine::PluginCatalog::findPlugin(
-    const Entry& _entry,
-    PluginType _pluginType,
-    const char* _pluginName
-) const
+const ego::engine::PluginCatalog::Plugin* ego::engine::PluginCatalog::findPlugin(const Entry& _entry, PluginType _pluginType, const char* _pluginName) const
 {
     for (const Plugin& plugin : _entry.m_plugins)
     {

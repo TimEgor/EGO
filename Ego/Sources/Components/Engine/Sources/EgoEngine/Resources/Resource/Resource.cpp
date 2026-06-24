@@ -47,19 +47,13 @@ void ego::Resource::ResourceAccessor::Unload(Resource* _resource)
     _resource->unload();
 }
 
-void ego::Resource::ResourceAccessor::AddDependency(
-    Resource* _resource,
-    const ResourcePointer& _dependency
-)
+void ego::Resource::ResourceAccessor::AddDependency(Resource* _resource, const ResourcePointer& _dependency)
 {
     EGO_ASSERT(_resource);
     _resource->addDependency(_dependency);
 }
 
-void ego::Resource::ResourceAccessor::GetDependencies(
-    const Resource* _resource,
-    DependencyCollection& _dependencies
-)
+void ego::Resource::ResourceAccessor::GetDependencies(const Resource* _resource, DependencyCollection& _dependencies)
 {
     EGO_ASSERT(_resource);
     _resource->getDependencies(_dependencies);
@@ -109,11 +103,7 @@ bool ego::Resource::isFailed() const
     return getState() == ResourceState::Failed;
 }
 
-bool ego::Resource::load(
-    const FileName& _path,
-    FileContent&& _content,
-    ResourceLoadingContext& _loadingContext
-)
+bool ego::Resource::load(const FileName& _path, FileContent&& _content, ResourceLoadingContext& _loadingContext)
 {
     prepareLoading(_path);
 
@@ -148,8 +138,7 @@ void ego::Resource::unload()
     setState(ResourceState::Undefined);
 }
 
-void ego::Resource::onUnload()
-{}
+void ego::Resource::onUnload() {}
 
 bool ego::Resource::onDependenciesLoaded()
 {
@@ -159,8 +148,7 @@ bool ego::Resource::onDependenciesLoaded()
         return dependenciesLoadedCallback();
     }
 
-    const std::string loadingError =
-        "Resource dependencies have been loaded, but dependency completion isn't implemented.";
+    const std::string loadingError = "Resource dependencies have been loaded, but dependency completion isn't implemented.";
 
     setLoadingError(loadingError);
     EGO_ASSERT_FAIL_MESSAGE(loadingError.c_str());
@@ -208,8 +196,7 @@ void ego::Resource::addDependency(const ResourcePointer& _resource)
         [&_resource](const ResourcePointer& _dependency)
         {
             return _dependency.get() == _resource.get();
-        }
-    );
+        });
     if (foundIt != m_dependencies.end())
     {
         return;

@@ -1,11 +1,13 @@
 #pragma once
 
+#include <string>
+
 #include "EgoCore/FileName/FileName.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
 #include "EgoEngine/Platform/FileSystem/FileSystem.h"
 
-#include <string>
+struct IDxcResult;
 
 namespace ego
 {
@@ -14,12 +16,19 @@ namespace ego
 
 namespace ego::resources::dxc
 {
-    bool CompileHlslContent(
-        const FileContent& _content,
-        const FileName& _sourcePath,
-        gpu::ShaderStage _stage,
-        ResourceLoadingContext& _loadingContext,
-        FileContent& _compiledContent,
-        std::string& _loadingError
-    );
-}
+    class DXCShaderCompiler final
+    {
+    public:
+        explicit DXCShaderCompiler(ResourceLoadingContext& _loadingContext);
+
+        bool compileHlslContent(const FileContent& _content, const FileName& _sourcePath, gpu::ShaderStage _stage, FileContent& _compiledContent, std::string& _loadingError) const;
+
+    private:
+        const wchar_t* getShaderEntryPoint(gpu::ShaderStage _stage) const;
+        const wchar_t* getShaderTarget(gpu::ShaderStage _stage) const;
+        std::string getHResultText(long _result) const;
+        std::string readCompileError(IDxcResult& _compileResult) const;
+
+        ResourceLoadingContext& m_loadingContext;
+    };
+} // namespace ego::resources::dxc

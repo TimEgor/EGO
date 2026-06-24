@@ -11,7 +11,7 @@ namespace
 {
     constexpr float MeshRotationSpeed = 1.0f;
     constexpr float FullRotation = 6.28318530718f;
-}
+} // namespace
 
 bool ego::demo::TestDemo::init()
 {
@@ -41,11 +41,7 @@ bool ego::demo::TestDemo::init()
     const render::RenderMaterial triangleMaterial = render::CreateMaterialHandler(m_triangleMaterial);
     EGO_CHECK_INITIALIZATION(triangleMesh && triangleMaterial);
 
-    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::MeshRenderComponent>(
-        m_meshEntity,
-        triangleMesh,
-        triangleMaterial
-    ));
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::MeshRenderComponent>(m_meshEntity, triangleMesh, triangleMaterial));
 
     return true;
 }

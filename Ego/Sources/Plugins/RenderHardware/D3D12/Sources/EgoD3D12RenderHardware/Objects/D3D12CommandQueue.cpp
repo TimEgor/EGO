@@ -4,31 +4,12 @@
 
 #include "D3D12Fence.h"
 
-#include "../D3D12GraphicDevice.h"
-
 #include "EgoCore/Assert/AssertCore.h"
 
-ego::gpu::d3d12::D3D12CommandQueue::D3D12CommandQueue(
-    D3D12GraphicDevice* _device,
-    const CommandQueueDesc& _desc,
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue>&& _queue
-)
+ego::gpu::d3d12::D3D12CommandQueue::D3D12CommandQueue(const CommandQueueDesc& _desc, Microsoft::WRL::ComPtr<ID3D12CommandQueue>&& _queue)
     : CommandQueue(_desc),
-      m_device(_device),
       m_queue(std::move(_queue))
 {
-    if (m_device)
-    {
-        m_device->registerQueue(this);
-    }
-}
-
-ego::gpu::d3d12::D3D12CommandQueue::~D3D12CommandQueue()
-{
-    if (m_device)
-    {
-        m_device->unregisterQueue(this);
-    }
 }
 
 void* ego::gpu::d3d12::D3D12CommandQueue::getNativeHandle() const
@@ -53,8 +34,7 @@ void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListRe
 
     for (const CommandListReference& commandList : _commandLists)
     {
-        ID3D12GraphicsCommandList* nativeCommandList =
-            commandList ? commandList->getNativeHandle<ID3D12GraphicsCommandList>() : nullptr;
+        ID3D12GraphicsCommandList* nativeCommandList = commandList ? commandList->getNativeHandle<ID3D12GraphicsCommandList>() : nullptr;
         EGO_ASSERT_MESSAGE(nativeCommandList, "CommandList must be created by D3D12 device");
         if (nativeCommandList)
         {
@@ -64,6 +44,22 @@ void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListRe
 
     if (!nativeCommandLists.empty())
     {
+        for (const CommandListReference& commandList : _commandLists)
+        {
+            if (!commandList)
+            {
+                continue;
+            }
+
+            for (const GpuTaskReference& gpuTask : commandList->getGpuWaits())
+            {
+                if (gpuTask)
+                {
+                    gpuTask->waitOnQueue(*this);
+                }
+            }
+        }
+
         m_queue->ExecuteCommandLists(static_cast<UINT>(nativeCommandLists.size()), nativeCommandLists.data());
     }
 }
@@ -90,8 +86,14 @@ void ego::gpu::d3d12::D3D12CommandQueue::wait(const FenceReference& _fence, Fenc
 
 void ego::gpu::d3d12::D3D12CommandQueue::waitIdle()
 {
+    Microsoft::WRL::ComPtr<ID3D12Device> device;
+    if (!m_queue || FAILED(m_queue->GetDevice(IID_PPV_ARGS(&device))))
+    {
+        return;
+    }
+
     Microsoft::WRL::ComPtr<ID3D12Fence> nativeFence;
-    if (FAILED(m_device->getDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&nativeFence))))
+    if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&nativeFence))))
     {
         return;
     }
@@ -100,9 +102,4 @@ void ego::gpu::d3d12::D3D12CommandQueue::waitIdle()
     const Fence::FenceValue waitValue = tempFence.getCompletedValue() + 1;
     m_queue->Signal(tempFence.getFence(), waitValue);
     tempFence.waitValue(waitValue);
-}
-
-ID3D12CommandQueue* ego::gpu::d3d12::D3D12CommandQueue::getQueue() const
-{
-    return m_queue.Get();
 }

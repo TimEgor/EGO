@@ -54,9 +54,7 @@ ego::EventCallbackID ego::EventController::addEventCallback(EventType _type, con
         return InvalidEventCallbackID;
     }
 
-    const CallbackPoolElementInfo dispatcherInfo = m_callbacks.addElement(
-        EventCallbackData{_callback, _type, static_cast<uint32_t>(-1)}
-    );
+    const CallbackPoolElementInfo dispatcherInfo = m_callbacks.addElement(EventCallbackData{_callback, _type, static_cast<uint32_t>(-1)});
     const EventCallbackID dispatcherID = dispatcherInfo.m_elementHandle.getKey();
 
     findEventIter->second.push_back(dispatcherInfo.m_elementPtr);
@@ -129,8 +127,7 @@ bool ego::EventController::unregisterInstancedEvent(InstancedEventID _eventID)
     InstancedEventCallbackID dispatcherID = findEventIter->second;
     while (dispatcherID != InvalidInstancedEventCallbackID)
     {
-        const InstancedEventCallbackID nextDispatcherID = m_instancedCallbacks.getElement(dispatcherID)->
-            m_nextSiblingID;
+        const InstancedEventCallbackID nextDispatcherID = m_instancedCallbacks.getElement(dispatcherID)->m_nextSiblingID;
         m_instancedCallbacks.removeElement(dispatcherID);
 
         dispatcherID = nextDispatcherID;
@@ -142,10 +139,7 @@ bool ego::EventController::unregisterInstancedEvent(InstancedEventID _eventID)
     return true;
 }
 
-ego::InstancedEventCallbackID ego::EventController::addInstanceEventCallback(
-    InstancedEventID _eventID,
-    const InstancedEventCallback& _callback
-)
+ego::InstancedEventCallbackID ego::EventController::addInstanceEventCallback(InstancedEventID _eventID, const InstancedEventCallback& _callback)
 {
     auto findEventIter = m_instancedCallbackOrders.find(_eventID);
     if (findEventIter == m_instancedCallbackOrders.end())
@@ -154,9 +148,8 @@ ego::InstancedEventCallbackID ego::EventController::addInstanceEventCallback(
     }
 
     const InstancedEventCallbackID prevOrderDispatcherId = findEventIter->second;
-    const InstancedEventCallbackID dispatcherID = m_instancedCallbacks.addElement(
-        InstancedEventCallbackData{_callback, _eventID, prevOrderDispatcherId, InvalidInstancedEventCallbackID}
-    ).m_elementHandle.getKey();
+    const InstancedEventCallbackID dispatcherID =
+        m_instancedCallbacks.addElement(InstancedEventCallbackData{_callback, _eventID, prevOrderDispatcherId, InvalidInstancedEventCallbackID}).m_elementHandle.getKey();
 
     if (prevOrderDispatcherId != InvalidInstancedEventCallbackID)
     {
@@ -178,9 +171,7 @@ void ego::EventController::removeInstancedEventDispatcher(InstancedEventCallback
 
     if (dispatcherData->m_nextSiblingID != InvalidInstancedEventCallbackID)
     {
-        InstancedEventCallbackData* nextSiblinngDispatcherData = m_instancedCallbacks.getElement(
-            dispatcherData->m_nextSiblingID
-        );
+        InstancedEventCallbackData* nextSiblinngDispatcherData = m_instancedCallbacks.getElement(dispatcherData->m_nextSiblingID);
 
         EGO_ASSERT(nextSiblinngDispatcherData);
         EGO_ASSERT(nextSiblinngDispatcherData->m_prevSiblingID == _dispatcherID);
@@ -197,9 +188,7 @@ void ego::EventController::removeInstancedEventDispatcher(InstancedEventCallback
 
     if (dispatcherData->m_prevSiblingID != InvalidInstancedEventCallbackID)
     {
-        InstancedEventCallbackData* prevSiblinngDispatcherData = m_instancedCallbacks.getElement(
-            dispatcherData->m_prevSiblingID
-        );
+        InstancedEventCallbackData* prevSiblinngDispatcherData = m_instancedCallbacks.getElement(dispatcherData->m_prevSiblingID);
 
         EGO_ASSERT(prevSiblinngDispatcherData);
         EGO_ASSERT(prevSiblinngDispatcherData->m_nextSiblingID == _dispatcherID);

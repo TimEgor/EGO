@@ -13,9 +13,7 @@ namespace ego::ecs
     namespace detail
     {
         template <typename TComponent>
-        inline constexpr bool IsComponentType =
-            std::is_base_of_v<Component, std::remove_cv_t<TComponent>> &&
-            !std::is_same_v<Component, std::remove_cv_t<TComponent>>;
+        inline constexpr bool IsComponentType = std::is_base_of_v<Component, std::remove_cv_t<TComponent>> && !std::is_same_v<Component, std::remove_cv_t<TComponent>>;
     }
 
     template <typename TComponent, typename... Args>
@@ -27,10 +25,7 @@ namespace ego::ecs
 
         EGO_ASSERT(isEntityAlive(_entity));
 
-        return m_implementation->m_registry.emplace<TComponent>(
-            detail::ToNativeEntity(_entity),
-            std::forward<Args>(_args)...
-        );
+        return m_implementation->m_registry.emplace<TComponent>(detail::ToNativeEntity(_entity), std::forward<Args>(_args)...);
     }
 
     template <typename TComponent, typename... Args>
@@ -42,10 +37,7 @@ namespace ego::ecs
 
         EGO_ASSERT(isEntityAlive(_entity));
 
-        return m_implementation->m_registry.emplace_or_replace<TComponent>(
-            detail::ToNativeEntity(_entity),
-            std::forward<Args>(_args)...
-        );
+        return m_implementation->m_registry.emplace_or_replace<TComponent>(detail::ToNativeEntity(_entity), std::forward<Args>(_args)...);
     }
 
     template <typename TComponent>
@@ -136,8 +128,7 @@ namespace ego::ecs
             [&function](entt::entity _nativeEntity, TComponents&... _components)
             {
                 std::invoke(function, detail::ToEntity(_nativeEntity), _components...);
-            }
-        );
+            });
     }
 
     template <typename... TComponents, typename TFunction>
@@ -152,7 +143,6 @@ namespace ego::ecs
             [&function](entt::entity _nativeEntity, const std::remove_const_t<TComponents>&... _components)
             {
                 std::invoke(function, detail::ToEntity(_nativeEntity), _components...);
-            }
-        );
+            });
     }
-}
+} // namespace ego::ecs

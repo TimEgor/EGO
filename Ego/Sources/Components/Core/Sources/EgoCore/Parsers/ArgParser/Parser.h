@@ -45,11 +45,7 @@ namespace ego
         }
 
         template <typename OptionT>
-        void addOptionValue(
-            const char* _optionName,
-            OptionT& _value,
-            typename OptionValue<OptionT>::LegacySetterType _setter
-        )
+        void addOptionValue(const char* _optionName, OptionT& _value, typename OptionValue<OptionT>::LegacySetterType _setter)
         {
             setOptionValue(_optionName, std::make_unique<OptionValue<OptionT>>(_value, _setter));
         }
@@ -60,4 +56,4 @@ namespace ego
     private:
         void setOptionValue(const char* _optionName, std::unique_ptr<BaseOptionValue> _optionValue);
     };
-}
+} // namespace ego

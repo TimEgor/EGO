@@ -10,10 +10,7 @@
 
 #include "ResourceDependencyGraph.h"
 
-bool ego::ResourceDependencyGraph::addDependency(
-    Resource& _resource,
-    const ResourcePointer& _dependency
-) const
+bool ego::ResourceDependencyGraph::addDependency(Resource& _resource, const ResourcePointer& _dependency) const
 {
     if (!_dependency)
     {
@@ -32,8 +29,7 @@ bool ego::ResourceDependencyGraph::addDependency(
 ego::ResourceDependencyGraph::PendingLoadingPointer ego::ResourceDependencyGraph::createPendingLoading(
     Resource& _resource,
     const ResourcePointer& _registeredResource,
-    Resource::DependencyCollection&& _dependencies
-) const
+    Resource::DependencyCollection&& _dependencies) const
 {
     if (!_registeredResource || _registeredResource.get() != &_resource)
     {
@@ -41,7 +37,7 @@ ego::ResourceDependencyGraph::PendingLoadingPointer ego::ResourceDependencyGraph
         return nullptr;
     }
 
-    PendingLoadingPointer pendingLoading = std::make_shared<PendingLoading>();
+    auto pendingLoading = std::make_shared<PendingLoading>();
     pendingLoading->m_resource = _registeredResource;
     pendingLoading->m_dependencies = std::move(_dependencies);
 
@@ -55,9 +51,7 @@ ego::ResourceDependencyGraph::PendingLoadingPointer ego::ResourceDependencyGraph
     return pendingLoading;
 }
 
-uint32_t ego::ResourceDependencyGraph::registerPendingDependencyWaiters(
-    const PendingLoadingPointer& _pendingLoading
-)
+uint32_t ego::ResourceDependencyGraph::registerPendingDependencyWaiters(const PendingLoadingPointer& _pendingLoading)
 {
     if (!_pendingLoading)
     {
@@ -82,9 +76,7 @@ uint32_t ego::ResourceDependencyGraph::registerPendingDependencyWaiters(
     return remainingDependencyCount;
 }
 
-ego::ResourceDependencyGraph::PendingLoadingCollection ego::ResourceDependencyGraph::notifyResourceLoadingFinished(
-    const ResourcePointer& _resource
-)
+ego::ResourceDependencyGraph::PendingLoadingCollection ego::ResourceDependencyGraph::notifyResourceLoadingFinished(const ResourcePointer& _resource)
 {
     if (!_resource || _resource->isLoading())
     {
@@ -108,9 +100,7 @@ ego::ResourceDependencyGraph::PendingLoadingCollection ego::ResourceDependencyGr
     return finishDependencyLoadings(std::move(pendingLoadings));
 }
 
-ego::ResourceDependencyGraph::PendingLoadingCompletionResult ego::ResourceDependencyGraph::completePendingLoading(
-    const PendingLoadingPointer& _pendingLoading
-) const
+ego::ResourceDependencyGraph::PendingLoadingCompletionResult ego::ResourceDependencyGraph::completePendingLoading(const PendingLoadingPointer& _pendingLoading) const
 {
     PendingLoadingCompletionResult result;
     if (!_pendingLoading)
@@ -136,9 +126,7 @@ ego::ResourceDependencyGraph::PendingLoadingCompletionResult ego::ResourceDepend
     return result;
 }
 
-ego::ResourcePointer ego::ResourceDependencyGraph::getPendingResource(
-    const PendingLoadingPointer& _pendingLoading
-) const
+ego::ResourcePointer ego::ResourceDependencyGraph::getPendingResource(const PendingLoadingPointer& _pendingLoading) const
 {
     return _pendingLoading ? _pendingLoading->m_resource.lock() : nullptr;
 }
@@ -146,8 +134,7 @@ ego::ResourcePointer ego::ResourceDependencyGraph::getPendingResource(
 void ego::ResourceDependencyGraph::collectResourceLoadingJobs(
     const ResourcePointer& _resource,
     const LoadingJobResolver& _loadingJobResolver,
-    std::vector<JobReference>& _jobs
-) const
+    std::vector<JobReference>& _jobs) const
 {
     std::unordered_set<const Resource*> checkedResources;
     collectResourceLoadingJobs(_resource, _loadingJobResolver, checkedResources, _jobs);
@@ -177,15 +164,11 @@ void ego::ResourceDependencyGraph::normalizeDependencies(Resource::DependencyCol
             [&uniqueDependencies](const ResourcePointer& _dependency)
             {
                 return !uniqueDependencies.insert(_dependency.get()).second;
-            }
-        ),
-        _dependencies.end()
-    );
+            }),
+        _dependencies.end());
 }
 
-ego::ResourceDependencyGraph::PendingLoadingCollection ego::ResourceDependencyGraph::finishDependencyLoadings(
-    PendingLoadingCollection&& _pendingLoadings
-) const
+ego::ResourceDependencyGraph::PendingLoadingCollection ego::ResourceDependencyGraph::finishDependencyLoadings(PendingLoadingCollection&& _pendingLoadings) const
 {
     PendingLoadingCollection finishedLoadings;
     for (const PendingLoadingPointer& pendingLoading : _pendingLoadings)
@@ -212,10 +195,7 @@ ego::ResourceDependencyGraph::PendingLoadingCollection ego::ResourceDependencyGr
     return finishedLoadings;
 }
 
-bool ego::ResourceDependencyGraph::checkPendingDependenciesLoaded(
-    const PendingLoadingPointer& _pendingLoading,
-    std::string& _loadingError
-) const
+bool ego::ResourceDependencyGraph::checkPendingDependenciesLoaded(const PendingLoadingPointer& _pendingLoading, std::string& _loadingError) const
 {
     if (!_pendingLoading)
     {
@@ -255,8 +235,7 @@ void ego::ResourceDependencyGraph::collectResourceLoadingJobs(
     const ResourcePointer& _resource,
     const LoadingJobResolver& _loadingJobResolver,
     std::unordered_set<const Resource*>& _checkedResources,
-    std::vector<JobReference>& _jobs
-) const
+    std::vector<JobReference>& _jobs) const
 {
     if (!_resource || !_resource->isLoading() || !_checkedResources.insert(_resource.get()).second)
     {
@@ -278,10 +257,7 @@ void ego::ResourceDependencyGraph::collectResourceLoadingJobs(
     }
 }
 
-bool ego::ResourceDependencyGraph::hasDependencyCycle(
-    const Resource& _resource,
-    const Resource::DependencyCollection& _dependencies
-) const
+bool ego::ResourceDependencyGraph::hasDependencyCycle(const Resource& _resource, const Resource::DependencyCollection& _dependencies) const
 {
     for (const ResourcePointer& dependency : _dependencies)
     {
@@ -294,10 +270,7 @@ bool ego::ResourceDependencyGraph::hasDependencyCycle(
     return false;
 }
 
-bool ego::ResourceDependencyGraph::hasDependencyCycle(
-    const Resource& _resource,
-    const ResourcePointer& _dependency
-) const
+bool ego::ResourceDependencyGraph::hasDependencyCycle(const Resource& _resource, const ResourcePointer& _dependency) const
 {
     if (!_dependency)
     {
@@ -324,8 +297,7 @@ bool ego::ResourceDependencyGraph::hasDependencyCycle(
 bool ego::ResourceDependencyGraph::hasDependencyPath(
     const ResourcePointer& _resource,
     const Resource* _targetResource,
-    std::unordered_set<const Resource*>& _checkedResources
-) const
+    std::unordered_set<const Resource*>& _checkedResources) const
 {
     if (!_resource || !_targetResource)
     {
@@ -356,10 +328,7 @@ bool ego::ResourceDependencyGraph::hasDependencyPath(
     return false;
 }
 
-bool ego::ResourceDependencyGraph::isChildResourcesLoaded(
-    const ResourcePointer& _resource,
-    std::unordered_set<const Resource*>& _checkedResources
-) const
+bool ego::ResourceDependencyGraph::isChildResourcesLoaded(const ResourcePointer& _resource, std::unordered_set<const Resource*>& _checkedResources) const
 {
     if (!_resource || !_resource->isLoaded())
     {

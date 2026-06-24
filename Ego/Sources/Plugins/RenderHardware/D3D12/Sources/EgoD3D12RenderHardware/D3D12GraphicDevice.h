@@ -1,98 +1,114 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
 #include <wrl/client.h>
 
-#include "Common/D3D12DescriptorAllocator.h"
+#include "D3D12DescriptorFactory.h"
+#include "D3D12DeviceContext.h"
+#include "D3D12ImmediateContext.h"
 
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
 #include "EgoEngine/Resources/Resource/ResourceProviderPlugin.h"
 
 namespace ego::gpu::d3d12
 {
+    class D3D12Buffer;
     class D3D12CommandQueue;
+    class D3D12GeometryAccelerationStructure;
+    class D3D12InstanceAccelerationStructure;
 
     class D3D12GraphicDevice final : public GraphicDevice
     {
     public:
         D3D12GraphicDevice() = default;
 
-        virtual bool init(const GraphicDevice::InitParams& _params) override;
-        virtual void release() override;
+        using GraphicDevice::createBuffer;
+        using GraphicDevice::createTexture2D;
 
-        virtual void* getNativeHandle() const override;
-        virtual void setName(const char* _name) override;
+        bool init(const GraphicDevice::InitParams& _params) override;
+        void release() override;
 
-        virtual CommandQueueReference createCommandQueue(const CommandQueueDesc& _desc) override;
-        virtual GraphicCommandListReference createGraphicCommandList() override;
-        virtual ComputeCommandListReference createComputeCommandList() override;
-        virtual CopyCommandListReference createCopyCommandList() override;
+        void* getNativeHandle() const override;
+        void setName(const char* _name) override;
 
-        virtual BufferReference createBuffer(
-            const BufferDesc& _desc,
-            const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
-        ) override;
-        virtual Texture2DReference createTexture2D(
-            const Texture2DDesc& _desc,
-            const InitialGraphicResourceData& _initialData = InitialGraphicResourceData()
-        ) override;
+        CommandQueueReference createCommandQueue(const CommandQueueDesc& _desc) override;
+        GraphicCommandListReference createGraphicCommandList() override;
+        ComputeCommandListReference createComputeCommandList() override;
+        CopyCommandListReference createCopyCommandList() override;
 
-        virtual VertexShaderReference createVertexShader(const ShaderCodeReference& _code) override;
-        virtual PixelShaderReference createPixelShader(const ShaderCodeReference& _code) override;
-        virtual ComputeShaderReference createComputeShader(const ShaderCodeReference& _code) override;
-        virtual BindingLayoutReference createBindingLayout(const BindingLayoutDesc& _desc) override;
-        virtual SamplerReference createSampler(const SamplerDesc& _desc) override;
+        BufferReference createBuffer(const BufferDesc& _desc) override;
+        GpuTaskReference uploadBuffer(
+            const BufferReference& _buffer,
+            const InitialGraphicResourceData& _initialData,
+            const GpuOperationOptions& _options = GpuOperationOptions()) override;
+        Texture2DReference createTexture2D(const Texture2DDesc& _desc) override;
+        GpuTaskReference uploadTexture2D(
+            const Texture2DReference& _texture,
+            const InitialGraphicResourceData& _initialData,
+            const GpuOperationOptions& _options = GpuOperationOptions()) override;
 
-        virtual BufferViewReference createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc) override;
-        virtual TextureViewReference createTextureView(
-            const TextureReference& _texture,
-            const TextureViewDesc& _desc
-        ) override;
+        VertexShaderReference createVertexShader(const ShaderCodeReference& _code) override;
+        PixelShaderReference createPixelShader(const ShaderCodeReference& _code) override;
+        ComputeShaderReference createComputeShader(const ShaderCodeReference& _code) override;
+        RayGenerationShaderReference createRayGenerationShader(const ShaderCodeReference& _code) override;
+        MissShaderReference createMissShader(const ShaderCodeReference& _code) override;
+        ClosestHitShaderReference createClosestHitShader(const ShaderCodeReference& _code) override;
+        BindingLayoutReference createBindingLayout(const BindingLayoutDesc& _desc) override;
+        SamplerReference createSampler(const SamplerDesc& _desc) override;
 
-        virtual GraphicPipelineReference createGraphicPipeline(const GraphicPipelineDesc& _desc) override;
-        virtual ComputePipelineReference createComputePipeline(const ComputePipelineDesc& _desc) override;
+        GpuGeometryAccelerationStructureTicket buildGeometryAccelerationStructure(
+            const MeshAccelerationStructureBuildDesc& _desc,
+            const GpuOperationOptions& _options = GpuOperationOptions()) override;
+        GpuInstanceAccelerationStructureTicket buildInstanceAccelerationStructure(
+            const InstanceAccelerationStructureBuildDesc& _desc,
+            const GpuOperationOptions& _options = GpuOperationOptions()) override;
+        AccelerationStructureViewReference createAccelerationStructureView(const InstanceAccelerationStructureReference& _accelerationStructure) override;
 
-        virtual FenceReference createFence(Fence::FenceValue _initialValue = 0) override;
+        BufferViewReference createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc) override;
+        TextureViewReference createTextureView(const TextureReference& _texture, const TextureViewDesc& _desc) override;
 
-        virtual SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window) override;
+        GraphicPipelineReference createGraphicPipeline(const GraphicPipelineDesc& _desc) override;
+        ComputePipelineReference createComputePipeline(const ComputePipelineDesc& _desc) override;
+        RayTracingPipelineReference createRayTracingPipeline(const RayTracingPipelineDesc& _desc) override;
 
-        virtual const GraphicDevice::Capabilities& getCapabilities() const override;
+        FenceReference createFence(Fence::FenceValue _initialValue = 0) override;
 
-        virtual void waitIdle() override;
+        SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window, const CommandQueueReference& _presentationQueue) override;
+
+        const GraphicDevice::Capabilities& getCapabilities() const override;
 
         ID3D12Device* getDevice() const;
         IDXGIAdapter1* getAdapter() const;
 
-        D3D12DescriptorAllocatorPointer getViewDescriptorAllocator();
-        D3D12DescriptorAllocatorPointer getSamplerDescriptorAllocator();
-        D3D12DescriptorAllocatorPointer getRtvDescriptorAllocator();
-        D3D12DescriptorAllocatorPointer getDsvDescriptorAllocator();
-
-        void registerQueue(D3D12CommandQueue* _queue);
-        void unregisterQueue(D3D12CommandQueue* _queue);
+        GpuTaskReference submitImmediateCommands(
+            const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands,
+            const std::vector<GraphicObjectReference>& _keepAliveObjects = std::vector<GraphicObjectReference>());
+        bool executeImmediateCommands(const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands);
 
     private:
-        bool initializeFactory(const GraphicDevice::InitParams& _params);
-        bool initializeAdapter();
-        bool initializeDevice();
-        bool initializeDescriptorAllocators();
-        void initializeCapabilities();
+        ID3D12Device5* getD3D12Device() const;
+        template <typename TCommandListReference, typename TCommandListObject>
+        TCommandListReference createCommandList(D3D12_COMMAND_LIST_TYPE _type);
+        ego::Reference<D3D12Buffer> createD3D12Buffer(const BufferDesc& _desc);
+        bool createUploadBuffer(uint64_t _size, Microsoft::WRL::ComPtr<ID3D12Resource>& _resource) const;
+        ego::Reference<D3D12Buffer> createUploadD3D12Buffer(uint64_t _size);
+        GpuTaskReference uploadBufferToDefaultHeap(ID3D12Resource* _dstResource, uint64_t _dstSize, const InitialGraphicResourceData& _initialData);
+        GpuTaskReference uploadTexture2DToDefaultHeap(ID3D12Resource* _dstResource, const D3D12_RESOURCE_DESC& _dstDesc, const InitialGraphicResourceData& _initialData);
+        bool createShaderTable(ID3D12StateObject* _stateObject, Microsoft::WRL::ComPtr<ID3D12Resource>& _shaderTable, uint64_t& _shaderRecordSize) const;
+        template <typename TReference, typename TObject>
+        GpuResourceTicket<TReference> buildAccelerationStructure(
+            const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& _inputs,
+            const GpuOperationOptions& _options,
+            const std::vector<GraphicObjectReference>& _keepAliveObjects = std::vector<GraphicObjectReference>());
         bool registerResourceProviders();
         void unregisterResourceProviders();
 
-        Microsoft::WRL::ComPtr<IDXGIFactory6> m_factory;
-        Microsoft::WRL::ComPtr<IDXGIAdapter1> m_adapter;
-        Microsoft::WRL::ComPtr<ID3D12Device> m_device;
+        D3D12DeviceContext m_deviceContext;
+        D3D12ImmediateContext m_immediateContext;
+        D3D12DescriptorFactory m_descriptorFactory;
 
-        D3D12DescriptorAllocatorPointer m_viewDescriptorAllocator;
-        D3D12DescriptorAllocatorPointer m_samplerDescriptorAllocator;
-        D3D12DescriptorAllocatorPointer m_rtvDescriptorAllocator;
-        D3D12DescriptorAllocatorPointer m_dsvDescriptorAllocator;
-
-        GraphicDevice::Capabilities m_capabilities;
-
-        std::vector<D3D12CommandQueue*> m_queues;
         ResourceProviderPluginPointer m_resourceProviderPlugin = nullptr;
     };
-}
+} // namespace ego::gpu::d3d12

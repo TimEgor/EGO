@@ -8,7 +8,8 @@
 #include "EgoECS/Entity.h"
 
 #include "Event/EventController.h"
-#include "Graphic/Presenter/WindowGraphicPresenter.h"
+#include "Graphic/Presenter/GraphicPresenter.h"
+#include "Graphic/Render/RenderDeviceContext.h"
 #include "Graphic/Render/RenderPlugin.h"
 #include "Graphic/RenderHardware/GraphicDevice.h"
 #include "Graphic/RenderHardware/RenderHardwarePlugin.h"
@@ -29,7 +30,7 @@ namespace ego
     class JobController;
     class ResourceController;
     class GraphicDevice;
-}
+} // namespace ego
 
 namespace ego::engine
 {
@@ -44,6 +45,7 @@ namespace ego::engine
             FileName m_platformPluginModuleName;
             FileName m_renderPluginModuleName;
             FileName m_renderHardwarePluginModuleName;
+            GraphicPresenterPointer m_graphicPresenter = nullptr;
             PluginDirectoryCollection m_pluginDirectories;
         };
 
@@ -54,6 +56,8 @@ namespace ego::engine
         void release();
 
         void run();
+        bool runFrame();
+        void completeRun();
         void stop();
         void pause();
         void unpause();
@@ -70,6 +74,7 @@ namespace ego::engine
         Platform& getPlatform();
         const GraphicDevice& getGraphicDevice() const;
         GraphicDevice& getGraphicDevice();
+        const ego::render::RenderDeviceContext& getRenderDeviceContext() const;
 
         const EventController& getEventController() const;
         EventController& getEventController();
@@ -101,12 +106,12 @@ namespace ego::engine
         bool initPlatform(const InitData& _initData);
         bool initPluginCatalog(const InitData& _initData);
         bool initGraphicDevice(const InitData& _initData);
+        bool initGraphicPresenter(const InitData& _initData);
         bool initRender(const InitData& _initData);
         bool initMainLoop();
 
         void beginFrame();
         void endFrame();
-        bool prepareMainWindowPresenter();
         JobGraphReference getMainLoopJobGraph();
         void renderFrame();
         void presentFrame();
@@ -124,7 +129,8 @@ namespace ego::engine
 
         PlatformPointer m_platform = nullptr;
         GraphicDevicePointer m_graphicDevice = nullptr;
-        WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
+        ego::render::RenderDeviceContext m_renderDeviceContext;
+        GraphicPresenterPointer m_graphicPresenter = nullptr;
         ego::render::RenderPointer m_render = nullptr;
 
         PlatformPluginPointer m_platformPlugin = nullptr;
@@ -162,4 +168,4 @@ namespace ego::engine
     };
 
     Engine& GetEngine();
-}
+} // namespace ego::engine

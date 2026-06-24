@@ -41,19 +41,23 @@ namespace ego
 
         template <typename T>
         struct HasObjectAccess : std::false_type
-        {};
+        {
+        };
 
         template <typename T>
         struct HasObjectAccess<T*> : std::true_type
-        {};
+        {
+        };
 
         template <typename T>
         struct HasObjectAccess<Reference<T>> : std::true_type
-        {};
+        {
+        };
 
         template <typename T>
         struct HasObjectAccess<SharedPointer<T>> : std::true_type
-        {};
+        {
+        };
 
         template <typename T>
         inline constexpr bool HasObjectAccessV = HasObjectAccess<std::remove_cv_t<T>>::value;
@@ -69,7 +73,7 @@ namespace ego
 
         template <typename T>
         T* GetObjectPointer(const SharedPointer<T>& _object);
-    }
+    } // namespace handler_details
 
     template <typename T>
     class HandlerSource : public STDDestroyMTCountable
@@ -100,8 +104,10 @@ namespace ego
         ObjectResult getObject() const;
         const SourceReference& getSource() const;
 
-        ObjectType& operator*() const requires handler_details::HasObjectAccessV<T>;
-        ObjectType* operator->() const requires handler_details::HasObjectAccessV<T>;
+        ObjectType& operator*() const
+            requires handler_details::HasObjectAccessV<T>;
+        ObjectType* operator->() const
+            requires handler_details::HasObjectAccessV<T>;
 
         bool isNull() const;
         bool isValid() const;
@@ -120,7 +126,7 @@ namespace ego
         template <typename TOwnerArg, typename TResolverArg>
         ResolvedHandlerSource(TOwnerArg&& _owner, TResolverArg&& _resolver);
 
-        virtual TResult getObject() const override;
+        TResult getObject() const override;
 
     private:
         TOwner m_owner;
@@ -132,15 +138,12 @@ namespace ego
 
     template <typename TResult>
     Handler<TResult> MakeHandler(const TResult& _object);
-}
+} // namespace ego
 
-#define EGO_HANDLER_DECLARATION(_TYPE, _NAME, _POSTFIX) \
-    using _NAME##_POSTFIX = ego::Handler<_TYPE>;
+#define EGO_HANDLER_DECLARATION(_TYPE, _NAME, _POSTFIX) using _NAME##_POSTFIX = ego::Handler<_TYPE>;
 
-#define EGO_HANDLER(_TYPE) \
-    EGO_HANDLER_DECLARATION(_TYPE, _TYPE, Handler)
+#define EGO_HANDLER(_TYPE) EGO_HANDLER_DECLARATION(_TYPE, _TYPE, Handler)
 
-#define EGO_NAMED_HANDLER(_TYPE, _NAME) \
-    EGO_HANDLER_DECLARATION(_TYPE, _NAME, Handler)
+#define EGO_NAMED_HANDLER(_TYPE, _NAME) EGO_HANDLER_DECLARATION(_TYPE, _NAME, Handler)
 
 #include "Handler.hpp"

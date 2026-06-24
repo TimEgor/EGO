@@ -5,14 +5,11 @@ namespace ego
     template <typename ValType, typename IndexType>
     IndexObjectPool<ValType, IndexType>::IndexObjectPool(IndexObjectPool&& _pool)
         : m_storage(std::move(_pool.m_storage))
-    {}
+    {
+    }
 
     template <typename ValType, typename IndexType>
-    bool IndexObjectPool<ValType, IndexType>::init(
-        size_t _pageSize,
-        size_t _maxFreePageCount,
-        size_t _minFreeIndexCount
-    )
+    bool IndexObjectPool<ValType, IndexType>::init(size_t _pageSize, size_t _maxFreePageCount, size_t _minFreeIndexCount)
     {
         return m_storage.init(_pageSize, _maxFreePageCount, _minFreeIndexCount);
     }
@@ -70,8 +67,7 @@ namespace ego
 
     template <typename ValType, typename IndexType>
     template <typename... Args>
-    typename IndexObjectPool<ValType, IndexType>::NewElementInfo
-    IndexObjectPool<ValType, IndexType>::addElement(Args&&... _args)
+    typename IndexObjectPool<ValType, IndexType>::NewElementInfo IndexObjectPool<ValType, IndexType>::addElement(Args&&... _args)
     {
         NewElementInfo info;
         addElement(info, std::forward<Args>(_args)...);
@@ -86,9 +82,8 @@ namespace ego
     }
 
     template <typename ValType, typename IndexType>
-    typename IndexObjectPool<ValType, IndexType>::NewElementInfo
-    IndexObjectPool<ValType, IndexType>::makeElementInfo(const StorageNewElementInfo& _info)
+    typename IndexObjectPool<ValType, IndexType>::NewElementInfo IndexObjectPool<ValType, IndexType>::makeElementInfo(const StorageNewElementInfo& _info)
     {
         return NewElementInfo{_info.m_handle, _info.m_elementPtr};
     }
-}
+} // namespace ego

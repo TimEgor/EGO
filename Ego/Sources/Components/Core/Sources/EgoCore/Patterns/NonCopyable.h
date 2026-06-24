@@ -2,14 +2,14 @@
 
 namespace ego
 {
-	class NonCopyable
-	{
-	public:
-		NonCopyable() = default;
-		virtual ~NonCopyable() = default;
+    class NonCopyable
+    {
+    public:
+        NonCopyable() = default;
+        virtual ~NonCopyable() = default;
 
-		NonCopyable(const NonCopyable&) = delete;
+        NonCopyable(const NonCopyable&) = delete;
 
-		void operator=(const NonCopyable&) = delete;
-	};
-}
+        void operator=(const NonCopyable&) = delete;
+    };
+} // namespace ego

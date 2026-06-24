@@ -5,7 +5,9 @@
 #include "PluginController.h"
 
 ego::PluginModule::PluginModule(const PluginModuleInfo& _info)
-    : m_info(_info) {}
+    : m_info(_info)
+{
+}
 
 ego::PluginModule::~PluginModule() = default;
 
@@ -57,10 +59,7 @@ void ego::PluginModuleCore::addReleaser(PluginModuleReleaserFunction _function)
     m_releasers.push_back(_function);
 }
 
-ego::PluginModuleRegistrator::PluginModuleRegistrator(
-    PluginModuleInitializerFunction _init,
-    PluginModuleReleaserFunction _release
-)
+ego::PluginModuleRegistrator::PluginModuleRegistrator(PluginModuleInitializerFunction _init, PluginModuleReleaserFunction _release)
 {
     if (_init)
     {

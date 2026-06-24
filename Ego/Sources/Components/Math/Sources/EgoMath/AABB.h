@@ -15,7 +15,9 @@ namespace ego
 
         constexpr AABB3(const ComputeVector3& _min, const ComputeVector3& _max)
             : m_minPosition(_min),
-              m_maxPosition(_max) {}
+              m_maxPosition(_max)
+        {
+        }
 
         AABB3& merge(const AABB3& _volume);
 
@@ -28,4 +30,4 @@ namespace ego
     };
 
     AABB3 AABBFromMerging(const AABB3& _volume1, const AABB3& _volume2);
-}
+} // namespace ego

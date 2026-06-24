@@ -29,8 +29,7 @@ namespace
             [](unsigned char _ch)
             {
                 return static_cast<char>(std::tolower(_ch));
-            }
-        );
+            });
         return extension;
     }
 
@@ -38,7 +37,7 @@ namespace
     {
         return NormalizeProviderExtension(ego::file_name_utils::GetFileExtension(_path));
     }
-}
+} // namespace
 
 void ego::ResourceSourceRegistry::addFileSystem(const FileSystemPointer& _fileSystem)
 {
@@ -55,8 +54,7 @@ void ego::ResourceSourceRegistry::addFileSystem(const FileSystemPointer& _fileSy
         [&_fileSystem](const FileSystemPointer& _registeredFileSystem)
         {
             return _registeredFileSystem.get() == _fileSystem.get();
-        }
-    );
+        });
     if (foundIt != m_fileSystems.end())
     {
         return;
@@ -80,8 +78,7 @@ bool ego::ResourceSourceRegistry::removeFileSystem(const FileSystemPointer& _fil
         [&_fileSystem](const FileSystemPointer& _registeredFileSystem)
         {
             return _registeredFileSystem.get() == _fileSystem.get();
-        }
-    );
+        });
     if (foundIt == m_fileSystems.end())
     {
         return false;
@@ -97,10 +94,7 @@ void ego::ResourceSourceRegistry::clearFileSystems()
     m_fileSystems.clear();
 }
 
-bool ego::ResourceSourceRegistry::addResourceProvider(
-    const FileName& _extension,
-    const ResourceProviderPointer& _provider
-)
+bool ego::ResourceSourceRegistry::addResourceProvider(const FileName& _extension, const ResourceProviderPointer& _provider)
 {
     const std::string extension = NormalizeProviderExtension(_extension);
     if (extension.empty() || !_provider)

@@ -62,4 +62,4 @@ namespace ego
         bool m_isAsyncLoading = false;
         bool m_hasAsyncDependencies = false;
     };
-}
+} // namespace ego

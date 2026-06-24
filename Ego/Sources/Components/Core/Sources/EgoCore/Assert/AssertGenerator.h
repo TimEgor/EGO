@@ -6,14 +6,14 @@
 
 namespace ego
 {
-	class AssertGenerator
-	{
-	public:
-		AssertGenerator() = default;
-		virtual ~AssertGenerator() = default;
+    class AssertGenerator
+    {
+    public:
+        AssertGenerator() = default;
+        virtual ~AssertGenerator() = default;
 
-		virtual void generateError(const char* _message, const char* _file, uint32_t _line) = 0;
-	};
+        virtual void generateError(const char* _message, const char* _file, uint32_t _line) = 0;
+    };
 
-	EGO_POINTER(AssertGenerator);
-}
+    EGO_POINTER(AssertGenerator);
+} // namespace ego

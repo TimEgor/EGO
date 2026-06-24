@@ -15,17 +15,17 @@ namespace ego::win32
     public:
         Win32Platform(HINSTANCE _instance);
 
-        virtual bool init() override;
-        virtual void release() override;
+        bool init() override;
+        void release() override;
 
-        virtual MainWindowProvider& getMainWindowProvider() override;
-        virtual const MainWindowProvider& getMainWindowProvider() const override;
-        virtual WindowPointer createWindow(const char* _title, const WindowSize& _size) override;
+        MainWindowProvider& getMainWindowProvider() override;
+        const MainWindowProvider& getMainWindowProvider() const override;
+        WindowPointer createWindow(const char* _title, const WindowSize& _size) override;
 
-        virtual const PlatformEventController& getPlatformEventController() const override;
-        virtual PlatformEventController& getPlatformEventController() override;
+        const PlatformEventController& getPlatformEventController() const override;
+        PlatformEventController& getPlatformEventController() override;
 
-        virtual FileSystemPointer getFileSystem() override;
+        FileSystemPointer getFileSystem() override;
 
         HINSTANCE getInstanceHandle() const;
 
@@ -39,4 +39,4 @@ namespace ego::win32
         HINSTANCE m_instance;
         bool m_isInitialized = false;
     };
-}
+} // namespace ego::win32

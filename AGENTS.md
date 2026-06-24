@@ -14,9 +14,10 @@
 - Shared CMake helpers live in `CMake`; when changing build logic, use the existing functions and structure.
 
 ## C++ Style
-- Preserve the current code style and the settings from `Utils/ReSharper.DotSettings`.
+- Preserve the current code style and use the project's `.clang-format` and `.clang-tidy` as the formatting and C++ checks sources of truth.
 - Use `#pragma once` and namespaces `ego`/`ego::*`.
 - Minimize the use of anonymous namespaces during implementation. Do not put meaningful domain, component, plugin, or launcher logic into anonymous namespaces; keep them only for small file-local implementation details when they are clearly justified.
+- Do not put implementations of regular non-template functions or methods in headers; prefer source files, especially when the body is more than one line.
 - Naming: classes, structs, unions, enums, enum members, concepts, typedefs/type aliases, global functions, global variables, and constants use `UpperCamelCase`.
 - Naming: instance methods, local variables, and lambdas use `lowerCamelCase`.
 - Naming: static class/struct methods use `UpperCamelCase`.
@@ -41,6 +42,7 @@
 - For template implementations, preserve the existing `.h` + `.hpp` pattern.
 
 ## Includes
+- In source files that have a corresponding header, include that header first, in its own include group, before all other includes.
 - When adding or changing `#include` directives, keep them grouped with one blank line between groups.
 - Include groups are ordered as follows:
   1. Standard library headers.

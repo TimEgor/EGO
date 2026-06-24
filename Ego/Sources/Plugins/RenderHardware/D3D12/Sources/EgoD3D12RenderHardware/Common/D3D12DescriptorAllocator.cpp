@@ -1,11 +1,6 @@
 #include "D3D12DescriptorAllocator.h"
 
-bool ego::gpu::d3d12::D3D12DescriptorAllocator::init(
-    ID3D12Device* _device,
-    D3D12_DESCRIPTOR_HEAP_TYPE _type,
-    D3D12DescriptorIndex _capacity,
-    bool _shaderVisible
-)
+bool ego::gpu::d3d12::D3D12DescriptorAllocator::init(ID3D12Device* _device, D3D12_DESCRIPTOR_HEAP_TYPE _type, D3D12DescriptorIndex _capacity, bool _shaderVisible)
 {
     if (!_device || !_capacity)
     {
@@ -61,9 +56,7 @@ void ego::gpu::d3d12::D3D12DescriptorAllocator::release(D3D12DescriptorIndex _in
     m_freeIndices.push_back(_index);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12DescriptorAllocator::getCpuHandle(
-    D3D12DescriptorIndex _index
-) const
+D3D12_CPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12DescriptorAllocator::getCpuHandle(D3D12DescriptorIndex _index) const
 {
     D3D12_CPU_DESCRIPTOR_HANDLE handle = {};
     if (!m_heap || !isValidIndex(_index))
@@ -76,9 +69,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12DescriptorAllocator::getCpuHan
     return handle;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12DescriptorAllocator::getGpuHandle(
-    D3D12DescriptorIndex _index
-) const
+D3D12_GPU_DESCRIPTOR_HANDLE ego::gpu::d3d12::D3D12DescriptorAllocator::getGpuHandle(D3D12DescriptorIndex _index) const
 {
     D3D12_GPU_DESCRIPTOR_HANDLE handle = {};
     if (!m_heap || !m_shaderVisible || !isValidIndex(_index))

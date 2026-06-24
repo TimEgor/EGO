@@ -8,10 +8,12 @@ namespace ego::engine
     {
     public:
         EnginePlugin(const PluginModulePointer& _module, PluginType _pluginType)
-            : Plugin(_module, _pluginType) {}
+            : Plugin(_module, _pluginType)
+        {
+        }
 
         EGO_PLUGIN(EnginePlugin, Plugin);
     };
 
     EGO_POINTER(EnginePlugin);
-}
+} // namespace ego::engine

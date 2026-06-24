@@ -25,4 +25,4 @@ namespace ego::framework
         static void ReadGameLogic(const XmlNode& _rootNode, Project& _project);
         static void ReadGameLogicPlugins(const XmlNode& _rootNode, Project& _project);
     };
-}
+} // namespace ego::framework

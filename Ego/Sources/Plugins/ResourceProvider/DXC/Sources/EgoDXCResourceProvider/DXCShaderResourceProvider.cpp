@@ -3,64 +3,55 @@
 
 #include "DXCShaderResourceProvider.h"
 
-#include "DXCResourceUtils.h"
 #include "DXCShaderCompiler.h"
 #include "DXCShaderSourceResolver.h"
 
-#include "EgoEngine/Graphic/RenderHardware/Resources/ShaderResource.h"
+#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ShaderResource.h"
 #include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
 
-bool ego::resources::dxc::DXCShaderResourceProvider::onProvideContent(
-    const Resource& _resource,
-    const FileName& _path,
-    ResourceLoadingContext& _loadingContext,
-    FileContent& _content,
-    std::string& _loadingError
-)
+namespace ego::resources::dxc
 {
-    if (!ego::rtti::IsObjectBasedOn<gpu::ShaderResource>(_resource))
+    bool DXCShaderResourceProvider::onProvideContent(
+        const Resource& _resource,
+        const FileName& _path,
+        ResourceLoadingContext& _loadingContext,
+        FileContent& _content,
+        std::string& _loadingError)
     {
-        if (TryLoadContent(_loadingContext, _path, _content))
+        DXCShaderSourceResolver sourceResolver(_loadingContext);
+        if (!ego::rtti::IsObjectBasedOn<gpu::ShaderResource>(_resource))
         {
-            return true;
+            if (sourceResolver.loadContent(_path, _content))
+            {
+                return true;
+            }
+
+            _loadingError = std::string("Failed to load resource content: ") + _path.c_str();
+            return false;
         }
 
-        _loadingError = std::string("Failed to load resource content: ") + _path.c_str();
-        return false;
-    }
-
-    const gpu::ShaderResource& shaderResource = static_cast<const gpu::ShaderResource&>(_resource);
-    FileName sourcePath;
-    FileContent sourceContent;
-    if (!ResolveShaderSourceContent(_path, _loadingContext, sourcePath, sourceContent, _loadingError))
-    {
-        _content.clear();
-        return false;
-    }
-
-    if (!IsRawHlslShader(sourcePath))
-    {
-        _content = std::move(sourceContent);
-        if (!_content.empty())
+        const auto& shaderResource = static_cast<const gpu::ShaderResource&>(_resource);
+        FileName sourcePath;
+        FileContent sourceContent;
+        if (!sourceResolver.resolveShaderSourceContent(_path, sourcePath, sourceContent, _loadingError))
         {
-            return true;
+            _content.clear();
+            return false;
         }
 
-        _loadingError = std::string("Shader bytecode is empty: ") + sourcePath.c_str();
-        return false;
-    }
+        if (!sourceResolver.isRawHlslShader(sourcePath))
+        {
+            _content = std::move(sourceContent);
+            if (!_content.empty())
+            {
+                return true;
+            }
 
-    if (CompileHlslContent(
-        sourceContent,
-        sourcePath,
-        shaderResource.getShaderStage(),
-        _loadingContext,
-        _content,
-        _loadingError
-    ))
-    {
-        return true;
-    }
+            _loadingError = std::string("Shader bytecode is empty: ") + sourcePath.c_str();
+            return false;
+        }
 
-    return false;
-}
+        const DXCShaderCompiler compiler(_loadingContext);
+        return compiler.compileHlslContent(sourceContent, sourcePath, shaderResource.getShaderStage(), _content, _loadingError);
+    }
+} // namespace ego::resources::dxc
