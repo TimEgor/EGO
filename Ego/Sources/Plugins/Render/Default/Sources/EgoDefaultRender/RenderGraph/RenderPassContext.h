@@ -7,6 +7,8 @@
 
 namespace ego::render
 {
+    class RenderPipelineStateCache;
+
     struct RenderPassInitContext final
     {
         GraphicDevice& m_graphicDevice;
@@ -24,6 +26,8 @@ namespace ego::render
 
     struct RenderPassExecuteContext final
     {
+        GraphicDevice& m_graphicDevice;
+        RenderPipelineStateCache& m_pipelineStateCache;
         const RenderGraphicCommandList& m_commandList;
         DefaultRenderTarget& m_renderTarget;
         DefaultRenderScene& m_scene;

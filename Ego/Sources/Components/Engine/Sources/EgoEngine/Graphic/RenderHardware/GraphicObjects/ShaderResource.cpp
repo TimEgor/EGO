@@ -132,3 +132,33 @@ ego::gpu::ShaderReference ego::gpu::ClosestHitShaderResource::createShader(const
 {
     return engine::GetEngine().getGraphicDevice().createClosestHitShader(_code);
 }
+
+ego::gpu::AnyHitShaderReference ego::gpu::AnyHitShaderResource::getAnyHitShader() const
+{
+    return MakeTypedShaderReference<AnyHitShader>(getShader(), ShaderStage::AnyHit);
+}
+
+ego::gpu::ShaderStage ego::gpu::AnyHitShaderResource::getShaderStage() const
+{
+    return ShaderStage::AnyHit;
+}
+
+ego::gpu::ShaderReference ego::gpu::AnyHitShaderResource::createShader(const ShaderCodeReference& _code)
+{
+    return engine::GetEngine().getGraphicDevice().createAnyHitShader(_code);
+}
+
+ego::gpu::IntersectionShaderReference ego::gpu::IntersectionShaderResource::getIntersectionShader() const
+{
+    return MakeTypedShaderReference<IntersectionShader>(getShader(), ShaderStage::Intersection);
+}
+
+ego::gpu::ShaderStage ego::gpu::IntersectionShaderResource::getShaderStage() const
+{
+    return ShaderStage::Intersection;
+}
+
+ego::gpu::ShaderReference ego::gpu::IntersectionShaderResource::createShader(const ShaderCodeReference& _code)
+{
+    return engine::GetEngine().getGraphicDevice().createIntersectionShader(_code);
+}

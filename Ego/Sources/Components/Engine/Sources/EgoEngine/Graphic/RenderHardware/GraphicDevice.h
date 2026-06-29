@@ -88,6 +88,8 @@ namespace ego
         virtual gpu::RayGenerationShaderReference createRayGenerationShader(const gpu::ShaderCodeReference& _code) = 0;
         virtual gpu::MissShaderReference createMissShader(const gpu::ShaderCodeReference& _code) = 0;
         virtual gpu::ClosestHitShaderReference createClosestHitShader(const gpu::ShaderCodeReference& _code) = 0;
+        virtual gpu::AnyHitShaderReference createAnyHitShader(const gpu::ShaderCodeReference& _code) = 0;
+        virtual gpu::IntersectionShaderReference createIntersectionShader(const gpu::ShaderCodeReference& _code) = 0;
         virtual gpu::BindingLayoutReference createBindingLayout(const gpu::BindingLayoutDesc& _desc) = 0;
         virtual gpu::SamplerReference createSampler(const gpu::SamplerDesc& _desc) = 0;
 

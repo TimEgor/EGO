@@ -34,6 +34,9 @@ namespace ego::gpu
         uint32_t m_componentsCount = 0;
         InputLayoutElementType m_type = InputLayoutElementType::Undefined;
 
+        bool operator==(const InputLayoutElementDesc& _other) const;
+        bool operator!=(const InputLayoutElementDesc& _other) const;
+
         InputLayoutElementHash getHash() const;
     };
 
@@ -52,6 +55,9 @@ namespace ego::gpu
         InputLayoutBindingType m_type = InputLayoutBindingType::VertexBinding;
         uint32_t m_instanceStepRate = 1;
 
+        bool operator==(const InputLayoutBindingDesc& _other) const;
+        bool operator!=(const InputLayoutBindingDesc& _other) const;
+
         InputLayoutBindingHash getHash() const;
     };
 
@@ -64,6 +70,9 @@ namespace ego::gpu
 
         ElementDescContainer m_elements;
         BindingDescContainer m_bindings;
+
+        bool operator==(const InputLayoutDesc& _other) const;
+        bool operator!=(const InputLayoutDesc& _other) const;
 
         InputLayoutHash getHash() const;
     };

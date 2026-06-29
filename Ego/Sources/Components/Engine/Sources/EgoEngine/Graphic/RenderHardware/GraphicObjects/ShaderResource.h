@@ -122,4 +122,36 @@ namespace ego::gpu
     };
 
     EGO_POINTER(ClosestHitShaderResource);
+
+    class AnyHitShaderResource final : public ShaderResource
+    {
+    public:
+        AnyHitShaderResource() = default;
+
+        AnyHitShaderReference getAnyHitShader() const;
+        ShaderStage getShaderStage() const override;
+
+        EGO_RESOURCE(AnyHitShaderResource, ShaderResource);
+
+    protected:
+        ShaderReference createShader(const ShaderCodeReference& _code) override;
+    };
+
+    EGO_POINTER(AnyHitShaderResource);
+
+    class IntersectionShaderResource final : public ShaderResource
+    {
+    public:
+        IntersectionShaderResource() = default;
+
+        IntersectionShaderReference getIntersectionShader() const;
+        ShaderStage getShaderStage() const override;
+
+        EGO_RESOURCE(IntersectionShaderResource, ShaderResource);
+
+    protected:
+        ShaderReference createShader(const ShaderCodeReference& _code) override;
+    };
+
+    EGO_POINTER(IntersectionShaderResource);
 } // namespace ego::gpu

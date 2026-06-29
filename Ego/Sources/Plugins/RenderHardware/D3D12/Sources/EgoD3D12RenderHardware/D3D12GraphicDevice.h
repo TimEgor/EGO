@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <string>
 #include <vector>
 
 #include <wrl/client.h>
@@ -55,6 +56,8 @@ namespace ego::gpu::d3d12
         RayGenerationShaderReference createRayGenerationShader(const ShaderCodeReference& _code) override;
         MissShaderReference createMissShader(const ShaderCodeReference& _code) override;
         ClosestHitShaderReference createClosestHitShader(const ShaderCodeReference& _code) override;
+        AnyHitShaderReference createAnyHitShader(const ShaderCodeReference& _code) override;
+        IntersectionShaderReference createIntersectionShader(const ShaderCodeReference& _code) override;
         BindingLayoutReference createBindingLayout(const BindingLayoutDesc& _desc) override;
         SamplerReference createSampler(const SamplerDesc& _desc) override;
 
@@ -96,7 +99,11 @@ namespace ego::gpu::d3d12
         ego::Reference<D3D12Buffer> createUploadD3D12Buffer(uint64_t _size);
         GpuTaskReference uploadBufferToDefaultHeap(ID3D12Resource* _dstResource, uint64_t _dstSize, const InitialGraphicResourceData& _initialData);
         GpuTaskReference uploadTexture2DToDefaultHeap(ID3D12Resource* _dstResource, const D3D12_RESOURCE_DESC& _dstDesc, const InitialGraphicResourceData& _initialData);
-        bool createShaderTable(ID3D12StateObject* _stateObject, Microsoft::WRL::ComPtr<ID3D12Resource>& _shaderTable, uint64_t& _shaderRecordSize) const;
+        bool createShaderTable(
+            ID3D12StateObject* _stateObject,
+            const std::vector<std::wstring>& _hitGroupExportNames,
+            Microsoft::WRL::ComPtr<ID3D12Resource>& _shaderTable,
+            uint64_t& _shaderRecordSize) const;
         template <typename TReference, typename TObject>
         GpuResourceTicket<TReference> buildAccelerationStructure(
             const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& _inputs,

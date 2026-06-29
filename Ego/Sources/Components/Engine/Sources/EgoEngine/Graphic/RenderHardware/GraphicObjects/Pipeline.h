@@ -79,6 +79,9 @@ namespace ego::gpu
         int32_t m_depthBias = 0;
         float m_depthBiasClamp = 0.0f;
         float m_depthBiasSlopeScale = 0.0f;
+
+        bool operator==(const RasterizationStateDesc& _other) const;
+        bool operator!=(const RasterizationStateDesc& _other) const;
     };
 
     struct DepthStencilStateDesc final
@@ -87,6 +90,9 @@ namespace ego::gpu
         bool m_depthWrite = true;
         CompareOperation m_depthCompareOperation = CompareOperation::LessEqual;
         bool m_stencilEnable = false;
+
+        bool operator==(const DepthStencilStateDesc& _other) const;
+        bool operator!=(const DepthStencilStateDesc& _other) const;
     };
 
     struct RenderTargetBlendDesc final
@@ -99,12 +105,18 @@ namespace ego::gpu
         BlendFactor m_dstAlphaFactor = BlendFactor::Zero;
         BlendOperation m_alphaOperation = BlendOperation::Add;
         uint8_t m_colorWriteMask = GraphicColorWriteMaskAll;
+
+        bool operator==(const RenderTargetBlendDesc& _other) const;
+        bool operator!=(const RenderTargetBlendDesc& _other) const;
     };
 
     struct BlendStateDesc final
     {
         bool m_alphaToCoverageEnable = false;
         std::vector<RenderTargetBlendDesc> m_renderTargets;
+
+        bool operator==(const BlendStateDesc& _other) const;
+        bool operator!=(const BlendStateDesc& _other) const;
     };
 
     struct GraphicPipelineDesc final
@@ -125,12 +137,35 @@ namespace ego::gpu
 
         std::vector<GraphicResourceFormat> m_colorFormats;
         GraphicResourceFormat m_depthFormat = GraphicResourceFormat::Undefined;
+
+        bool operator==(const GraphicPipelineDesc& _other) const;
+        bool operator!=(const GraphicPipelineDesc& _other) const;
     };
 
     struct ComputePipelineDesc final
     {
         BindingLayoutReference m_bindingLayout = nullptr;
         ComputeShaderReference m_computeShader = nullptr;
+
+        bool operator==(const ComputePipelineDesc& _other) const;
+        bool operator!=(const ComputePipelineDesc& _other) const;
+    };
+
+    enum class RayTracingHitGroupType
+    {
+        Triangles,
+        ProceduralPrimitive
+    };
+
+    struct RayTracingHitGroupDesc final
+    {
+        RayTracingHitGroupType m_type = RayTracingHitGroupType::Triangles;
+        ClosestHitShaderReference m_closestHitShader = nullptr;
+        AnyHitShaderReference m_anyHitShader = nullptr;
+        IntersectionShaderReference m_intersectionShader = nullptr;
+
+        bool operator==(const RayTracingHitGroupDesc& _other) const;
+        bool operator!=(const RayTracingHitGroupDesc& _other) const;
     };
 
     struct RayTracingPipelineDesc final
@@ -138,10 +173,13 @@ namespace ego::gpu
         BindingLayoutReference m_bindingLayout = nullptr;
         RayGenerationShaderReference m_rayGenerationShader = nullptr;
         MissShaderReference m_missShader = nullptr;
-        ClosestHitShaderReference m_closestHitShader = nullptr;
+        std::vector<RayTracingHitGroupDesc> m_hitGroups;
         uint32_t m_maxPayloadSize = 0;
         uint32_t m_maxAttributeSize = 0;
         uint32_t m_maxRecursionDepth = 1;
+
+        bool operator==(const RayTracingPipelineDesc& _other) const;
+        bool operator!=(const RayTracingPipelineDesc& _other) const;
     };
 
     enum class PipelineType

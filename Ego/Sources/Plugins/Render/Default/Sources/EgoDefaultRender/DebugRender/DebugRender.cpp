@@ -9,6 +9,7 @@
 
 #include "EgoEngine/Engine.h"
 
+#include "EgoDefaultRender/PipelineState/RenderPipelineStateCache.h"
 #include "EgoDefaultRender/RenderShaderData.h"
 
 namespace
@@ -85,14 +86,9 @@ ego::gpu::InputLayoutDesc ego::render::DefaultRenderDebugDraw::CreateLineInputLa
     return inputLayout;
 }
 
-ego::render::RenderGraphicPipeline ego::render::DefaultRenderDebugDraw::CreateDebugDrawPipeline(
-    ego::GraphicDevice& _graphicDevice,
-    const ego::render::RenderBindingLayout& _bindingLayout,
+ego::render::RasterizationMaterialRenderPassInfoReference ego::render::DefaultRenderDebugDraw::CreateDebugDrawMaterialInfo(
     const ego::render::RenderVertexShader& _vertexShader,
-    const ego::render::RenderPixelShader& _pixelShader,
-    const ego::gpu::InputLayoutDesc& _inputLayoutDesc,
-    ego::gpu::GraphicResourceFormat _renderTargetFormat,
-    ego::gpu::PrimitiveTopology _topology)
+    const ego::render::RenderPixelShader& _pixelShader)
 {
     const ego::gpu::VertexShaderReference vertexShader = _vertexShader.getObject();
     const ego::gpu::PixelShaderReference pixelShader = _pixelShader.getObject();
@@ -101,51 +97,51 @@ ego::render::RenderGraphicPipeline ego::render::DefaultRenderDebugDraw::CreateDe
         return nullptr;
     }
 
+    return RasterizationMaterialRenderPassInfoReference(new RasterizationMaterialRenderPassInfo(_vertexShader, _pixelShader));
+}
+
+ego::render::RenderGraphicPipeline ego::render::DefaultRenderDebugDraw::getOrCreateDebugDrawPipeline(
+    ego::GraphicDevice& _graphicDevice,
+    ego::render::RenderPipelineStateCache& _pipelineStateCache,
+    const RasterizationMaterialRenderPassInfoReference& _materialInfo,
+    const ego::gpu::InputLayoutDesc& _inputLayoutDesc,
+    ego::gpu::PrimitiveTopology _topology) const
+{
+    if (!_materialInfo || !m_bindingLayout)
+    {
+        return nullptr;
+    }
+
     ego::gpu::GraphicPipelineDesc pipelineDesc;
-    pipelineDesc.m_bindingLayout = _bindingLayout.getObject();
-    pipelineDesc.m_vertexShader = vertexShader;
-    pipelineDesc.m_pixelShader = pixelShader;
+    pipelineDesc.m_bindingLayout = m_bindingLayout.getObject();
+    pipelineDesc.m_vertexShader = _materialInfo->getVertexShader().getObject();
+    pipelineDesc.m_pixelShader = _materialInfo->getPixelShader().getObject();
     pipelineDesc.m_inputLayoutDesc = _inputLayoutDesc;
     pipelineDesc.m_topology = _topology;
     pipelineDesc.m_rasterizationStateDesc.m_cullMode = ego::gpu::RasterizationCullMode::None;
     pipelineDesc.m_depthStencilStateDesc.m_depthTestEnable = false;
     pipelineDesc.m_depthStencilStateDesc.m_depthWrite = false;
     pipelineDesc.m_depthFormat = ego::gpu::GraphicResourceFormat::Undefined;
-    pipelineDesc.m_colorFormats.push_back(_renderTargetFormat);
+    pipelineDesc.m_colorFormats.push_back(m_renderTargetFormat);
 
-    return _graphicDevice.createGraphicPipeline(pipelineDesc);
+    return _pipelineStateCache.getOrCreateGraphicPipeline(_graphicDevice, pipelineDesc);
 }
 
-bool ego::render::DefaultRenderDebugDraw::init(
-    GraphicDevice& _graphicDevice,
-    const RenderBindingLayout& _bindingLayout,
-    gpu::GraphicResourceFormat _renderTargetFormat,
-    const InitData& _initData)
+bool ego::render::DefaultRenderDebugDraw::init(const RenderBindingLayout& _bindingLayout, gpu::GraphicResourceFormat _renderTargetFormat, const InitData& _initData)
 {
     EGO_CHECK_INITIALIZATION(_initData.m_point.m_vertexShader);
     EGO_CHECK_INITIALIZATION(_initData.m_point.m_pixelShader);
     EGO_CHECK_INITIALIZATION(_initData.m_line.m_vertexShader);
     EGO_CHECK_INITIALIZATION(_initData.m_line.m_pixelShader);
 
-    m_pointRenderData.m_pipeline = CreateDebugDrawPipeline(
-        _graphicDevice,
-        _bindingLayout,
-        _initData.m_point.m_vertexShader,
-        _initData.m_point.m_pixelShader,
-        CreatePointInputLayout(),
-        _renderTargetFormat,
-        gpu::PrimitiveTopology::TriangleStrip);
-    EGO_CHECK_INITIALIZATION(m_pointRenderData.m_pipeline);
+    m_bindingLayout = _bindingLayout;
+    m_renderTargetFormat = _renderTargetFormat;
 
-    m_lineRenderData.m_pipeline = CreateDebugDrawPipeline(
-        _graphicDevice,
-        _bindingLayout,
-        _initData.m_line.m_vertexShader,
-        _initData.m_line.m_pixelShader,
-        CreateLineInputLayout(),
-        _renderTargetFormat,
-        gpu::PrimitiveTopology::LineList);
-    EGO_CHECK_INITIALIZATION(m_lineRenderData.m_pipeline);
+    m_pointRenderData.m_materialInfo = CreateDebugDrawMaterialInfo(_initData.m_point.m_vertexShader, _initData.m_point.m_pixelShader);
+    EGO_CHECK_INITIALIZATION(m_pointRenderData.m_materialInfo);
+
+    m_lineRenderData.m_materialInfo = CreateDebugDrawMaterialInfo(_initData.m_line.m_vertexShader, _initData.m_line.m_pixelShader);
+    EGO_CHECK_INITIALIZATION(m_lineRenderData.m_materialInfo);
 
     DebugElementBufferPool::BufferDesc pointDataBufferDesc;
     pointDataBufferDesc.m_stride = sizeof(DebugPointRenderData::PointData);
@@ -166,11 +162,14 @@ void ego::render::DefaultRenderDebugDraw::release()
 {
     clearResources();
 
+    m_bindingLayout = nullptr;
+    m_renderTargetFormat = gpu::GraphicResourceFormat::Undefined;
+
     m_pointRenderData.m_pointData.release();
-    m_pointRenderData.m_pipeline = nullptr;
+    m_pointRenderData.m_materialInfo = nullptr;
 
     m_lineRenderData.m_lineData.release();
-    m_lineRenderData.m_pipeline = nullptr;
+    m_lineRenderData.m_materialInfo = nullptr;
 }
 
 void ego::render::DefaultRenderDebugDraw::clearResources()
@@ -186,10 +185,14 @@ bool ego::render::DefaultRenderDebugDraw::prepare()
     return preparePointData() && prepareLineData();
 }
 
-void ego::render::DefaultRenderDebugDraw::render(const RenderGraphicCommandList& _commandList, const RenderBufferView& _cameraShaderDataView)
+void ego::render::DefaultRenderDebugDraw::render(
+    GraphicDevice& _graphicDevice,
+    RenderPipelineStateCache& _pipelineStateCache,
+    const RenderGraphicCommandList& _commandList,
+    const RenderBufferView& _cameraShaderDataView)
 {
-    renderPoints(_commandList, _cameraShaderDataView);
-    renderLines(_commandList, _cameraShaderDataView);
+    renderPoints(_graphicDevice, _pipelineStateCache, _commandList, _cameraShaderDataView);
+    renderLines(_graphicDevice, _pipelineStateCache, _commandList, _cameraShaderDataView);
 
     m_pointRenderData.m_pointCount = 0;
     m_lineRenderData.m_lineCount = 0;
@@ -271,9 +274,13 @@ bool ego::render::DefaultRenderDebugDraw::prepareLineData()
     return true;
 }
 
-void ego::render::DefaultRenderDebugDraw::renderPoints(const RenderGraphicCommandList& _commandList, const RenderBufferView& _cameraShaderDataView)
+void ego::render::DefaultRenderDebugDraw::renderPoints(
+    GraphicDevice& _graphicDevice,
+    RenderPipelineStateCache& _pipelineStateCache,
+    const RenderGraphicCommandList& _commandList,
+    const RenderBufferView& _cameraShaderDataView)
 {
-    if (!_commandList || !m_pointRenderData.m_pipeline || m_pointRenderData.m_pointCount == 0 || !_cameraShaderDataView)
+    if (!_commandList || !m_pointRenderData.m_materialInfo || m_pointRenderData.m_pointCount == 0 || !_cameraShaderDataView)
     {
         return;
     }
@@ -285,7 +292,14 @@ void ego::render::DefaultRenderDebugDraw::renderPoints(const RenderGraphicComman
         return;
     }
 
-    _commandList->setPipeline(m_pointRenderData.m_pipeline.getObject());
+    const RenderGraphicPipeline pipeline =
+        getOrCreateDebugDrawPipeline(_graphicDevice, _pipelineStateCache, m_pointRenderData.m_materialInfo, CreatePointInputLayout(), gpu::PrimitiveTopology::TriangleStrip);
+    if (!pipeline)
+    {
+        return;
+    }
+
+    _commandList->setPipeline(pipeline.getObject());
     _commandList->pushConstants(RenderBindlessRootConstantsStageFlag, RenderBindlessRootConstantsOffset, sizeof(rootConstants), &rootConstants);
 
     uint32_t remainedPointCount = m_pointRenderData.m_pointCount;
@@ -307,9 +321,13 @@ void ego::render::DefaultRenderDebugDraw::renderPoints(const RenderGraphicComman
     }
 }
 
-void ego::render::DefaultRenderDebugDraw::renderLines(const RenderGraphicCommandList& _commandList, const RenderBufferView& _cameraShaderDataView)
+void ego::render::DefaultRenderDebugDraw::renderLines(
+    GraphicDevice& _graphicDevice,
+    RenderPipelineStateCache& _pipelineStateCache,
+    const RenderGraphicCommandList& _commandList,
+    const RenderBufferView& _cameraShaderDataView)
 {
-    if (!_commandList || !m_lineRenderData.m_pipeline || m_lineRenderData.m_lineCount == 0 || !_cameraShaderDataView)
+    if (!_commandList || !m_lineRenderData.m_materialInfo || m_lineRenderData.m_lineCount == 0 || !_cameraShaderDataView)
     {
         return;
     }
@@ -321,7 +339,14 @@ void ego::render::DefaultRenderDebugDraw::renderLines(const RenderGraphicCommand
         return;
     }
 
-    _commandList->setPipeline(m_lineRenderData.m_pipeline.getObject());
+    const RenderGraphicPipeline pipeline =
+        getOrCreateDebugDrawPipeline(_graphicDevice, _pipelineStateCache, m_lineRenderData.m_materialInfo, CreateLineInputLayout(), gpu::PrimitiveTopology::LineList);
+    if (!pipeline)
+    {
+        return;
+    }
+
+    _commandList->setPipeline(pipeline.getObject());
     _commandList->pushConstants(RenderBindlessRootConstantsStageFlag, RenderBindlessRootConstantsOffset, sizeof(rootConstants), &rootConstants);
 
     uint32_t remainedLineCount = m_lineRenderData.m_lineCount;

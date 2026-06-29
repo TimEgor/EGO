@@ -134,11 +134,13 @@ ego::gpu::d3d12::D3D12RayTracingPipeline::D3D12RayTracingPipeline(
     Microsoft::WRL::ComPtr<ID3D12StateObject>&& _stateObject,
     Microsoft::WRL::ComPtr<ID3D12Resource>&& _shaderTable,
     uint64_t _shaderRecordSize,
+    uint32_t _hitGroupCount,
     const D3D12BindingLayout* _layout)
     : RayTracingPipeline(_desc),
       m_stateObject(std::move(_stateObject)),
       m_shaderTable(std::move(_shaderTable)),
       m_shaderRecordSize(_shaderRecordSize),
+      m_hitGroupCount(_hitGroupCount),
       m_layout(_layout)
 {
 }
@@ -166,7 +168,7 @@ const ego::gpu::d3d12::D3D12BindingLayout* ego::gpu::d3d12::D3D12RayTracingPipel
 D3D12_DISPATCH_RAYS_DESC ego::gpu::d3d12::D3D12RayTracingPipeline::getDispatchRaysDesc(uint32_t _width, uint32_t _height, uint32_t _depth) const
 {
     D3D12_DISPATCH_RAYS_DESC desc = {};
-    if (!m_shaderTable || m_shaderRecordSize == 0)
+    if (!m_shaderTable || m_shaderRecordSize == 0 || m_hitGroupCount == 0)
     {
         return desc;
     }
@@ -179,7 +181,7 @@ D3D12_DISPATCH_RAYS_DESC ego::gpu::d3d12::D3D12RayTracingPipeline::getDispatchRa
     desc.MissShaderTable.SizeInBytes = m_shaderRecordSize;
     desc.MissShaderTable.StrideInBytes = m_shaderRecordSize;
     desc.HitGroupTable.StartAddress = shaderTableAddress + m_shaderRecordSize * 2;
-    desc.HitGroupTable.SizeInBytes = m_shaderRecordSize;
+    desc.HitGroupTable.SizeInBytes = m_shaderRecordSize * m_hitGroupCount;
     desc.HitGroupTable.StrideInBytes = m_shaderRecordSize;
     desc.Width = _width;
     desc.Height = _height;

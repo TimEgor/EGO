@@ -166,10 +166,7 @@ void ego::framework::Framework::appendProjectPluginDirectories(engine::Engine::I
     }
 
     const Project::DirectoryCollection& pluginDirectories = m_project->getPluginDirectories();
-    _engineInitData.m_pluginDirectories.insert(
-        _engineInitData.m_pluginDirectories.end(),
-        pluginDirectories.begin(),
-        pluginDirectories.end());
+    _engineInitData.m_pluginDirectories.insert(_engineInitData.m_pluginDirectories.end(), pluginDirectories.begin(), pluginDirectories.end());
 }
 
 bool ego::framework::Framework::registerProjectAssetFileSystems()
@@ -198,9 +195,7 @@ bool ego::framework::Framework::registerProjectAssetFileSystems()
     return true;
 }
 
-ego::FileSystemPointer ego::framework::Framework::createProjectAssetFileSystem(
-    const FileSystemPointer& _sourceFileSystem,
-    const FileName& _rootPath) const
+ego::FileSystemPointer ego::framework::Framework::createProjectAssetFileSystem(const FileSystemPointer& _sourceFileSystem, const FileName& _rootPath) const
 {
     RootedFileSystemPointer fileSystem = new RootedFileSystem(_sourceFileSystem, _rootPath);
     return fileSystem && fileSystem->init() ? fileSystem : nullptr;
@@ -265,9 +260,7 @@ ego::FileName ego::framework::Framework::resolvePluginModuleName(const Project::
 
     if (!_plugin.m_type.empty() && !_plugin.m_name.empty() && m_engine)
     {
-        return m_engine->getPluginCatalog().getModulePath(
-            GetPluginType(_plugin.m_type.c_str()),
-            _plugin.m_name.c_str());
+        return m_engine->getPluginCatalog().getModulePath(GetPluginType(_plugin.m_type.c_str()), _plugin.m_name.c_str());
     }
 
     return FileName();
@@ -291,8 +284,7 @@ bool ego::framework::Framework::loadGameLogic(const FileName& _moduleName)
     EGO_ASSERT(m_gameLogicPluginController);
     EGO_CHECK_RETURN_FALSE(_moduleName);
 
-    GameLogicPluginPointer gameLogicPlugin =
-        m_gameLogicPluginController->loadGameLogicPlugin<GameLogicPlugin>(_moduleName);
+    GameLogicPluginPointer gameLogicPlugin = m_gameLogicPluginController->loadGameLogicPlugin<GameLogicPlugin>(_moduleName);
     EGO_CHECK_RETURN_FALSE(gameLogicPlugin);
 
     GameLogicPointer gameLogic = gameLogicPlugin->createGameLogic();

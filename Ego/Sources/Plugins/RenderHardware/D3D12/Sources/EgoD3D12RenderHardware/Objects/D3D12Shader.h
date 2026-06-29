@@ -33,4 +33,6 @@ namespace ego::gpu::d3d12
     using D3D12RayGenerationShader = D3D12Shader<RayGenerationShader>;
     using D3D12MissShader = D3D12Shader<MissShader>;
     using D3D12ClosestHitShader = D3D12Shader<ClosestHitShader>;
+    using D3D12AnyHitShader = D3D12Shader<AnyHitShader>;
+    using D3D12IntersectionShader = D3D12Shader<IntersectionShader>;
 } // namespace ego::gpu::d3d12

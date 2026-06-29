@@ -355,8 +355,7 @@ bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
 
     EGO_CHECK_RETURN_FALSE(renderHardwarePluginModuleName);
 
-    m_renderHardwarePlugin =
-        m_enginePluginController->loadEnginePlugin<RenderHardwarePlugin>(renderHardwarePluginModuleName);
+    m_renderHardwarePlugin = m_enginePluginController->loadEnginePlugin<RenderHardwarePlugin>(renderHardwarePluginModuleName);
     EGO_CHECK_RETURN_FALSE(m_renderHardwarePlugin);
 
     m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();

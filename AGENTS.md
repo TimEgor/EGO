@@ -16,7 +16,7 @@
 ## C++ Style
 - Preserve the current code style and use the project's `.clang-format` and `.clang-tidy` as the formatting and C++ checks sources of truth.
 - Use `#pragma once` and namespaces `ego`/`ego::*`.
-- Minimize the use of anonymous namespaces during implementation. Do not put meaningful domain, component, plugin, or launcher logic into anonymous namespaces; keep them only for small file-local implementation details when they are clearly justified.
+- Do not move logic out of a class into any namespace-level function without a clear need. Keep class-related behavior in the owning class; use namespace-level helpers, including anonymous namespaces, only for clearly utility code or implementation details that are not tied to class logic.
 - Do not put implementations of regular non-template functions or methods in headers; prefer source files, especially when the body is more than one line.
 - Naming: classes, structs, unions, enums, enum members, concepts, typedefs/type aliases, global functions, global variables, and constants use `UpperCamelCase`.
 - Naming: instance methods, local variables, and lambdas use `lowerCamelCase`.
@@ -24,6 +24,8 @@
 - Naming: class/struct fields and union members use `m_lowerCamelCase`.
 - Naming: static class/struct fields use `UpperCamelCase`.
 - Naming: function and lambda parameters use `_lowerCamelCase`.
+- Avoid `auto` for simple or obvious types; use it only for complex composite types, such as collection iterators, or when the language/API requires it.
+- Structure functions and classes into clear logical blocks. Prefer separating independent steps, responsibilities, and declaration groups instead of keeping large uninterrupted blocks of code.
 - Formatting: keep at most one consecutive blank line in code and declarations.
 - Formatting: preprocessor directives use normal indentation; keep empty blocks compact.
 - Formatting: simple `case` statements and embedded statements use line breaks instead of staying on one line.

@@ -152,7 +152,14 @@ bool ego::render::RenderPassGraph::execute(RenderPassExecuteContext& _context, c
 
         commandList->begin();
 
-        RenderPassExecuteContext passContext{commandList, _context.m_renderTarget, _context.m_scene, _context.m_shaderData, _context.m_settings};
+        RenderPassExecuteContext passContext{
+            _context.m_graphicDevice,
+            _context.m_pipelineStateCache,
+            commandList,
+            _context.m_renderTarget,
+            _context.m_scene,
+            _context.m_shaderData,
+            _context.m_settings};
         node.m_pass.get().execute(passContext);
 
         if (_finalizer && scheduleIndex + 1 == m_schedule.size())

@@ -1,4 +1,5 @@
 #include "/Shaders/Common/GBufferPass.hlsli"
+#include "/Shaders/RayTracing/RayTracingCommon.hlsli"
 
 struct RayPayload
 {
@@ -21,7 +22,7 @@ cbuffer RenderBindlessRootConstants : register(b0)
 };
 
 [shader("raygeneration")]
-void RayGenerationMain()
+void EGO_RT_RAY_GENERATION_ENTRY_POINT()
 {
     const uint2 pixelIndex = DispatchRaysIndex().xy;
     const CameraShaderData cameraData = LoadCameraShaderData(CameraDataIndex);

@@ -8,6 +8,8 @@
 
 namespace ego::render
 {
+    class RenderPipelineStateCache;
+
     class DefaultRenderDebugDraw final
     {
     public:
@@ -23,12 +25,16 @@ namespace ego::render
             ShaderInitData m_line;
         };
 
-        bool init(GraphicDevice& _graphicDevice, const RenderBindingLayout& _bindingLayout, gpu::GraphicResourceFormat _renderTargetFormat, const InitData& _initData);
+        bool init(const RenderBindingLayout& _bindingLayout, gpu::GraphicResourceFormat _renderTargetFormat, const InitData& _initData);
         void release();
         void clearResources();
 
         bool prepare();
-        void render(const RenderGraphicCommandList& _commandList, const RenderBufferView& _cameraShaderDataView);
+        void render(
+            GraphicDevice& _graphicDevice,
+            RenderPipelineStateCache& _pipelineStateCache,
+            const RenderGraphicCommandList& _commandList,
+            const RenderBufferView& _cameraShaderDataView);
 
         void drawPoint(const DebugDrawPointData& _point);
         void drawLine(const DebugDrawLineData& _line);
@@ -40,20 +46,30 @@ namespace ego::render
 
         bool prepareLineData();
 
-        void renderPoints(const RenderGraphicCommandList& _commandList, const RenderBufferView& _cameraShaderDataView);
-        void renderLines(const RenderGraphicCommandList& _commandList, const RenderBufferView& _cameraShaderDataView);
+        RenderGraphicPipeline getOrCreateDebugDrawPipeline(
+            GraphicDevice& _graphicDevice,
+            RenderPipelineStateCache& _pipelineStateCache,
+            const RasterizationMaterialRenderPassInfoReference& _materialInfo,
+            const gpu::InputLayoutDesc& _inputLayoutDesc,
+            gpu::PrimitiveTopology _topology) const;
+
+        void renderPoints(
+            GraphicDevice& _graphicDevice,
+            RenderPipelineStateCache& _pipelineStateCache,
+            const RenderGraphicCommandList& _commandList,
+            const RenderBufferView& _cameraShaderDataView);
+        void renderLines(
+            GraphicDevice& _graphicDevice,
+            RenderPipelineStateCache& _pipelineStateCache,
+            const RenderGraphicCommandList& _commandList,
+            const RenderBufferView& _cameraShaderDataView);
 
         static gpu::InputLayoutDesc CreatePointInputLayout();
         static gpu::InputLayoutDesc CreateLineInputLayout();
-        static RenderGraphicPipeline CreateDebugDrawPipeline(
-            GraphicDevice& _graphicDevice,
-            const RenderBindingLayout& _bindingLayout,
-            const RenderVertexShader& _vertexShader,
-            const RenderPixelShader& _pixelShader,
-            const gpu::InputLayoutDesc& _inputLayoutDesc,
-            gpu::GraphicResourceFormat _renderTargetFormat,
-            gpu::PrimitiveTopology _topology);
+        static RasterizationMaterialRenderPassInfoReference CreateDebugDrawMaterialInfo(const RenderVertexShader& _vertexShader, const RenderPixelShader& _pixelShader);
 
+        RenderBindingLayout m_bindingLayout = nullptr;
+        gpu::GraphicResourceFormat m_renderTargetFormat = gpu::GraphicResourceFormat::Undefined;
         DebugPointRenderData m_pointRenderData;
         DebugLineRenderData m_lineRenderData;
     };

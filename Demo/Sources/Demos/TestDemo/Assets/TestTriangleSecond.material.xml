@@ -1,0 +1,5 @@
+<Material>
+    <Pass name="RayTracing" type="RayTracing">
+        <ClosestHitShader>Shaders/RayTracing/TestTriangleSecondClosestHit.hlsl</ClosestHitShader>
+    </Pass>
+</Material>

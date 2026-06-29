@@ -9,7 +9,6 @@
 #include "EgoEngine/Platform/Window/MainWindowProvider.h"
 #include "EgoFramework/ProjectReader.h"
 
-
 ego::demo::launcher::LauncherApplication::~LauncherApplication()
 {
     releaseFramework();
@@ -20,9 +19,7 @@ int ego::demo::launcher::LauncherApplication::run(void* _nativeInstanceHandle, i
     releaseFramework();
 
     CommandLineOptions commandLineOptions;
-    EGO_CHECK_RETURN_VALUE(
-        parseCommandLine(_argCount, _argValues, commandLineOptions),
-        FrameworkInitializationFailedExitCode);
+    EGO_CHECK_RETURN_VALUE(parseCommandLine(_argCount, _argValues, commandLineOptions), FrameworkInitializationFailedExitCode);
 
     framework::Framework::InitData frameworkInitData;
     EGO_CHECK_RETURN_VALUE(loadProject(commandLineOptions, frameworkInitData.m_project), ProjectLoadingFailedExitCode);
@@ -51,10 +48,7 @@ int ego::demo::launcher::LauncherApplication::run(void* _nativeInstanceHandle, i
     return SuccessExitCode;
 }
 
-bool ego::demo::launcher::LauncherApplication::parseCommandLine(
-    int _argCount,
-    char** _argValues,
-    CommandLineOptions& _options) const
+bool ego::demo::launcher::LauncherApplication::parseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options) const
 {
     ArgParser argParser;
     argParser.addOptionValue("--platform", _options.m_platformPluginModuleName);
@@ -80,9 +74,7 @@ void ego::demo::launcher::LauncherApplication::fillFrameworkInitData(
     _frameworkInitData.m_profilerPluginModuleName = _options.m_profilerPluginModuleName;
 }
 
-bool ego::demo::launcher::LauncherApplication::loadProject(
-    const CommandLineOptions& _options,
-    framework::ProjectPointer& _project) const
+bool ego::demo::launcher::LauncherApplication::loadProject(const CommandLineOptions& _options, framework::ProjectPointer& _project) const
 {
     _project = nullptr;
 
@@ -108,9 +100,7 @@ ego::FileName ego::demo::launcher::LauncherApplication::selectProjectFile() cons
     return SelectOpenFile(params);
 }
 
-bool ego::demo::launcher::LauncherApplication::loadProjectFile(
-    const FileName& _fileName,
-    framework::ProjectPointer& _project) const
+bool ego::demo::launcher::LauncherApplication::loadProjectFile(const FileName& _fileName, framework::ProjectPointer& _project) const
 {
     _project = nullptr;
     EGO_CHECK_RETURN_FALSE(_fileName);
@@ -122,8 +112,7 @@ bool ego::demo::launcher::LauncherApplication::loadProjectFile(
     return true;
 }
 
-int ego::demo::launcher::LauncherApplication::initFramework(
-    const framework::Framework::InitData& _frameworkInitData)
+int ego::demo::launcher::LauncherApplication::initFramework(const framework::Framework::InitData& _frameworkInitData)
 {
     m_framework = new framework::Framework();
     if (!m_framework)
@@ -152,11 +141,7 @@ bool ego::demo::launcher::LauncherApplication::initWindowRuntime()
     swapChainDesc.m_bufferCount = 2;
 
     const WindowPointer mainWindow = engine.getPlatform().getMainWindowProvider().getMainWindow();
-    return m_graphicPresenter->init(
-        engine.getGraphicDevice(),
-        *mainWindow,
-        swapChainDesc,
-        engine.getRenderDeviceContext().getGraphicCommandQueue());
+    return m_graphicPresenter->init(engine.getGraphicDevice(), *mainWindow, swapChainDesc, engine.getRenderDeviceContext().getGraphicCommandQueue());
 }
 
 void ego::demo::launcher::LauncherApplication::runWindowLoop() const

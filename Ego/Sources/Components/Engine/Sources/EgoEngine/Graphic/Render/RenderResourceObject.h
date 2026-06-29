@@ -14,6 +14,8 @@ namespace ego::gpu
     class RayGenerationShaderResource;
     class MissShaderResource;
     class ClosestHitShaderResource;
+    class AnyHitShaderResource;
+    class IntersectionShaderResource;
 } // namespace ego::gpu
 
 namespace ego::render
@@ -25,4 +27,6 @@ namespace ego::render
     RenderRayGenerationShader CreateRayGenerationShaderHandler(const SharedPointer<gpu::RayGenerationShaderResource>& _resource);
     RenderMissShader CreateMissShaderHandler(const SharedPointer<gpu::MissShaderResource>& _resource);
     RenderClosestHitShader CreateClosestHitShaderHandler(const SharedPointer<gpu::ClosestHitShaderResource>& _resource);
+    RenderAnyHitShader CreateAnyHitShaderHandler(const SharedPointer<gpu::AnyHitShaderResource>& _resource);
+    RenderIntersectionShader CreateIntersectionShaderHandler(const SharedPointer<gpu::IntersectionShaderResource>& _resource);
 } // namespace ego::render

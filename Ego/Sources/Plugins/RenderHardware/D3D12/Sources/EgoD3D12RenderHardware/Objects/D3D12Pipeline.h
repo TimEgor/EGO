@@ -82,6 +82,7 @@ namespace ego::gpu::d3d12
             Microsoft::WRL::ComPtr<ID3D12StateObject>&& _stateObject,
             Microsoft::WRL::ComPtr<ID3D12Resource>&& _shaderTable,
             uint64_t _shaderRecordSize,
+            uint32_t _hitGroupCount,
             const D3D12BindingLayout* _layout);
 
         void* getNativeHandle() const override;
@@ -95,6 +96,7 @@ namespace ego::gpu::d3d12
         Microsoft::WRL::ComPtr<ID3D12StateObject> m_stateObject;
         Microsoft::WRL::ComPtr<ID3D12Resource> m_shaderTable;
         uint64_t m_shaderRecordSize = 0;
+        uint32_t m_hitGroupCount = 0;
         const D3D12BindingLayout* m_layout = nullptr;
     };
 } // namespace ego::gpu::d3d12

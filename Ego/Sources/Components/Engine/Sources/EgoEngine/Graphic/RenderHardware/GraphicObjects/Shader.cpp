@@ -100,3 +100,23 @@ ego::gpu::ShaderStage ego::gpu::ClosestHitShader::getShaderType() const
 {
     return ShaderStage::ClosestHit;
 }
+
+ego::gpu::AnyHitShader::AnyHitShader(const ShaderCodeReference& _code)
+    : Shader(_code)
+{
+}
+
+ego::gpu::ShaderStage ego::gpu::AnyHitShader::getShaderType() const
+{
+    return ShaderStage::AnyHit;
+}
+
+ego::gpu::IntersectionShader::IntersectionShader(const ShaderCodeReference& _code)
+    : Shader(_code)
+{
+}
+
+ego::gpu::ShaderStage ego::gpu::IntersectionShader::getShaderType() const
+{
+    return ShaderStage::Intersection;
+}

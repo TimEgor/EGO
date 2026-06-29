@@ -39,6 +39,7 @@ void ego::render::DefaultRender::release()
 
     m_shaderData.release();
     releasePassGraph();
+    m_pipelineStateCache.clear();
     m_fileSystems.release();
     m_renderTarget.release();
     m_frameExecutor.release();
@@ -53,6 +54,7 @@ void ego::render::DefaultRender::clearResources()
     m_scene.clear();
     m_shaderData.clearResources();
     m_passGraph.clearResources();
+    m_pipelineStateCache.releaseUnused();
     m_isPrepared = false;
 }
 
@@ -116,10 +118,12 @@ void ego::render::DefaultRender::render()
     {
         EGO_ASSERT_FAIL();
         m_passGraph.clearResources();
+        m_pipelineStateCache.releaseUnused();
         return;
     }
 
-    RenderPassExecuteContext passContext{commandLists.front(), m_renderTarget, m_scene, m_shaderData, m_settings};
+    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    RenderPassExecuteContext passContext{graphicDevice, m_pipelineStateCache, commandLists.front(), m_renderTarget, m_scene, m_shaderData, m_settings};
     const bool passExecutionResult = m_passGraph.execute(
         passContext,
         [this](const RenderGraphicCommandList& _commandList)
@@ -130,6 +134,7 @@ void ego::render::DefaultRender::render()
     {
         EGO_ASSERT_FAIL();
         m_passGraph.clearResources();
+        m_pipelineStateCache.releaseUnused();
         m_isPrepared = false;
         return;
     }
@@ -229,6 +234,7 @@ void ego::render::DefaultRender::handlePrepareFailure()
 {
     m_scene.clear();
     m_passGraph.clearResources();
+    m_pipelineStateCache.releaseUnused();
 }
 
 bool ego::render::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _presenter)

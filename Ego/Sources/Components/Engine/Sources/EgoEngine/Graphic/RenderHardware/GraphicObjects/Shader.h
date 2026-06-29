@@ -14,7 +14,9 @@ namespace ego::gpu
 
         RayGeneration,
         Miss,
-        ClosestHit
+        ClosestHit,
+        AnyHit,
+        Intersection
     };
 
     enum ShaderStageFlag
@@ -26,8 +28,10 @@ namespace ego::gpu
         ShaderStageFlagRayGeneration = 1 << 4,
         ShaderStageFlagMiss = 1 << 5,
         ShaderStageFlagClosestHit = 1 << 6,
+        ShaderStageFlagAnyHit = 1 << 7,
+        ShaderStageFlagIntersection = 1 << 8,
         ShaderStageFlagAllGraphics = ShaderStageFlagVertex | ShaderStageFlagPixel,
-        ShaderStageFlagAllRayTracing = ShaderStageFlagRayGeneration | ShaderStageFlagMiss | ShaderStageFlagClosestHit,
+        ShaderStageFlagAllRayTracing = ShaderStageFlagRayGeneration | ShaderStageFlagMiss | ShaderStageFlagClosestHit | ShaderStageFlagAnyHit | ShaderStageFlagIntersection,
         ShaderStageFlagAll = ShaderStageFlagAllGraphics | ShaderStageFlagCompute | ShaderStageFlagAllRayTracing
     };
 
@@ -137,4 +141,28 @@ namespace ego::gpu
     };
 
     EGO_REFERENCE(ClosestHitShader);
+
+    class AnyHitShader : public Shader
+    {
+    public:
+        AnyHitShader(const ShaderCodeReference& _code);
+
+        ShaderStage getShaderType() const override;
+
+        EGO_GRAPHIC_RESOURCE(AnyHitShader, Shader);
+    };
+
+    EGO_REFERENCE(AnyHitShader);
+
+    class IntersectionShader : public Shader
+    {
+    public:
+        IntersectionShader(const ShaderCodeReference& _code);
+
+        ShaderStage getShaderType() const override;
+
+        EGO_GRAPHIC_RESOURCE(IntersectionShader, Shader);
+    };
+
+    EGO_REFERENCE(IntersectionShader);
 } // namespace ego::gpu

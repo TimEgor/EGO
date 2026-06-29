@@ -1,4 +1,5 @@
 <Material>
-    <VertexShader>Shaders/TestTriangleVS.shader</VertexShader>
-    <PixelShader>Shaders/TestTrianglePS.shader</PixelShader>
+    <Pass name="RayTracing" type="RayTracing">
+        <ClosestHitShader>Shaders/RayTracing/TestTriangleFirstClosestHit.hlsl</ClosestHitShader>
+    </Pass>
 </Material>

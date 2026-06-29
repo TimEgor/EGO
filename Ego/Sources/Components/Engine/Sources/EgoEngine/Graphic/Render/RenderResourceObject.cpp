@@ -71,3 +71,23 @@ ego::render::RenderClosestHitShader ego::render::CreateClosestHitShaderHandler(c
             return _storedResource ? _storedResource->getClosestHitShader() : nullptr;
         });
 }
+
+ego::render::RenderAnyHitShader ego::render::CreateAnyHitShaderHandler(const SharedPointer<gpu::AnyHitShaderResource>& _resource)
+{
+    return MakeHandler<gpu::AnyHitShaderReference>(
+        _resource,
+        [](const SharedPointer<gpu::AnyHitShaderResource>& _storedResource) -> gpu::AnyHitShaderReference
+        {
+            return _storedResource ? _storedResource->getAnyHitShader() : nullptr;
+        });
+}
+
+ego::render::RenderIntersectionShader ego::render::CreateIntersectionShaderHandler(const SharedPointer<gpu::IntersectionShaderResource>& _resource)
+{
+    return MakeHandler<gpu::IntersectionShaderReference>(
+        _resource,
+        [](const SharedPointer<gpu::IntersectionShaderResource>& _storedResource) -> gpu::IntersectionShaderReference
+        {
+            return _storedResource ? _storedResource->getIntersectionShader() : nullptr;
+        });
+}

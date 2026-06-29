@@ -32,3 +32,5 @@ template class ego::gpu::d3d12::D3D12Shader<ego::gpu::ComputeShader>;
 template class ego::gpu::d3d12::D3D12Shader<ego::gpu::RayGenerationShader>;
 template class ego::gpu::d3d12::D3D12Shader<ego::gpu::MissShader>;
 template class ego::gpu::d3d12::D3D12Shader<ego::gpu::ClosestHitShader>;
+template class ego::gpu::d3d12::D3D12Shader<ego::gpu::AnyHitShader>;
+template class ego::gpu::d3d12::D3D12Shader<ego::gpu::IntersectionShader>;

@@ -1,20 +1,18 @@
 #pragma once
 
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
+#include "EgoEngine/Graphic/Render/MaterialTemplate.h"
 
 namespace ego::render
 {
     class Material final : public STDDestroyMTCountable
     {
     public:
-        Material(const RenderVertexShader& _vertexShader, const RenderPixelShader& _pixelShader);
+        explicit Material(const MaterialTemplateReference& _materialTemplate);
 
-        const RenderVertexShader& getVertexShader() const;
-        const RenderPixelShader& getPixelShader() const;
+        const MaterialTemplateReference& getMaterialTemplate() const;
 
     private:
-        const RenderVertexShader m_vertexShader;
-        const RenderPixelShader m_pixelShader;
+        const MaterialTemplateReference m_materialTemplate = nullptr;
     };
 
     EGO_REFERENCE(Material);

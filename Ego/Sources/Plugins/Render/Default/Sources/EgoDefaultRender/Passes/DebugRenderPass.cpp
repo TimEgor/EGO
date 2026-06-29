@@ -67,7 +67,7 @@ bool ego::render::DebugRenderPass::init(RenderPassInitContext& _context)
     m_bindingLayout = CreateDefaultRenderBindlessBindingLayout(_context.m_graphicDevice);
     EGO_CHECK_RETURN_FALSE(m_bindingLayout);
 
-    return m_debugDraw.init(_context.m_graphicDevice, m_bindingLayout, _context.m_renderTargetFormat, debugDrawInitData);
+    return m_debugDraw.init(m_bindingLayout, _context.m_renderTargetFormat, debugDrawInitData);
 }
 
 void ego::render::DebugRenderPass::release()
@@ -113,7 +113,11 @@ void ego::render::DebugRenderPass::execute(RenderPassExecuteContext& _context)
 
     _context.m_commandList->beginRendering(renderingDesc);
     SetupTargetViewport(_context);
-    m_debugDraw.render(_context.m_commandList, _context.m_shaderData.getCameraShaderDataView());
+    m_debugDraw.render(
+        _context.m_graphicDevice,
+        _context.m_pipelineStateCache,
+        _context.m_commandList,
+        _context.m_shaderData.getCameraShaderDataView());
     _context.m_commandList->endRendering();
 }
 

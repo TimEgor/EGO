@@ -55,6 +55,8 @@ namespace ego::render
     using RenderRayGenerationShader = Handler<gpu::RayGenerationShaderReference>;
     using RenderMissShader = Handler<gpu::MissShaderReference>;
     using RenderClosestHitShader = Handler<gpu::ClosestHitShaderReference>;
+    using RenderAnyHitShader = Handler<gpu::AnyHitShaderReference>;
+    using RenderIntersectionShader = Handler<gpu::IntersectionShaderReference>;
 
     // Textures and presentation.
     using RenderTexture = Handler<gpu::TextureReference>;

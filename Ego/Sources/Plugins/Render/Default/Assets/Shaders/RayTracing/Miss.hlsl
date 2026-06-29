@@ -1,10 +1,12 @@
+#include "/Shaders/RayTracing/RayTracingCommon.hlsli"
+
 struct RayPayload
 {
     float3 Color;
 };
 
 [shader("miss")]
-void MissMain(inout RayPayload _payload)
+void EGO_RT_MISS_ENTRY_POINT(inout RayPayload _payload)
 {
     const float3 rayDirection = normalize(WorldRayDirection());
     const float gradient = saturate(rayDirection.y * 0.5 + 0.5);

@@ -5,7 +5,7 @@
 
 #include "EgoMath/Vector.h"
 
-#include "EgoEngine/Graphic/Render/RenderObject.h"
+#include "EgoEngine/Graphic/Render/MaterialRenderPassInfo.h"
 
 #include "DebugElementBufferPool.h"
 
@@ -29,7 +29,7 @@ namespace ego::render
 
         using PointCollection = std::vector<PointData>;
 
-        RenderGraphicPipeline m_pipeline = nullptr;
+        RasterizationMaterialRenderPassInfoReference m_materialInfo = nullptr;
         DebugElementBufferPool m_pointData;
         PointCollection m_pointCommands;
         uint32_t m_pointCount = 0;
@@ -67,7 +67,7 @@ namespace ego::render
 
         using LineCollection = std::vector<LineData>;
 
-        RenderGraphicPipeline m_pipeline = nullptr;
+        RasterizationMaterialRenderPassInfoReference m_materialInfo = nullptr;
         DebugElementBufferPool m_lineData;
         LineCollection m_lineCommands;
         uint32_t m_lineCount = 0;

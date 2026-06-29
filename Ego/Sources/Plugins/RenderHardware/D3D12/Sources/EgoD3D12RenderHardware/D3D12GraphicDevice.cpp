@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "EgoCore/Memory/Utils.h"
 
@@ -23,10 +25,22 @@
 
 namespace
 {
-    constexpr auto RayGenerationExportName = L"RayGenerationMain";
-    constexpr auto MissExportName = L"MissMain";
-    constexpr auto ClosestHitExportName = L"ClosestHitMain";
+    constexpr auto RayGenerationEntryPointName = L"RayGenerationMain";
+    constexpr auto MissEntryPointName = L"MissMain";
+    constexpr auto ClosestHitEntryPointName = L"ClosestHitMain";
+    constexpr auto AnyHitEntryPointName = L"AnyHitMain";
+    constexpr auto IntersectionEntryPointName = L"IntersectionMain";
     constexpr auto HitGroupExportName = L"HitGroup";
+
+    std::wstring MakeIndexedExportName(const wchar_t* _baseName, size_t _index)
+    {
+        return std::wstring(_baseName) + std::to_wstring(_index);
+    }
+
+    D3D12_HIT_GROUP_TYPE GetD3D12HitGroupType(ego::gpu::RayTracingHitGroupType _type)
+    {
+        return _type == ego::gpu::RayTracingHitGroupType::ProceduralPrimitive ? D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE : D3D12_HIT_GROUP_TYPE_TRIANGLES;
+    }
 } // namespace
 
 template <typename TCommandListReference, typename TCommandListObject>
@@ -213,10 +227,11 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DT
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
     ID3D12StateObject* _stateObject,
+    const std::vector<std::wstring>& _hitGroupExportNames,
     Microsoft::WRL::ComPtr<ID3D12Resource>& _shaderTable,
     uint64_t& _shaderRecordSize) const
 {
-    if (!getD3D12Device() || !_stateObject)
+    if (!getD3D12Device() || !_stateObject || _hitGroupExportNames.empty())
     {
         return false;
     }
@@ -227,16 +242,28 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
         return false;
     }
 
-    const void* rayGenerationIdentifier = stateObjectProperties->GetShaderIdentifier(RayGenerationExportName);
-    const void* missIdentifier = stateObjectProperties->GetShaderIdentifier(MissExportName);
-    const void* hitGroupIdentifier = stateObjectProperties->GetShaderIdentifier(HitGroupExportName);
-    if (!rayGenerationIdentifier || !missIdentifier || !hitGroupIdentifier)
+    const void* rayGenerationIdentifier = stateObjectProperties->GetShaderIdentifier(RayGenerationEntryPointName);
+    const void* missIdentifier = stateObjectProperties->GetShaderIdentifier(MissEntryPointName);
+    if (!rayGenerationIdentifier || !missIdentifier)
     {
         return false;
     }
 
+    std::vector<const void*> hitGroupIdentifiers;
+    hitGroupIdentifiers.reserve(_hitGroupExportNames.size());
+    for (const std::wstring& hitGroupExportName : _hitGroupExportNames)
+    {
+        const void* hitGroupIdentifier = stateObjectProperties->GetShaderIdentifier(hitGroupExportName.c_str());
+        if (!hitGroupIdentifier)
+        {
+            return false;
+        }
+
+        hitGroupIdentifiers.push_back(hitGroupIdentifier);
+    }
+
     _shaderRecordSize = ego::Align(static_cast<uint64_t>(D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES), static_cast<uint64_t>(D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT));
-    const uint64_t shaderTableSize = _shaderRecordSize * 3;
+    const uint64_t shaderTableSize = _shaderRecordSize * (2 + hitGroupIdentifiers.size());
     if (!createUploadBuffer(shaderTableSize, _shaderTable))
     {
         return false;
@@ -251,7 +278,13 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
 
     std::memcpy(mappedData, rayGenerationIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
     std::memcpy(mappedData + _shaderRecordSize, missIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
-    std::memcpy(mappedData + _shaderRecordSize * 2, hitGroupIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+    for (size_t hitGroupIndex = 0; hitGroupIndex < hitGroupIdentifiers.size(); ++hitGroupIndex)
+    {
+        std::memcpy(
+            mappedData + _shaderRecordSize * (2 + hitGroupIndex),
+            hitGroupIdentifiers[hitGroupIndex],
+            D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+    }
 
     D3D12_RANGE writtenRange = {};
     writtenRange.Begin = 0;
@@ -672,6 +705,26 @@ ego::gpu::ClosestHitShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createC
     return ClosestHitShaderReference(new D3D12ClosestHitShader(_code));
 }
 
+ego::gpu::AnyHitShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createAnyHitShader(const ShaderCodeReference& _code)
+{
+    if (!IsValidShaderCode(_code))
+    {
+        return AnyHitShaderReference();
+    }
+
+    return AnyHitShaderReference(new D3D12AnyHitShader(_code));
+}
+
+ego::gpu::IntersectionShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createIntersectionShader(const ShaderCodeReference& _code)
+{
+    if (!IsValidShaderCode(_code))
+    {
+        return IntersectionShaderReference();
+    }
+
+    return IntersectionShaderReference(new D3D12IntersectionShader(_code));
+}
+
 ego::gpu::GpuGeometryAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDevice::buildGeometryAccelerationStructure(
     const MeshAccelerationStructureBuildDesc& _desc,
     const GpuOperationOptions& _options)
@@ -752,11 +805,13 @@ ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
         }
 
         D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
+        const ego::FloatMatrix4x4& transform = instance.m_transform;
+        // Ego stores transform columns in FloatMatrix4x4 rows, while DXR expects a row-major 3x4 matrix.
         for (uint32_t row = 0; row < 3; ++row)
         {
             for (uint32_t column = 0; column < 4; ++column)
             {
-                instanceDesc.Transform[row][column] = instance.m_transform.m_values[row][column];
+                instanceDesc.Transform[row][column] = transform.m_values[column][row];
             }
         }
 
@@ -997,32 +1052,62 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
     D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
     D3D12RayGenerationShader* rayGenerationShader = _desc.m_rayGenerationShader ? static_cast<D3D12RayGenerationShader*>(_desc.m_rayGenerationShader.getObject()) : nullptr;
     D3D12MissShader* missShader = _desc.m_missShader ? static_cast<D3D12MissShader*>(_desc.m_missShader.getObject()) : nullptr;
-    D3D12ClosestHitShader* closestHitShader = _desc.m_closestHitShader ? static_cast<D3D12ClosestHitShader*>(_desc.m_closestHitShader.getObject()) : nullptr;
+
+    struct HitGroupShaders final
+    {
+        RayTracingHitGroupType m_type = RayTracingHitGroupType::Triangles;
+        D3D12ClosestHitShader* m_closestHitShader = nullptr;
+        D3D12AnyHitShader* m_anyHitShader = nullptr;
+        D3D12IntersectionShader* m_intersectionShader = nullptr;
+    };
+
+    std::vector<HitGroupShaders> hitGroupShaders;
+    hitGroupShaders.reserve(_desc.m_hitGroups.size());
+    for (const RayTracingHitGroupDesc& hitGroupDesc : _desc.m_hitGroups)
+    {
+        HitGroupShaders shaders;
+        shaders.m_type = hitGroupDesc.m_type;
+        shaders.m_closestHitShader = hitGroupDesc.m_closestHitShader ? static_cast<D3D12ClosestHitShader*>(hitGroupDesc.m_closestHitShader.getObject()) : nullptr;
+        shaders.m_anyHitShader = hitGroupDesc.m_anyHitShader ? static_cast<D3D12AnyHitShader*>(hitGroupDesc.m_anyHitShader.getObject()) : nullptr;
+        shaders.m_intersectionShader = hitGroupDesc.m_intersectionShader ? static_cast<D3D12IntersectionShader*>(hitGroupDesc.m_intersectionShader.getObject()) : nullptr;
+
+        if (!shaders.m_closestHitShader && !shaders.m_anyHitShader && !shaders.m_intersectionShader)
+        {
+            return RayTracingPipelineReference();
+        }
+
+        if (shaders.m_type == RayTracingHitGroupType::Triangles && shaders.m_intersectionShader)
+        {
+            return RayTracingPipelineReference();
+        }
+
+        if (shaders.m_type == RayTracingHitGroupType::ProceduralPrimitive && !shaders.m_intersectionShader)
+        {
+            return RayTracingPipelineReference();
+        }
+
+        hitGroupShaders.push_back(shaders);
+    }
 
     EGO_ASSERT_MESSAGE(layout, "Ray tracing pipeline requires a D3D12 binding layout");
     EGO_ASSERT_MESSAGE(rayGenerationShader, "Ray tracing pipeline has invalid ray generation shader");
     EGO_ASSERT_MESSAGE(missShader, "Ray tracing pipeline has invalid miss shader");
-    EGO_ASSERT_MESSAGE(closestHitShader, "Ray tracing pipeline has invalid closest hit shader");
+    EGO_ASSERT_MESSAGE(!hitGroupShaders.empty(), "Ray tracing pipeline has no hit groups");
 
-    if (!layout || !rayGenerationShader || !missShader || !closestHitShader)
+    if (!layout || !rayGenerationShader || !missShader || hitGroupShaders.empty())
     {
         return RayTracingPipelineReference();
     }
 
     D3D12_EXPORT_DESC rayGenerationExport = {};
-    rayGenerationExport.Name = RayGenerationExportName;
+    rayGenerationExport.Name = RayGenerationEntryPointName;
     rayGenerationExport.ExportToRename = nullptr;
     rayGenerationExport.Flags = D3D12_EXPORT_FLAG_NONE;
 
     D3D12_EXPORT_DESC missExport = {};
-    missExport.Name = MissExportName;
+    missExport.Name = MissEntryPointName;
     missExport.ExportToRename = nullptr;
     missExport.Flags = D3D12_EXPORT_FLAG_NONE;
-
-    D3D12_EXPORT_DESC closestHitExport = {};
-    closestHitExport.Name = ClosestHitExportName;
-    closestHitExport.ExportToRename = nullptr;
-    closestHitExport.Flags = D3D12_EXPORT_FLAG_NONE;
 
     D3D12_DXIL_LIBRARY_DESC rayGenerationLibraryDesc = {};
     rayGenerationLibraryDesc.DXILLibrary = rayGenerationShader->getD3D12ByteCode();
@@ -1034,25 +1119,121 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
     missLibraryDesc.NumExports = 1;
     missLibraryDesc.pExports = &missExport;
 
-    D3D12_DXIL_LIBRARY_DESC closestHitLibraryDesc = {};
-    closestHitLibraryDesc.DXILLibrary = closestHitShader->getD3D12ByteCode();
-    closestHitLibraryDesc.NumExports = 1;
-    closestHitLibraryDesc.pExports = &closestHitExport;
+    std::vector<std::wstring> closestHitExportNames;
+    std::vector<std::wstring> anyHitExportNames;
+    std::vector<std::wstring> intersectionExportNames;
+    std::vector<std::wstring> hitGroupExportNames;
 
-    D3D12_HIT_GROUP_DESC hitGroupDesc = {};
-    hitGroupDesc.HitGroupExport = HitGroupExportName;
-    hitGroupDesc.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
-    hitGroupDesc.ClosestHitShaderImport = ClosestHitExportName;
+    closestHitExportNames.resize(hitGroupShaders.size());
+    anyHitExportNames.resize(hitGroupShaders.size());
+    intersectionExportNames.resize(hitGroupShaders.size());
+    hitGroupExportNames.reserve(hitGroupShaders.size());
+
+    size_t hitGroupShaderCount = 0;
+    for (size_t shaderIndex = 0; shaderIndex < hitGroupShaders.size(); ++shaderIndex)
+    {
+        if (hitGroupShaders[shaderIndex].m_closestHitShader)
+        {
+            closestHitExportNames[shaderIndex] = MakeIndexedExportName(ClosestHitEntryPointName, shaderIndex);
+            ++hitGroupShaderCount;
+        }
+
+        if (hitGroupShaders[shaderIndex].m_anyHitShader)
+        {
+            anyHitExportNames[shaderIndex] = MakeIndexedExportName(AnyHitEntryPointName, shaderIndex);
+            ++hitGroupShaderCount;
+        }
+
+        if (hitGroupShaders[shaderIndex].m_intersectionShader)
+        {
+            intersectionExportNames[shaderIndex] = MakeIndexedExportName(IntersectionEntryPointName, shaderIndex);
+            ++hitGroupShaderCount;
+        }
+
+        hitGroupExportNames.push_back(MakeIndexedExportName(HitGroupExportName, shaderIndex));
+    }
+
+    std::vector<D3D12_EXPORT_DESC> hitGroupShaderExports;
+    std::vector<D3D12_DXIL_LIBRARY_DESC> hitGroupShaderLibraryDescs;
+    std::vector<D3D12_HIT_GROUP_DESC> hitGroupDescs;
+
+    hitGroupShaderExports.reserve(hitGroupShaderCount);
+    hitGroupShaderLibraryDescs.reserve(hitGroupShaderCount);
+    hitGroupDescs.reserve(hitGroupShaders.size());
+
+    for (size_t shaderIndex = 0; shaderIndex < hitGroupShaders.size(); ++shaderIndex)
+    {
+        if (hitGroupShaders[shaderIndex].m_closestHitShader)
+        {
+            D3D12_EXPORT_DESC closestHitExport = {};
+            closestHitExport.Name = closestHitExportNames[shaderIndex].c_str();
+            closestHitExport.ExportToRename = ClosestHitEntryPointName;
+            closestHitExport.Flags = D3D12_EXPORT_FLAG_NONE;
+            hitGroupShaderExports.push_back(closestHitExport);
+
+            D3D12_DXIL_LIBRARY_DESC closestHitLibraryDesc = {};
+            closestHitLibraryDesc.DXILLibrary = hitGroupShaders[shaderIndex].m_closestHitShader->getD3D12ByteCode();
+            closestHitLibraryDesc.NumExports = 1;
+            closestHitLibraryDesc.pExports = &hitGroupShaderExports.back();
+            hitGroupShaderLibraryDescs.push_back(closestHitLibraryDesc);
+        }
+
+        if (hitGroupShaders[shaderIndex].m_anyHitShader)
+        {
+            D3D12_EXPORT_DESC anyHitExport = {};
+            anyHitExport.Name = anyHitExportNames[shaderIndex].c_str();
+            anyHitExport.ExportToRename = AnyHitEntryPointName;
+            anyHitExport.Flags = D3D12_EXPORT_FLAG_NONE;
+            hitGroupShaderExports.push_back(anyHitExport);
+
+            D3D12_DXIL_LIBRARY_DESC anyHitLibraryDesc = {};
+            anyHitLibraryDesc.DXILLibrary = hitGroupShaders[shaderIndex].m_anyHitShader->getD3D12ByteCode();
+            anyHitLibraryDesc.NumExports = 1;
+            anyHitLibraryDesc.pExports = &hitGroupShaderExports.back();
+            hitGroupShaderLibraryDescs.push_back(anyHitLibraryDesc);
+        }
+
+        if (hitGroupShaders[shaderIndex].m_intersectionShader)
+        {
+            D3D12_EXPORT_DESC intersectionExport = {};
+            intersectionExport.Name = intersectionExportNames[shaderIndex].c_str();
+            intersectionExport.ExportToRename = IntersectionEntryPointName;
+            intersectionExport.Flags = D3D12_EXPORT_FLAG_NONE;
+            hitGroupShaderExports.push_back(intersectionExport);
+
+            D3D12_DXIL_LIBRARY_DESC intersectionLibraryDesc = {};
+            intersectionLibraryDesc.DXILLibrary = hitGroupShaders[shaderIndex].m_intersectionShader->getD3D12ByteCode();
+            intersectionLibraryDesc.NumExports = 1;
+            intersectionLibraryDesc.pExports = &hitGroupShaderExports.back();
+            hitGroupShaderLibraryDescs.push_back(intersectionLibraryDesc);
+        }
+
+        D3D12_HIT_GROUP_DESC hitGroupDesc = {};
+        hitGroupDesc.HitGroupExport = hitGroupExportNames[shaderIndex].c_str();
+        hitGroupDesc.Type = GetD3D12HitGroupType(hitGroupShaders[shaderIndex].m_type);
+        hitGroupDesc.ClosestHitShaderImport = hitGroupShaders[shaderIndex].m_closestHitShader ? closestHitExportNames[shaderIndex].c_str() : nullptr;
+        hitGroupDesc.AnyHitShaderImport = hitGroupShaders[shaderIndex].m_anyHitShader ? anyHitExportNames[shaderIndex].c_str() : nullptr;
+        hitGroupDesc.IntersectionShaderImport = hitGroupShaders[shaderIndex].m_intersectionShader ? intersectionExportNames[shaderIndex].c_str() : nullptr;
+        hitGroupDescs.push_back(hitGroupDesc);
+    }
 
     D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = {};
     shaderConfig.MaxPayloadSizeInBytes = _desc.m_maxPayloadSize;
     shaderConfig.MaxAttributeSizeInBytes = _desc.m_maxAttributeSize;
 
-    const wchar_t* shaderConfigExports[] = {RayGenerationExportName, MissExportName, HitGroupExportName};
+    std::vector<const wchar_t*> shaderConfigExports;
+    shaderConfigExports.reserve(2 + hitGroupExportNames.size());
+    shaderConfigExports.push_back(RayGenerationEntryPointName);
+    shaderConfigExports.push_back(MissEntryPointName);
+
+    for (const std::wstring& hitGroupExportName : hitGroupExportNames)
+    {
+        shaderConfigExports.push_back(hitGroupExportName.c_str());
+    }
 
     D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION shaderConfigAssociation = {};
-    shaderConfigAssociation.NumExports = static_cast<UINT>(sizeof(shaderConfigExports) / sizeof(shaderConfigExports[0]));
-    shaderConfigAssociation.pExports = shaderConfigExports;
+    shaderConfigAssociation.NumExports = static_cast<UINT>(shaderConfigExports.size());
+    shaderConfigAssociation.pExports = shaderConfigExports.data();
 
     D3D12_GLOBAL_ROOT_SIGNATURE globalRootSignature = {};
     globalRootSignature.pGlobalRootSignature = layout->getRootSignature();
@@ -1060,24 +1241,55 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
     D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {};
     pipelineConfig.MaxTraceRecursionDepth = (std::max<uint32_t>)(_desc.m_maxRecursionDepth, 1);
 
-    std::array<D3D12_STATE_SUBOBJECT, 8> subobjects = {};
-    subobjects[0].Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
-    subobjects[0].pDesc = &rayGenerationLibraryDesc;
-    subobjects[1].Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
-    subobjects[1].pDesc = &missLibraryDesc;
-    subobjects[2].Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
-    subobjects[2].pDesc = &closestHitLibraryDesc;
-    subobjects[3].Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
-    subobjects[3].pDesc = &hitGroupDesc;
-    subobjects[4].Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
-    subobjects[4].pDesc = &shaderConfig;
-    shaderConfigAssociation.pSubobjectToAssociate = &subobjects[4];
-    subobjects[5].Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
-    subobjects[5].pDesc = &shaderConfigAssociation;
-    subobjects[6].Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
-    subobjects[6].pDesc = &globalRootSignature;
-    subobjects[7].Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
-    subobjects[7].pDesc = &pipelineConfig;
+    std::vector<D3D12_STATE_SUBOBJECT> subobjects;
+    subobjects.reserve(6 + hitGroupShaderLibraryDescs.size() + hitGroupDescs.size());
+
+    D3D12_STATE_SUBOBJECT rayGenerationLibrarySubobject = {};
+    rayGenerationLibrarySubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+    rayGenerationLibrarySubobject.pDesc = &rayGenerationLibraryDesc;
+    subobjects.push_back(rayGenerationLibrarySubobject);
+
+    D3D12_STATE_SUBOBJECT missLibrarySubobject = {};
+    missLibrarySubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+    missLibrarySubobject.pDesc = &missLibraryDesc;
+    subobjects.push_back(missLibrarySubobject);
+
+    for (D3D12_DXIL_LIBRARY_DESC& hitGroupShaderLibraryDesc : hitGroupShaderLibraryDescs)
+    {
+        D3D12_STATE_SUBOBJECT hitGroupShaderLibrarySubobject = {};
+        hitGroupShaderLibrarySubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+        hitGroupShaderLibrarySubobject.pDesc = &hitGroupShaderLibraryDesc;
+        subobjects.push_back(hitGroupShaderLibrarySubobject);
+    }
+
+    for (D3D12_HIT_GROUP_DESC& hitGroupDesc : hitGroupDescs)
+    {
+        D3D12_STATE_SUBOBJECT hitGroupSubobject = {};
+        hitGroupSubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+        hitGroupSubobject.pDesc = &hitGroupDesc;
+        subobjects.push_back(hitGroupSubobject);
+    }
+
+    D3D12_STATE_SUBOBJECT shaderConfigSubobject = {};
+    shaderConfigSubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
+    shaderConfigSubobject.pDesc = &shaderConfig;
+    subobjects.push_back(shaderConfigSubobject);
+    shaderConfigAssociation.pSubobjectToAssociate = &subobjects.back();
+
+    D3D12_STATE_SUBOBJECT shaderConfigAssociationSubobject = {};
+    shaderConfigAssociationSubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
+    shaderConfigAssociationSubobject.pDesc = &shaderConfigAssociation;
+    subobjects.push_back(shaderConfigAssociationSubobject);
+
+    D3D12_STATE_SUBOBJECT globalRootSignatureSubobject = {};
+    globalRootSignatureSubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
+    globalRootSignatureSubobject.pDesc = &globalRootSignature;
+    subobjects.push_back(globalRootSignatureSubobject);
+
+    D3D12_STATE_SUBOBJECT pipelineConfigSubobject = {};
+    pipelineConfigSubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
+    pipelineConfigSubobject.pDesc = &pipelineConfig;
+    subobjects.push_back(pipelineConfigSubobject);
 
     D3D12_STATE_OBJECT_DESC stateObjectDesc = {};
     stateObjectDesc.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE;
@@ -1092,12 +1304,18 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
 
     Microsoft::WRL::ComPtr<ID3D12Resource> shaderTable;
     uint64_t shaderRecordSize = 0;
-    if (!createShaderTable(stateObject.Get(), shaderTable, shaderRecordSize))
+    if (!createShaderTable(stateObject.Get(), hitGroupExportNames, shaderTable, shaderRecordSize))
     {
         return RayTracingPipelineReference();
     }
 
-    return RayTracingPipelineReference(new D3D12RayTracingPipeline(_desc, std::move(stateObject), std::move(shaderTable), shaderRecordSize, layout));
+    return RayTracingPipelineReference(new D3D12RayTracingPipeline(
+        _desc,
+        std::move(stateObject),
+        std::move(shaderTable),
+        shaderRecordSize,
+        static_cast<uint32_t>(hitGroupExportNames.size()),
+        layout));
 }
 
 ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(const BindingLayoutDesc& _desc)

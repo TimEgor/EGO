@@ -13,6 +13,7 @@
 #include "Passes/ClearRenderPass.h"
 #include "Passes/DebugRenderPass.h"
 #include "Passes/RayTracingRenderPass.h"
+#include "PipelineState/RenderPipelineStateCache.h"
 #include "RenderGraph/RenderPassGraph.h"
 
 namespace ego::render
@@ -60,6 +61,7 @@ namespace ego::render
         DefaultRenderTarget m_renderTarget;
         DefaultRenderScene m_scene;
         DefaultRenderShaderDataStore m_shaderData;
+        RenderPipelineStateCache m_pipelineStateCache;
         RenderPassGraph m_passGraph;
         ClearRenderPass m_clearPass;
         RayTracingRenderPass m_rayTracingPass;
