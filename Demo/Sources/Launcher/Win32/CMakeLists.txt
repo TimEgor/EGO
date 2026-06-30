@@ -10,7 +10,12 @@ ego_setup_target_sources(
     SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
-target_link_libraries(EgoDemoLauncherWin32 PRIVATE Ego::Framework)
+target_link_libraries(
+    EgoDemoLauncherWin32
+        PRIVATE
+            Ego::Application
+            Ego::Framework
+)
 
 if (TARGET EgoTestDemo)
     add_dependencies(EgoDemoLauncherWin32 EgoTestDemo)

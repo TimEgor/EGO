@@ -10,7 +10,6 @@
 #include "EgoCore/Memory/Utils.h"
 
 #include "EgoEngine/Engine.h"
-#include "EgoEngine/Platform/Window/Window.h"
 #include "EgoPlugin/PluginController.h"
 
 #include "Objects/D3D12AccelerationStructure.h"
@@ -280,10 +279,7 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
     std::memcpy(mappedData + _shaderRecordSize, missIdentifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
     for (size_t hitGroupIndex = 0; hitGroupIndex < hitGroupIdentifiers.size(); ++hitGroupIndex)
     {
-        std::memcpy(
-            mappedData + _shaderRecordSize * (2 + hitGroupIndex),
-            hitGroupIdentifiers[hitGroupIndex],
-            D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+        std::memcpy(mappedData + _shaderRecordSize * (2 + hitGroupIndex), hitGroupIdentifiers[hitGroupIndex], D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
     }
 
     D3D12_RANGE writtenRange = {};
@@ -1309,13 +1305,8 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
         return RayTracingPipelineReference();
     }
 
-    return RayTracingPipelineReference(new D3D12RayTracingPipeline(
-        _desc,
-        std::move(stateObject),
-        std::move(shaderTable),
-        shaderRecordSize,
-        static_cast<uint32_t>(hitGroupExportNames.size()),
-        layout));
+    return RayTracingPipelineReference(
+        new D3D12RayTracingPipeline(_desc, std::move(stateObject), std::move(shaderTable), shaderRecordSize, static_cast<uint32_t>(hitGroupExportNames.size()), layout));
 }
 
 ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(const BindingLayoutDesc& _desc)
@@ -1397,10 +1388,10 @@ ego::gpu::FenceReference ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence:
 
 ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
     const SwapChainDesc& _swapChainDesc,
-    const Window& _window,
+    const PresentationSurface& _surface,
     const CommandQueueReference& _presentationQueue)
 {
-    if (!m_deviceContext.getFactory() || !getD3D12Device() || !_window.getNativeHandle())
+    if (!m_deviceContext.getFactory() || !getD3D12Device() || !_surface.getNativeHandle())
     {
         return SwapChainReference();
     }
@@ -1427,7 +1418,7 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
         return SwapChainReference();
     }
 
-    const WindowSize& clientAreaSize = _window.getClientAreaSize();
+    const PresentationSurfaceSize& clientAreaSize = _surface.getClientAreaSize();
     const uint32_t width = clientAreaSize.m_x;
     const uint32_t height = clientAreaSize.m_y;
 
@@ -1450,7 +1441,7 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     swapChainDesc.Flags = 0;
 
-    auto windowHandle = reinterpret_cast<HWND>(_window.getNativeHandle());
+    auto windowHandle = reinterpret_cast<HWND>(_surface.getNativeHandle());
     Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain;
     if (FAILED(m_deviceContext.getFactory()->CreateSwapChainForHwnd(presentationQueue, windowHandle, &swapChainDesc, nullptr, nullptr, &swapChain)))
     {

@@ -3,13 +3,12 @@
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
-#include "EgoMath/Vector.h"
-
 #include "EgoEngine/Event/EventController.h"
+#include "EgoEngine/Graphic/RenderHardware/PresentationSurface.h"
 
 namespace ego
 {
-    using WindowSize = UInt16Vector2;
+    using WindowSize = PresentationSurfaceSize;
     inline constexpr WindowSize DefaultWindowSize = UInt16Vector2Zero;
 
     struct WindowArea final
@@ -59,12 +58,19 @@ namespace ego
 
     constexpr auto DefaultWindowArea = WindowArea(0, 0, 0, 0);
 
-    class Window
+    struct WindowDesc final
+    {
+        const char* m_title = "";
+        WindowSize m_size = DefaultWindowSize;
+        bool m_showOnInit = true;
+    };
+
+    class Window : public PresentationSurface
     {
     public:
         Window() = default;
 
-        virtual bool init(const char* _title, const WindowSize& _size) = 0;
+        virtual bool init(const WindowDesc& _desc) = 0;
         virtual void release() = 0;
 
         virtual bool isValid() const = 0;
@@ -73,12 +79,9 @@ namespace ego
         virtual void hide() = 0;
         virtual bool isShown() const = 0;
 
-        virtual void* getNativeHandle() const = 0;
-
         virtual bool isStable() const = 0;
 
         virtual const WindowSize& getWindowSize() const = 0;
-        virtual const WindowSize& getClientAreaSize() const = 0;
         virtual const WindowArea& getCutoutsArea() const = 0;
 
         InstancedEventID getSizeEventID() const;

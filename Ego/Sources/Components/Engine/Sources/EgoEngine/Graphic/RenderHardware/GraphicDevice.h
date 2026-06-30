@@ -14,11 +14,7 @@
 #include "GraphicObjects/Shader.h"
 #include "GraphicObjects/SwapChain.h"
 #include "GraphicObjects/Texture.h"
-
-namespace ego
-{
-    class Window;
-}
+#include "PresentationSurface.h"
 
 namespace ego::gpu
 {
@@ -110,7 +106,10 @@ namespace ego
 
         virtual gpu::FenceReference createFence(gpu::Fence::FenceValue _initialValue = 0) = 0;
 
-        virtual gpu::SwapChainReference createSwapChain(const gpu::SwapChainDesc& _swapChainDesc, const Window& _window, const gpu::CommandQueueReference& _presentationQueue) = 0;
+        virtual gpu::SwapChainReference createSwapChain(
+            const gpu::SwapChainDesc& _swapChainDesc,
+            const PresentationSurface& _surface,
+            const gpu::CommandQueueReference& _presentationQueue) = 0;
 
         virtual const Capabilities& getCapabilities() const = 0;
     };

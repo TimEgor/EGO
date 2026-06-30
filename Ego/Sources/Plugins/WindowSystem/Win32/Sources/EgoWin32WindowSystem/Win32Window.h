@@ -5,9 +5,7 @@
 #include "EgoCore/PlatformMacros.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 
-#include "EgoEngine/Platform/Window/Window.h"
-
-#define EGO_WIN32_WND_CLASS_NAME "EgoWindowCLS"
+#include "EgoApplication/Window/Window.h"
 
 namespace ego::win32
 {
@@ -16,7 +14,7 @@ namespace ego::win32
     public:
         class Accessor final : public NonInstanceable
         {
-            friend class Win32WindowEventController;
+            friend class Win32WindowSystem;
 
             static void OnWindowDestroying(Win32Window& _window);
             static void OnWindowTransformationStart(Win32Window& _window);
@@ -24,10 +22,10 @@ namespace ego::win32
             static void OnWindowSizeUpdate(Win32Window& _window);
         };
 
-        Win32Window() = default;
-        ~Win32Window();
+        explicit Win32Window(HINSTANCE _instance);
+        ~Win32Window() override;
 
-        bool init(const char* _title, const WindowSize& _size) override;
+        bool init(const WindowDesc& _desc) override;
         void release() override;
 
         bool isValid() const override;
@@ -60,6 +58,7 @@ namespace ego::win32
         WindowSize m_clientAreaSize = DefaultWindowSize;
         WindowArea m_cutoutsArea = DefaultWindowArea;
 
+        HINSTANCE m_instance = nullptr;
         HWND m_handle = nullptr;
 
         bool m_isShown = false;

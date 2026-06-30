@@ -5,8 +5,6 @@
 #include "EgoEngine/Platform/Platform.h"
 
 #include "FileSystem/Win32FileSystem.h"
-#include "Window/Win32MainWindowProvider.h"
-#include "Win32PlatformEventController.h"
 
 namespace ego::win32
 {
@@ -18,22 +16,11 @@ namespace ego::win32
         bool init() override;
         void release() override;
 
-        MainWindowProvider& getMainWindowProvider() override;
-        const MainWindowProvider& getMainWindowProvider() const override;
-        WindowPointer createWindow(const char* _title, const WindowSize& _size) override;
-
-        const PlatformEventController& getPlatformEventController() const override;
-        PlatformEventController& getPlatformEventController() override;
-
         FileSystemPointer getFileSystem() override;
 
         HINSTANCE getInstanceHandle() const;
 
     private:
-        bool initWindowClass();
-
-        Win32MainWindowProviderPointer m_mainWindowProvider = nullptr;
-        Win32WindowEventControllerPointer m_platformEventController = nullptr;
         Win32FileSystemPointer m_fileSystem;
 
         HINSTANCE m_instance;

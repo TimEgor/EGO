@@ -9,11 +9,11 @@ ego::WindowGraphicPresenter::~WindowGraphicPresenter()
 
 bool ego::WindowGraphicPresenter::init(
     GraphicDevice& _graphicDevice,
-    const Window& _window,
+    const PresentationSurface& _surface,
     const gpu::SwapChainDesc& _swapChainDesc,
     const gpu::CommandQueueReference& _presentationQueue)
 {
-    m_swapChain = _graphicDevice.createSwapChain(_swapChainDesc, _window, _presentationQueue);
+    m_swapChain = _graphicDevice.createSwapChain(_swapChainDesc, _surface, _presentationQueue);
     EGO_CHECK_RETURN_FALSE(m_swapChain);
 
     return true;

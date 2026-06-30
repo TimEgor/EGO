@@ -79,6 +79,7 @@ namespace ego::framework
 
         // Core state
         PluginControllerPointer m_pluginController = nullptr;
+        bool m_isPluginControllerCoreInitialized = false;
 
         engine::EnginePointer m_engine = nullptr;
         ProjectPointer m_project = nullptr;

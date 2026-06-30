@@ -1,46 +1,55 @@
 #include "Win32Window.h"
 
-#include "EgoWin32Platform/Win32PlatformUtils.h"
+#include "EgoCore/UtilsMacros.h"
+
+#include "Win32WindowSystem.h"
+
+ego::win32::Win32Window::Win32Window(HINSTANCE _instance)
+    : m_instance(_instance)
+{
+}
 
 ego::win32::Win32Window::~Win32Window()
 {
     release();
 }
 
-bool ego::win32::Win32Window::init(const char* _title, const WindowSize& _size)
+bool ego::win32::Win32Window::init(const WindowDesc& _desc)
 {
-    const Win32Platform& win32Platform = GetWin32FrameworkPlatform();
-
     EGO_CHECK_INITIALIZATION(initWindowInstancedEvents());
+
+    const WindowSize requestedWindowSize = _desc.m_size;
+    HWND handle = CreateWindow(
+        EGO_WIN32_WINDOW_SYSTEM_WND_CLASS_NAME,
+        _desc.m_title,
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        requestedWindowSize.m_x,
+        requestedWindowSize.m_y,
+        nullptr,
+        nullptr,
+        m_instance,
+        nullptr);
+    EGO_CHECK_INITIALIZATION(handle);
 
     {
         std::scoped_lock locker(m_mutex);
 
-        m_windowSize = _size;
-
-        m_handle = CreateWindow(
-            EGO_WIN32_WND_CLASS_NAME,
-            _title,
-            WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            m_windowSize.m_x,
-            m_windowSize.m_y,
-            NULL,
-            NULL,
-            win32Platform.getInstanceHandle(),
-            NULL);
+        m_windowSize = requestedWindowSize;
+        m_handle = handle;
     }
 
-    EGO_CHECK_INITIALIZATION(m_handle);
-
     auto windowData = new Win32WindowWeakPointer(weakFromThis());
-    SetWindowLongPtr(m_handle, 0, reinterpret_cast<LONG_PTR>(windowData));
+    SetWindowLongPtr(handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(windowData));
 
     ShowCursor(true);
 
-    ShowWindow(m_handle, SW_NORMAL);
-    UpdateWindow(m_handle);
+    if (_desc.m_showOnInit)
+    {
+        show();
+        UpdateWindow(handle);
+    }
 
     updateSizes();
 
@@ -51,11 +60,15 @@ void ego::win32::Win32Window::release()
 {
     releaseWindowInstancedEvents();
 
-    std::scoped_lock locker(m_mutex);
-
-    if (m_handle)
+    HWND handle = nullptr;
     {
-        DestroyWindow(m_handle);
+        std::shared_lock locker(m_mutex);
+        handle = m_handle;
+    }
+
+    if (handle)
+    {
+        DestroyWindow(handle);
     }
 }
 
@@ -68,27 +81,53 @@ bool ego::win32::Win32Window::isValid() const
 
 void ego::win32::Win32Window::show()
 {
-    EGO_ASSERT(m_handle);
+    HWND handle = nullptr;
+    {
+        std::shared_lock locker(m_mutex);
+        handle = m_handle;
+    }
 
-    std::scoped_lock locker(m_mutex);
+    EGO_ASSERT(handle);
+    EGO_CHECK_RETURN(handle);
 
-    ShowWindow(m_handle, SW_NORMAL);
+    ShowWindow(handle, SW_NORMAL);
+
+    {
+        std::scoped_lock locker(m_mutex);
+        if (m_handle == handle)
+        {
+            m_isShown = true;
+        }
+    }
 }
 
 void ego::win32::Win32Window::hide()
 {
-    EGO_ASSERT(m_handle);
+    HWND handle = nullptr;
+    {
+        std::shared_lock locker(m_mutex);
+        handle = m_handle;
+    }
 
-    std::scoped_lock locker(m_mutex);
+    EGO_ASSERT(handle);
+    EGO_CHECK_RETURN(handle);
 
-    ShowWindow(m_handle, SW_HIDE);
+    ShowWindow(handle, SW_HIDE);
+
+    {
+        std::scoped_lock locker(m_mutex);
+        if (m_handle == handle)
+        {
+            m_isShown = false;
+        }
+    }
 }
 
 bool ego::win32::Win32Window::isShown() const
 {
     std::shared_lock locker(m_mutex);
 
-    return isValid() && m_isShown;
+    return m_handle && m_isShown;
 }
 
 void* ego::win32::Win32Window::getNativeHandle() const
@@ -126,11 +165,18 @@ bool ego::win32::Win32Window::isStable() const
 {
     std::shared_lock locker(m_mutex);
 
-    return isValid() && m_isSizeStable;
+    return m_handle && m_isSizeStable;
 }
 
 void ego::win32::Win32Window::updateSizes()
 {
+    std::scoped_lock locker(m_mutex);
+
+    RECT windowRect;
+    GetWindowRect(m_handle, &windowRect);
+    m_windowSize.m_x = static_cast<uint16_t>(windowRect.right - windowRect.left);
+    m_windowSize.m_y = static_cast<uint16_t>(windowRect.bottom - windowRect.top);
+
     RECT clientSize;
     GetClientRect(m_handle, &clientSize);
     m_clientAreaSize.m_x = static_cast<uint16_t>(clientSize.right - clientSize.left);
@@ -146,12 +192,13 @@ void ego::win32::Win32Window::invalidate()
 {
     std::scoped_lock locker(m_mutex);
 
-    auto windowData = reinterpret_cast<Win32WindowWeakPointer*>(GetWindowLongPtr(m_handle, 0));
+    auto windowData = reinterpret_cast<Win32WindowWeakPointer*>(GetWindowLongPtr(m_handle, GWLP_USERDATA));
     EGO_SAFE_DESTROY(windowData);
 
-    SetWindowLongPtr(m_handle, 0, 0);
+    SetWindowLongPtr(m_handle, GWLP_USERDATA, 0);
 
     m_handle = nullptr;
+    m_isShown = false;
 }
 
 void ego::win32::Win32Window::setSizeStabilization(bool _state)

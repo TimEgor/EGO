@@ -112,6 +112,7 @@ namespace ego::engine
 
         void beginFrame();
         void endFrame();
+        void updateFrameServices();
         JobGraphReference getMainLoopJobGraph();
         void renderFrame();
         void presentFrame();

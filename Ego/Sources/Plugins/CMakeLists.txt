@@ -10,6 +10,7 @@ add_subdirectory(Profiler)
 add_subdirectory(Render)
 add_subdirectory(RenderHardware)
 add_subdirectory(ResourceProvider)
+add_subdirectory(WindowSystem)
 
 target_link_libraries(
     EgoComponentsPlugins
@@ -19,4 +20,5 @@ target_link_libraries(
             Ego::Plugins::Render
             Ego::Plugins::RenderHardware
             Ego::Plugins::ResourceProvider
+            Ego::Plugins::WindowSystem
 )

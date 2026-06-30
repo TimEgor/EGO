@@ -78,7 +78,7 @@ namespace ego::gpu::d3d12
 
         FenceReference createFence(Fence::FenceValue _initialValue = 0) override;
 
-        SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const Window& _window, const CommandQueueReference& _presentationQueue) override;
+        SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const PresentationSurface& _surface, const CommandQueueReference& _presentationQueue) override;
 
         const GraphicDevice::Capabilities& getCapabilities() const override;
 

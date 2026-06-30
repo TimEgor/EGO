@@ -5,45 +5,65 @@
 #include "EgoCore/Parsers/ArgParser/Parser.h"
 #include "EgoCore/UtilsMacros.h"
 
+#include "EgoApplication/Window/WindowEvents.h"
+
 #include "EgoEngine/Engine.h"
-#include "EgoEngine/Platform/Window/MainWindowProvider.h"
 #include "EgoFramework/ProjectReader.h"
 
 ego::demo::launcher::LauncherApplication::~LauncherApplication()
 {
-    releaseFramework();
+    releaseRuntime();
 }
 
 int ego::demo::launcher::LauncherApplication::run(void* _nativeInstanceHandle, int _argCount, char** _argValues)
 {
-    releaseFramework();
+    releaseRuntime();
 
+    const int result = runInternal(_nativeInstanceHandle, _argCount, _argValues);
+    releaseRuntime();
+
+    return result;
+}
+
+int ego::demo::launcher::LauncherApplication::runInternal(void* _nativeInstanceHandle, int _argCount, char** _argValues)
+{
     CommandLineOptions commandLineOptions;
     EGO_CHECK_RETURN_VALUE(parseCommandLine(_argCount, _argValues, commandLineOptions), FrameworkInitializationFailedExitCode);
 
     framework::Framework::InitData frameworkInitData;
     EGO_CHECK_RETURN_VALUE(loadProject(commandLineOptions, frameworkInitData.m_project), ProjectLoadingFailedExitCode);
 
+    application::Application::InitData applicationInitData;
+    fillApplicationInitData(_nativeInstanceHandle, commandLineOptions, applicationInitData);
+
     m_graphicPresenter = new WindowGraphicPresenter();
     EGO_CHECK_RETURN_VALUE(m_graphicPresenter, WindowInitializationFailedExitCode);
 
     fillFrameworkInitData(_nativeInstanceHandle, commandLineOptions, frameworkInitData);
 
-    const int frameworkInitResult = initFramework(frameworkInitData);
-    if (frameworkInitResult != SuccessExitCode)
+    const int applicationInitResult = initApplication(applicationInitData);
+    if (applicationInitResult != SuccessExitCode)
     {
-        releaseFramework();
-        return frameworkInitResult;
+        return applicationInitResult;
     }
 
     if (!initWindowRuntime())
     {
-        releaseFramework();
+        return WindowInitializationFailedExitCode;
+    }
+
+    const int frameworkInitResult = initFramework(frameworkInitData);
+    if (frameworkInitResult != SuccessExitCode)
+    {
+        return frameworkInitResult;
+    }
+
+    if (!initGraphicPresenter())
+    {
         return WindowInitializationFailedExitCode;
     }
 
     runWindowLoop();
-    releaseFramework();
 
     return SuccessExitCode;
 }
@@ -52,6 +72,7 @@ bool ego::demo::launcher::LauncherApplication::parseCommandLine(int _argCount, c
 {
     ArgParser argParser;
     argParser.addOptionValue("--platform", _options.m_platformPluginModuleName);
+    argParser.addOptionValue("--windowSystem", _options.m_windowSystemPluginModuleName);
     argParser.addOptionValue("--profiler", _options.m_profilerPluginModuleName);
     argParser.addOptionValue("--render", _options.m_renderPluginModuleName);
     argParser.addOptionValue("--renderHardware", _options.m_renderHardwarePluginModuleName);
@@ -72,6 +93,15 @@ void ego::demo::launcher::LauncherApplication::fillFrameworkInitData(
     _frameworkInitData.m_engineInitData.m_renderHardwarePluginModuleName = _options.m_renderHardwarePluginModuleName;
     _frameworkInitData.m_engineInitData.m_graphicPresenter = m_graphicPresenter;
     _frameworkInitData.m_profilerPluginModuleName = _options.m_profilerPluginModuleName;
+}
+
+void ego::demo::launcher::LauncherApplication::fillApplicationInitData(
+    void* _nativeInstanceHandle,
+    const CommandLineOptions& _options,
+    application::Application::InitData& _applicationInitData) const
+{
+    _applicationInitData.m_nativeInstanceHandle = _nativeInstanceHandle;
+    _applicationInitData.m_windowSystemPluginModuleName = _options.m_windowSystemPluginModuleName;
 }
 
 bool ego::demo::launcher::LauncherApplication::loadProject(const CommandLineOptions& _options, framework::ProjectPointer& _project) const
@@ -106,6 +136,7 @@ bool ego::demo::launcher::LauncherApplication::loadProjectFile(const FileName& _
     EGO_CHECK_RETURN_FALSE(_fileName);
 
     _project = new framework::Project();
+
     EGO_CHECK_RETURN_FALSE(_project);
     EGO_CHECK_RETURN_FALSE(framework::ProjectReader::ReadFromFile(_fileName, *_project));
 
@@ -129,35 +160,66 @@ int ego::demo::launcher::LauncherApplication::initFramework(const framework::Fra
     return m_framework->init(_frameworkInitData) ? SuccessExitCode : FrameworkInitializationFailedExitCode;
 }
 
+int ego::demo::launcher::LauncherApplication::initApplication(const application::Application::InitData& _applicationInitData)
+{
+    return application::Application::init(_applicationInitData) ? SuccessExitCode : ApplicationInitializationFailedExitCode;
+}
+
 bool ego::demo::launcher::LauncherApplication::initWindowRuntime()
 {
-    EGO_CHECK_RETURN_FALSE(m_framework && m_graphicPresenter);
+    EGO_CHECK_RETURN_FALSE(prepareMainWindow());
+    EGO_CHECK_RETURN_FALSE(initWindowEventCallbacks());
+
+    return true;
+}
+
+bool ego::demo::launcher::LauncherApplication::initGraphicPresenter()
+{
+    EGO_CHECK_RETURN_FALSE(m_framework && m_graphicPresenter && m_mainWindow);
 
     engine::Engine& engine = m_framework->getEngine();
-    EGO_CHECK_RETURN_FALSE(prepareMainWindow(engine));
-
     gpu::SwapChainDesc swapChainDesc;
     swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
     swapChainDesc.m_bufferCount = 2;
 
-    const WindowPointer mainWindow = engine.getPlatform().getMainWindowProvider().getMainWindow();
-    return m_graphicPresenter->init(engine.getGraphicDevice(), *mainWindow, swapChainDesc, engine.getRenderDeviceContext().getGraphicCommandQueue());
+    return m_graphicPresenter->init(engine.getGraphicDevice(), *m_mainWindow, swapChainDesc, engine.getRenderDeviceContext().getGraphicCommandQueue());
 }
 
-void ego::demo::launcher::LauncherApplication::runWindowLoop() const
+bool ego::demo::launcher::LauncherApplication::initWindowEventCallbacks()
+{
+    EventController& eventController = getEventController();
+
+    m_windowDestroyingEventCallbackID = eventController.addEventCallback<WindowDestroyingEvent>(
+        [this](const WindowDestroyingEvent& _event)
+        {
+            onMainWindowDestroying(_event);
+        });
+    EGO_CHECK_RETURN_FALSE(m_windowDestroyingEventCallbackID != InvalidEventCallbackID);
+
+    m_windowSystemQuitRequestedEventCallbackID = eventController.addEventCallback<WindowSystemQuitRequestedEvent>(
+        [this](const WindowSystemQuitRequestedEvent& _event)
+        {
+            onWindowSystemQuitRequested(_event);
+        });
+    if (m_windowSystemQuitRequestedEventCallbackID == InvalidEventCallbackID)
+    {
+        releaseWindowEventCallbacks();
+        return false;
+    }
+
+    return true;
+}
+
+void ego::demo::launcher::LauncherApplication::runWindowLoop()
 {
     EGO_ASSERT(m_framework);
 
     engine::Engine& engine = m_framework->getEngine();
+    WindowSystem& windowSystem = getWindowSystem();
     while (!engine.isStopped())
     {
-        if (!isMainWindowValid(engine))
-        {
-            engine.stop();
-            break;
-        }
-
-        if (!m_framework->runFrame())
+        windowSystem.processEvents();
+        if (engine.isStopped() || !m_framework->runFrame())
         {
             break;
         }
@@ -166,26 +228,57 @@ void ego::demo::launcher::LauncherApplication::runWindowLoop() const
     engine.completeRun();
 }
 
-bool ego::demo::launcher::LauncherApplication::prepareMainWindow(engine::Engine& _engine) const
+bool ego::demo::launcher::LauncherApplication::prepareMainWindow()
 {
-    MainWindowProvider& mainWindowProvider = _engine.getPlatform().getMainWindowProvider();
-    if (!mainWindowProvider.isWindowPlatformProvided())
-    {
-        EGO_CHECK_RETURN_FALSE(mainWindowProvider.prepareMainWindow("EGO", WindowSize(500, 500)));
-    }
+    WindowDesc windowDesc;
+    windowDesc.m_title = "EGO";
+    windowDesc.m_size = WindowSize(500, 500);
+    windowDesc.m_showOnInit = true;
 
-    const WindowPointer mainWindow = mainWindowProvider.getMainWindow();
-    EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
+    m_mainWindow = getWindowSystem().createWindow(windowDesc);
+    EGO_CHECK_RETURN_FALSE(isMainWindowValid());
 
     return true;
 }
 
-bool ego::demo::launcher::LauncherApplication::isMainWindowValid(const engine::Engine& _engine) const
+bool ego::demo::launcher::LauncherApplication::isMainWindowValid() const
 {
-    const MainWindowProvider& mainWindowProvider = _engine.getPlatform().getMainWindowProvider();
-    const WindowPointer mainWindow = mainWindowProvider.getMainWindow();
+    return m_mainWindow && m_mainWindow->isValid();
+}
 
-    return mainWindow && mainWindow->isValid();
+void ego::demo::launcher::LauncherApplication::releaseWindowEventCallbacks()
+{
+    if (m_windowDestroyingEventCallbackID == InvalidEventCallbackID && m_windowSystemQuitRequestedEventCallbackID == InvalidEventCallbackID)
+    {
+        return;
+    }
+
+    EventController& eventController = getEventController();
+
+    if (m_windowDestroyingEventCallbackID != InvalidEventCallbackID)
+    {
+        eventController.removeEventCallback(m_windowDestroyingEventCallbackID);
+        m_windowDestroyingEventCallbackID = InvalidEventCallbackID;
+    }
+
+    if (m_windowSystemQuitRequestedEventCallbackID != InvalidEventCallbackID)
+    {
+        eventController.removeEventCallback(m_windowSystemQuitRequestedEventCallbackID);
+        m_windowSystemQuitRequestedEventCallbackID = InvalidEventCallbackID;
+    }
+}
+
+void ego::demo::launcher::LauncherApplication::releaseApplication()
+{
+    releaseWindowEventCallbacks();
+    m_mainWindow = nullptr;
+    application::Application::release();
+}
+
+void ego::demo::launcher::LauncherApplication::releaseRuntime()
+{
+    releaseFramework();
+    releaseApplication();
 }
 
 void ego::demo::launcher::LauncherApplication::releaseFramework()
@@ -198,4 +291,20 @@ void ego::demo::launcher::LauncherApplication::releaseFramework()
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_framework);
     m_graphicPresenter = nullptr;
+}
+
+void ego::demo::launcher::LauncherApplication::onMainWindowDestroying(const WindowDestroyingEvent& _event)
+{
+    if (_event.m_window.get() == m_mainWindow.get() && m_framework)
+    {
+        m_framework->getEngine().stop();
+    }
+}
+
+void ego::demo::launcher::LauncherApplication::onWindowSystemQuitRequested(const WindowSystemQuitRequestedEvent&)
+{
+    if (m_framework)
+    {
+        m_framework->getEngine().stop();
+    }
 }

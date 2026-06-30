@@ -1,6 +1,6 @@
 #include "Window.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoApplication/Application.h"
 
 #include "WindowEvents.h"
 
@@ -11,7 +11,7 @@ ego::InstancedEventID ego::Window::getSizeEventID() const
 
 bool ego::Window::initWindowInstancedEvents()
 {
-    EventController& eventController = engine::GetEngine().getEventController();
+    EventController& eventController = application::GetApplication().getEventController();
 
     m_sizeEventID = eventController.registerInstancedEvent<WindowSizeEvent>();
     EGO_CHECK_RETURN_FALSE(m_sizeEventID != InvalidInstancedEventID);
@@ -21,7 +21,7 @@ bool ego::Window::initWindowInstancedEvents()
 
 void ego::Window::releaseWindowInstancedEvents()
 {
-    EventController& eventController = engine::GetEngine().getEventController();
+    EventController& eventController = application::GetApplication().getEventController();
 
     if (m_sizeEventID != InvalidInstancedEventID)
     {

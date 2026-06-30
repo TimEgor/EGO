@@ -6,6 +6,13 @@
 
 namespace ego
 {
+    struct WindowSystemQuitRequestedEvent final : public Event
+    {
+        WindowSystemQuitRequestedEvent() = default;
+
+        EGO_EVENT(WindowSystemQuitRequestedEvent, Event);
+    };
+
     struct WindowEvent : public Event
     {
         WindowPointer m_window;

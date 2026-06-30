@@ -48,6 +48,28 @@ function(ego_add_component TARGET_NAME)
     )
 endfunction()
 
+function(ego_add_tool TARGET_NAME)
+    set(ONE_VALUE_ARGS ALIAS)
+    cmake_parse_arguments(EGO_TOOL "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    if (EGO_TOOL_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_add_tool received unknown arguments: ${EGO_TOOL_UNPARSED_ARGUMENTS}")
+    endif()
+
+    add_library(${TARGET_NAME} STATIC)
+    _ego_create_target_alias(${TARGET_NAME} "${EGO_TOOL_ALIAS}")
+
+    ego_setup_target_sources(
+        ${TARGET_NAME}
+        INCLUDE_SCOPE PUBLIC
+    )
+
+    ego_setup_target_common(
+        ${TARGET_NAME}
+        "Ego/Tools"
+    )
+endfunction()
+
 function(ego_add_plugin TARGET_NAME)
     set(ONE_VALUE_ARGS ALIAS CATEGORY INCLUDE_SCOPE)
     cmake_parse_arguments(EGO_PLUGIN "" "${ONE_VALUE_ARGS}" "" ${ARGN})
@@ -116,6 +138,21 @@ function(ego_setup_launch_args TARGET_NAME)
 
     if (NOT "${EGO_PLATFORM_PLUGIN}" STREQUAL "")
         string(APPEND DEBUG_ARGS " --platform=\"${EGO_PLATFORM_PLUGIN}\"")
+    endif()
+
+    if (NOT DEFINED EGO_WINDOW_SYSTEM_PLUGIN)
+        set(EGO_WINDOW_SYSTEM_PLUGIN)
+
+        if (WIN32)
+            set(EGO_WINDOW_SYSTEM_PLUGIN "$<TARGET_FILE:EgoWin32WindowSystem>")
+            if (TARGET EgoWin32WindowSystem)
+                add_dependencies(${TARGET_NAME} EgoWin32WindowSystem)
+            endif()
+        endif()
+    endif()
+
+    if (NOT "${EGO_WINDOW_SYSTEM_PLUGIN}" STREQUAL "")
+        string(APPEND DEBUG_ARGS " --windowSystem=\"${EGO_WINDOW_SYSTEM_PLUGIN}\"")
     endif()
 
     if (NOT DEFINED EGO_PROFILER_PLUGIN)

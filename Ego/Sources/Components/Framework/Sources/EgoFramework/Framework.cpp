@@ -82,9 +82,24 @@ ego::framework::GameLogic& ego::framework::Framework::getCurrentGameLogic() cons
 
 bool ego::framework::Framework::initPluginController()
 {
+    m_pluginController = PluginControllerCore::GetInstance().getPluginController();
+    if (m_pluginController)
+    {
+        return true;
+    }
+
     m_pluginController = new PluginController();
+    EGO_CHECK_RETURN_FALSE(m_pluginController);
     EGO_CHECK_RETURN_FALSE(PluginControllerCore::GetInstance().init(m_pluginController));
-    EGO_CHECK_RETURN_FALSE(m_pluginController && m_pluginController->init());
+
+    m_isPluginControllerCoreInitialized = true;
+    if (!m_pluginController->init())
+    {
+        PluginControllerCore::GetInstance().release();
+        m_pluginController = nullptr;
+        m_isPluginControllerCoreInitialized = false;
+        return false;
+    }
 
     return true;
 }
@@ -136,8 +151,15 @@ bool ego::framework::Framework::registerGameLogicMainLoopJob()
 
 void ego::framework::Framework::releasePluginController()
 {
-    PluginControllerCore::GetInstance().release();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_pluginController);
+    if (m_isPluginControllerCoreInitialized)
+    {
+        PluginControllerCore::GetInstance().release();
+        EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_pluginController);
+        m_isPluginControllerCoreInitialized = false;
+        return;
+    }
+
+    m_pluginController = nullptr;
 }
 
 void ego::framework::Framework::releaseProjectAssetFileSystems()

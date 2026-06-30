@@ -1,9 +1,9 @@
 #pragma once
 
-#include "EgoEngine/Platform/Window/Window.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandQueue.h"
 #include "EgoEngine/Graphic/RenderHardware/GraphicObjects/SwapChain.h"
+#include "EgoEngine/Graphic/RenderHardware/PresentationSurface.h"
 
 #include "GraphicPresenter.h"
 
@@ -15,7 +15,11 @@ namespace ego
         WindowGraphicPresenter() = default;
         ~WindowGraphicPresenter() override;
 
-        bool init(GraphicDevice& _graphicDevice, const Window& _window, const gpu::SwapChainDesc& _swapChainDesc, const gpu::CommandQueueReference& _presentationQueue);
+        bool init(
+            GraphicDevice& _graphicDevice,
+            const PresentationSurface& _surface,
+            const gpu::SwapChainDesc& _swapChainDesc,
+            const gpu::CommandQueueReference& _presentationQueue);
         void release() override;
 
         gpu::Texture2DReference getTargetTexture() override;

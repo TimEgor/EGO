@@ -95,7 +95,7 @@ bool ego::engine::Engine::runFrame()
 
     beginFrame();
 
-    m_platform->getPlatformEventController().updateNativeEvents();
+    updateFrameServices();
     // m_inputDeviceController->update();
 
     if (m_isStopped)
@@ -428,6 +428,18 @@ void ego::engine::Engine::beginFrame()
 void ego::engine::Engine::endFrame()
 {
     m_prevFrameStartTime = m_currentFrameTime;
+}
+
+void ego::engine::Engine::updateFrameServices()
+{
+    if (m_platform)
+    {
+        const FileSystemPointer fileSystem = m_platform->getFileSystem();
+        if (fileSystem)
+        {
+            fileSystem->updateDirectoryWatches();
+        }
+    }
 }
 
 void ego::engine::Engine::completeRun()
