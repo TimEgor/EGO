@@ -21,13 +21,6 @@ namespace ego
     }
 
     template <typename T>
-    ComputeQuaternionBase<T>& ComputeQuaternionBase<T>::operator=(const ComputeQuaternionBase<T>& _quaternion)
-    {
-        m_quaternion = _quaternion.m_quaternion;
-        return *this;
-    }
-
-    template <typename T>
     bool ComputeQuaternionBase<T>::operator==(const ComputeQuaternionBase<T>& _quaternion) const
     {
         return isEqual(_quaternion);
@@ -42,14 +35,10 @@ namespace ego
     template <typename T>
     ComputeQuaternionBase<T>& ComputeQuaternionBase<T>::operator*=(const ComputeQuaternionBase<T>& _quaternion)
     {
-        const T x = m_quaternion.m_elements.m_w * _quaternion.m_quaternion.m_elements.m_x + m_quaternion.m_elements.m_x * _quaternion.m_quaternion.m_elements.m_w +
-                    m_quaternion.m_elements.m_y * _quaternion.m_quaternion.m_elements.m_z - m_quaternion.m_elements.m_z * _quaternion.m_quaternion.m_elements.m_y;
-        const T y = m_quaternion.m_elements.m_w * _quaternion.m_quaternion.m_elements.m_y - m_quaternion.m_elements.m_x * _quaternion.m_quaternion.m_elements.m_z +
-                    m_quaternion.m_elements.m_y * _quaternion.m_quaternion.m_elements.m_w + m_quaternion.m_elements.m_z * _quaternion.m_quaternion.m_elements.m_x;
-        const T z = m_quaternion.m_elements.m_w * _quaternion.m_quaternion.m_elements.m_z + m_quaternion.m_elements.m_x * _quaternion.m_quaternion.m_elements.m_y -
-                    m_quaternion.m_elements.m_y * _quaternion.m_quaternion.m_elements.m_x + m_quaternion.m_elements.m_z * _quaternion.m_quaternion.m_elements.m_w;
-        const T w = m_quaternion.m_elements.m_w * _quaternion.m_quaternion.m_elements.m_w - m_quaternion.m_elements.m_x * _quaternion.m_quaternion.m_elements.m_x -
-                    m_quaternion.m_elements.m_y * _quaternion.m_quaternion.m_elements.m_y - m_quaternion.m_elements.m_z * _quaternion.m_quaternion.m_elements.m_z;
+        const T x = getW() * _quaternion.getX() + getX() * _quaternion.getW() + getY() * _quaternion.getZ() - getZ() * _quaternion.getY();
+        const T y = getW() * _quaternion.getY() - getX() * _quaternion.getZ() + getY() * _quaternion.getW() + getZ() * _quaternion.getX();
+        const T z = getW() * _quaternion.getZ() + getX() * _quaternion.getY() - getY() * _quaternion.getX() + getZ() * _quaternion.getW();
+        const T w = getW() * _quaternion.getW() - getX() * _quaternion.getX() - getY() * _quaternion.getY() - getZ() * _quaternion.getZ();
 
         *this = ComputeQuaternionBase<T>(x, y, z, w);
         return *this;
@@ -64,42 +53,42 @@ namespace ego
         {
             T s = sqrt(trace + T(1.0)) * T(2.0);
 
-            m_quaternion.m_elements.m_w = T(0.25) * s;
-            m_quaternion.m_elements.m_x = (_matrix.getElement(2, 1) - _matrix.getElement(1, 2)) / s;
-            m_quaternion.m_elements.m_y = (_matrix.getElement(0, 2) - _matrix.getElement(2, 0)) / s;
-            m_quaternion.m_elements.m_z = (_matrix.getElement(1, 0) - _matrix.getElement(0, 1)) / s;
+            setW(T(0.25) * s);
+            setX((_matrix.getElement(2, 1) - _matrix.getElement(1, 2)) / s);
+            setY((_matrix.getElement(0, 2) - _matrix.getElement(2, 0)) / s);
+            setZ((_matrix.getElement(1, 0) - _matrix.getElement(0, 1)) / s);
         }
         else if (_matrix.getElement(0, 0) > _matrix.getElement(1, 1) && _matrix.getElement(0, 0) > _matrix.getElement(2, 2))
         {
             T s = sqrt(T(1.0) + _matrix.getElement(0, 0) - _matrix.getElement(1, 1) - _matrix.getElement(2, 2)) * T(2.0);
 
-            m_quaternion.m_elements.m_w = (_matrix.getElement(2, 1) - _matrix.getElement(1, 2)) / s;
-            m_quaternion.m_elements.m_x = T(0.25) * s;
-            m_quaternion.m_elements.m_y = (_matrix.getElement(0, 1) + _matrix.getElement(1, 0)) / s;
-            m_quaternion.m_elements.m_z = (_matrix.getElement(0, 2) + _matrix.getElement(2, 0)) / s;
+            setW((_matrix.getElement(2, 1) - _matrix.getElement(1, 2)) / s);
+            setX(T(0.25) * s);
+            setY((_matrix.getElement(0, 1) + _matrix.getElement(1, 0)) / s);
+            setZ((_matrix.getElement(0, 2) + _matrix.getElement(2, 0)) / s);
         }
         else if (_matrix.getElement(1, 1) > _matrix.getElement(2, 2))
         {
             T s = sqrt(T(1.0) + _matrix.getElement(1, 1) - _matrix.getElement(0, 0) - _matrix.getElement(2, 2)) * T(2.0);
 
-            m_quaternion.m_elements.m_w = (_matrix.getElement(0, 2) - _matrix.getElement(2, 0)) / s;
-            m_quaternion.m_elements.m_x = (_matrix.getElement(0, 1) + _matrix.getElement(1, 0)) / s;
-            m_quaternion.m_elements.m_y = T(0.25) * s;
-            m_quaternion.m_elements.m_z = (_matrix.getElement(1, 2) + _matrix.getElement(2, 1)) / s;
+            setW((_matrix.getElement(0, 2) - _matrix.getElement(2, 0)) / s);
+            setX((_matrix.getElement(0, 1) + _matrix.getElement(1, 0)) / s);
+            setY(T(0.25) * s);
+            setZ((_matrix.getElement(1, 2) + _matrix.getElement(2, 1)) / s);
         }
         else
         {
             T s = sqrt(T(1.0) + _matrix.getElement(2, 2) - _matrix.getElement(0, 0) - _matrix.getElement(1, 1)) * T(2.0);
 
-            m_quaternion.m_elements.m_w = (_matrix.getElement(1, 0) - _matrix.getElement(0, 1)) / s;
-            m_quaternion.m_elements.m_x = (_matrix.getElement(0, 2) + _matrix.getElement(2, 0)) / s;
-            m_quaternion.m_elements.m_y = (_matrix.getElement(1, 2) + _matrix.getElement(2, 1)) / s;
-            m_quaternion.m_elements.m_z = T(0.25) * s;
+            setW((_matrix.getElement(1, 0) - _matrix.getElement(0, 1)) / s);
+            setX((_matrix.getElement(0, 2) + _matrix.getElement(2, 0)) / s);
+            setY((_matrix.getElement(1, 2) + _matrix.getElement(2, 1)) / s);
+            setZ(T(0.25) * s);
         }
 
-        m_quaternion.m_elements.m_x = -m_quaternion.m_elements.m_x;
-        m_quaternion.m_elements.m_y = -m_quaternion.m_elements.m_y;
-        m_quaternion.m_elements.m_z = -m_quaternion.m_elements.m_z;
+        setX(-getX());
+        setY(-getY());
+        setZ(-getZ());
 
         return *this;
     }
@@ -115,16 +104,16 @@ namespace ego
     template <typename T>
     ComputeQuaternionBase<T>& ComputeQuaternionBase<T>::setupFromAxisAngle(const ComputeVector3Base<T>& _axis, T _angle)
     {
-        const ComputeVector3 normAxis = NormalizeComputeVector3(_axis);
+        const ComputeVector3Base<T> normAxis = NormalizeComputeVector3(_axis);
 
         const T halfAngle = _angle * T(0.5);
         const T halfAngleSin = sin(halfAngle);
         const T halfAngleCos = cos(halfAngle);
 
-        m_quaternion.m_elements.m_x = normAxis.getX() * halfAngleSin;
-        m_quaternion.m_elements.m_y = normAxis.getY() * halfAngleSin;
-        m_quaternion.m_elements.m_z = normAxis.getZ() * halfAngleSin;
-        m_quaternion.m_elements.m_w = halfAngleCos;
+        setX(normAxis.getX() * halfAngleSin);
+        setY(normAxis.getY() * halfAngleSin);
+        setZ(normAxis.getZ() * halfAngleSin);
+        setW(halfAngleCos);
 
         return *this;
     }
@@ -145,10 +134,10 @@ namespace ego
         const ValueType cy = std::cos(_yaw * T(0.5));
         const ValueType sy = std::sin(_yaw * T(0.5));
 
-        m_quaternion.m_elements.m_x = sr * cp * cy - cr * sp * sy;
-        m_quaternion.m_elements.m_y = cr * sp * cy + sr * cp * sy;
-        m_quaternion.m_elements.m_z = cr * cp * sy - sr * sp * cy;
-        m_quaternion.m_elements.m_w = cr * cp * cy + sr * sp * sy;
+        setX(sr * cp * cy - cr * sp * sy);
+        setY(cr * sp * cy + sr * cp * sy);
+        setZ(cr * cp * sy - sr * sp * cy);
+        setW(cr * cp * cy + sr * sp * sy);
 
         return *this;
     }
@@ -168,8 +157,7 @@ namespace ego
     template <typename T>
     T ComputeQuaternionBase<T>::dot(const ComputeQuaternionBase<T>& _quaternion) const
     {
-        return m_quaternion.m_elements.m_x * _quaternion.m_quaternion.m_elements.m_x + m_quaternion.m_elements.m_y * _quaternion.m_quaternion.m_elements.m_y +
-               m_quaternion.m_elements.m_z * _quaternion.m_quaternion.m_elements.m_z + m_quaternion.m_elements.m_w * _quaternion.m_quaternion.m_elements.m_w;
+        return m_vector.dot(_quaternion.m_vector);
     }
 
     template <typename T>
@@ -181,10 +169,7 @@ namespace ego
             return *this;
         }
 
-        m_quaternion.m_elements.m_x /= length;
-        m_quaternion.m_elements.m_y /= length;
-        m_quaternion.m_elements.m_z /= length;
-        m_quaternion.m_elements.m_w /= length;
+        m_vector /= length;
 
         return *this;
     }
@@ -192,9 +177,9 @@ namespace ego
     template <typename T>
     ComputeQuaternionBase<T>& ComputeQuaternionBase<T>::conjugate()
     {
-        m_quaternion.m_elements.m_x = -m_quaternion.m_elements.m_x;
-        m_quaternion.m_elements.m_y = -m_quaternion.m_elements.m_y;
-        m_quaternion.m_elements.m_z = -m_quaternion.m_elements.m_z;
+        setX(-getX());
+        setY(-getY());
+        setZ(-getZ());
 
         return *this;
     }
@@ -202,7 +187,13 @@ namespace ego
     template <typename T>
     ComputeQuaternionBase<T>& ComputeQuaternionBase<T>::invert()
     {
-        return conjugate() / getLength();
+        const T lengthSqr = getLengthSqr();
+        EGO_ASSERT(std::abs(lengthSqr) > math::TypedEpsilon<T>());
+
+        conjugate();
+        m_vector /= lengthSqr;
+
+        return *this;
     }
 
     template <typename T>
@@ -228,10 +219,7 @@ namespace ego
     template <typename T>
     bool ComputeQuaternionBase<T>::isEqual(const ComputeQuaternionBase<T>& _quaternion, T _epsilon) const
     {
-        return math::IsApproxEqual(m_quaternion.m_elements.m_x, _quaternion.m_quaternion.m_elements.m_x, _epsilon) &&
-               math::IsApproxEqual(m_quaternion.m_elements.m_y, _quaternion.m_quaternion.m_elements.m_y, _epsilon) &&
-               math::IsApproxEqual(m_quaternion.m_elements.m_z, _quaternion.m_quaternion.m_elements.m_z, _epsilon) &&
-               math::IsApproxEqual(m_quaternion.m_elements.m_w, _quaternion.m_quaternion.m_elements.m_w, _epsilon);
+        return m_vector.isEqual(_quaternion.m_vector, _epsilon);
     }
 
     template <typename T>
@@ -325,15 +313,15 @@ namespace ego
     template <typename T>
     void ComputeQuaternionBase<T>::getEulerAngles(ComputeVector3Base<T>& _angles) const
     {
-        const T sinr_cosp = T(2.0) * (m_quaternion.m_elements.m_w * m_quaternion.m_elements.m_x + m_quaternion.m_elements.m_y * m_quaternion.m_elements.m_z);
-        const T cosr_cosp = T(1.0) - T(2.0) * (m_quaternion.m_elements.m_x * m_quaternion.m_elements.m_x + m_quaternion.m_elements.m_y * m_quaternion.m_elements.m_y);
-        const T sinp = T(2.0) * (m_quaternion.m_elements.m_w * m_quaternion.m_elements.m_y - m_quaternion.m_elements.m_z * m_quaternion.m_elements.m_x);
-        const T siny_cosp = T(2.0) * (m_quaternion.m_elements.m_w * m_quaternion.m_elements.m_z + m_quaternion.m_elements.m_x * m_quaternion.m_elements.m_y);
-        const T cosy_cosp = T(1.0) - T(2.0) * (m_quaternion.m_elements.m_y * m_quaternion.m_elements.m_y + m_quaternion.m_elements.m_z * m_quaternion.m_elements.m_z);
+        const T sinr_cosp = T(2.0) * (getW() * getX() + getY() * getZ());
+        const T cosr_cosp = T(1.0) - T(2.0) * (getX() * getX() + getY() * getY());
+        const T sinp = T(2.0) * (getW() * getY() - getZ() * getX());
+        const T siny_cosp = T(2.0) * (getW() * getZ() + getX() * getY());
+        const T cosy_cosp = T(1.0) - T(2.0) * (getY() * getY() + getZ() * getZ());
 
         if (std::abs(sinp) >= T(1.0))
         {
-            _angles.setY(std::copysign(math::HalfPi, sinp));
+            _angles.setY(std::copysign(math::TypedHalfPi<T>(), sinp));
         }
         else
         {

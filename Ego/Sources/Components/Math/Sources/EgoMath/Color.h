@@ -75,7 +75,7 @@ namespace ego
 
         NormalizedColorRGBA& operator=(const FloatVector4& _values)
         {
-            m_values = values;
+            m_values = _values;
             return *this;
         }
 
@@ -108,5 +108,5 @@ namespace ego
     inline constexpr auto NormalizedColorCyan = NormalizedColorRGB(0.0f, 1.0f, 1.0f);
     inline constexpr auto NormalizedColorSteelBlue = NormalizedColorRGB(0.3f, 0.6f, 0.8f);
     inline constexpr auto NormalizedColorViolet = NormalizedColorRGB(0.6f, 0.0f, 0.85f);
-    inline constexpr auto NormalizedColorMagneta = NormalizedColorRGB(1.0f, 0.0f, 1.0f);
+    inline constexpr auto NormalizedColorMagenta = NormalizedColorRGB(1.0f, 0.0f, 1.0f);
 } // namespace ego

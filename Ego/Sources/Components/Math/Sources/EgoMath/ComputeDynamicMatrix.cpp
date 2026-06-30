@@ -2,6 +2,30 @@
 
 #include "EgoCore/Assert/AssertCore.h"
 
+#include "ComputeMath.h"
+
+namespace
+{
+    float DotDynamicMatrixRowColumn(
+        const ego::FloatDynamicMatrix& _matrix1,
+        const ego::FloatDynamicMatrix& _matrix2,
+        uint32_t _rowIndex,
+        uint32_t _columnIndex,
+        uint32_t _elementCount)
+    {
+        return ego::math::simd::DotDynamicMatrixRowColumnElements(_matrix1, _matrix2, _rowIndex, _columnIndex, _elementCount);
+    }
+
+    float DotDynamicMatrixRowVector(
+        const ego::FloatDynamicMatrix& _matrix,
+        const ego::FloatDynamicVector& _vector,
+        uint32_t _rowIndex,
+        uint32_t _elementCount)
+    {
+        return ego::math::simd::DotDynamicMatrixRowVectorElements(_matrix, _vector, _rowIndex, _elementCount);
+    }
+} // namespace
+
 void ego::TransposeDynamicMatrix(const FloatDynamicMatrix& _matrix, FloatDynamicMatrix& _result)
 {
     _result = TransposeDynamicMatrix(_matrix);
@@ -12,7 +36,7 @@ ego::FloatDynamicMatrix ego::TransposeDynamicMatrix(const FloatDynamicMatrix& _m
     const uint32_t rowCount = _matrix.getRowCount();
     const uint32_t columnCount = _matrix.getColumnCount();
 
-    auto result = FloatDynamicMatrix(columnCount, rowCount);
+    FloatDynamicMatrix result(columnCount, rowCount);
 
     for (uint32_t rowIndex = 0; rowIndex < rowCount; ++rowIndex)
     {
@@ -40,18 +64,13 @@ ego::FloatDynamicMatrix ego::MultiplyDynamicMatrix(const FloatDynamicMatrix& _ma
 
     EGO_ASSERT(columnCount1 == rowCount2);
 
-    auto result = FloatDynamicMatrix(rowCount1, columnCount2);
+    FloatDynamicMatrix result(rowCount1, columnCount2);
 
     for (uint32_t rowIndex = 0; rowIndex < rowCount1; ++rowIndex)
     {
         for (uint32_t columnIndex = 0; columnIndex < columnCount2; ++columnIndex)
         {
-            float value = 0.0f;
-
-            for (uint32_t elementIndex = 0; elementIndex < columnCount1; ++elementIndex)
-            {
-                value += _matrix1.getElement(rowIndex, elementIndex) * _matrix2.getElement(elementIndex, columnIndex);
-            }
+            const float value = DotDynamicMatrixRowColumn(_matrix1, _matrix2, rowIndex, columnIndex, columnCount1);
 
             result.setElement(rowIndex, columnIndex, value);
         }
@@ -72,16 +91,11 @@ ego::FloatDynamicVector ego::TransformDynamicVector(const FloatDynamicMatrix& _m
 
     EGO_ASSERT(_vector.getElementCount() == columnCount);
 
-    auto result = FloatDynamicVector(rowCount);
+    FloatDynamicVector result(rowCount);
 
     for (uint32_t rowIndex = 0; rowIndex < rowCount; ++rowIndex)
     {
-        float value = 0.0f;
-
-        for (uint32_t columnIndex = 0; columnIndex < columnCount; ++columnIndex)
-        {
-            value += _matrix.getElement(rowIndex, columnIndex) * _vector.getElement(columnIndex);
-        }
+        const float value = DotDynamicMatrixRowVector(_matrix, _vector, rowIndex, columnCount);
 
         result.setElement(rowIndex, value);
     }

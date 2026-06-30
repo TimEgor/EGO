@@ -16,42 +16,32 @@ namespace ego
         using QuaternionType = QuaternionBase<ValueType>;
 
     private:
-        union
-        {
-            QuaternionType m_quaternion;
-
-            ComputeVector4Base<ValueType> m_xyzw;
-
-            ComputeVector3Base<ValueType> m_xyz;
-        };
+        ComputeVector4Base<ValueType> m_vector;
 
     public:
-        constexpr ComputeQuaternionBase()
-            : m_quaternion()
+        ComputeQuaternionBase()
+            : m_vector()
         {
         }
-        constexpr ComputeQuaternionBase(ValueType _x, ValueType _y, ValueType _z, ValueType _w)
-            : m_quaternion(_x, _y, _z, _w)
+        ComputeQuaternionBase(ValueType _x, ValueType _y, ValueType _z, ValueType _w)
+            : m_vector(_x, _y, _z, _w)
         {
         }
-        constexpr ComputeQuaternionBase(const QuaternionType& _quaternion)
-            : m_quaternion(_quaternion)
+        ComputeQuaternionBase(const QuaternionType& _quaternion)
+            : m_vector(_quaternion.m_elements)
         {
         }
-        constexpr ComputeQuaternionBase(const ComputeVector4Base<ValueType>& _vector)
-            : m_xyzw(_vector)
+        ComputeQuaternionBase(const ComputeVector4Base<ValueType>& _vector)
+            : m_vector(_vector)
         {
         }
-        constexpr ComputeQuaternionBase(const ComputeQuaternionBase& _quaternion)
-            : m_quaternion(_quaternion.m_quaternion)
-        {
-        }
+        ComputeQuaternionBase(const ComputeQuaternionBase& _quaternion) = default;
 
         explicit ComputeQuaternionBase(const ComputeMatrix3x3Base<ValueType>& _matrix);
         explicit ComputeQuaternionBase(const ComputeMatrix4x4Base<ValueType>& _matrix);
         explicit ComputeQuaternionBase(const ComputeVector3Base<ValueType>& _axis, ValueType _angle);
 
-        ComputeQuaternionBase& operator=(const ComputeQuaternionBase& _quaternion);
+        ComputeQuaternionBase& operator=(const ComputeQuaternionBase& _quaternion) = default;
 
         bool operator==(const ComputeQuaternionBase& _quaternion) const;
         bool operator!=(const ComputeQuaternionBase& _quaternion) const;
@@ -62,18 +52,14 @@ namespace ego
         {
             return getElement(_index);
         }
-        ValueType& operator[](uint32_t _index)
-        {
-            return getElement(_index);
-        }
 
         ValueType getElement(uint32_t _index) const
         {
-            return m_quaternion.m_elements.getElement(_index);
+            return m_vector.getElement(_index);
         }
-        ValueType& getElement(uint32_t _index)
+        void setElement(uint32_t _index, ValueType _value)
         {
-            return m_quaternion.m_elements.getElement(_index);
+            m_vector.setElement(_index, _value);
         }
 
         ComputeQuaternionBase& setupFromRotationMatrix3x3(const ComputeMatrix3x3Base<ValueType>& _matrix);
@@ -84,68 +70,52 @@ namespace ego
 
         ValueType getX() const
         {
-            return m_quaternion.m_elements.m_x;
+            return m_vector.getX();
         }
         ValueType getY() const
         {
-            return m_quaternion.m_elements.m_y;
+            return m_vector.getY();
         }
         ValueType getZ() const
         {
-            return m_quaternion.m_elements.m_z;
+            return m_vector.getZ();
         }
         ValueType getW() const
         {
-            return m_quaternion.m_elements.m_w;
-        }
-        ValueType& getX()
-        {
-            return m_quaternion.m_elements.m_x;
-        }
-        ValueType& getY()
-        {
-            return m_quaternion.m_elements.m_y;
-        }
-        ValueType& getZ()
-        {
-            return m_quaternion.m_elements.m_z;
-        }
-        ValueType& getW()
-        {
-            return m_quaternion.m_elements.m_w;
+            return m_vector.getW();
         }
         void setX(ValueType _value)
         {
-            m_quaternion.m_elements.m_x = _value;
+            m_vector.setX(_value);
         }
         void setY(ValueType _value)
         {
-            m_quaternion.m_elements.m_y = _value;
+            m_vector.setY(_value);
         }
         void setZ(ValueType _value)
         {
-            m_quaternion.m_elements.m_z = _value;
+            m_vector.setZ(_value);
         }
         void setW(ValueType _value)
         {
-            m_quaternion.m_elements.m_w = _value;
+            m_vector.setW(_value);
         }
 
         const ComputeVector4Base<ValueType>& getVector() const
         {
-            return m_xyzw;
+            return m_vector;
         }
         ComputeVector4Base<ValueType>& getVector()
         {
-            return m_xyzw;
+            return m_vector;
         }
-        const ComputeVector3Base<ValueType>& getXYZ() const
+        ComputeVector3Base<ValueType> getXYZ() const
         {
-            return m_xyz;
+            return m_vector.getXYZ();
         }
-        ComputeVector3Base<ValueType>& getXYZ()
+        void setXYZ(const ComputeVector3Base<ValueType>& _vector)
         {
-            return m_xyz;
+            m_vector.setXYZ(_vector);
         }
 
         ValueType getLength() const;
@@ -182,12 +152,13 @@ namespace ego
     ComputeQuaternionBase<T> ConjugateComputeQuaternion(const ComputeQuaternionBase<T>& _quaternion);
 
     template <typename T>
-    constexpr ComputeQuaternionBase<T> ComputeQuaternionZeroBase()
+    ComputeQuaternionBase<T> ComputeQuaternionZeroBase()
     {
         return ComputeQuaternionBase<T>(T(0.0), T(0.0), T(0.0), T(0.0));
     }
+
     template <typename T>
-    constexpr ComputeQuaternionBase<T> ComputeQuaternionIdentityBase()
+    ComputeQuaternionBase<T> ComputeQuaternionIdentityBase()
     {
         return ComputeQuaternionBase<T>(T(0.0), T(0.0), T(0.0), T(1.0));
     }
@@ -201,8 +172,8 @@ namespace ego
     using ComputeQuaternion = ComputeQuaternionBase<ComputeValueType>;
     using FloatComputeQuaternion = ComputeQuaternionBase<float>;
 
-    inline constexpr ComputeQuaternion ComputeQuaternionZero = ComputeQuaternionZeroBase<ComputeValueType>();
-    inline constexpr ComputeQuaternion ComputeQuaternionIdentity = ComputeQuaternionIdentityBase<ComputeValueType>();
+    inline const ComputeQuaternion ComputeQuaternionZero = ComputeQuaternionZeroBase<ComputeValueType>();
+    inline const ComputeQuaternion ComputeQuaternionIdentity = ComputeQuaternionIdentityBase<ComputeValueType>();
 } // namespace ego
 
 #include "ComputeQuaternion.hpp"

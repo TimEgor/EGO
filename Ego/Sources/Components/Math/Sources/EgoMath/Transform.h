@@ -17,7 +17,7 @@ namespace ego
         {
         }
 
-        const ComputeVector3& getAxisX() const
+        ComputeVector3 getAxisX() const
         {
             return m_matrix.getColumn(0).getXYZ();
         }
@@ -25,7 +25,7 @@ namespace ego
         {
             m_matrix.getColumn(0).setXYZ(axis);
         }
-        const ComputeVector3& getAxisY() const
+        ComputeVector3 getAxisY() const
         {
             return m_matrix.getColumn(1).getXYZ();
         }
@@ -33,7 +33,7 @@ namespace ego
         {
             m_matrix.getColumn(1).setXYZ(axis);
         }
-        const ComputeVector3& getAxisZ() const
+        ComputeVector3 getAxisZ() const
         {
             return m_matrix.getColumn(2).getXYZ();
         }
@@ -41,7 +41,7 @@ namespace ego
         {
             m_matrix.getColumn(2).setXYZ(axis);
         }
-        const ComputeVector3& getOrigin() const
+        ComputeVector3 getOrigin() const
         {
             return m_matrix.getColumn(3).getXYZ();
         }

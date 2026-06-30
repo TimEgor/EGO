@@ -1,9 +1,11 @@
 #pragma once
 
-#include <numbers>
-#include <limits>
-#include <utility>
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
+#include <numbers>
+#include <utility>
 
 #include "EgoCore/Assert/AssertCore.h"
 
@@ -130,7 +132,7 @@ namespace ego
             T _epsilon = TypedEpsilon<T>()) // is value1 less or equal than value2
         {
             EGO_ASSERT(_epsilon > T(0.0));
-            return (_value2 - _value1) >= _epsilon;
+            return (_value1 - _value2) <= _epsilon;
         }
 
         template <typename T>
@@ -147,7 +149,7 @@ namespace ego
             T _epsilon = TypedEpsilon<T>()) // is value1 greater or equal than value2
         {
             EGO_ASSERT(_epsilon > T(0.0));
-            return (_value1 - _value2) >= _epsilon;
+            return (_value2 - _value1) <= _epsilon;
         }
 
         template <typename T>
@@ -158,4 +160,4 @@ namespace ego
     } // namespace math
 } // namespace ego
 
-using namespace ego::literals;
+#include "Simd/ComputeOperations.h"

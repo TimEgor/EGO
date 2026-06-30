@@ -1,6 +1,9 @@
 #pragma once
 
 #include <complex>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 #include <vector>
 
 #include "ComputeMath.h"
@@ -170,7 +173,7 @@ namespace ego
               m_w(_vector2.m_y)
         {
         }
-        constexpr Vector4Base(const Vector2Base<ValueType>& _vector, float _z, float _w)
+        constexpr Vector4Base(const Vector2Base<ValueType>& _vector, ValueType _z, ValueType _w)
             : m_x(_vector.m_x),
               m_y(_vector.m_y),
               m_z(_z),
@@ -184,7 +187,7 @@ namespace ego
               m_w(DefaultValue)
         {
         }
-        constexpr Vector4Base(const Vector3Base<ValueType>& _vector, float _w)
+        constexpr Vector4Base(const Vector3Base<ValueType>& _vector, ValueType _w)
             : m_x(_vector.m_x),
               m_y(_vector.m_y),
               m_z(_vector.m_z),

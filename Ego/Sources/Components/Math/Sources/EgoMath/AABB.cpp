@@ -13,7 +13,7 @@ ego::AABB3& ego::AABB3::merge(const AABB3& _volume)
 ego::Transform ego::AABB3::getTransform() const
 {
     const ComputeVector3 delta = m_maxPosition - m_minPosition;
-    const ComputeVector3 size = delta * 0.5f;
+    const ComputeVector3 size = delta * ComputeValue(0.5);
     const ComputeVector3 center = m_minPosition + size;
 
     Transform transform;
@@ -39,7 +39,7 @@ bool ego::AABB3::isContained(const AABB3& _volume) const
 
 bool ego::AABB3::isOverlapped(const AABB3& _volume) const
 {
-    return !(m_maxPosition.isAnyLess(_volume.m_minPosition)) || m_minPosition.isAnyGreater(_volume.m_maxPosition);
+    return !m_maxPosition.isAnyLess(_volume.m_minPosition) && !m_minPosition.isAnyGreater(_volume.m_maxPosition);
 }
 
 ego::AABB3 ego::AABBFromMerging(const AABB3& _volume1, const AABB3& _volume2)

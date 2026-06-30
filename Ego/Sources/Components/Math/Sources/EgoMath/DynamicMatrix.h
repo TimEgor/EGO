@@ -1,5 +1,11 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
+#include <limits>
+#include <type_traits>
+#include <vector>
+
 #include "DynamicVector.h"
 
 namespace ego
@@ -9,6 +15,7 @@ namespace ego
     {
     public:
         using ValueType = T;
+        using ValueContainer = std::vector<ValueType>;
         using RowType = DynamicVectorBase<ValueType>;
         using RowContainer = std::vector<RowType>;
 
@@ -17,7 +24,13 @@ namespace ego
         static constexpr ValueType DefaultValue = 0;
 
     private:
-        RowContainer m_values;
+        size_t m_rowCount = 0;
+        size_t m_columnCount = 0;
+        ValueContainer m_values;
+        RowContainer m_rows;
+
+        size_t getElementIndex(size_t _row, size_t _column) const;
+        void rebuildRows();
 
     public:
         DynamicMatrixBase() = default;

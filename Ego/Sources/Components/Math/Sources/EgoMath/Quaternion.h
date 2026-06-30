@@ -27,6 +27,8 @@ namespace ego
 
     using FloatQuaternion = QuaternionBase<float>;
 
+    static_assert(sizeof(FloatQuaternion) == sizeof(FloatVector4));
+
     inline constexpr auto FloatQuaternionZero = FloatQuaternion(0.0f, 0.0f, 0.0f, 0.0f);
     inline constexpr auto FloatQuaternionIdentity = FloatQuaternion(0.0f, 0.0f, 0.0f, 1.0f);
 } // namespace ego

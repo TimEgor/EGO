@@ -1,8 +1,12 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <span>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace ego
@@ -13,6 +17,8 @@ namespace ego
     public:
         using ValueType = T;
         using ValueContainer = std::vector<ValueType>;
+        using ValueView = std::span<ValueType>;
+        using ConstValueView = std::span<const ValueType>;
 
         static_assert(std::is_arithmetic_v<ValueType>);
 
@@ -20,11 +26,18 @@ namespace ego
 
     private:
         ValueContainer m_values;
+        ValueView m_view;
+
+        bool isView() const;
+        ValueView getValues();
+        ConstValueView getValues() const;
+        void assignValues(ConstValueView _values);
 
     public:
         DynamicVectorBase() = default;
         DynamicVectorBase(size_t _dimension);
         DynamicVectorBase(ValueContainer&& _values);
+        DynamicVectorBase(ValueView _values);
         DynamicVectorBase(const DynamicVectorBase& _vector);
         DynamicVectorBase(DynamicVectorBase&& _vector);
 
