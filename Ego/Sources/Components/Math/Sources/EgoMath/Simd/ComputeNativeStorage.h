@@ -2,11 +2,62 @@
 
 #include <cstdint>
 
-#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 2)))
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE__) || defined(__SSE2__) || defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(_M_AVX) || defined(_M_AVX512) || defined(_M_X64) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 1)))
     #include <immintrin.h>
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__AVX512F__) || defined(_M_AVX512))
+    #define EGO_MATH_SIMD_AVX512 1
+#else
+    #define EGO_MATH_SIMD_AVX512 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__AVX2__) || (defined(_M_AVX) && (_M_AVX >= 2)))
+    #define EGO_MATH_SIMD_AVX2 1
+#else
+    #define EGO_MATH_SIMD_AVX2 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__AVX__) || defined(_M_AVX) || EGO_MATH_SIMD_AVX2 || EGO_MATH_SIMD_AVX512)
+    #define EGO_MATH_SIMD_AVX 1
+#else
+    #define EGO_MATH_SIMD_AVX 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE4_2__) || EGO_MATH_SIMD_AVX)
+    #define EGO_MATH_SIMD_SSE4_2 1
+#else
+    #define EGO_MATH_SIMD_SSE4_2 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE4_1__) || EGO_MATH_SIMD_SSE4_2)
+    #define EGO_MATH_SIMD_SSE4_1 1
+#else
+    #define EGO_MATH_SIMD_SSE4_1 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSSE3__) || EGO_MATH_SIMD_SSE4_1)
+    #define EGO_MATH_SIMD_SSSE3 1
+#else
+    #define EGO_MATH_SIMD_SSSE3 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE3__) || EGO_MATH_SIMD_SSSE3)
+    #define EGO_MATH_SIMD_SSE3 1
+#else
+    #define EGO_MATH_SIMD_SSE3 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 2)) || EGO_MATH_SIMD_SSE3)
     #define EGO_MATH_SIMD_SSE2 1
 #else
     #define EGO_MATH_SIMD_SSE2 0
+#endif
+
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE__) || defined(_M_X64) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 1)) || EGO_MATH_SIMD_SSE2)
+    #define EGO_MATH_SIMD_SSE 1
+#else
+    #define EGO_MATH_SIMD_SSE 0
 #endif
 
 namespace ego
@@ -23,15 +74,18 @@ namespace ego
                 T m_elements[NativeComputeVectorElementCount];
             };
 
-#if EGO_MATH_SIMD_SSE2
+#if EGO_MATH_SIMD_SSE
             inline constexpr uint32_t Float32x4ElementCount = 4;
-            inline constexpr uint32_t Float64x2ElementCount = 2;
 
             template <>
             struct NativeComputeVectorStorage<float>
             {
                 __m128 m_value;
             };
+#endif
+
+#if EGO_MATH_SIMD_SSE2
+            inline constexpr uint32_t Float64x2ElementCount = 2;
 
             template <>
             struct NativeComputeVectorStorage<double>
@@ -59,7 +113,7 @@ namespace ego
                 _values.m_elements[_index] = _value;
             }
 
-#if EGO_MATH_SIMD_SSE2
+#if EGO_MATH_SIMD_SSE
             inline NativeComputeVectorStorage<float> MakeNativeComputeVectorStorage(float _x, float _y, float _z, float _w)
             {
                 NativeComputeVectorStorage<float> result;
@@ -67,7 +121,9 @@ namespace ego
 
                 return result;
             }
+#endif
 
+#if EGO_MATH_SIMD_SSE2
             inline NativeComputeVectorStorage<double> MakeNativeComputeVectorStorage(double _x, double _y, double _z, double _w)
             {
                 NativeComputeVectorStorage<double> result;
@@ -76,7 +132,9 @@ namespace ego
 
                 return result;
             }
+#endif
 
+#if EGO_MATH_SIMD_SSE
             inline float GetNativeComputeVectorElement(const NativeComputeVectorStorage<float>& _values, uint32_t _index)
             {
                 alignas(16) float values[Float32x4ElementCount];
@@ -84,7 +142,9 @@ namespace ego
 
                 return values[_index];
             }
+#endif
 
+#if EGO_MATH_SIMD_SSE2
             inline double GetNativeComputeVectorElement(const NativeComputeVectorStorage<double>& _values, uint32_t _index)
             {
                 alignas(16) double values[Float64x2ElementCount];
@@ -97,7 +157,9 @@ namespace ego
                 _mm_store_pd(values, _values.m_highValue);
                 return values[_index - Float64x2ElementCount];
             }
+#endif
 
+#if EGO_MATH_SIMD_SSE
             inline void SetNativeComputeVectorElement(NativeComputeVectorStorage<float>& _values, uint32_t _index, float _value)
             {
                 alignas(16) float values[Float32x4ElementCount];
@@ -105,7 +167,9 @@ namespace ego
                 values[_index] = _value;
                 _values.m_value = _mm_load_ps(values);
             }
+#endif
 
+#if EGO_MATH_SIMD_SSE2
             inline void SetNativeComputeVectorElement(NativeComputeVectorStorage<double>& _values, uint32_t _index, double _value)
             {
                 alignas(16) double values[Float64x2ElementCount];
