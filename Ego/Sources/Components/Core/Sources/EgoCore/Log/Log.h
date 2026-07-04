@@ -1,12 +1,11 @@
 #pragma once
 
-#include "EgoCore/Patterns/Singleton.h"
-#include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/UtilsMacros.h"
-
 #include <cstdint>
 #include <mutex>
 #include <string_view>
+
+#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/UtilsMacros.h"
 
 #ifndef EGO_ENABLE_LOGS
     #if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE)
@@ -37,21 +36,6 @@ namespace ego::log
     EGO_POINTER(Logger);
 
     LoggerPointer CreateDefaultLogger();
-
-    class LogCore final : public Singleton<LogCore>
-    {
-    public:
-        LogCore();
-
-        void setLogger(const LoggerPointer& _logger);
-        LoggerPointer getLogger() const;
-        LoggerPointer getIdeLogger() const;
-
-    private:
-        mutable std::mutex m_lock;
-        LoggerPointer m_ideLogger;
-        LoggerPointer m_logger;
-    };
 
     LoggerPointer GetLogger();
 

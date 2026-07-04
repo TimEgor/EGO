@@ -123,36 +123,18 @@ function(ego_add_demo_plugin TARGET_NAME)
 endfunction()
 
 function(ego_setup_launch_args TARGET_NAME)
+    set(ONE_VALUE_ARGS PROJECT_FILE)
+    cmake_parse_arguments(EGO_LAUNCH "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+
+    if (EGO_LAUNCH_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "ego_setup_launch_args received unknown arguments: ${EGO_LAUNCH_UNPARSED_ARGUMENTS}")
+    endif()
+
     set(DEBUG_ARGS)
-
-    if (NOT DEFINED EGO_PLATFORM_PLUGIN)
-        set(EGO_PLATFORM_PLUGIN)
-
-        if (WIN32)
-            set(EGO_PLATFORM_PLUGIN "$<TARGET_FILE:EgoWin32Platform>")
-            if (TARGET EgoWin32Platform)
-                add_dependencies(${TARGET_NAME} EgoWin32Platform)
-            endif()
-        endif()
-    endif()
-
-    if (NOT "${EGO_PLATFORM_PLUGIN}" STREQUAL "")
-        string(APPEND DEBUG_ARGS " --platform=\"${EGO_PLATFORM_PLUGIN}\"")
-    endif()
-
-    if (NOT DEFINED EGO_WINDOW_SYSTEM_PLUGIN)
-        set(EGO_WINDOW_SYSTEM_PLUGIN)
-
-        if (WIN32)
-            set(EGO_WINDOW_SYSTEM_PLUGIN "$<TARGET_FILE:EgoWin32WindowSystem>")
-            if (TARGET EgoWin32WindowSystem)
-                add_dependencies(${TARGET_NAME} EgoWin32WindowSystem)
-            endif()
-        endif()
-    endif()
-
-    if (NOT "${EGO_WINDOW_SYSTEM_PLUGIN}" STREQUAL "")
-        string(APPEND DEBUG_ARGS " --windowSystem=\"${EGO_WINDOW_SYSTEM_PLUGIN}\"")
+    if (DEFINED EGO_PLUGIN_DIRECTORY)
+        set(EGO_LAUNCH_PLUGIN_DIRECTORY "${EGO_PLUGIN_DIRECTORY}")
+    else()
+        set(EGO_LAUNCH_PLUGIN_DIRECTORY "${CMAKE_BINARY_DIR}/Ego/Sources/Plugins")
     endif()
 
     if (NOT DEFINED EGO_PROFILER_PLUGIN)
@@ -179,19 +161,31 @@ function(ego_setup_launch_args TARGET_NAME)
         string(APPEND DEBUG_ARGS " --render=\"${EGO_RENDER_PLUGIN}\"")
     endif()
 
-    if (NOT DEFINED EGO_RENDER_HARDWARE_PLUGIN)
-        set(EGO_RENDER_HARDWARE_PLUGIN)
+    if (NOT DEFINED EGO_GRAPHIC_HARDWARE_PLUGIN)
+        set(EGO_GRAPHIC_HARDWARE_PLUGIN)
 
         if (WIN32)
-            set(EGO_RENDER_HARDWARE_PLUGIN "$<TARGET_FILE:EgoD3D12RenderHardware>")
-            if (TARGET EgoD3D12RenderHardware)
-                add_dependencies(${TARGET_NAME} EgoD3D12RenderHardware)
+            set(EGO_GRAPHIC_HARDWARE_PLUGIN "$<TARGET_FILE:EgoD3D12GraphicHardware>")
+            if (TARGET EgoD3D12GraphicHardware)
+                add_dependencies(${TARGET_NAME} EgoD3D12GraphicHardware)
             endif()
         endif()
     endif()
 
-    if (NOT "${EGO_RENDER_HARDWARE_PLUGIN}" STREQUAL "")
-        string(APPEND DEBUG_ARGS " --renderHardware=\"${EGO_RENDER_HARDWARE_PLUGIN}\"")
+    if (NOT "${EGO_GRAPHIC_HARDWARE_PLUGIN}" STREQUAL "")
+        string(APPEND DEBUG_ARGS " --graphicHardware=\"${EGO_GRAPHIC_HARDWARE_PLUGIN}\"")
+    endif()
+
+    if (TARGET EgoDXCResourceProvider)
+        add_dependencies(${TARGET_NAME} EgoDXCResourceProvider)
+    endif()
+
+    if (NOT "${EGO_LAUNCH_PLUGIN_DIRECTORY}" STREQUAL "")
+        string(APPEND DEBUG_ARGS " --pluginDirectory=\"${EGO_LAUNCH_PLUGIN_DIRECTORY}\"")
+    endif()
+
+    if (EGO_LAUNCH_PROJECT_FILE)
+        string(APPEND DEBUG_ARGS " --project=\"${EGO_LAUNCH_PROJECT_FILE}\"")
     endif()
 
     if (MSVC)

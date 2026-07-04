@@ -1,11 +1,11 @@
 #pragma once
 
-#include "MTCountable.h"
-
 #include <cstddef>
 #include <functional>
 #include <type_traits>
 #include <utility>
+
+#include "MTCountable.h"
 
 namespace ego
 {

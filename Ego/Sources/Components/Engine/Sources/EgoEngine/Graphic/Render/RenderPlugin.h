@@ -1,7 +1,6 @@
 #pragma once
 
 #include "EgoEngine/Plugin/EnginePlugin.h"
-
 #include "Render.h"
 
 namespace ego::render

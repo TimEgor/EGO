@@ -1,11 +1,12 @@
 #include "Log.h"
 
-#include "EgoCore/UtilsMacros.h"
-
 #include <algorithm>
 #include <iostream>
 #include <limits>
 #include <string>
+
+#include "EgoCore/Context/DiagnosticContext.h"
+#include "EgoCore/UtilsMacros.h"
 
 #if defined(WIN32) || defined(_WIN32)
     #ifndef NOMINMAX
@@ -125,32 +126,24 @@ ego::log::LoggerPointer ego::log::CreateDefaultLogger()
     return new DefaultLogger();
 }
 
-ego::log::LogCore::LogCore()
-    : m_ideLogger(CreateDefaultLogger())
+namespace
 {
-}
-
-void ego::log::LogCore::setLogger(const LoggerPointer& _logger)
-{
-    std::lock_guard lock(m_lock);
-    m_logger = _logger;
-}
-
-ego::log::LoggerPointer ego::log::LogCore::getLogger() const
-{
-    std::lock_guard lock(m_lock);
-    return m_logger;
-}
-
-ego::log::LoggerPointer ego::log::LogCore::getIdeLogger() const
-{
-    std::lock_guard lock(m_lock);
-    return m_ideLogger;
-}
+    ego::log::LoggerPointer GetDefaultLogger()
+    {
+        static const ego::log::LoggerPointer Logger = ego::log::CreateDefaultLogger();
+        return Logger;
+    }
+} // namespace
 
 ego::log::LoggerPointer ego::log::GetLogger()
 {
-    return LogCore::GetInstance().getLogger();
+    const context::DiagnosticContextPointer diagnosticContext = context::GetDiagnosticContextPointer();
+    if (diagnosticContext && diagnosticContext->getLogger())
+    {
+        return diagnosticContext->getLogger();
+    }
+
+    return nullptr;
 }
 
 const char* ego::log::GetLogCategoryName(LogCategory _category)
@@ -171,14 +164,13 @@ const char* ego::log::GetLogCategoryName(LogCategory _category)
 void ego::log::Write(LogCategory _category, std::string_view _message, const char* _file, uint32_t _line)
 {
 #if EGO_ENABLE_LOGS
-    LogCore& core = LogCore::GetInstance();
-    const LoggerPointer ideLogger = core.getIdeLogger();
+    const LoggerPointer ideLogger = GetDefaultLogger();
     if (ideLogger)
     {
         ideLogger->write(_category, _message, _file, _line);
     }
 
-    const LoggerPointer logger = core.getLogger();
+    const LoggerPointer logger = GetLogger();
     if (logger && logger.get() != ideLogger.get())
     {
         logger->write(_category, _message, _file, _line);

@@ -1,18 +1,18 @@
 #pragma once
 
+#include <cstddef>
+#include <utility>
+#include <vector>
+
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 
-#include "Components/LevelComponent.h"
-#include "Components/SceneNodeComponent.h"
-
 #include "EgoECS/Entity.h"
 #include "EgoECS/World.h"
 
-#include <cstddef>
-#include <utility>
-#include <vector>
+#include "Components/LevelComponent.h"
+#include "Components/SceneNodeComponent.h"
 
 namespace ego
 {

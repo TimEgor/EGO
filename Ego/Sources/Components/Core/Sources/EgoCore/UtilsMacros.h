@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cstdint"
+#include <cstdint>
 
 #define EGO_TO_STRING(_S) #_S
 #define EGO_TO_STRING_DEF(_DEF) EGO_TO_STRING(_DEF)
@@ -27,11 +27,11 @@
     {                                                                                                                                                                              \
         _FUNCTION;                                                                                                                                                                 \
     }
-#define EGO_CHECK_INITIALIZATION(_CHECK_VAL)                                                                                                                                       \
+#define EGO_CHECK_RETURN_CALL_VALUE(_CHECK_VAL, _FUNCTION, _VALUE)                                                                                                                 \
     if (!(_CHECK_VAL))                                                                                                                                                             \
     {                                                                                                                                                                              \
-        release();                                                                                                                                                                 \
-        return false;                                                                                                                                                              \
+        _FUNCTION;                                                                                                                                                                 \
+        return _VALUE;                                                                                                                                                             \
     }
 #define EGO_CHECK_RETURN_VALUE(_CHECK_VAL, _VALUE)                                                                                                                                 \
     if (!(_CHECK_VAL))                                                                                                                                                             \
@@ -43,8 +43,17 @@
     {                                                                                                                                                                              \
         return;                                                                                                                                                                    \
     }
+#define EGO_CHECK_RETURN_CALL(_CHECK_VAL, _FUNCTION)                                                                                                                               \
+    if (!(_CHECK_VAL))                                                                                                                                                             \
+    {                                                                                                                                                                              \
+        _FUNCTION;                                                                                                                                                                 \
+        return;                                                                                                                                                                    \
+    }
+#define EGO_CHECK_INITIALIZATION(_CHECK_VAL) EGO_CHECK_RETURN_CALL_VALUE(_CHECK_VAL, release(), false)
 #define EGO_CHECK_RETURN_FALSE(_CHECK_VAL) EGO_CHECK_RETURN_VALUE(_CHECK_VAL, false)
 #define EGO_CHECK_RETURN_NULL(_CHECK_VAL) EGO_CHECK_RETURN_VALUE(_CHECK_VAL, nullptr)
+#define EGO_CHECK_RETURN_CALL_FALSE(_CHECK_VAL, _FUNCTION) EGO_CHECK_RETURN_CALL_VALUE(_CHECK_VAL, _FUNCTION, false)
+#define EGO_CHECK_RETURN_CALL_NULL(_CHECK_VAL, _FUNCTION) EGO_CHECK_RETURN_CALL_VALUE(_CHECK_VAL, _FUNCTION, nullptr)
 
 #define EGO_SAFE_DESTROY(_OBJ)                                                                                                                                                     \
     {                                                                                                                                                                              \

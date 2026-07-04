@@ -1,12 +1,11 @@
 #pragma once
 
-#include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Patterns/Singleton.h"
-#include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/UtilsMacros.h"
-
 #include <atomic>
 #include <mutex>
+
+#include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/UtilsMacros.h"
 
 #ifndef EGO_ENABLE_PROFILING
     #if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE) || defined(EGO_CONFIG_PROFILE)
@@ -50,18 +49,6 @@ namespace ego::profile
     };
 
     EGO_POINTER(ProfilerController);
-
-    class ProfileCore final : public Singleton<ProfileCore>
-    {
-    public:
-        ProfileCore();
-
-        void setController(const ProfilerControllerPointer& _controller);
-        ProfilerControllerPointer getController() const;
-
-    private:
-        ProfilerControllerPointer m_controller = nullptr;
-    };
 
     ProfilerControllerPointer GetProfilerController();
 

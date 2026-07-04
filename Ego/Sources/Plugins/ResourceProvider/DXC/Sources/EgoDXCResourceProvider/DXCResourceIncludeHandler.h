@@ -5,8 +5,7 @@
 #include <vector>
 
 #include "EgoCore/FileName/FileName.h"
-
-#include "EgoEngine/Platform/FileSystem/FileSystem.h"
+#include "EgoCore/Platform/FileSystem/FileSystem.h"
 
 #include <Windows.h>
 #include <Unknwn.h>

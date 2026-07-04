@@ -2,16 +2,17 @@
 
 #include <string>
 
+#include "EgoCore/Context/ContextStack.h"
+#include "EgoCore/Context/PlatformContext.h"
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoPlugin/PluginModule.h"
+#include "EgoRuntime/Plugin/PluginModule.h"
+#include "EgoRuntime/Resource/ResourceController.h"
+#include "EgoRuntime/RuntimeContext.h"
 
-#include "EgoEngine/Engine.h"
-#include "EgoEngine/Platform/Platform.h"
 #include "EgoEngine/Resources/GeneralResources/XmlResource.h"
-#include "EgoEngine/Resources/Resource/ResourceController.h"
 
 #include "DefaultRenderConstants.h"
 
@@ -36,14 +37,14 @@ ego::render::DefaultRenderFileSystems::~DefaultRenderFileSystems()
 
 bool ego::render::DefaultRenderFileSystems::loadAssetsRootPath(FileName& _assetsRootPath)
 {
-    const PluginModuleInfo& moduleInfo = PluginModuleCore::GetInstance().getInfo();
+    const PluginModuleInfo& moduleInfo = GetPluginModuleState().getInfo();
     const FileName pluginDirectoryPath = file_name_utils::GetFileDirPath(moduleInfo.m_modulePath);
     EGO_CHECK_RETURN_FALSE(pluginDirectoryPath);
 
     RootedFileSystemPointer configFileSystem = CreateFileSystem(pluginDirectoryPath);
     EGO_CHECK_RETURN_FALSE(configFileSystem);
 
-    ResourceController& resourceController = engine::GetEngine().getResourceController();
+    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
     resourceController.addFileSystem(configFileSystem);
 
     const XmlResourcePointer configResource = resourceController.load<XmlResource>(DefaultRenderConfigPath);
@@ -58,7 +59,7 @@ bool ego::render::DefaultRenderFileSystems::initAssetsFileSystem(const FileName&
 {
     EGO_CHECK_RETURN_FALSE(_assetsRootPath);
 
-    ResourceController& resourceController = engine::GetEngine().getResourceController();
+    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
     if (m_assetsFileSystem)
     {
         resourceController.removeFileSystem(m_assetsFileSystem);
@@ -76,15 +77,16 @@ bool ego::render::DefaultRenderFileSystems::initAssetsFileSystem(const FileName&
 
 void ego::render::DefaultRenderFileSystems::release()
 {
-    const engine::EnginePointer engine = engine::EngineCore::GetInstance().getEngine();
+    const context::RuntimeContextPointer runtimeContext = context::GetRuntimeContextPointer();
+    const ResourceControllerPointer resourceController = runtimeContext ? runtimeContext->getResourceControllerPointer() : nullptr;
     if (!m_assetsFileSystem)
     {
         return;
     }
 
-    if (engine)
+    if (resourceController)
     {
-        engine->getResourceController().removeFileSystem(m_assetsFileSystem);
+        resourceController->removeFileSystem(m_assetsFileSystem);
     }
 
     m_assetsFileSystem->release();
@@ -93,7 +95,13 @@ void ego::render::DefaultRenderFileSystems::release()
 
 ego::RootedFileSystemPointer ego::render::DefaultRenderFileSystems::CreateFileSystem(const FileName& _rootPath)
 {
-    RootedFileSystemPointer fileSystem = new RootedFileSystem(engine::GetEngine().getPlatform().getFileSystem(), _rootPath);
+    const PlatformPointer platform = context::GetPlatformPointer();
+    EGO_CHECK_RETURN_NULL(platform);
+
+    const FileSystemPointer sourceFileSystem = platform->getFileSystem();
+    EGO_CHECK_RETURN_NULL(sourceFileSystem);
+
+    RootedFileSystemPointer fileSystem = new RootedFileSystem(sourceFileSystem, _rootPath);
     if (!fileSystem)
     {
         return nullptr;

@@ -3,9 +3,9 @@
 #include <string>
 
 #include "EgoCore/FileName/FileName.h"
+#include "EgoCore/Platform/FileSystem/FileSystem.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
-#include "EgoEngine/Platform/FileSystem/FileSystem.h"
+#include "EgoGraphicHardware/GraphicObjects/Shader.h"
 
 struct IDxcResult;
 

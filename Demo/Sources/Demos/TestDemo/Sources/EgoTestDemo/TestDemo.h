@@ -6,11 +6,11 @@
 #include "EgoEngine/Graphic/Render/Resources/MeshResource.h"
 #include "EgoEngine/Level/Level.h"
 
-#include "EgoFramework/GameLogic.h"
+#include "EgoEngineFramework/EngineLogic.h"
 
 namespace ego::demo
 {
-    class TestDemo final : public framework::GameLogic
+    class TestDemo final : public engine_framework::EngineLogic
     {
     public:
         TestDemo() = default;

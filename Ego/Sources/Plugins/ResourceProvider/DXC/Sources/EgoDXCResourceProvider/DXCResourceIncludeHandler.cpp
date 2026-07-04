@@ -1,13 +1,13 @@
+#include "DXCResourceIncludeHandler.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <limits>
 
-#include "DXCResourceIncludeHandler.h"
-
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/String/StringConverter.h"
 
-#include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
+#include "EgoRuntime/Resource/ResourceLoadingContext.h"
 
 namespace ego::resources::dxc
 {

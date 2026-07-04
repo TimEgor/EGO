@@ -1,8 +1,5 @@
 #pragma once
 
-#include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/Memory/Utils.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -12,6 +9,9 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Memory/Utils.h"
 
 namespace ego::detail
 {

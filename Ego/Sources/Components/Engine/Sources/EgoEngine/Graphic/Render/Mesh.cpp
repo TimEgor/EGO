@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicDevice.h"
 
 namespace
 {

@@ -4,7 +4,7 @@
 
 #include "EgoCore/Hash/HashCombine.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicDevice.h"
 
 uint64_t ego::render::RenderPipelineStateCache::HashPointer(const void* _pointer)
 {

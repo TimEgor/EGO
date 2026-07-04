@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "EgoEngine/Graphic/Render/RenderObject.h"
-#include "EgoEngine/Resources/Resource/Resource.h"
+#include "EgoRuntime/Resource/Resource.h"
 
 namespace ego
 {

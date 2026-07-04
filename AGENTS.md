@@ -45,10 +45,10 @@
 
 ## Includes
 - In source files that have a corresponding header, include that header first, in its own include group, before all other includes.
-- When adding or changing `#include` directives, keep them grouped with one blank line between groups.
+- When adding or changing `#include` directives, keep them grouped with one blank line between groups and between component/module subgroups.
 - Include groups are ordered as follows:
   1. Standard library headers.
-  2. Project headers, grouped by dependency direction: lower-level/base modules first, then modules that depend on them. Apply this consistently across components, plugins, launchers, and demos.
+  2. Ego project headers, grouped by dependency direction and the current component/module hierarchy: lower-level/base components first, then components that depend on them, then the current component, plugin, launcher, or demo. Treat all headers from the same component/module as one subgroup with no blank lines inside it; separate different component/module subgroups with one blank line.
   3. Third-party library headers.
 - Keep includes within each group sorted consistently with the surrounding file.
 - Do not move third-party includes above standard library or Ego project includes.

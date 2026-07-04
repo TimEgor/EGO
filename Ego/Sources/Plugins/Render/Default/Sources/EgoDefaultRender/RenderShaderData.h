@@ -5,7 +5,7 @@
 #include "EgoMath/Matrix.h"
 #include "EgoMath/Vector.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Shader.h"
+#include "EgoGraphicHardware/GraphicObjects/Shader.h"
 
 namespace ego::render
 {

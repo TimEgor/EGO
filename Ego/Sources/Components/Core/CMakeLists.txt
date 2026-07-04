@@ -14,3 +14,15 @@ target_link_libraries(
         PUBLIC
             Ego::ThirdParty::PugiXML
 )
+
+if (WIN32)
+    target_compile_definitions(EgoCore PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+
+    target_link_libraries(
+        EgoCore
+            PRIVATE
+                Comdlg32
+                Gdi32
+                User32
+    )
+endif()

@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/GraphicResource.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ResourceView.h"
+#include "EgoGraphicHardware/GraphicObjects/GraphicResource.h"
+#include "EgoGraphicHardware/GraphicObjects/ResourceView.h"
 
 namespace ego::render
 {

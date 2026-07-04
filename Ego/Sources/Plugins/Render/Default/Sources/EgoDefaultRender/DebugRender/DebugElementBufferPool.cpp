@@ -5,7 +5,7 @@
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoGraphicHardware/GraphicHardwareContext.h"
 
 ego::render::DebugElementBufferPool::~DebugElementBufferPool()
 {
@@ -106,7 +106,7 @@ const ego::render::RenderBuffer& ego::render::DebugElementBufferPool::getBuffer(
 
 ego::render::RenderBuffer ego::render::DebugElementBufferPool::createNewBuffer() const
 {
-    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
     return graphicDevice.createBuffer(m_bufferDesc);
 }
 

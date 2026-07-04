@@ -5,9 +5,9 @@
 #include <limits>
 #include <string>
 
-#include "DXCResourceIncludeHandler.h"
-
 #include "EgoCore/String/StringConverter.h"
+
+#include "DXCResourceIncludeHandler.h"
 
 #include <Windows.h>
 #include <Unknwn.h>

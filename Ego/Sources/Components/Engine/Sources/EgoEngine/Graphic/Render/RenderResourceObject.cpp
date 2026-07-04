@@ -1,6 +1,6 @@
 #include "RenderResourceObject.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ShaderResource.h"
+#include "EgoGraphicHardware/Resources/ShaderResource.h"
 
 ego::render::RenderShader ego::render::CreateShaderHandler(const SharedPointer<gpu::ShaderResource>& _resource)
 {

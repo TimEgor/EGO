@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EgoECS/Component.h"
+
 #include "EgoMath/ComputeMatrix44.h"
 
 namespace ego::render

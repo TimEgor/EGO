@@ -7,5 +7,4 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../CMake/EgoProject.cmake")
 ego_setup_project()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Components)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Tools)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Plugins)

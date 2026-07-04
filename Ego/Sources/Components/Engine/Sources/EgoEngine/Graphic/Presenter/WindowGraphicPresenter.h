@@ -1,10 +1,9 @@
 #pragma once
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/CommandQueue.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/SwapChain.h"
-#include "EgoEngine/Graphic/RenderHardware/PresentationSurface.h"
-
+#include "EgoGraphicHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicObjects/CommandQueue.h"
+#include "EgoGraphicHardware/GraphicObjects/SwapChain.h"
+#include "EgoGraphicHardware/PresentationSurface.h"
 #include "GraphicPresenter.h"
 
 namespace ego

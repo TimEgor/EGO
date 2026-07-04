@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "EgoEngine/Graphic/Render/RenderGpuObject.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicDevice.h"
 
 namespace ego::render
 {

@@ -14,7 +14,7 @@ target_link_libraries(
     EgoDemoLauncherWin32
         PRIVATE
             Ego::Application
-            Ego::Framework
+            Ego::EngineFramework
 )
 
 if (TARGET EgoTestDemo)

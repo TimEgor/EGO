@@ -1,8 +1,7 @@
 #pragma once
 
 #include "EgoCore/FileName/FileName.h"
-
-#include "EgoEngine/Platform/FileSystem/RootedFileSystem.h"
+#include "EgoCore/Platform/FileSystem/RootedFileSystem.h"
 
 namespace ego::render
 {

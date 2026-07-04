@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoPlugin/Plugin.h"
+#include "EgoRuntime/Plugin/Plugin.h"
 
 namespace ego::engine
 {

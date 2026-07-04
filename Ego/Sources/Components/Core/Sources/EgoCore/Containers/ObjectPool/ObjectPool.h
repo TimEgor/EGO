@@ -1,9 +1,9 @@
 #pragma once
 
+#include <cstddef>
+
 #include "ObjectPoolHandle.h"
 #include "ObjectPoolStorage.h"
-
-#include <cstddef>
 
 namespace ego
 {

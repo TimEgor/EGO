@@ -1,13 +1,17 @@
 #include "TestDemo.h"
 
+#include "EgoCore/Context/ContextStack.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoMath/ComputeQuaternion.h"
 
+#include "EgoRuntime/Resource/ResourceController.h"
+#include "EgoRuntime/RuntimeContext.h"
+
 #include "EgoEngine/Engine.h"
+#include "EgoEngine/EngineContext.h"
 #include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
-#include "EgoEngine/Resources/Resource/ResourceController.h"
 
 namespace
 {
@@ -22,7 +26,7 @@ namespace
 bool ego::demo::TestDemo::init()
 {
     engine::Engine& engine = engine::GetEngine();
-    ResourceController& resourceController = engine.getResourceController();
+    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
 
     m_triangleMesh = resourceController.load<render::MeshResource>("TestTriangle.mesh.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMesh && m_triangleMesh->isLoaded());
@@ -43,14 +47,8 @@ bool ego::demo::TestDemo::init()
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(cameraNode));
     engine.setRenderCameraEntity(cameraNode);
 
-    EGO_CHECK_INITIALIZATION(createTriangleEntity(
-        m_firstTriangleEntity,
-        m_firstTriangleMaterial,
-        FirstTrianglePosition));
-    EGO_CHECK_INITIALIZATION(createTriangleEntity(
-        m_secondTriangleEntity,
-        m_secondTriangleMaterial,
-        SecondTrianglePosition));
+    EGO_CHECK_INITIALIZATION(createTriangleEntity(m_firstTriangleEntity, m_firstTriangleMaterial, FirstTrianglePosition));
+    EGO_CHECK_INITIALIZATION(createTriangleEntity(m_secondTriangleEntity, m_secondTriangleMaterial, SecondTrianglePosition));
 
     return true;
 }
@@ -78,7 +76,8 @@ void ego::demo::TestDemo::update(float _deltaTime)
 
 void ego::demo::TestDemo::release()
 {
-    const engine::EnginePointer engine = engine::EngineCore::GetInstance().getEngine();
+    const engine::EngineContextPointer engineContext = context::FindCurrentContext<engine::EngineContext>();
+    const engine::EnginePointer engine = engineContext ? engineContext->getEnginePointer() : nullptr;
     if (engine && m_level)
     {
         const LevelPointer activeLevel = engine->getLevelController().getActiveLevel();
@@ -99,10 +98,7 @@ void ego::demo::TestDemo::release()
     m_triangleMesh = nullptr;
 }
 
-bool ego::demo::TestDemo::createTriangleEntity(
-    ecs::Entity& _entity,
-    const render::MaterialResourcePointer& _materialResource,
-    const ComputeVector3& _position)
+bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const ComputeVector3& _position)
 {
     _entity = m_level->createNode();
     EGO_CHECK_RETURN_FALSE(_entity);
@@ -111,19 +107,13 @@ bool ego::demo::TestDemo::createTriangleEntity(
     const render::RenderMaterial triangleMaterial = render::CreateMaterialHandler(_materialResource);
     EGO_CHECK_RETURN_FALSE(triangleMesh && triangleMaterial);
 
-    EGO_CHECK_RETURN_FALSE(m_level->addOrReplaceComponent<render::MeshRenderComponent>(
-        _entity,
-        triangleMesh,
-        triangleMaterial));
+    EGO_CHECK_RETURN_FALSE(m_level->addOrReplaceComponent<render::MeshRenderComponent>(_entity, triangleMesh, triangleMaterial));
     EGO_CHECK_RETURN_FALSE(setTriangleTransform(_entity, _position, 0.0f));
 
     return true;
 }
 
-bool ego::demo::TestDemo::setTriangleTransform(
-    ecs::Entity _entity,
-    const ComputeVector3& _position,
-    float _rotationAngle)
+bool ego::demo::TestDemo::setTriangleTransform(ecs::Entity _entity, const ComputeVector3& _position, float _rotationAngle)
 {
     TransformComponent* transformComponent = m_level->tryGetComponent<TransformComponent>(_entity);
     EGO_CHECK_RETURN_FALSE(transformComponent);

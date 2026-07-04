@@ -11,6 +11,7 @@ ego_add_plugin(
 target_link_libraries(
     EgoDefaultRender
         PUBLIC
+            Ego::Core
             Ego::Engine
 )
 

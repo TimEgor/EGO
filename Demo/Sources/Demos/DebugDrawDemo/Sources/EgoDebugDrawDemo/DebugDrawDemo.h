@@ -4,11 +4,11 @@
 
 #include "EgoEngine/Level/Level.h"
 
-#include "EgoFramework/GameLogic.h"
+#include "EgoEngineFramework/EngineLogic.h"
 
 namespace ego::demo
 {
-    class DebugDrawDemo final : public framework::GameLogic
+    class DebugDrawDemo final : public engine_framework::EngineLogic
     {
     public:
         DebugDrawDemo() = default;

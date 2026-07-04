@@ -6,7 +6,8 @@
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoGraphicHardware/GraphicHardwareContext.h"
+
 #include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
 
 #include "DefaultRenderConstants.h"
@@ -18,11 +19,11 @@ bool ego::render::DefaultRender::init()
         return true;
     }
 
-    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
     EGO_CHECK_INITIALIZATION(graphicDevice.getCapabilities().m_supportsBindlessResources);
     EGO_CHECK_INITIALIZATION(graphicDevice.getCapabilities().m_supportsRayTracing);
 
-    EGO_CHECK_INITIALIZATION(m_frameExecutor.init(graphicDevice, engine::GetEngine().getRenderDeviceContext().getGraphicCommandQueue()));
+    EGO_CHECK_INITIALIZATION(m_frameExecutor.init(graphicDevice, gpu::GetGraphicCommandQueue()));
 
     FileName assetsRootPath;
     EGO_CHECK_INITIALIZATION(m_fileSystems.loadAssetsRootPath(assetsRootPath));
@@ -74,7 +75,7 @@ bool ego::render::DefaultRender::prepare(Level& _level, ecs::Entity _cameraEntit
 
     m_isPrepared = false;
 
-    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
     if (!m_renderTarget.prepare(graphicDevice, m_pendingResolution, DefaultRenderTargetFormat))
     {
         handlePrepareFailure();
@@ -122,7 +123,7 @@ void ego::render::DefaultRender::render()
         return;
     }
 
-    GraphicDevice& graphicDevice = engine::GetEngine().getGraphicDevice();
+    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
     RenderPassExecuteContext passContext{graphicDevice, m_pipelineStateCache, commandLists.front(), m_renderTarget, m_scene, m_shaderData, m_settings};
     const bool passExecutionResult = m_passGraph.execute(
         passContext,

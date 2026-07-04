@@ -9,11 +9,13 @@
 #include "EgoCore/RTTI/RTTI.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoRuntime/Resource/ResourceController.h"
+#include "EgoRuntime/RuntimeContext.h"
+
+#include "EgoGraphicHardware/Resources/ShaderResource.h"
+
 #include "EgoEngine/Graphic/Render/RenderResourceObject.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ShaderResource.h"
 #include "EgoEngine/Resources/GeneralResources/XmlResource.h"
-#include "EgoEngine/Resources/Resource/ResourceController.h"
 
 #include "EgoDefaultRender/DefaultRenderBindingLayout.h"
 #include "EgoDefaultRender/DefaultRenderConstants.h"
@@ -50,7 +52,7 @@ namespace ego::render
 
     static bool LoadRayTracingRenderPassShaderConfig(RayTracingRenderPassShaderConfig& _config)
     {
-        ResourceController& resourceController = engine::GetEngine().getResourceController();
+        ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
         const XmlResourcePointer configResource = resourceController.load<XmlResource>(RayTracingRenderPassConfigPath);
         return configResource && configResource->isLoaded() && ParseRayTracingRenderPassShaderConfig(configResource->getRootNode(), _config);
     }
@@ -246,7 +248,7 @@ bool ego::render::RayTracingRenderPass::loadShaders()
     RayTracingRenderPassShaderConfig config;
     EGO_CHECK_RETURN_FALSE(LoadRayTracingRenderPassShaderConfig(config));
 
-    ResourceController& resourceController = engine::GetEngine().getResourceController();
+    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
 
     const gpu::RayGenerationShaderResourcePointer rayGenerationShaderResource = resourceController.load<gpu::RayGenerationShaderResource>(config.m_rayGenerationShaderPath);
     const gpu::MissShaderResourcePointer missShaderResource = resourceController.load<gpu::MissShaderResource>(config.m_missShaderPath);

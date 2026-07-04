@@ -1,11 +1,10 @@
 #include "WinPIXProfilerPlugin.h"
 
-#include "EgoEngine/Plugin/EngineExternalModuleCore.h"
+#include "EgoRuntime/Plugin/ExternalModule.h"
 
 #include "WinPIXProfiler.h"
 
-EGO_CORE_MODULE();
-EGO_ENGINE_MODULE();
+EGO_MODULE_ENTRY();
 
 EGO_PLUGIN_CREATE(ego::winpix::WinPIXProfilerPlugin, ProfilerPlugin, ego::ProfilerPlugin);
 

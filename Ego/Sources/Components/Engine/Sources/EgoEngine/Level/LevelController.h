@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Level.h"
+#include <unordered_map>
 
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 
-#include <unordered_map>
+#include "Level.h"
 
 namespace ego
 {

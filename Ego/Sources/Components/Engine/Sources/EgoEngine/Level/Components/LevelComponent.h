@@ -1,9 +1,9 @@
 #pragma once
 
-#include "EgoECS/Component.h"
-
 #include <cstdint>
 #include <string>
+
+#include "EgoECS/Component.h"
 
 namespace ego
 {

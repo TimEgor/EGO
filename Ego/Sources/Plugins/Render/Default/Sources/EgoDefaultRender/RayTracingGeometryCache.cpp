@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <limits>
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicDevice.h"
 
 void ego::render::RayTracingGeometryCache::beginFrame()
 {

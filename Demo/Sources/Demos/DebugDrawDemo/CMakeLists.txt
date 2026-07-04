@@ -10,14 +10,14 @@ ego_add_demo_plugin(
 target_link_libraries(
     EgoDebugDrawDemo
         PRIVATE
-            Ego::Framework
+            Ego::EngineFramework
 )
 
 ego_register_plugin(
     TARGET EgoDebugDrawDemo
     INSTALL_DIR "Demo/Demos/DebugDrawDemo"
     MANIFEST
-        "GameLogicPlugin"
+        "EngineLogicPlugin"
         "DebugDrawDemo"
 )
 

@@ -1,40 +1,20 @@
 #include "Engine.h"
 
 #include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/Job/JobController.h"
-#include "EgoCore/Job/JobDescriptor.h"
+#include "EgoCore/Context/ContextStack.h"
 #include "EgoCore/Profile/Profile.h"
 
-#include "Event/EventController.h"
+#include "EgoRuntime/Job/JobDescriptor.h"
+#include "EgoRuntime/Plugin/PluginController.h"
+
+#include "EngineContext.h"
 #include "Graphic/Render/RenderPlugin.h"
-#include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Level/LevelController.h"
-#include "Platform/Platform.h"
-#include "Platform/PlatformPlugin.h"
-#include "Plugin/EnginePluginController.h"
-#include "Plugin/PluginCatalogBuilder.h"
-#include "Resources/Resource/ResourceController.h"
 
 bool ego::engine::Engine::init(const Engine::InitData& _initData)
 {
-    EGO_CHECK_INITIALIZATION(initPluginController());
+    EGO_CHECK_INITIALIZATION(initJobController(_initData));
 
-    m_eventController = new EventController();
-    EGO_CHECK_INITIALIZATION(m_eventController && m_eventController->init());
-
-    m_jobController = new JobController();
-
-    const uint32_t jobThreadCount = JobController::GetHardwareThreadCount();
-    EGO_CHECK_INITIALIZATION(m_jobController && m_jobController->init(jobThreadCount ? jobThreadCount : 1));
-
-    EGO_CHECK_INITIALIZATION(initPlatform(_initData));
-
-    m_resourceController = new ResourceController();
-    EGO_CHECK_INITIALIZATION(m_resourceController && m_resourceController->init());
-    m_resourceController->addFileSystem(m_platform->getFileSystem());
-
-    EGO_CHECK_INITIALIZATION(initPluginCatalog(_initData));
-    EGO_CHECK_INITIALIZATION(initGraphicDevice(_initData));
     EGO_CHECK_INITIALIZATION(initGraphicPresenter(_initData));
 
     m_levelController = new LevelController();
@@ -53,22 +33,11 @@ void ego::engine::Engine::release()
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
-    m_renderDeviceContext.release();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_resourceController);
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_platform);
+    releaseJobController();
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
-
-    m_renderHardwarePlugin = nullptr;
     m_renderPlugin = nullptr;
-    m_platformPlugin = nullptr;
-
-    m_pluginCatalog.clear();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_enginePluginController);
 }
 
 void ego::engine::Engine::run()
@@ -81,7 +50,7 @@ void ego::engine::Engine::run()
         }
     }
 
-    completeRun();
+    cleanResources();
 }
 
 bool ego::engine::Engine::runFrame()
@@ -95,7 +64,6 @@ bool ego::engine::Engine::runFrame()
 
     beginFrame();
 
-    updateFrameServices();
     // m_inputDeviceController->update();
 
     if (m_isStopped)
@@ -112,6 +80,7 @@ bool ego::engine::Engine::runFrame()
         return false;
     }
 
+    EGO_ASSERT(m_jobController);
     m_jobController->addJobGraph(mainLoopJobGraph);
     m_jobController->waitAndExecute(mainLoopJobGraph);
 
@@ -167,72 +136,6 @@ bool ego::engine::Engine::isPaused() const
     return m_isPaused;
 }
 
-const ego::Platform& ego::engine::Engine::getPlatform() const
-{
-    EGO_ASSERT(m_platform);
-    return *m_platform;
-}
-
-ego::Platform& ego::engine::Engine::getPlatform()
-{
-    EGO_ASSERT(m_platform);
-    return *m_platform;
-}
-
-const ego::GraphicDevice& ego::engine::Engine::getGraphicDevice() const
-{
-    EGO_ASSERT(m_graphicDevice);
-    return *m_graphicDevice;
-}
-
-ego::GraphicDevice& ego::engine::Engine::getGraphicDevice()
-{
-    EGO_ASSERT(m_graphicDevice);
-    return *m_graphicDevice;
-}
-
-const ego::render::RenderDeviceContext& ego::engine::Engine::getRenderDeviceContext() const
-{
-    EGO_ASSERT(m_renderDeviceContext.isValid());
-    return m_renderDeviceContext;
-}
-
-const ego::EventController& ego::engine::Engine::getEventController() const
-{
-    EGO_ASSERT(m_eventController);
-    return *m_eventController;
-}
-
-ego::EventController& ego::engine::Engine::getEventController()
-{
-    EGO_ASSERT(m_eventController);
-    return *m_eventController;
-}
-
-const ego::JobController& ego::engine::Engine::getJobController() const
-{
-    EGO_ASSERT(m_jobController);
-    return *m_jobController;
-}
-
-ego::JobController& ego::engine::Engine::getJobController()
-{
-    EGO_ASSERT(m_jobController);
-    return *m_jobController;
-}
-
-const ego::ResourceController& ego::engine::Engine::getResourceController() const
-{
-    EGO_ASSERT(m_resourceController);
-    return *m_resourceController;
-}
-
-ego::ResourceController& ego::engine::Engine::getResourceController()
-{
-    EGO_ASSERT(m_resourceController);
-    return *m_resourceController;
-}
-
 const ego::LevelController& ego::engine::Engine::getLevelController() const
 {
     EGO_ASSERT(m_levelController);
@@ -277,16 +180,6 @@ ego::JobGraphReference ego::engine::Engine::getMainLoopJobGraph()
     return m_mainLoop.createJobGraph();
 }
 
-const ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog() const
-{
-    return m_pluginCatalog;
-}
-
-ego::engine::PluginCatalog& ego::engine::Engine::getPluginCatalog()
-{
-    return m_pluginCatalog;
-}
-
 const ego::engine::MainLoop& ego::engine::Engine::getMainLoop() const
 {
     return m_mainLoop;
@@ -297,78 +190,6 @@ ego::engine::MainLoop& ego::engine::Engine::getMainLoop()
     return m_mainLoop;
 }
 
-bool ego::engine::Engine::initPluginController()
-{
-    m_enginePluginController = new EnginePluginController();
-    EGO_CHECK_RETURN_FALSE(m_enginePluginController && m_enginePluginController->init());
-
-    return true;
-}
-
-bool ego::engine::Engine::initPlatform(const InitData& _initData)
-{
-    EGO_ASSERT(m_enginePluginController);
-
-    FileName platformPluginModuleName = _initData.m_platformPluginModuleName;
-    if (!platformPluginModuleName)
-    {
-        platformPluginModuleName = m_enginePluginController->selectEnginePluginModule<PlatformPlugin>();
-    }
-
-    EGO_CHECK_RETURN_FALSE(platformPluginModuleName);
-
-    m_platformPlugin = m_enginePluginController->loadEnginePlugin<PlatformPlugin>(platformPluginModuleName);
-    EGO_CHECK_RETURN_FALSE(m_platformPlugin);
-
-    m_platform = m_platformPlugin->createPlatform(_initData.m_nativeInstanceHandle);
-    EGO_CHECK_RETURN_FALSE(m_platform && m_platform->init());
-
-    return true;
-}
-
-bool ego::engine::Engine::initPluginCatalog(const InitData& _initData)
-{
-    EGO_CHECK_RETURN_FALSE(m_platform);
-
-    m_pluginCatalog.clear();
-
-    const FileSystemPointer fileSystem = m_platform->getFileSystem();
-    EGO_CHECK_RETURN_FALSE(fileSystem);
-
-    for (const FileName& pluginDirectory : _initData.m_pluginDirectories)
-    {
-        PluginCatalogBuilder::AddPluginsFromPath(m_pluginCatalog, *fileSystem, pluginDirectory);
-    }
-
-    return true;
-}
-
-bool ego::engine::Engine::initGraphicDevice(const InitData& _initData)
-{
-    EGO_ASSERT(m_enginePluginController);
-
-    FileName renderHardwarePluginModuleName = _initData.m_renderHardwarePluginModuleName;
-    if (!renderHardwarePluginModuleName)
-    {
-        renderHardwarePluginModuleName = m_enginePluginController->selectEnginePluginModule<RenderHardwarePlugin>();
-    }
-
-    EGO_CHECK_RETURN_FALSE(renderHardwarePluginModuleName);
-
-    m_renderHardwarePlugin = m_enginePluginController->loadEnginePlugin<RenderHardwarePlugin>(renderHardwarePluginModuleName);
-    EGO_CHECK_RETURN_FALSE(m_renderHardwarePlugin);
-
-    m_graphicDevice = m_renderHardwarePlugin->createGraphicDevice();
-    GraphicDevice::InitParams graphicDeviceInitParams;
-    graphicDeviceInitParams.m_debugEnable = true;
-    graphicDeviceInitParams.m_gpuValidation = true;
-    EGO_CHECK_RETURN_FALSE(m_graphicDevice && m_graphicDevice->init(graphicDeviceInitParams));
-
-    EGO_CHECK_RETURN_FALSE(m_renderDeviceContext.init(*m_graphicDevice));
-
-    return true;
-}
-
 bool ego::engine::Engine::initGraphicPresenter(const InitData& _initData)
 {
     m_graphicPresenter = _initData.m_graphicPresenter;
@@ -377,17 +198,15 @@ bool ego::engine::Engine::initGraphicPresenter(const InitData& _initData)
 
 bool ego::engine::Engine::initRender(const InitData& _initData)
 {
-    EGO_ASSERT(m_enginePluginController);
-
-    FileName renderPluginModuleName = _initData.m_renderPluginModuleName;
-    if (!renderPluginModuleName)
+    m_renderPlugin = _initData.m_renderPlugin;
+    if (!m_renderPlugin)
     {
-        renderPluginModuleName = m_enginePluginController->selectEnginePluginModule<ego::render::RenderPlugin>();
+        const PluginControllerPointer pluginController = GetCurrentPluginController();
+        EGO_CHECK_RETURN_FALSE(pluginController);
+
+        m_renderPlugin = pluginController->loadPlugin<ego::render::RenderPlugin>();
     }
 
-    EGO_CHECK_RETURN_FALSE(renderPluginModuleName);
-
-    m_renderPlugin = m_enginePluginController->loadEnginePlugin<ego::render::RenderPlugin>(renderPluginModuleName);
     EGO_CHECK_RETURN_FALSE(m_renderPlugin);
 
     m_render = m_renderPlugin->createRender();
@@ -419,6 +238,35 @@ bool ego::engine::Engine::initMainLoop()
             "Prepare render frame"));
 }
 
+bool ego::engine::Engine::initJobController(const InitData& _initData)
+{
+    m_jobController = new JobController();
+    EGO_CHECK_RETURN_FALSE(m_jobController);
+
+    const context::ContextScopePointer contextScope = context::ContextStackCore::GetInstance().getCurrentScope();
+    EGO_CHECK_RETURN_FALSE(contextScope);
+
+    uint32_t threadCount = _initData.m_jobThreadCount;
+    if (threadCount == 0)
+    {
+        threadCount = JobController::GetHardwareThreadCount();
+    }
+
+    if (threadCount == 0)
+    {
+        threadCount = 1;
+    }
+
+    EGO_CHECK_RETURN_FALSE(m_jobController->init(threadCount, contextScope, _initData.m_jobThreadName));
+
+    return true;
+}
+
+void ego::engine::Engine::releaseJobController()
+{
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
+}
+
 void ego::engine::Engine::beginFrame()
 {
     m_currentFrameTime = Clock::GetCurrentTimePoint();
@@ -430,19 +278,7 @@ void ego::engine::Engine::endFrame()
     m_prevFrameStartTime = m_currentFrameTime;
 }
 
-void ego::engine::Engine::updateFrameServices()
-{
-    if (m_platform)
-    {
-        const FileSystemPointer fileSystem = m_platform->getFileSystem();
-        if (fileSystem)
-        {
-            fileSystem->updateDirectoryWatches();
-        }
-    }
-}
-
-void ego::engine::Engine::completeRun()
+void ego::engine::Engine::cleanResources()
 {
     if (m_render)
     {
@@ -480,26 +316,10 @@ void ego::engine::Engine::prepareRenderFrame()
     }
 }
 
-ego::engine::EnginePointer ego::engine::EngineCore::getEngine() const
-{
-    return m_engine;
-}
-
-void ego::engine::EngineCore::init(const EnginePointer& _engine)
-{
-    EGO_ASSERT(!m_engine || !_engine);
-    m_engine = _engine;
-}
-
-void ego::engine::EngineCore::release()
-{
-    m_engine = nullptr;
-}
-
 ego::engine::Engine& ego::engine::GetEngine()
 {
-    const EnginePointer engine = EngineCore::GetInstance().getEngine();
+    const EngineContextPointer engineContext = context::FindCurrentContext<EngineContext>();
+    EGO_ASSERT(engineContext);
 
-    EGO_ASSERT(engine);
-    return *engine.get();
+    return engineContext->getEngine();
 }

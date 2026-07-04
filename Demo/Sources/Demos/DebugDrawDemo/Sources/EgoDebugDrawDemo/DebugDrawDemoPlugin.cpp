@@ -1,23 +1,19 @@
 #include "DebugDrawDemoPlugin.h"
 
-#include "EgoEngine/Plugin/EngineExternalModuleCore.h"
-
-#include "EgoFramework/Plugin/FrameworkExternalModuleCore.h"
+#include "EgoRuntime/Plugin/ExternalModule.h"
 
 #include "DebugDrawDemo.h"
 
-EGO_CORE_MODULE();
-EGO_ENGINE_MODULE();
-EGO_FRAMEWORK_MODULE();
+EGO_MODULE_ENTRY();
 
-EGO_PLUGIN_CREATE(ego::demo::DebugDrawDemoPlugin, GameLogicPlugin, ego::framework::GameLogicPlugin);
+EGO_PLUGIN_CREATE(ego::demo::DebugDrawDemoPlugin, EngineLogicPlugin, ego::engine_framework::EngineLogicPlugin);
 
 ego::demo::DebugDrawDemoPlugin::DebugDrawDemoPlugin(const PluginModulePointer& _module, PluginType _pluginType)
-    : framework::GameLogicPlugin(_module, _pluginType)
+    : engine_framework::EngineLogicPlugin(_module, _pluginType)
 {
 }
 
-ego::framework::GameLogicPointer ego::demo::DebugDrawDemoPlugin::createGameLogic()
+ego::engine_framework::EngineLogicPointer ego::demo::DebugDrawDemoPlugin::createEngineLogic()
 {
-    return ego::framework::GameLogicPointer(new DebugDrawDemo());
+    return ego::engine_framework::EngineLogicPointer(new DebugDrawDemo());
 }

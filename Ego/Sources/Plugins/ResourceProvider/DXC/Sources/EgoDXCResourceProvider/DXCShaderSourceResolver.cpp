@@ -1,11 +1,12 @@
+#include "DXCShaderSourceResolver.h"
+
 #include <algorithm>
 #include <cctype>
 #include <string>
 
-#include "DXCShaderSourceResolver.h"
 #include "EgoCore/FileName/FileNameUtils.h"
 
-#include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
+#include "EgoRuntime/Resource/ResourceLoadingContext.h"
 
 namespace ego::resources::dxc
 {

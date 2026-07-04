@@ -1,6 +1,7 @@
 #include "Profile.h"
 
 #include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Context/DiagnosticContext.h"
 
 ego::profile::ProfilerController::ProfilerController()
     : m_profilerRaw(nullptr)
@@ -61,25 +62,24 @@ void ego::profile::ProfilerController::endEvent() const
     }
 }
 
-ego::profile::ProfileCore::ProfileCore()
-    : m_controller(new ProfilerController())
+namespace
 {
-}
-
-void ego::profile::ProfileCore::setController(const ProfilerControllerPointer& _controller)
-{
-    EGO_CHECK_RETURN(_controller);
-    m_controller = _controller;
-}
-
-ego::profile::ProfilerControllerPointer ego::profile::ProfileCore::getController() const
-{
-    return m_controller;
-}
+    ego::profile::ProfilerControllerPointer GetDefaultProfilerController()
+    {
+        static const ego::profile::ProfilerControllerPointer Controller = new ego::profile::ProfilerController();
+        return Controller;
+    }
+} // namespace
 
 ego::profile::ProfilerControllerPointer ego::profile::GetProfilerController()
 {
-    return ProfileCore::GetInstance().getController();
+    const context::DiagnosticContextPointer diagnosticContext = context::GetDiagnosticContextPointer();
+    if (diagnosticContext && diagnosticContext->getProfilerController())
+    {
+        return diagnosticContext->getProfilerController();
+    }
+
+    return GetDefaultProfilerController();
 }
 
 void ego::profile::BeginEvent(const char* _titleName, const char* _contextName)

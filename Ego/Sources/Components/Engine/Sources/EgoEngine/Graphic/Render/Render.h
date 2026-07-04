@@ -7,7 +7,7 @@
 
 #include "EgoEngine/Graphic/Render/DebugDrawData.h"
 #include "EgoEngine/Graphic/Render/RenderObject.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Texture.h"
+#include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
 namespace ego
 {

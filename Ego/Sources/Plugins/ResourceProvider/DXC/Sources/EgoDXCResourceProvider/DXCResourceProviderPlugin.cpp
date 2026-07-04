@@ -1,13 +1,12 @@
 #include "DXCResourceProviderPlugin.h"
 
-#include "EgoEngine/Engine.h"
-#include "EgoEngine/Plugin/EngineExternalModuleCore.h"
-#include "EgoEngine/Resources/Resource/ResourceController.h"
+#include "EgoRuntime/Plugin/ExternalModule.h"
+#include "EgoRuntime/Resource/ResourceController.h"
+#include "EgoRuntime/RuntimeContext.h"
 
 #include "DXCShaderResourceProvider.h"
 
-EGO_CORE_MODULE();
-EGO_ENGINE_MODULE();
+EGO_MODULE_ENTRY();
 
 EGO_PLUGIN_CREATE(ego::resources::dxc::DXCResourceProviderPlugin, ResourceProviderPlugin, ego::ResourceProviderPlugin);
 
@@ -21,13 +20,15 @@ namespace ego::resources::dxc
     void DXCResourceProviderPlugin::registerResourceProviders()
     {
         const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
-        engine::GetEngine().getResourceController().addResourceProvider(".shader", shaderProvider);
-        engine::GetEngine().getResourceController().addResourceProvider(".hlsl", shaderProvider);
+        ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+        resourceController.addResourceProvider(".shader", shaderProvider);
+        resourceController.addResourceProvider(".hlsl", shaderProvider);
     }
 
     void DXCResourceProviderPlugin::unregisterResourceProviders()
     {
-        engine::GetEngine().getResourceController().removeResourceProvider(".hlsl");
-        engine::GetEngine().getResourceController().removeResourceProvider(".shader");
+        ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+        resourceController.removeResourceProvider(".hlsl");
+        resourceController.removeResourceProvider(".shader");
     }
 } // namespace ego::resources::dxc

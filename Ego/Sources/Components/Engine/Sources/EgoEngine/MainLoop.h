@@ -1,7 +1,8 @@
 #pragma once
 
-#include "EgoCore/Job/JobGraphDescriptor.h"
 #include "EgoCore/Patterns/NonCopyable.h"
+
+#include "EgoRuntime/Job/JobGraphDescriptor.h"
 
 namespace ego::engine
 {

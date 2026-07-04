@@ -13,7 +13,8 @@ target_compile_definitions(EgoDXCResourceProvider PRIVATE WIN32_LEAN_AND_MEAN NO
 target_link_libraries(
     EgoDXCResourceProvider
         PUBLIC
-            Ego::Engine
+            Ego::Core
+            Ego::GraphicHardware
         PRIVATE
             dxcompiler
 )

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Texture.h"
+#include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
 namespace ego
 {

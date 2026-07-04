@@ -1,12 +1,12 @@
 #pragma once
 
-#include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/Reference/Reference.h"
-
 #include <cstddef>
 #include <functional>
 #include <type_traits>
 #include <utility>
+
+#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Reference/Reference.h"
 
 namespace ego
 {

@@ -1,13 +1,13 @@
-#include <vector>
-
 #include "MeshResource.h"
+
+#include <vector>
 
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoMath/Vector.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoGraphicHardware/GraphicHardwareContext.h"
 
 namespace
 {
@@ -72,7 +72,7 @@ bool ego::render::MeshResource::onLoad(FileContent&& _content, ResourceLoadingCo
     rawData.m_vertexStride = sizeof(MeshVertex);
     rawData.m_vertexCount = static_cast<uint32_t>(vertices.size());
 
-    const RenderMesh mesh = CreateMeshFromRawData(engine::GetEngine().getGraphicDevice(), rawData);
+    const RenderMesh mesh = CreateMeshFromRawData(gpu::GetGraphicDevice(), rawData);
     EGO_CHECK_RETURN_FALSE(mesh);
 
     m_mesh = mesh;

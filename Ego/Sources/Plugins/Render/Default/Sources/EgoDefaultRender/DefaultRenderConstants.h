@@ -4,7 +4,7 @@
 
 #include "EgoMath/Vector.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/Format.h"
+#include "EgoGraphicHardware/GraphicObjects/Format.h"
 
 namespace ego::render
 {

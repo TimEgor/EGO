@@ -3,10 +3,11 @@
 #include <cstdint>
 
 #include "EgoECS/Entity.h"
+
 #include "EgoMath/Matrix.h"
 
 #include "EgoEngine/Graphic/Render/RenderGpuObject.h"
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicDevice.h"
 
 #include "DefaultRenderScene.h"
 

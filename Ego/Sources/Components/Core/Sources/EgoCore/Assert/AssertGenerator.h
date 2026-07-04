@@ -1,8 +1,8 @@
 #pragma once
 
-#include "EgoCore/Reference/Pointer.h"
-
 #include <cstdint>
+
+#include "EgoCore/Reference/Pointer.h"
 
 namespace ego
 {

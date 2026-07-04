@@ -1,13 +1,13 @@
+#include "DXCShaderResourceProvider.h"
+
 #include <string>
 #include <utility>
 
-#include "DXCShaderResourceProvider.h"
+#include "EgoGraphicHardware/Resources/ShaderResource.h"
+#include "EgoRuntime/Resource/ResourceLoadingContext.h"
 
 #include "DXCShaderCompiler.h"
 #include "DXCShaderSourceResolver.h"
-
-#include "EgoEngine/Graphic/RenderHardware/GraphicObjects/ShaderResource.h"
-#include "EgoEngine/Resources/Resource/ResourceLoadingContext.h"
 
 namespace ego::resources::dxc
 {

@@ -1,35 +1,21 @@
 #pragma once
 
 #include "EgoCore/Clock.h"
-#include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Job/JobController.h"
-#include "EgoCore/Job/JobGraph.h"
-#include "EgoCore/Patterns/Singleton.h"
+
 #include "EgoECS/Entity.h"
 
-#include "Event/EventController.h"
+#include "EgoRuntime/Job/JobController.h"
+#include "EgoRuntime/Job/JobGraph.h"
+
 #include "Graphic/Presenter/GraphicPresenter.h"
-#include "Graphic/Render/RenderDeviceContext.h"
 #include "Graphic/Render/RenderPlugin.h"
-#include "Graphic/RenderHardware/GraphicDevice.h"
-#include "Graphic/RenderHardware/RenderHardwarePlugin.h"
 #include "Level/LevelController.h"
 #include "MainLoop.h"
-#include "Platform/Platform.h"
-#include "Platform/PlatformPlugin.h"
-#include "Plugin/EnginePluginController.h"
-#include "Plugin/PluginCatalog.h"
-#include "Resources/Resource/ResourceController.h"
-
-#include <vector>
 
 namespace ego
 {
     class EventController;
-    class Platform;
     class JobController;
-    class ResourceController;
-    class GraphicDevice;
 } // namespace ego
 
 namespace ego::engine
@@ -39,14 +25,10 @@ namespace ego::engine
     public:
         struct InitData final
         {
-            using PluginDirectoryCollection = std::vector<FileName>;
-
-            void* m_nativeInstanceHandle = nullptr;
-            FileName m_platformPluginModuleName;
-            FileName m_renderPluginModuleName;
-            FileName m_renderHardwarePluginModuleName;
+            ego::render::RenderPluginPointer m_renderPlugin = nullptr;
             GraphicPresenterPointer m_graphicPresenter = nullptr;
-            PluginDirectoryCollection m_pluginDirectories;
+            uint32_t m_jobThreadCount = 0;
+            const char* m_jobThreadName = "EgoJob";
         };
 
         Engine() = default;
@@ -57,7 +39,8 @@ namespace ego::engine
 
         void run();
         bool runFrame();
-        void completeRun();
+        void cleanResources();
+
         void stop();
         void pause();
         void unpause();
@@ -70,21 +53,6 @@ namespace ego::engine
         bool isStopped() const;
         bool isPaused() const;
 
-        const Platform& getPlatform() const;
-        Platform& getPlatform();
-        const GraphicDevice& getGraphicDevice() const;
-        GraphicDevice& getGraphicDevice();
-        const ego::render::RenderDeviceContext& getRenderDeviceContext() const;
-
-        const EventController& getEventController() const;
-        EventController& getEventController();
-
-        const JobController& getJobController() const;
-        JobController& getJobController();
-
-        const ResourceController& getResourceController() const;
-        ResourceController& getResourceController();
-
         const LevelController& getLevelController() const;
         LevelController& getLevelController();
 
@@ -95,48 +63,33 @@ namespace ego::engine
         void setRenderCameraEntity(ecs::Entity _cameraEntity);
         void clearRenderCameraEntity();
 
-        const PluginCatalog& getPluginCatalog() const;
-        PluginCatalog& getPluginCatalog();
-
         const MainLoop& getMainLoop() const;
         MainLoop& getMainLoop();
 
     private:
-        bool initPluginController();
-        bool initPlatform(const InitData& _initData);
-        bool initPluginCatalog(const InitData& _initData);
-        bool initGraphicDevice(const InitData& _initData);
         bool initGraphicPresenter(const InitData& _initData);
         bool initRender(const InitData& _initData);
+        bool initJobController(const InitData& _initData);
         bool initMainLoop();
+
+        void releaseJobController();
 
         void beginFrame();
         void endFrame();
-        void updateFrameServices();
         JobGraphReference getMainLoopJobGraph();
         void renderFrame();
         void presentFrame();
         void prepareRenderFrame();
 
-        EnginePluginControllerPointer m_enginePluginController = nullptr;
-
-        EventControllerPointer m_eventController = nullptr;
-        JobControllerPointer m_jobController = nullptr;
-        ResourceControllerPointer m_resourceController = nullptr;
         LevelControllerPointer m_levelController = nullptr;
+        JobControllerPointer m_jobController = nullptr;
 
-        PluginCatalog m_pluginCatalog;
         MainLoop m_mainLoop;
 
-        PlatformPointer m_platform = nullptr;
-        GraphicDevicePointer m_graphicDevice = nullptr;
-        ego::render::RenderDeviceContext m_renderDeviceContext;
         GraphicPresenterPointer m_graphicPresenter = nullptr;
         ego::render::RenderPointer m_render = nullptr;
 
-        PlatformPluginPointer m_platformPlugin = nullptr;
         ego::render::RenderPluginPointer m_renderPlugin = nullptr;
-        RenderHardwarePluginPointer m_renderHardwarePlugin = nullptr;
 
         ClockTimePoint m_startTime;
         ClockTimePoint m_currentFrameTime;
@@ -154,19 +107,6 @@ namespace ego::engine
 
     EGO_POINTER(Engine);
     EGO_WEAK_POINTER(Engine);
-
-    class EngineCore final : public Singleton<EngineCore>
-    {
-    public:
-        EngineCore() = default;
-
-        EnginePointer getEngine() const;
-        void init(const EnginePointer& _engine);
-        void release();
-
-    private:
-        EnginePointer m_engine = nullptr;
-    };
 
     Engine& GetEngine();
 } // namespace ego::engine

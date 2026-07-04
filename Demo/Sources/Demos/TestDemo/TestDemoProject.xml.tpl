@@ -6,7 +6,7 @@
         <PluginDirectory Path="@TPL_TEST_DEMO_PLUGINS_PATH@" />
         <PluginDirectory Path="@TPL_TEST_DEMO_GAME_PLUGINS_PATH@" />
     </PluginDirectories>
-    <GameLogic>
+    <EngineLogic>
         <Plugin Name="TestDemo" />
-    </GameLogic>
+    </EngineLogic>
 </Project>

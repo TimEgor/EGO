@@ -1,10 +1,10 @@
 #pragma once
 
+#include <cstddef>
+
 #include "EgoECS/Entity.h"
 
 #include <entt/entity/registry.hpp>
-
-#include <cstddef>
 
 namespace ego::ecs::detail
 {

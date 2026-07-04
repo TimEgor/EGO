@@ -1,8 +1,8 @@
 #pragma once
 
-#include "EgoEngine/Resources/Resource/Resource.h"
-
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
+
+#include "EgoRuntime/Resource/Resource.h"
 
 namespace ego
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/Resources/Resource/ResourceProviderPlugin.h"
+#include "EgoRuntime/Resource/ResourceProviderPlugin.h"
 
 namespace ego::resources::dxc
 {

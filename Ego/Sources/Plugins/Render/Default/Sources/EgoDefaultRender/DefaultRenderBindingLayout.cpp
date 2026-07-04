@@ -1,6 +1,6 @@
 #include "DefaultRenderBindingLayout.h"
 
-#include "EgoEngine/Graphic/RenderHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicDevice.h"
 
 #include "RenderShaderData.h"
 

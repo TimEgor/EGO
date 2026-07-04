@@ -4,8 +4,7 @@
 #include <string_view>
 
 #include "EgoCore/FileName/FileName.h"
-
-#include "EgoEngine/Platform/FileSystem/FileSystem.h"
+#include "EgoCore/Platform/FileSystem/FileSystem.h"
 
 namespace ego
 {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "EgoCore/Hash/CRC32.h"
-
 #include <vector>
+
+#include "EgoCore/Hash/CRC32.h"
 
 namespace ego::rtti
 {

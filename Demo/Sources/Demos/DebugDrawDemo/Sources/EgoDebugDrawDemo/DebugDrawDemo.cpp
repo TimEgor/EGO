@@ -2,9 +2,11 @@
 
 #include <cmath>
 
+#include "EgoCore/Context/ContextStack.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Engine.h"
+#include "EgoEngine/EngineContext.h"
 #include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/Render/Render.h"
 
@@ -57,7 +59,8 @@ void ego::demo::DebugDrawDemo::update(float _deltaTime)
 
 void ego::demo::DebugDrawDemo::release()
 {
-    const engine::EnginePointer engine = engine::EngineCore::GetInstance().getEngine();
+    const engine::EngineContextPointer engineContext = context::FindCurrentContext<engine::EngineContext>();
+    const engine::EnginePointer engine = engineContext ? engineContext->getEnginePointer() : nullptr;
     if (engine && m_level)
     {
         const LevelPointer activeLevel = engine->getLevelController().getActiveLevel();
