@@ -5,6 +5,7 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoRuntime/Event/EventController.h"
+#include "EgoRuntime/Input/InputController.h"
 #include "EgoRuntime/Plugin/PluginCatalog.h"
 #include "EgoRuntime/Resource/ResourceController.h"
 
@@ -16,6 +17,9 @@ bool ego::context::RuntimeContext::init(const RuntimeContext::InitData& _initDat
     m_eventController = new EventController();
     EGO_CHECK_INITIALIZATION(m_eventController && m_eventController->init());
 
+    m_inputController = new InputController();
+    EGO_CHECK_INITIALIZATION(m_inputController && m_inputController->init());
+
     EGO_CHECK_INITIALIZATION(initResourceController(_initData));
 
     return true;
@@ -24,6 +28,7 @@ bool ego::context::RuntimeContext::init(const RuntimeContext::InitData& _initDat
 void ego::context::RuntimeContext::release()
 {
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_resourceController);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
 
     if (m_pluginCatalog)
@@ -65,6 +70,17 @@ ego::EventController& ego::context::RuntimeContext::getEventController() const
 {
     EGO_ASSERT(m_eventController);
     return *m_eventController;
+}
+
+ego::InputControllerPointer ego::context::RuntimeContext::getInputControllerPointer() const
+{
+    return m_inputController;
+}
+
+ego::InputController& ego::context::RuntimeContext::getInputController() const
+{
+    EGO_ASSERT(m_inputController);
+    return *m_inputController;
 }
 
 ego::ResourceControllerPointer ego::context::RuntimeContext::getResourceControllerPointer() const

@@ -35,3 +35,13 @@ void ego::gpu::GraphicResource::setLastWriteTask(const GpuTaskReference& _task)
 {
     m_lastWriteTask = _task;
 }
+
+ego::gpu::GraphicResourceState ego::gpu::GraphicResource::getState() const
+{
+    return m_state;
+}
+
+void ego::gpu::GraphicResource::setState(GraphicResourceState _state)
+{
+    m_state = _state;
+}

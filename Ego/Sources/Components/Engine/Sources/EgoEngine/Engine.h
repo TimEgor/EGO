@@ -7,6 +7,8 @@
 #include "EgoRuntime/Job/JobController.h"
 #include "EgoRuntime/Job/JobGraph.h"
 
+#include "EgoGui/GuiController.h"
+
 #include "Graphic/Presenter/GraphicPresenter.h"
 #include "Graphic/Render/RenderPlugin.h"
 #include "Level/LevelController.h"
@@ -27,6 +29,7 @@ namespace ego::engine
         {
             ego::render::RenderPluginPointer m_renderPlugin = nullptr;
             GraphicPresenterPointer m_graphicPresenter = nullptr;
+            gui::GuiViewportDesc m_guiViewportDesc;
             uint32_t m_jobThreadCount = 0;
             const char* m_jobThreadName = "EgoJob";
         };
@@ -63,14 +66,21 @@ namespace ego::engine
         void setRenderCameraEntity(ecs::Entity _cameraEntity);
         void clearRenderCameraEntity();
 
+        const gui::GuiController& getGuiController() const;
+        gui::GuiController& getGuiController();
+        gui::GuiControllerPointer getGuiControllerPointer() const;
+
         const MainLoop& getMainLoop() const;
         MainLoop& getMainLoop();
 
     private:
         bool initGraphicPresenter(const InitData& _initData);
+        bool loadDefaultGuiFont(gui::GuiFontAtlasDesc& _fontAtlasDesc) const;
+        bool initGuiController(const InitData& _initData);
         bool initRender(const InitData& _initData);
         bool initJobController(const InitData& _initData);
         bool initMainLoop();
+        void syncPresenterTargetResolution();
 
         void releaseJobController();
 
@@ -90,6 +100,7 @@ namespace ego::engine
         ego::render::RenderPointer m_render = nullptr;
 
         ego::render::RenderPluginPointer m_renderPlugin = nullptr;
+        gui::GuiControllerPointer m_guiController = nullptr;
 
         ClockTimePoint m_startTime;
         ClockTimePoint m_currentFrameTime;

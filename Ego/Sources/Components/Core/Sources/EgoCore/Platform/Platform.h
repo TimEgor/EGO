@@ -4,7 +4,8 @@
 
 #include "EgoCore/RTTI/RTTI.h"
 #include "FileSystem/FileSystem.h"
-#include "Window/PlatformWindowSystem.h"
+#include "Input/InputDeviceController.h"
+#include "Window/WindowSystem.h"
 
 namespace ego
 {
@@ -39,7 +40,8 @@ namespace ego
         virtual void release() = 0;
 
         virtual FileSystemPointer getFileSystem() = 0;
-        virtual PlatformWindowSystemPointer createWindowSystem() = 0;
+        virtual InputDeviceController& getInputDeviceController() = 0;
+        virtual WindowSystem& getWindowSystem() = 0;
         virtual FileName selectOpenFile(const OpenFileDialogParams& _params) const = 0;
 
         virtual DynamicLibraryHandle loadDynamicLibrary(const FileName& _libraryPath) = 0;

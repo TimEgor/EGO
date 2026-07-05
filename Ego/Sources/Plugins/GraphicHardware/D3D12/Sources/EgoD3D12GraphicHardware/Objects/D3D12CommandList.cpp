@@ -129,10 +129,11 @@ void ego::gpu::d3d12::D3D12CommandListBase::bindBindlessDescriptorHeapsInternal(
     }
 }
 
-void ego::gpu::d3d12::D3D12CommandListBase::resourceBarrierInternal(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState)
+void ego::gpu::d3d12::D3D12CommandListBase::resourceBarrierInternal(const GraphicResourceReference& _resource, GraphicResourceState _nextState)
 {
     ID3D12Resource* resource = _resource ? _resource->getNativeHandle<ID3D12Resource>() : nullptr;
-    if (!resource || _prevState == _nextState)
+    const GraphicResourceState prevState = _resource ? _resource->getState() : GraphicResourceState::Undefined;
+    if (!resource || prevState == _nextState)
     {
         return;
     }
@@ -141,11 +142,12 @@ void ego::gpu::d3d12::D3D12CommandListBase::resourceBarrierInternal(const Graphi
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
     barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = ToD3D12ResourceState(_prevState);
+    barrier.Transition.StateBefore = ToD3D12ResourceState(prevState);
     barrier.Transition.StateAfter = ToD3D12ResourceState(_nextState);
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
     m_commandList->ResourceBarrier(1, &barrier);
+    _resource->setState(_nextState);
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::pushConstantsInternal(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data)
@@ -387,10 +389,13 @@ void ego::gpu::d3d12::D3D12CopyCommandList::end()
     endInternal();
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState)
+void ego::gpu::d3d12::D3D12CopyCommandList::resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState)
 {
-    addResourceGpuWait(_resource);
-    resourceBarrierInternal(_resource, _prevState, _nextState);
+    if (_resource && _resource->getState() != _nextState)
+    {
+        addResourceGpuWait(_resource);
+        resourceBarrierInternal(_resource, _nextState);
+    }
 }
 
 void ego::gpu::d3d12::D3D12CopyCommandList::pushConstants(ShaderStageFlags, uint32_t, uint32_t, const void*)
@@ -462,10 +467,13 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::end()
     endInternal();
 }
 
-void ego::gpu::d3d12::D3D12ComputeCommandList::resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState)
+void ego::gpu::d3d12::D3D12ComputeCommandList::resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState)
 {
-    addResourceGpuWait(_resource);
-    resourceBarrierInternal(_resource, _prevState, _nextState);
+    if (_resource && _resource->getState() != _nextState)
+    {
+        addResourceGpuWait(_resource);
+        resourceBarrierInternal(_resource, _nextState);
+    }
 }
 
 void ego::gpu::d3d12::D3D12ComputeCommandList::pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data)
@@ -575,10 +583,13 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::end()
     endInternal();
 }
 
-void ego::gpu::d3d12::D3D12GraphicCommandList::resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState)
+void ego::gpu::d3d12::D3D12GraphicCommandList::resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState)
 {
-    addResourceGpuWait(_resource);
-    resourceBarrierInternal(_resource, _prevState, _nextState);
+    if (_resource && _resource->getState() != _nextState)
+    {
+        addResourceGpuWait(_resource);
+        resourceBarrierInternal(_resource, _nextState);
+    }
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data)

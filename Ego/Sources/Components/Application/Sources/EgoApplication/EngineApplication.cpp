@@ -18,11 +18,13 @@
 
 #include "EgoEngineFramework/ProjectReader.h"
 
-#include "Window/WindowEvents.h"
+#include "Gui/ApplicationWindowGuiViewportInputAdapter.h"
+
+#include "Window/ApplicationWindowEvents.h"
 
 ego::application::EngineApplication::~EngineApplication()
 {
-    releaseWindowEventCallbacks();
+    releaseApplicationWindowEventCallbacks();
 }
 
 bool ego::application::EngineApplication::parseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options) const
@@ -86,7 +88,7 @@ bool ego::application::EngineApplication::fillEngineFrameworkInitData(
     }
 
     _engineFrameworkInitData.m_engineInitData.m_graphicPresenter = getEngineGraphicPresenter();
-    return true;
+    return fillGuiViewportDesc(_engineFrameworkInitData.m_engineInitData);
 }
 
 bool ego::application::EngineApplication::loadProject(const CommandLineOptions& _options, engine_framework::ProjectPointer& _project) const
@@ -141,7 +143,7 @@ bool ego::application::EngineApplication::initEngineFramework(const engine_frame
 bool ego::application::EngineApplication::initWindowRuntime()
 {
     EGO_CHECK_RETURN_FALSE(prepareMainWindow());
-    EGO_CHECK_RETURN_FALSE(initWindowEventCallbacks());
+    EGO_CHECK_RETURN_FALSE(initApplicationWindowEventCallbacks());
 
     return true;
 }
@@ -169,10 +171,10 @@ void ego::application::EngineApplication::runEngineWindowLoop()
     EGO_ASSERT(m_engineFramework);
 
     engine::Engine& engine = m_engineFramework->getEngine();
-    WindowSystem& windowSystem = getWindowSystem();
+    ApplicationWindowManager& applicationWindowManager = getApplicationWindowManager();
     while (!engine.isStopped())
     {
-        windowSystem.processEvents();
+        applicationWindowManager.processWindowEvents();
         bool frameResult = false;
         {
             context::ScopedContextScope scopedContextScope(m_engineFrameworkContextScope);
@@ -194,25 +196,25 @@ bool ego::application::EngineApplication::isMainWindowValid() const
     return m_mainWindow && m_mainWindow->isValid();
 }
 
-void ego::application::EngineApplication::releaseWindowEventCallbacks()
+void ego::application::EngineApplication::releaseApplicationWindowEventCallbacks()
 {
-    if (m_windowDestroyingEventCallbackID == InvalidEventCallbackID && m_windowSystemQuitRequestedEventCallbackID == InvalidEventCallbackID)
+    if (m_applicationWindowDestroyingEventCallbackID == InvalidEventCallbackID && m_applicationQuitRequestedEventCallbackID == InvalidEventCallbackID)
     {
         return;
     }
 
     EventController& eventController = context::GetRuntimeContext().getEventController();
 
-    if (m_windowDestroyingEventCallbackID != InvalidEventCallbackID)
+    if (m_applicationWindowDestroyingEventCallbackID != InvalidEventCallbackID)
     {
-        eventController.removeEventCallback(m_windowDestroyingEventCallbackID);
-        m_windowDestroyingEventCallbackID = InvalidEventCallbackID;
+        eventController.removeEventCallback(m_applicationWindowDestroyingEventCallbackID);
+        m_applicationWindowDestroyingEventCallbackID = InvalidEventCallbackID;
     }
 
-    if (m_windowSystemQuitRequestedEventCallbackID != InvalidEventCallbackID)
+    if (m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID)
     {
-        eventController.removeEventCallback(m_windowSystemQuitRequestedEventCallbackID);
-        m_windowSystemQuitRequestedEventCallbackID = InvalidEventCallbackID;
+        eventController.removeEventCallback(m_applicationQuitRequestedEventCallbackID);
+        m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
     }
 }
 
@@ -223,7 +225,7 @@ void ego::application::EngineApplication::releaseGraphicPresenter()
 
 void ego::application::EngineApplication::releaseApplicationRuntime()
 {
-    releaseWindowEventCallbacks();
+    releaseApplicationWindowEventCallbacks();
     m_mainWindow = nullptr;
     Application::release();
 }
@@ -262,6 +264,18 @@ bool ego::application::EngineApplication::useOwnEngineFrameworkContextScope() co
     return false;
 }
 
+bool ego::application::EngineApplication::fillGuiViewportDesc(engine::Engine::InitData& _engineInitData) const
+{
+    EGO_CHECK_RETURN_FALSE(m_mainWindow && m_graphicPresenter);
+
+    ApplicationWindowGuiViewportInputAdapterPointer adapter = new ApplicationWindowGuiViewportInputAdapter();
+    EGO_CHECK_RETURN_FALSE(adapter && adapter->init(m_mainWindow, m_graphicPresenter));
+
+    _engineInitData.m_guiViewportDesc.m_inputAdapter = adapter;
+
+    return true;
+}
+
 bool ego::application::EngineApplication::initEngineFrameworkContextScope()
 {
     EGO_CHECK_RETURN_FALSE(!m_engineFrameworkContextScope);
@@ -282,38 +296,42 @@ bool ego::application::EngineApplication::initEngineFrameworkContextScope()
 
 bool ego::application::EngineApplication::prepareMainWindow()
 {
-    m_mainWindow = getWindowSystem().createWindow(createMainWindowDesc());
+    m_mainWindow = getApplicationWindowManager().createApplicationWindow(createMainWindowDesc());
     EGO_CHECK_RETURN_FALSE(isMainWindowValid());
 
     return true;
 }
 
-bool ego::application::EngineApplication::initWindowEventCallbacks()
+bool ego::application::EngineApplication::initApplicationWindowEventCallbacks()
 {
     EventController& eventController = context::GetRuntimeContext().getEventController();
 
-    m_windowDestroyingEventCallbackID = eventController.addEventCallback<WindowDestroyingEvent>(
-        [this](const WindowDestroyingEvent& _event)
+    m_applicationWindowDestroyingEventCallbackID = eventController.addEventCallback<ApplicationWindowDestroyingEvent>(
+        [this](const ApplicationWindowDestroyingEvent& _event)
         {
             onMainWindowDestroying(_event);
         });
-    EGO_CHECK_RETURN_FALSE(m_windowDestroyingEventCallbackID != InvalidEventCallbackID);
-
-    m_windowSystemQuitRequestedEventCallbackID = eventController.addEventCallback<WindowSystemQuitRequestedEvent>(
-        [this](const WindowSystemQuitRequestedEvent& _event)
-        {
-            onWindowSystemQuitRequested(_event);
-        });
-    if (m_windowSystemQuitRequestedEventCallbackID == InvalidEventCallbackID)
+    if (m_applicationWindowDestroyingEventCallbackID == InvalidEventCallbackID)
     {
-        releaseWindowEventCallbacks();
+        releaseApplicationWindowEventCallbacks();
+        return false;
+    }
+
+    m_applicationQuitRequestedEventCallbackID = eventController.addEventCallback<ApplicationQuitRequestedEvent>(
+        [this](const ApplicationQuitRequestedEvent& _event)
+        {
+            onApplicationQuitRequested(_event);
+        });
+    if (m_applicationQuitRequestedEventCallbackID == InvalidEventCallbackID)
+    {
+        releaseApplicationWindowEventCallbacks();
         return false;
     }
 
     return true;
 }
 
-void ego::application::EngineApplication::onMainWindowDestroying(const WindowDestroyingEvent& _event)
+void ego::application::EngineApplication::onMainWindowDestroying(const ApplicationWindowDestroyingEvent& _event)
 {
     if (_event.m_window.get() == m_mainWindow.get() && m_engineFramework)
     {
@@ -321,7 +339,7 @@ void ego::application::EngineApplication::onMainWindowDestroying(const WindowDes
     }
 }
 
-void ego::application::EngineApplication::onWindowSystemQuitRequested(const WindowSystemQuitRequestedEvent&)
+void ego::application::EngineApplication::onApplicationQuitRequested(const ApplicationQuitRequestedEvent&)
 {
     if (m_engineFramework)
     {

@@ -2,31 +2,22 @@
 
 #include <shared_mutex>
 
-#include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Platform/PlatformMacros.h"
-#include "EgoCore/Platform/Window/PlatformWindow.h"
+#include "EgoCore/Platform/Window/Window.h"
 
 namespace ego::win32
 {
     class Win32WindowSystem;
 
-    class Win32Window final : public PlatformWindow, public EnableSharedFromThis<Win32Window>
+    class Win32Window final : public Window, public EnableSharedFromThis<Win32Window>
     {
+        friend class Win32WindowSystem;
+
     public:
-        class Accessor final : public NonInstanceable
-        {
-            friend class Win32WindowSystem;
-
-            static void OnWindowDestroying(Win32Window& _window);
-            static void OnWindowTransformationStart(Win32Window& _window);
-            static void OnWindowTransformationEnd(Win32Window& _window);
-            static void OnWindowSizeUpdate(Win32Window& _window);
-        };
-
         Win32Window(Win32WindowSystem& _windowSystem, HINSTANCE _instance);
         ~Win32Window() override;
 
-        bool init(const PlatformWindowDesc& _desc) override;
+        bool init(const WindowDesc& _desc) override;
         void release() override;
 
         bool isValid() const override;
@@ -38,17 +29,25 @@ namespace ego::win32
         void* getNativeHandle() const override;
 
         bool isStable() const override;
+        bool screenToClient(const WindowPoint& _screenPoint, WindowPoint& _clientPoint) const override;
 
-        const PlatformWindowSize& getWindowSize() const override;
-        const PlatformWindowSize& getClientAreaSize() const override;
-        const PlatformWindowArea& getCutoutsArea() const override;
+        const WindowSize& getWindowSize() const override;
+        const WindowSize& getClientAreaSize() const override;
+        const WindowArea& getCutoutsArea() const override;
 
         HWND getHandle() const;
-        Win32WindowSystem& getWindowSystem() const;
 
-        EGO_RTTI_VIRTUAL(Win32Window, PlatformWindow);
+        EGO_RTTI_VIRTUAL(Win32Window, Window);
 
     private:
+        bool processWindowMessage(UINT _msg, WPARAM _wParam, LPARAM _lParam, LRESULT& _result);
+
+        void onWindowDestroying();
+        void onWindowTransformationStart();
+        void onWindowTransformationEnd();
+        void onWindowSizeUpdate();
+        void onWindowActivate(bool _isActive);
+
         void updateSizes();
 
         void invalidate();
@@ -56,9 +55,9 @@ namespace ego::win32
 
         mutable std::shared_mutex m_mutex;
 
-        PlatformWindowSize m_windowSize = DefaultPlatformWindowSize;
-        PlatformWindowSize m_clientAreaSize = DefaultPlatformWindowSize;
-        PlatformWindowArea m_cutoutsArea = DefaultPlatformWindowArea;
+        WindowSize m_windowSize = DefaultWindowSize;
+        WindowSize m_clientAreaSize = DefaultWindowSize;
+        WindowArea m_cutoutsArea = DefaultWindowArea;
 
         Win32WindowSystem& m_windowSystem;
         HINSTANCE m_instance = nullptr;

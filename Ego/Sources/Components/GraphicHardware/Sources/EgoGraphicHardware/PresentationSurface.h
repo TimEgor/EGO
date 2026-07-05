@@ -2,11 +2,11 @@
 
 #include "EgoCore/RTTI/RTTI.h"
 
-#include "EgoMath/Vector.h"
+#include "EgoCore/Platform/Window/WindowTypes.h"
 
 namespace ego
 {
-    using PresentationSurfaceSize = UInt16Vector2;
+    using PresentationSurfaceSize = WindowSize;
 
     class PresentationSurface
     {

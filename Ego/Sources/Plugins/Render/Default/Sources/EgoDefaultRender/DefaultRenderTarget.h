@@ -26,6 +26,5 @@ namespace ego::render
         RenderTextureView m_renderTargetView = nullptr;
         RenderTextureView m_unorderedAccessView = nullptr;
         gpu::Texture2DSize m_resolution = DefaultRenderResolution;
-        gpu::GraphicResourceState m_state = gpu::GraphicResourceState::Common;
     };
 } // namespace ego::render

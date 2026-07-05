@@ -32,7 +32,7 @@ namespace ego::gpu::d3d12
         void endInternal();
 
         void bindBindlessDescriptorHeapsInternal();
-        void resourceBarrierInternal(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState);
+        void resourceBarrierInternal(const GraphicResourceReference& _resource, GraphicResourceState _nextState);
 
         void pushConstantsInternal(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data);
         void setRayTracingPipelineInternal(const RayTracingPipelineReference& _pipeline);
@@ -69,7 +69,7 @@ namespace ego::gpu::d3d12
         void reset() override;
         void end() override;
 
-        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState) override;
+        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) override;
 
         void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) override;
 
@@ -98,7 +98,7 @@ namespace ego::gpu::d3d12
         void reset() override;
         void end() override;
 
-        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState) override;
+        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) override;
 
         void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) override;
 
@@ -132,7 +132,7 @@ namespace ego::gpu::d3d12
         void reset() override;
         void end() override;
 
-        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState) override;
+        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) override;
 
         void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) override;
 

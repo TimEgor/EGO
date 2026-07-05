@@ -1477,7 +1477,9 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
             return SwapChainReference();
         }
 
-        targetTextures.push_back(Texture2DReference(new D3D12Texture2D(textureDesc, std::move(resource))));
+        Texture2DReference targetTexture = new D3D12Texture2D(textureDesc, std::move(resource));
+        targetTexture->setState(GraphicResourceState::Present);
+        targetTextures.push_back(targetTexture);
     }
 
     return SwapChainReference(new D3D12SwapChain(_swapChainDesc, std::move(swapChain3), std::move(targetTextures), _presentationQueue));

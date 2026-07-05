@@ -2,14 +2,24 @@
 
 #include "EgoCore/Assert/AssertCore.h"
 #include "EgoCore/Context/ContextStack.h"
+#include "EgoCore/Context/PlatformContext.h"
+#include "EgoCore/Platform/FileSystem/FileSystem.h"
+#include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Profile/Profile.h"
 
+#include "EgoRuntime/Input/InputController.h"
 #include "EgoRuntime/Job/JobDescriptor.h"
 #include "EgoRuntime/Plugin/PluginController.h"
+#include "EgoRuntime/RuntimeContext.h"
 
 #include "EngineContext.h"
 #include "Graphic/Render/RenderPlugin.h"
 #include "Level/LevelController.h"
+
+namespace
+{
+    constexpr const char* EngineGuiFontPath = "C:/Windows/Fonts/segoeui.ttf";
+} // namespace
 
 bool ego::engine::Engine::init(const Engine::InitData& _initData)
 {
@@ -20,7 +30,10 @@ bool ego::engine::Engine::init(const Engine::InitData& _initData)
     m_levelController = new LevelController();
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
+    EGO_CHECK_INITIALIZATION(initGuiController(_initData));
+
     EGO_CHECK_INITIALIZATION(initRender(_initData));
+    syncPresenterTargetResolution();
 
     EGO_CHECK_INITIALIZATION(initMainLoop());
 
@@ -32,6 +45,7 @@ void ego::engine::Engine::release()
     m_mainLoop.release();
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
@@ -64,7 +78,8 @@ bool ego::engine::Engine::runFrame()
 
     beginFrame();
 
-    // m_inputDeviceController->update();
+    context::GetPlatform().getInputDeviceController().update();
+    context::GetRuntimeContext().getInputController().update();
 
     if (m_isStopped)
     {
@@ -175,6 +190,23 @@ void ego::engine::Engine::clearRenderCameraEntity()
     m_renderCameraEntity = ecs::Entity();
 }
 
+const ego::gui::GuiController& ego::engine::Engine::getGuiController() const
+{
+    EGO_ASSERT(m_guiController);
+    return *m_guiController;
+}
+
+ego::gui::GuiController& ego::engine::Engine::getGuiController()
+{
+    EGO_ASSERT(m_guiController);
+    return *m_guiController;
+}
+
+ego::gui::GuiControllerPointer ego::engine::Engine::getGuiControllerPointer() const
+{
+    return m_guiController;
+}
+
 ego::JobGraphReference ego::engine::Engine::getMainLoopJobGraph()
 {
     return m_mainLoop.createJobGraph();
@@ -193,6 +225,34 @@ ego::engine::MainLoop& ego::engine::Engine::getMainLoop()
 bool ego::engine::Engine::initGraphicPresenter(const InitData& _initData)
 {
     m_graphicPresenter = _initData.m_graphicPresenter;
+    return true;
+}
+
+bool ego::engine::Engine::loadDefaultGuiFont(gui::GuiFontAtlasDesc& _fontAtlasDesc) const
+{
+    const PlatformPointer platform = context::GetPlatformPointer();
+    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
+    EGO_CHECK_RETURN_FALSE(fileSystem && fileSystem->readFile(EngineGuiFontPath, _fontAtlasDesc.m_fontData));
+
+    _fontAtlasDesc.m_pixelHeight = 16.0f;
+    _fontAtlasDesc.m_width = 512;
+    _fontAtlasDesc.m_height = 512;
+    _fontAtlasDesc.m_firstCharacter = ' ';
+    _fontAtlasDesc.m_characterCount = 95;
+    _fontAtlasDesc.m_textureId = gui::GuiDefaultFontTextureID;
+    return true;
+}
+
+bool ego::engine::Engine::initGuiController(const InitData& _initData)
+{
+    m_guiController = new gui::GuiController();
+    EGO_CHECK_RETURN_FALSE(m_guiController);
+
+    gui::GuiController::InitData guiInitData;
+    guiInitData.m_viewportDesc = _initData.m_guiViewportDesc;
+    EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiInitData.m_fontAtlasDesc));
+    EGO_CHECK_RETURN_FALSE(m_guiController->init(guiInitData));
+
     return true;
 }
 
@@ -262,6 +322,46 @@ bool ego::engine::Engine::initJobController(const InitData& _initData)
     return true;
 }
 
+void ego::engine::Engine::syncPresenterTargetResolution()
+{
+    gpu::Texture2DSize targetResolution(0);
+    bool hasTargetResolution = false;
+    if (m_graphicPresenter)
+    {
+        const gpu::Texture2DReference targetTexture = m_graphicPresenter->getTargetTexture();
+        if (targetTexture)
+        {
+            targetResolution = targetTexture->getDesc().m_size;
+            hasTargetResolution = targetResolution.m_x != 0 && targetResolution.m_y != 0;
+        }
+    }
+
+    if (hasTargetResolution && m_render)
+    {
+        const gpu::Texture2DSize& renderResolution = m_render->getResolution();
+        if (renderResolution.m_x != targetResolution.m_x || renderResolution.m_y != targetResolution.m_y)
+        {
+            m_render->setResolution(targetResolution);
+        }
+    }
+
+    if (hasTargetResolution && m_guiController && m_guiController->isInitialized())
+    {
+        const gui::GuiViewportPointer guiViewport = m_guiController->getViewport();
+        if (guiViewport)
+        {
+            const gui::GuiSize viewportSize(
+                static_cast<float>(targetResolution.m_x),
+                static_cast<float>(targetResolution.m_y));
+            const gui::GuiSize& currentViewportSize = guiViewport->getSize();
+            if (currentViewportSize.m_x != viewportSize.m_x || currentViewportSize.m_y != viewportSize.m_y)
+            {
+                guiViewport->setSize(viewportSize);
+            }
+        }
+    }
+}
+
 void ego::engine::Engine::releaseJobController()
 {
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
@@ -271,10 +371,19 @@ void ego::engine::Engine::beginFrame()
 {
     m_currentFrameTime = Clock::GetCurrentTimePoint();
     m_deltaTime = Clock::CalcTimePointDelta<float>(m_currentFrameTime, m_prevFrameStartTime);
+    if (m_guiController)
+    {
+        m_guiController->beginFrame();
+    }
 }
 
 void ego::engine::Engine::endFrame()
 {
+    if (m_guiController)
+    {
+        m_guiController->endFrame();
+    }
+
     m_prevFrameStartTime = m_currentFrameTime;
 }
 
@@ -304,6 +413,8 @@ void ego::engine::Engine::presentFrame()
 
 void ego::engine::Engine::prepareRenderFrame()
 {
+    syncPresenterTargetResolution();
+
     if (!m_render || !m_levelController)
     {
         return;

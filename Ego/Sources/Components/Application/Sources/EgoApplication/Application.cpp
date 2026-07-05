@@ -44,7 +44,7 @@ bool ego::application::Application::initRuntime(const InitData& _initData)
     EGO_CHECK_RETURN_CALL_FALSE(initProfilerPlugin(_initData), releaseRuntimeObjects());
     EGO_CHECK_RETURN_CALL_FALSE(initPluginCatalog(_initData), releaseRuntimeObjects());
     EGO_CHECK_RETURN_CALL_FALSE(initApplicationScopedContext(), releaseRuntimeObjects());
-    EGO_CHECK_RETURN_CALL_FALSE(initWindowSystem(_initData), releaseRuntimeObjects());
+    EGO_CHECK_RETURN_CALL_FALSE(initApplicationWindowManager(), releaseRuntimeObjects());
     EGO_CHECK_RETURN_CALL_FALSE(initGraphicHardware(_initData), releaseRuntimeObjects());
 
     return true;
@@ -59,7 +59,7 @@ void ego::application::Application::release()
 void ego::application::Application::releaseRuntimeObjects()
 {
     releaseGraphicHardwareContext();
-    releaseWindowSystem();
+    releaseApplicationWindowManager();
     releaseApplicationScopedContext();
     releaseProfilerPlugin();
 }
@@ -79,16 +79,16 @@ ego::Platform& ego::application::Application::getPlatform()
     return context::GetPlatform();
 }
 
-const ego::WindowSystem& ego::application::Application::getWindowSystem() const
+const ego::application::ApplicationWindowManager& ego::application::Application::getApplicationWindowManager() const
 {
-    EGO_ASSERT(m_windowSystem);
-    return *m_windowSystem;
+    EGO_ASSERT(m_applicationWindowManager);
+    return *m_applicationWindowManager;
 }
 
-ego::WindowSystem& ego::application::Application::getWindowSystem()
+ego::application::ApplicationWindowManager& ego::application::Application::getApplicationWindowManager()
 {
-    EGO_ASSERT(m_windowSystem);
-    return *m_windowSystem;
+    EGO_ASSERT(m_applicationWindowManager);
+    return *m_applicationWindowManager;
 }
 
 bool ego::application::Application::initContextStack()
@@ -205,12 +205,12 @@ bool ego::application::Application::initPluginCatalog(const InitData& _initData)
     return true;
 }
 
-bool ego::application::Application::initWindowSystem(const InitData& _initData)
+bool ego::application::Application::initApplicationWindowManager()
 {
-    EGO_CHECK_RETURN_FALSE(!m_windowSystem);
+    EGO_CHECK_RETURN_FALSE(!m_applicationWindowManager);
 
-    m_windowSystem = new WindowSystem();
-    EGO_CHECK_RETURN_FALSE(m_windowSystem && m_windowSystem->init());
+    m_applicationWindowManager = new ApplicationWindowManager();
+    EGO_CHECK_RETURN_FALSE(m_applicationWindowManager && m_applicationWindowManager->init());
 
     return true;
 }
@@ -247,9 +247,9 @@ void ego::application::Application::releaseGraphicHardwareContext()
     m_graphicHardwareContext = nullptr;
 }
 
-void ego::application::Application::releaseWindowSystem()
+void ego::application::Application::releaseApplicationWindowManager()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_windowSystem);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationWindowManager);
 }
 
 void ego::application::Application::releaseApplicationScopedContext()

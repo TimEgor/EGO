@@ -7,6 +7,7 @@ add_subdirectory(ECS)
 add_subdirectory(Math)
 add_subdirectory(Runtime)
 add_subdirectory(GraphicHardware)
+add_subdirectory(Gui)
 add_subdirectory(Engine)
 add_subdirectory(EngineFramework)
 add_subdirectory(Application)
@@ -18,6 +19,7 @@ target_link_libraries(EgoComponents
     INTERFACE
         Ego::Core
         Ego::ECS
+        Ego::Gui
         Ego::GraphicHardware
         Ego::Engine
         Ego::EngineFramework

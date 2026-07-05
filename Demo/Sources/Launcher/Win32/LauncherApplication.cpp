@@ -74,12 +74,13 @@ int ego::demo::launcher::LauncherApplication::initEngineFrameworkFromOptions(con
     engine_framework::EngineFramework::InitData engineFrameworkInitData;
     EGO_CHECK_RETURN_VALUE(loadProject(_options, engineFrameworkInitData.m_project), ProjectLoadingFailedExitCode);
     EGO_CHECK_RETURN_VALUE(createGraphicPresenter(), WindowInitializationFailedExitCode);
-    EGO_CHECK_RETURN_VALUE(fillEngineFrameworkInitData(_options, engineFrameworkInitData), EngineFrameworkInitializationFailedExitCode);
 
     if (!initWindowRuntime())
     {
         return WindowInitializationFailedExitCode;
     }
+
+    EGO_CHECK_RETURN_VALUE(fillEngineFrameworkInitData(_options, engineFrameworkInitData), EngineFrameworkInitializationFailedExitCode);
 
     if (!initEngineFramework(engineFrameworkInitData))
     {

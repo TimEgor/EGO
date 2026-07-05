@@ -12,7 +12,7 @@
 #include "EgoRuntime/RuntimeContext.h"
 
 #include "ApplicationContext.h"
-#include "Window/WindowSystem.h"
+#include "Window/ApplicationWindowManager.h"
 
 namespace ego
 {
@@ -59,8 +59,8 @@ namespace ego::application
         const Platform& getPlatform() const;
         Platform& getPlatform();
 
-        const WindowSystem& getWindowSystem() const;
-        WindowSystem& getWindowSystem();
+        const ApplicationWindowManager& getApplicationWindowManager() const;
+        ApplicationWindowManager& getApplicationWindowManager();
 
     private:
         bool initContextStack();
@@ -72,12 +72,12 @@ namespace ego::application
         bool initProfilerPlugin(const InitData& _initData);
         bool initPluginCatalog(const InitData& _initData);
         bool initApplicationScopedContext();
-        bool initWindowSystem(const InitData& _initData);
+        bool initApplicationWindowManager();
         bool initGraphicHardware(const InitData& _initData);
 
         void releaseRuntimeObjects();
         void releaseGraphicHardwareContext();
-        void releaseWindowSystem();
+        void releaseApplicationWindowManager();
         void releaseApplicationScopedContext();
         void releaseProfilerPlugin();
 
@@ -98,7 +98,7 @@ namespace ego::application
         bool m_isContextStackInitialized = false;
         bool m_isContextScopePushed = false;
         ProfilerPluginPointer m_profilerPlugin = nullptr;
-        WindowSystemPointer m_windowSystem = nullptr;
+        ApplicationWindowManagerPointer m_applicationWindowManager = nullptr;
         gpu::GraphicHardwareContextPointer m_graphicHardwareContext = nullptr;
     };
 

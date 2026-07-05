@@ -12,6 +12,7 @@
 #include "DefaultRenderTarget.h"
 #include "Passes/ClearRenderPass.h"
 #include "Passes/DebugRenderPass.h"
+#include "Passes/GuiRenderPass.h"
 #include "Passes/RayTracingRenderPass.h"
 #include "PipelineState/RenderPipelineStateCache.h"
 #include "RenderGraph/RenderPassGraph.h"
@@ -66,6 +67,7 @@ namespace ego::render
         ClearRenderPass m_clearPass;
         RayTracingRenderPass m_rayTracingPass;
         DebugRenderPass m_debugPass;
+        GuiRenderPass m_guiPass;
         gpu::Texture2DSize m_pendingResolution = DefaultRenderResolution;
         DefaultRenderSettings m_settings;
         bool m_isInitialized = false;

@@ -8,6 +8,7 @@
 #include "EgoCore/String/StringConverter.h"
 #include "EgoCore/UtilsMacros.h"
 
+#include "Input/Win32InputDeviceProvider.h"
 #include "WindowSystem/Win32WindowSystem.h"
 
 #include <commdlg.h>
@@ -63,6 +64,12 @@ bool ego::win32::Win32Platform::init()
     m_fileSystem = new Win32FileSystem();
     EGO_CHECK_INITIALIZATION(m_fileSystem && m_fileSystem->init());
 
+    m_inputDeviceController = new InputDeviceController();
+    EGO_CHECK_INITIALIZATION(m_inputDeviceController && m_inputDeviceController->addProvider(new Win32InputDeviceProvider()) && m_inputDeviceController->init());
+
+    m_windowSystem = new Win32WindowSystem(m_instance);
+    EGO_CHECK_INITIALIZATION(m_windowSystem && m_windowSystem->init());
+
     m_isInitialized = true;
 
     return true;
@@ -70,11 +77,13 @@ bool ego::win32::Win32Platform::init()
 
 void ego::win32::Win32Platform::release()
 {
-    if (!m_isInitialized)
+    if (!m_isInitialized && !m_windowSystem && !m_inputDeviceController && !m_fileSystem)
     {
         return;
     }
 
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_windowSystem);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputDeviceController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_fileSystem);
     m_isInitialized = false;
 }
@@ -84,9 +93,16 @@ ego::FileSystemPointer ego::win32::Win32Platform::getFileSystem()
     return m_fileSystem;
 }
 
-ego::PlatformWindowSystemPointer ego::win32::Win32Platform::createWindowSystem()
+ego::InputDeviceController& ego::win32::Win32Platform::getInputDeviceController()
 {
-    return PlatformWindowSystemPointer(new Win32WindowSystem(m_instance));
+    EGO_ASSERT(m_inputDeviceController);
+    return *m_inputDeviceController;
+}
+
+ego::WindowSystem& ego::win32::Win32Platform::getWindowSystem()
+{
+    EGO_ASSERT(m_windowSystem);
+    return *m_windowSystem;
 }
 
 ego::FileName ego::win32::Win32Platform::selectOpenFile(const Platform::OpenFileDialogParams& _params) const

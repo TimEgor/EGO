@@ -15,7 +15,8 @@ namespace ego::win32
         void release() override;
 
         FileSystemPointer getFileSystem() override;
-        PlatformWindowSystemPointer createWindowSystem() override;
+        InputDeviceController& getInputDeviceController() override;
+        WindowSystem& getWindowSystem() override;
         FileName selectOpenFile(const Platform::OpenFileDialogParams& _params) const override;
 
         Platform::DynamicLibraryHandle loadDynamicLibrary(const FileName& _libraryPath) override;
@@ -28,6 +29,8 @@ namespace ego::win32
         static void OutputDynamicLibraryError(const FileName& _libraryPath);
 
         Win32FileSystemPointer m_fileSystem;
+        InputDeviceControllerPointer m_inputDeviceController;
+        WindowSystemPointer m_windowSystem;
 
         HINSTANCE m_instance;
         bool m_isInitialized = false;

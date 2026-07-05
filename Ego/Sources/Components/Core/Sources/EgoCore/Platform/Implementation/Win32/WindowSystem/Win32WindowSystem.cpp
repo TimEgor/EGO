@@ -22,7 +22,7 @@ bool ego::win32::Win32WindowSystem::init()
         return true;
     }
 
-    EGO_CHECK_INITIALIZATION(PlatformWindowSystem::init());
+    EGO_CHECK_INITIALIZATION(WindowSystem::init());
     EGO_CHECK_INITIALIZATION(initWindowClass());
 
     m_isInitialized = true;
@@ -38,12 +38,12 @@ void ego::win32::Win32WindowSystem::release()
     }
 
     UnregisterClass(EGO_WIN32_WINDOW_SYSTEM_WND_CLASS_NAME, m_instance);
-    PlatformWindowSystem::release();
+    WindowSystem::release();
 
     m_isInitialized = false;
 }
 
-ego::PlatformWindowPointer ego::win32::Win32WindowSystem::createWindow(const PlatformWindowDesc& _desc)
+ego::WindowPointer ego::win32::Win32WindowSystem::createWindow(const WindowDesc& _desc)
 {
     Win32WindowPointer window = new Win32Window(*this, m_instance);
     EGO_CHECK_RETURN_NULL(window && window->init(_desc));
@@ -70,6 +70,23 @@ void ego::win32::Win32WindowSystem::processEvents()
 HINSTANCE ego::win32::Win32WindowSystem::getInstanceHandle() const
 {
     return m_instance;
+}
+
+void ego::win32::Win32WindowSystem::onWindowDestroying(const WindowPointer& _window) const
+{
+    notifyWindowDestroying(_window);
+}
+
+void ego::win32::Win32WindowSystem::onWindowActivate(const WindowPointer& _window, bool _isActive) const
+{
+    notifyWindowActivate(_window, _isActive);
+}
+
+void ego::win32::Win32WindowSystem::onWindowSizeChange(
+    const WindowPointer& _window,
+    const WindowSize& _prevSize) const
+{
+    notifyWindowSizeChange(_window, _prevSize);
 }
 
 bool ego::win32::Win32WindowSystem::initWindowClass()
@@ -104,44 +121,10 @@ LRESULT ego::win32::Win32WindowSystem::WndProc(HWND _hwnd, UINT _msg, WPARAM _wP
         Win32WindowPointer win32Window = windowData->lock();
         if (win32Window)
         {
-            if (win32Window->isValid())
+            LRESULT result = 0;
+            if (win32Window->processWindowMessage(_msg, _wParam, _lParam, result))
             {
-                switch (_msg)
-                {
-                case WM_DESTROY:
-                {
-                    win32Window->getWindowSystem().notifyWindowDestroying(win32Window);
-                    Win32Window::Accessor::OnWindowDestroying(*win32Window);
-                    return 0;
-                }
-
-                case WM_ENTERSIZEMOVE:
-                {
-                    Win32Window::Accessor::OnWindowTransformationStart(*win32Window);
-                    break;
-                }
-
-                case WM_EXITSIZEMOVE:
-                {
-                    Win32Window::Accessor::OnWindowTransformationEnd(*win32Window);
-                    break;
-                }
-
-                case WM_SIZE:
-                {
-                    const PlatformWindowSize prevWindowSize = win32Window->getWindowSize();
-                    Win32Window::Accessor::OnWindowSizeUpdate(*win32Window);
-                    win32Window->getWindowSystem().notifyWindowSizeChange(win32Window, prevWindowSize);
-                    break;
-                }
-
-                case WM_ACTIVATE:
-                {
-                    const bool activationState = LOWORD(_wParam) != WA_INACTIVE;
-                    win32Window->getWindowSystem().notifyWindowActivate(win32Window, activationState);
-                    break;
-                }
-                }
+                return result;
             }
         }
     }

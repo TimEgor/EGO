@@ -9,13 +9,13 @@
 #include "EgoEngineFramework/EngineFramework.h"
 
 #include "Application.h"
-#include "Window/Window.h"
+#include "Window/ApplicationWindow.h"
 
-namespace ego
+namespace ego::application
 {
-    struct WindowDestroyingEvent;
-    struct WindowSystemQuitRequestedEvent;
-} // namespace ego
+    struct ApplicationQuitRequestedEvent;
+    struct ApplicationWindowDestroyingEvent;
+} // namespace ego::application
 
 namespace ego::application
 {
@@ -52,7 +52,7 @@ namespace ego::application
         void runEngineWindowLoop();
 
         bool isMainWindowValid() const;
-        void releaseWindowEventCallbacks();
+        void releaseApplicationWindowEventCallbacks();
         void releaseGraphicPresenter();
         void releaseApplicationRuntime();
         void releaseEngineFramework();
@@ -65,19 +65,20 @@ namespace ego::application
         virtual bool useOwnEngineFrameworkContextScope() const;
 
         engine_framework::EngineFrameworkPointer m_engineFramework = nullptr;
-        WindowPointer m_mainWindow = nullptr;
+        ApplicationWindowPointer m_mainWindow = nullptr;
         WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
 
     private:
+        bool fillGuiViewportDesc(engine::Engine::InitData& _engineInitData) const;
         bool initEngineFrameworkContextScope();
         bool prepareMainWindow();
-        bool initWindowEventCallbacks();
-        void onMainWindowDestroying(const WindowDestroyingEvent& _event);
-        void onWindowSystemQuitRequested(const WindowSystemQuitRequestedEvent&);
+        bool initApplicationWindowEventCallbacks();
+        void onMainWindowDestroying(const ApplicationWindowDestroyingEvent& _event);
+        void onApplicationQuitRequested(const ApplicationQuitRequestedEvent&);
 
         context::ContextScopePointer m_engineFrameworkContextScope = nullptr;
-        EventCallbackID m_windowDestroyingEventCallbackID = InvalidEventCallbackID;
-        EventCallbackID m_windowSystemQuitRequestedEventCallbackID = InvalidEventCallbackID;
+        EventCallbackID m_applicationWindowDestroyingEventCallbackID = InvalidEventCallbackID;
+        EventCallbackID m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
     };
 
     EGO_POINTER(EngineApplication);

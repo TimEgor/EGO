@@ -21,6 +21,14 @@ if (TARGET EgoTestDemo)
     add_dependencies(EgoDemoLauncherWin32 EgoTestDemo)
 endif()
 
+if (TARGET EgoDebugDrawDemo)
+    add_dependencies(EgoDemoLauncherWin32 EgoDebugDrawDemo)
+endif()
+
+if (TARGET EgoGuiDemo)
+    add_dependencies(EgoDemoLauncherWin32 EgoGuiDemo)
+endif()
+
 ego_setup_target_common(
     EgoDemoLauncherWin32
     "Demo/Launcher"

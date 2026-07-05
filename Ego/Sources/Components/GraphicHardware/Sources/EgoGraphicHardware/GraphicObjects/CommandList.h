@@ -125,7 +125,7 @@ namespace ego::gpu
         virtual CommandType getCommandType() const = 0;
         const std::vector<GpuTaskReference>& getGpuWaits() const;
 
-        virtual void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _prevState, GraphicResourceState _nextState) = 0;
+        virtual void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) = 0;
 
         virtual void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) = 0;
 

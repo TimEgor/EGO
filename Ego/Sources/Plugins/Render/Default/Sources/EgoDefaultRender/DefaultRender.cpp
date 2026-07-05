@@ -218,6 +218,7 @@ bool ego::render::DefaultRender::initPassGraph(GraphicDevice& _graphicDevice)
     m_passGraph.addPass("Clear", m_clearPass);
     m_passGraph.addPass("RayTracing", m_rayTracingPass);
     m_passGraph.addPass("Debug", m_debugPass);
+    m_passGraph.addPass("Gui", m_guiPass);
     EGO_CHECK_INITIALIZATION(m_passGraph.compile());
     EGO_CHECK_INITIALIZATION(m_passGraph.prepareCommandLists(_graphicDevice));
 
@@ -279,9 +280,9 @@ bool ego::render::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _
     presentCommandList->begin();
     m_renderTarget.transition(presentCommandList, gpu::GraphicResourceState::CopySrc);
 
-    presentCommandList->resourceBarrier(presenterTargetTexture.getObject(), gpu::GraphicResourceState::Present, gpu::GraphicResourceState::CopyDst);
+    presentCommandList->resourceBarrier(presenterTargetTexture.getObject(), gpu::GraphicResourceState::CopyDst);
     presentCommandList->copyTexture(renderTargetTexture.getObject(), presenterTargetTexture.getObject(), copyRegion);
-    presentCommandList->resourceBarrier(presenterTargetTexture.getObject(), gpu::GraphicResourceState::CopyDst, gpu::GraphicResourceState::Present);
+    presentCommandList->resourceBarrier(presenterTargetTexture.getObject(), gpu::GraphicResourceState::Present);
 
     m_renderTarget.transition(presentCommandList, gpu::GraphicResourceState::Common);
     presentCommandList->end();

@@ -8,11 +8,13 @@ namespace ego
 {
     class EventController;
     class FileSystem;
+    class InputController;
     class PluginCatalog;
     class ResourceController;
 
     EGO_POINTER(EventController);
     EGO_POINTER(FileSystem);
+    EGO_POINTER(InputController);
     EGO_POINTER(PluginCatalog);
     EGO_POINTER(ResourceController);
 } // namespace ego
@@ -41,6 +43,9 @@ namespace ego::context
         EventControllerPointer getEventControllerPointer() const;
         EventController& getEventController() const;
 
+        InputControllerPointer getInputControllerPointer() const;
+        InputController& getInputController() const;
+
         ResourceControllerPointer getResourceControllerPointer() const;
         ResourceController& getResourceController() const;
 
@@ -51,6 +56,7 @@ namespace ego::context
 
         PluginCatalogPointer m_pluginCatalog = nullptr;
         EventControllerPointer m_eventController = nullptr;
+        InputControllerPointer m_inputController = nullptr;
         ResourceControllerPointer m_resourceController = nullptr;
     };
 

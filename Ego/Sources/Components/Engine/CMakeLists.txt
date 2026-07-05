@@ -12,6 +12,7 @@ target_link_libraries(
         PUBLIC
             Ego::Core
             Ego::ECS
+            Ego::Gui
             Ego::GraphicHardware
             Ego::Math
             Ego::Runtime

@@ -45,7 +45,6 @@ bool ego::render::DefaultRenderTarget::prepare(GraphicDevice& _graphicDevice, co
     unorderedAccessViewDesc.m_format = textureDesc.m_format;
 
     m_unorderedAccessView = _graphicDevice.createTextureView(m_texture.getObject(), unorderedAccessViewDesc);
-    m_state = gpu::GraphicResourceState::Common;
 
     return static_cast<bool>(m_unorderedAccessView);
 }
@@ -55,18 +54,16 @@ void ego::render::DefaultRenderTarget::release()
     m_unorderedAccessView = nullptr;
     m_renderTargetView = nullptr;
     m_texture = nullptr;
-    m_state = gpu::GraphicResourceState::Common;
 }
 
 void ego::render::DefaultRenderTarget::transition(const RenderGraphicCommandList& _commandList, gpu::GraphicResourceState _nextState)
 {
-    if (!_commandList || !m_texture || m_state == _nextState)
+    if (!_commandList || !m_texture || m_texture->getState() == _nextState)
     {
         return;
     }
 
-    _commandList->resourceBarrier(m_texture.getObject(), m_state, _nextState);
-    m_state = _nextState;
+    _commandList->resourceBarrier(m_texture.getObject(), _nextState);
 }
 
 bool ego::render::DefaultRenderTarget::isReady() const

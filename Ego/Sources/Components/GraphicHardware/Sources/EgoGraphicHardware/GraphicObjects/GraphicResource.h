@@ -86,11 +86,14 @@ namespace ego::gpu
         void waitGpuReady() const;
         const GpuTaskReference& getLastWriteTask() const;
         void setLastWriteTask(const GpuTaskReference& _task);
+        GraphicResourceState getState() const;
+        void setState(GraphicResourceState _state);
 
         EGO_RTTI_VIRTUAL_BASE(GraphicResource);
 
     private:
         GpuTaskReference m_lastWriteTask = nullptr;
+        GraphicResourceState m_state = GraphicResourceState::Common;
     };
 
     EGO_REFERENCE(GraphicResource);
