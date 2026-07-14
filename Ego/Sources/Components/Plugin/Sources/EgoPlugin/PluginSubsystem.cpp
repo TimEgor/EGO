@@ -4,34 +4,37 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "PluginCatalog.h"
+#include "PluginController.h"
 
 bool ego::PluginSubsystem::init()
 {
-    m_pluginCatalog = new PluginCatalog();
-    EGO_CHECK_INITIALIZATION(m_pluginCatalog);
+    m_pluginCatalog.clear();
+
+    m_pluginController = new PluginController();
+    EGO_CHECK_INITIALIZATION(m_pluginController && m_pluginController->init());
 
     return true;
 }
 
 void ego::PluginSubsystem::release()
 {
-    if (m_pluginCatalog)
-    {
-        m_pluginCatalog->clear();
-        m_pluginCatalog.reset();
-    }
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_pluginController);
+    m_pluginCatalog.clear();
 }
 
-ego::PluginCatalogPointer ego::PluginSubsystem::getPluginCatalogPointer() const
+ego::PluginCatalog& ego::PluginSubsystem::getPluginCatalog()
 {
     return m_pluginCatalog;
 }
 
-ego::PluginCatalog& ego::PluginSubsystem::getPluginCatalog() const
+const ego::PluginCatalog& ego::PluginSubsystem::getPluginCatalog() const
 {
-    EGO_ASSERT(m_pluginCatalog);
-    return *m_pluginCatalog;
+    return m_pluginCatalog;
+}
+
+ego::PluginControllerPointer ego::PluginSubsystem::getPluginControllerPointer() const
+{
+    return m_pluginController;
 }
 
 ego::PluginSubsystemPointer ego::GetPluginSubsystemPointer()

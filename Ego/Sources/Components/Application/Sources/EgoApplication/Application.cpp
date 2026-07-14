@@ -11,8 +11,7 @@
 
 #include "EgoEvent/EventSubsystem.h"
 
-#include "EgoPlugin/PlatformPluginSubsystem.h"
-#include "EgoPlugin/PluginCatalogBuilder.h"
+#include "EgoPlugin/Catalog/PluginCatalogBuilder.h"
 #include "EgoPlugin/PluginSubsystem.h"
 
 #include "EgoResource/ResourceSubsystem.h"
@@ -104,11 +103,6 @@ bool ego::application::Application::initSubsystems(const InitData& _initData)
     EGO_CHECK_RETURN_FALSE(m_platformSubsystem->init(platformSubsystemInitData));
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_platformSubsystem));
 
-    m_platformPluginSubsystem = new PlatformPluginSubsystem();
-    EGO_CHECK_RETURN_FALSE(m_platformPluginSubsystem);
-    EGO_CHECK_RETURN_FALSE(m_platformPluginSubsystem->init());
-    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_platformPluginSubsystem));
-
     m_pluginSubsystem = new PluginSubsystem();
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem->init());
@@ -164,11 +158,9 @@ void ego::application::Application::releaseSubsystems()
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationProfiler);
 
+    unregisterPluginDirectory();
     releaseSubsystem(m_pluginSubsystem);
     m_pluginSubsystem = nullptr;
-
-    releaseSubsystem(m_platformPluginSubsystem);
-    m_platformPluginSubsystem = nullptr;
 
     releaseSubsystem(m_platformSubsystem);
     m_platformSubsystem = nullptr;
@@ -222,7 +214,7 @@ void ego::application::Application::releaseSubsystem(const subsystem::SubsystemP
     {
         return;
     }
-    
+
     _subsystem->release();
 
     if (m_subsystemRegistry)
@@ -237,6 +229,8 @@ void ego::application::Application::releaseSubsystem(const subsystem::SubsystemP
 
 bool ego::application::Application::registerPluginDirectory(const FileName& _pluginDirectory)
 {
+    EGO_CHECK_RETURN_FALSE(m_pluginDirectoryRegistrationID == PluginCatalog::InvalidRegistrationID);
+
     if (!_pluginDirectory)
     {
         return true;
@@ -250,9 +244,26 @@ bool ego::application::Application::registerPluginDirectory(const FileName& _plu
 
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
 
-    PluginCatalogBuilder::AddPluginsFromPath(m_pluginSubsystem->getPluginCatalog(), *fileSystem, _pluginDirectory);
+    PluginCatalogBuilder::Options options;
+    options.m_mode = PluginCatalogBuilder::Mode::BestEffort;
+    m_pluginDirectoryRegistrationID = PluginCatalogBuilder::AddPluginsFromPath(m_pluginSubsystem->getPluginCatalog(), *fileSystem, _pluginDirectory, options);
 
-    return true;
+    return m_pluginDirectoryRegistrationID != PluginCatalog::InvalidRegistrationID;
+}
+
+void ego::application::Application::unregisterPluginDirectory()
+{
+    if (m_pluginDirectoryRegistrationID == PluginCatalog::InvalidRegistrationID)
+    {
+        return;
+    }
+
+    if (m_pluginSubsystem)
+    {
+        m_pluginSubsystem->getPluginCatalog().unregisterModules(m_pluginDirectoryRegistrationID);
+    }
+
+    m_pluginDirectoryRegistrationID = PluginCatalog::InvalidRegistrationID;
 }
 
 bool ego::application::Application::registerGraphicResourceProvider()

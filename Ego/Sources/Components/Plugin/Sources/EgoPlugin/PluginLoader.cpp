@@ -11,40 +11,30 @@
 
 #include "ExternalModule.h"
 #include "ExternalPlugin.h"
-#include "PluginCatalog.h"
+#include "Catalog/PluginCatalog.h"
 #include "PluginSubsystem.h"
-
-namespace
-{
-    ego::FileName SelectPluginModuleFromCatalog(const char* _typeName)
-    {
-        if (!_typeName || _typeName[0] == '\0')
-        {
-            return ego::FileName();
-        }
-
-        const ego::PluginSubsystemPointer pluginSubsystem = ego::GetPluginSubsystemPointer();
-        if (!pluginSubsystem)
-        {
-            return ego::FileName();
-        }
-
-        const ego::PluginCatalogPointer pluginCatalog = pluginSubsystem->getPluginCatalogPointer();
-        if (!pluginCatalog)
-        {
-            return ego::FileName();
-        }
-
-        return pluginCatalog->getModulePath(ego::GetPluginType(_typeName));
-    }
-} // namespace
 
 ego::FileName ego::PluginLoader::selectPluginModule(const char* _typeName)
 {
-    const FileName catalogModuleName = SelectPluginModuleFromCatalog(_typeName);
-    if (catalogModuleName)
+    if (!_typeName || _typeName[0] == '\0')
     {
-        return catalogModuleName;
+        return FileName();
+    }
+
+    const PluginType pluginType = GetPluginType(_typeName);
+    if (pluginType == rtti::InvalidTypeMetaInfoID)
+    {
+        return FileName();
+    }
+
+    const PluginSubsystemPointer pluginSubsystem = GetPluginSubsystemPointer();
+    if (pluginSubsystem)
+    {
+        const FileName moduleName = pluginSubsystem->getPluginCatalog().resolve(pluginType);
+        if (moduleName)
+        {
+            return moduleName;
+        }
     }
 
     const PlatformPointer platform = GetPlatformPointer();

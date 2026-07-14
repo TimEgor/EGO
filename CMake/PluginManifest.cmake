@@ -63,7 +63,7 @@ function(ego_setup_plugin_manifest TARGET_NAME DIR)
     _ego_create_plugin_manifest_items(MANIFEST_PLUGIN_ITEMS ${ARGN})
 
     set(MANIFEST_NAME "$<TARGET_FILE_NAME:${TARGET_NAME}>.plugin.xml")
-    set(MANIFEST_ROOT "${CMAKE_CURRENT_BINARY_DIR}/PluginManifests")
+    set(MANIFEST_ROOT "${CMAKE_BINARY_DIR}/PluginManifests/${TARGET_NAME}")
     set(MANIFEST_BUILD_FILE "${MANIFEST_ROOT}/$<CONFIG>/${MANIFEST_NAME}")
 
     set(MANIFEST_CONTENT [=[

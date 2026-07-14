@@ -9,10 +9,9 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoPlugin/PlatformPluginSubsystem.h"
+#include "EgoPlugin/Catalog/PluginCatalog.h"
+#include "EgoPlugin/Catalog/PluginCatalogBuilder.h"
 #include "EgoPlugin/Plugin.h"
-#include "EgoPlugin/PluginCatalog.h"
-#include "EgoPlugin/PluginCatalogBuilder.h"
 #include "EgoPlugin/PluginController.h"
 #include "EgoPlugin/PluginSubsystem.h"
 
@@ -96,31 +95,31 @@ void ego::engine::EngineSession::release()
 
 bool ego::engine::EngineSession::initProject(const ProjectPointer& _project)
 {
+    const PluginSubsystemPointer pluginSubsystem = subsystem::FindSubsystem<PluginSubsystem>();
+    EGO_CHECK_RETURN_FALSE(pluginSubsystem);
+
     if (!_project)
     {
         return true;
     }
 
-    PluginCatalog pluginCatalog;
-    EGO_CHECK_RETURN_FALSE(buildProjectPluginCatalog(*_project, pluginCatalog));
+    EGO_CHECK_RETURN_FALSE(buildProjectPluginCatalog(*_project));
     EGO_CHECK_RETURN_FALSE(registerProjectAssetFileSystems(*_project));
-    EGO_CHECK_RETURN_FALSE(loadProjectPlugins(*_project, pluginCatalog));
-    EGO_CHECK_RETURN_FALSE(loadProjectEngineLogicPlugin(*_project, pluginCatalog));
+    EGO_CHECK_RETURN_FALSE(loadProjectPlugins(*_project));
+    EGO_CHECK_RETURN_FALSE(loadProjectEngineLogicPlugin(*_project));
 
     return true;
 }
 
 void ego::engine::EngineSession::releaseProject()
 {
-    if (!m_engineLogicPlugin && m_projectPlugins.empty() && m_projectAssetFileSystems.empty())
+    if (m_engineLogicPlugin || !m_projectPlugins.empty() || !m_projectAssetFileSystems.empty())
     {
-        return;
-    }
-
-    const ResourceControllerPointer resourceController = getResourceControllerPointer();
-    if (resourceController)
-    {
-        resourceController->waitAllLoading();
+        const ResourceControllerPointer resourceController = getResourceControllerPointer();
+        if (resourceController)
+        {
+            resourceController->waitAllLoading();
+        }
     }
 
     m_engineLogicPlugin = nullptr;
@@ -131,6 +130,8 @@ void ego::engine::EngineSession::releaseProject()
     }
 
     releaseProjectAssetFileSystems();
+
+    m_projectPluginCatalog.clear();
 }
 
 ego::FileSystemPointer ego::engine::EngineSession::getFileSystemPointer() const
@@ -142,8 +143,8 @@ ego::FileSystemPointer ego::engine::EngineSession::getFileSystemPointer() const
 
 ego::PluginControllerPointer ego::engine::EngineSession::getPluginControllerPointer() const
 {
-    const PlatformPluginSubsystemPointer platformPluginSubsystem = subsystem::FindSubsystem<PlatformPluginSubsystem>();
-    return platformPluginSubsystem ? platformPluginSubsystem->getPluginControllerPointer() : nullptr;
+    const PluginSubsystemPointer pluginSubsystem = subsystem::FindSubsystem<PluginSubsystem>();
+    return pluginSubsystem ? pluginSubsystem->getPluginControllerPointer() : nullptr;
 }
 
 ego::ResourceControllerPointer ego::engine::EngineSession::getResourceControllerPointer() const
@@ -152,14 +153,21 @@ ego::ResourceControllerPointer ego::engine::EngineSession::getResourceController
     return resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
 }
 
-bool ego::engine::EngineSession::buildProjectPluginCatalog(const Project& _project, PluginCatalog& _pluginCatalog) const
+bool ego::engine::EngineSession::buildProjectPluginCatalog(const Project& _project)
 {
     const FileSystemPointer fileSystem = getFileSystemPointer();
     EGO_CHECK_RETURN_FALSE(fileSystem);
 
     for (const FileName& pluginDirectory : _project.getPluginDirectories())
     {
-        PluginCatalogBuilder::AddPluginsFromPath(_pluginCatalog, *fileSystem, pluginDirectory);
+        PluginCatalogBuilder::Options options;
+        options.m_mode = PluginCatalogBuilder::Mode::BestEffort;
+        const PluginCatalog::RegistrationID registrationID = PluginCatalogBuilder::AddPluginsFromPath(m_projectPluginCatalog, *fileSystem, pluginDirectory, options);
+
+        if (registrationID == PluginCatalog::InvalidRegistrationID)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -211,19 +219,19 @@ ego::FileSystemPointer ego::engine::EngineSession::createProjectAssetFileSystem(
     return fileSystem && fileSystem->init() ? fileSystem : nullptr;
 }
 
-bool ego::engine::EngineSession::loadProjectPlugins(const Project& _project, const PluginCatalog& _pluginCatalog)
+bool ego::engine::EngineSession::loadProjectPlugins(const Project& _project)
 {
     for (const Project::PluginDesc& pluginDesc : _project.getPlugins())
     {
-        EGO_CHECK_RETURN_FALSE(loadProjectPlugin(pluginDesc, _pluginCatalog));
+        EGO_CHECK_RETURN_FALSE(loadProjectPlugin(pluginDesc));
     }
 
     return true;
 }
 
-bool ego::engine::EngineSession::loadProjectPlugin(const Project::PluginDesc& _pluginDesc, const PluginCatalog& _pluginCatalog)
+bool ego::engine::EngineSession::loadProjectPlugin(const Project::PluginDesc& _pluginDesc)
 {
-    const FileName moduleName = resolveProjectPluginModuleName(_pluginDesc, _pluginCatalog);
+    const FileName moduleName = resolveProjectPluginModuleName(_pluginDesc);
     EGO_CHECK_RETURN_FALSE(moduleName);
 
     const PluginControllerPointer pluginController = getPluginControllerPointer();
@@ -236,7 +244,7 @@ bool ego::engine::EngineSession::loadProjectPlugin(const Project::PluginDesc& _p
     return true;
 }
 
-bool ego::engine::EngineSession::loadProjectEngineLogicPlugin(const Project& _project, const PluginCatalog& _pluginCatalog)
+bool ego::engine::EngineSession::loadProjectEngineLogicPlugin(const Project& _project)
 {
     if (!_project.getEngineLogicPlugin().has_value())
     {
@@ -244,7 +252,7 @@ bool ego::engine::EngineSession::loadProjectEngineLogicPlugin(const Project& _pr
     }
 
     const Project::PluginDesc& pluginDesc = _project.getEngineLogicPlugin().value();
-    const FileName moduleName = resolveProjectPluginModuleName(pluginDesc, _pluginCatalog);
+    const FileName moduleName = resolveProjectPluginModuleName(pluginDesc);
     EGO_CHECK_RETURN_FALSE(moduleName);
 
     const PluginControllerPointer pluginController = getPluginControllerPointer();
@@ -254,7 +262,7 @@ bool ego::engine::EngineSession::loadProjectEngineLogicPlugin(const Project& _pr
     return static_cast<bool>(m_engineLogicPlugin);
 }
 
-ego::FileName ego::engine::EngineSession::resolveProjectPluginModuleName(const Project::PluginDesc& _pluginDesc, const PluginCatalog& _pluginCatalog) const
+ego::FileName ego::engine::EngineSession::resolveProjectPluginModuleName(const Project::PluginDesc& _pluginDesc) const
 {
     if (_pluginDesc.m_moduleName)
     {
@@ -267,14 +275,31 @@ ego::FileName ego::engine::EngineSession::resolveProjectPluginModuleName(const P
     }
 
     const PluginType pluginType = GetPluginType(_pluginDesc.m_typeName.c_str());
-    const FileName projectModuleName = _pluginCatalog.getModulePath(pluginType, _pluginDesc.m_name.c_str());
+    return resolvePluginModuleName(pluginType, _pluginDesc.m_name);
+}
+
+ego::FileName ego::engine::EngineSession::resolvePluginModuleName(PluginType _pluginType) const
+{
+    const FileName projectModuleName = m_projectPluginCatalog.resolve(_pluginType);
     if (projectModuleName)
     {
         return projectModuleName;
     }
 
     const PluginSubsystemPointer pluginSubsystem = subsystem::FindSubsystem<PluginSubsystem>();
-    return pluginSubsystem ? pluginSubsystem->getPluginCatalog().getModulePath(pluginType, _pluginDesc.m_name.c_str()) : FileName();
+    return pluginSubsystem ? pluginSubsystem->getPluginCatalog().resolve(_pluginType) : FileName();
+}
+
+ego::FileName ego::engine::EngineSession::resolvePluginModuleName(PluginType _pluginType, std::string_view _pluginName) const
+{
+    const FileName projectModuleName = m_projectPluginCatalog.resolve(_pluginType, _pluginName);
+    if (projectModuleName)
+    {
+        return projectModuleName;
+    }
+
+    const PluginSubsystemPointer pluginSubsystem = subsystem::FindSubsystem<PluginSubsystem>();
+    return pluginSubsystem ? pluginSubsystem->getPluginCatalog().resolve(_pluginType, _pluginName) : FileName();
 }
 
 bool ego::engine::EngineSession::tick()
@@ -448,14 +473,10 @@ bool ego::engine::EngineSession::initRender(const InitData& _initData)
     const PluginControllerPointer pluginController = getPluginControllerPointer();
     EGO_CHECK_RETURN_FALSE(pluginController);
 
-    if (_initData.m_renderPluginModuleName)
-    {
-        m_renderPlugin = pluginController->loadPlugin<render::RenderPlugin>(_initData.m_renderPluginModuleName);
-    }
-    else
-    {
-        m_renderPlugin = pluginController->loadPlugin<render::RenderPlugin>();
-    }
+    const FileName moduleName = _initData.m_renderPluginModuleName ? _initData.m_renderPluginModuleName : resolvePluginModuleName(render::RenderPlugin::GetPluginType());
+    EGO_CHECK_RETURN_FALSE(moduleName);
+
+    m_renderPlugin = pluginController->loadPlugin<render::RenderPlugin>(moduleName);
 
     EGO_CHECK_RETURN_FALSE(m_renderPlugin);
 

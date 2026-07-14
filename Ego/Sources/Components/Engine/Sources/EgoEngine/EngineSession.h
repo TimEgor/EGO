@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 #include "EgoCore/Clock.h"
@@ -14,6 +15,8 @@
 
 #include "EgoGui/GuiController.h"
 
+#include "EgoPlugin/Catalog/PluginCatalog.h"
+
 #include "Graphic/Presenter/GraphicPresenter.h"
 #include "Graphic/Render/Render.h"
 #include "Level/LevelController.h"
@@ -26,7 +29,6 @@ namespace ego
     class InputController;
     class JobController;
     class Plugin;
-    class PluginCatalog;
     class PluginController;
     class ResourceController;
 
@@ -98,15 +100,17 @@ namespace ego::engine
         PluginControllerPointer getPluginControllerPointer() const;
         ResourceControllerPointer getResourceControllerPointer() const;
 
-        bool buildProjectPluginCatalog(const Project& _project, PluginCatalog& _pluginCatalog) const;
+        bool buildProjectPluginCatalog(const Project& _project);
         bool registerProjectAssetFileSystems(const Project& _project);
         void releaseProjectAssetFileSystems();
         FileSystemPointer createProjectAssetFileSystem(const FileSystemPointer& _sourceFileSystem, const FileName& _rootPath) const;
 
-        bool loadProjectPlugins(const Project& _project, const PluginCatalog& _pluginCatalog);
-        bool loadProjectPlugin(const Project::PluginDesc& _pluginDesc, const PluginCatalog& _pluginCatalog);
-        bool loadProjectEngineLogicPlugin(const Project& _project, const PluginCatalog& _pluginCatalog);
-        FileName resolveProjectPluginModuleName(const Project::PluginDesc& _pluginDesc, const PluginCatalog& _pluginCatalog) const;
+        bool loadProjectPlugins(const Project& _project);
+        bool loadProjectPlugin(const Project::PluginDesc& _pluginDesc);
+        bool loadProjectEngineLogicPlugin(const Project& _project);
+        FileName resolveProjectPluginModuleName(const Project::PluginDesc& _pluginDesc) const;
+        FileName resolvePluginModuleName(PluginType _pluginType) const;
+        FileName resolvePluginModuleName(PluginType _pluginType, std::string_view _pluginName) const;
 
         bool initInputController();
         bool loadDefaultGuiFont(gui::GuiFontAtlasDesc& _fontAtlasDesc) const;
@@ -138,6 +142,7 @@ namespace ego::engine
 
         ProjectAssetFileSystemCollection m_projectAssetFileSystems;
         ProjectPluginCollection m_projectPlugins;
+        PluginCatalog m_projectPluginCatalog;
         EngineLogicPluginPointer m_engineLogicPlugin = nullptr;
 
         EngineLogicPointer m_engineLogic = nullptr;

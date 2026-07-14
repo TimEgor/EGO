@@ -2,11 +2,13 @@
 
 #include "EgoCore/Subsystem/Subsystem.h"
 
+#include "Catalog/PluginCatalog.h"
+
 namespace ego
 {
-    class PluginCatalog;
+    class PluginController;
 
-    EGO_POINTER(PluginCatalog);
+    EGO_POINTER(PluginController);
 
     class PluginSubsystem final : public subsystem::Subsystem
     {
@@ -17,13 +19,15 @@ namespace ego
         bool init();
         void release() override;
 
-        PluginCatalogPointer getPluginCatalogPointer() const;
-        PluginCatalog& getPluginCatalog() const;
+        PluginCatalog& getPluginCatalog();
+        const PluginCatalog& getPluginCatalog() const;
+        PluginControllerPointer getPluginControllerPointer() const;
 
         EGO_SUBSYSTEM(PluginSubsystem, subsystem::Subsystem);
 
     private:
-        PluginCatalogPointer m_pluginCatalog = nullptr;
+        PluginCatalog m_pluginCatalog;
+        PluginControllerPointer m_pluginController = nullptr;
     };
 
     EGO_POINTER(PluginSubsystem);

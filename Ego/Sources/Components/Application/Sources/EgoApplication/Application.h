@@ -8,19 +8,19 @@
 
 #include "EgoEvent/EventController.h"
 
+#include "EgoPlugin/Catalog/PluginCatalog.h"
+
 namespace ego
 {
     class DiagnosticSubsystem;
     class EventSubsystem;
     class PlatformSubsystem;
-    class PlatformPluginSubsystem;
     class PluginSubsystem;
     class ResourceSubsystem;
 
     EGO_POINTER(DiagnosticSubsystem);
     EGO_POINTER(EventSubsystem);
     EGO_POINTER(PlatformSubsystem);
-    EGO_POINTER(PlatformPluginSubsystem);
     EGO_POINTER(PluginSubsystem);
     EGO_POINTER(ResourceSubsystem);
 } // namespace ego
@@ -80,6 +80,7 @@ namespace ego::application
         void releaseSubsystem(const subsystem::SubsystemPointer& _subsystem);
 
         bool registerPluginDirectory(const FileName& _pluginDirectory);
+        void unregisterPluginDirectory();
         bool registerGraphicResourceProvider();
 
         bool initWindowing();
@@ -88,8 +89,8 @@ namespace ego::application
         subsystem::SubsystemRegistryPointer m_subsystemRegistry = nullptr;
         DiagnosticSubsystemPointer m_diagnosticSubsystem = nullptr;
         PlatformSubsystemPointer m_platformSubsystem = nullptr;
-        PlatformPluginSubsystemPointer m_platformPluginSubsystem = nullptr;
         PluginSubsystemPointer m_pluginSubsystem = nullptr;
+        PluginCatalog::RegistrationID m_pluginDirectoryRegistrationID = PluginCatalog::InvalidRegistrationID;
         EventSubsystemPointer m_eventSubsystem = nullptr;
         gpu::GraphicHardwareSubsystemPointer m_graphicHardwareSubsystem = nullptr;
         ResourceSubsystemPointer m_resourceSubsystem = nullptr;

@@ -4,7 +4,7 @@
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "PlatformPluginSubsystem.h"
+#include "PluginSubsystem.h"
 
 ego::PluginModuleID ego::PluginController::GetModuleID(const FileName& _moduleName)
 {
@@ -161,6 +161,6 @@ void ego::PluginController::unloadPlugin(Plugin* _plugin)
 
 ego::PluginControllerPointer ego::GetPluginControllerPointer()
 {
-    const PlatformPluginSubsystemPointer platformPluginSubsystem = GetPlatformPluginSubsystemPointer();
-    return platformPluginSubsystem ? platformPluginSubsystem->getPluginControllerPointer() : nullptr;
+    const PluginSubsystemPointer pluginSubsystem = GetPluginSubsystemPointer();
+    return pluginSubsystem ? pluginSubsystem->getPluginControllerPointer() : nullptr;
 }

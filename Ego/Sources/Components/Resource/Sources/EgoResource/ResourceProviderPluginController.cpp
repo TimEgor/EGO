@@ -5,9 +5,9 @@
 
 #include "EgoCore/Assert/Assert.h"
 
-#include "EgoPlugin/PluginCatalog.h"
-#include "EgoPlugin/PluginSubsystem.h"
+#include "EgoPlugin/Catalog/PluginCatalog.h"
 #include "EgoPlugin/PluginController.h"
+#include "EgoPlugin/PluginSubsystem.h"
 
 #include "ResourceSubsystem.h"
 #include "ResourceController.h"
@@ -51,13 +51,13 @@ bool ego::ResourceProviderPluginController::registerProvider(const std::string& 
         return false;
     }
 
-    const FileName providerModuleName = pluginSubsystem->getPluginCatalog().getModulePath(ResourceProviderPlugin::GetPluginType(), _providerName.c_str());
-    if (!providerModuleName)
+    const FileName moduleName = pluginSubsystem->getPluginCatalog().resolve(ResourceProviderPlugin::GetPluginType(), _providerName);
+    if (!moduleName)
     {
         return false;
     }
 
-    const ResourceProviderPluginPointer plugin = pluginController->loadPlugin<ResourceProviderPlugin>(providerModuleName);
+    const ResourceProviderPluginPointer plugin = pluginController->loadPlugin<ResourceProviderPlugin>(moduleName);
     if (!plugin)
     {
         return false;

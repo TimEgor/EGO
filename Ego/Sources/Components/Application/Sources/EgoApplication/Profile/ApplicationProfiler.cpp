@@ -4,7 +4,6 @@
 #include "EgoCore/Profile/ProfileController.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoPlugin/PlatformPluginSubsystem.h"
 #include "EgoPlugin/PluginController.h"
 
 #include "ProfilerPlugin.h"
