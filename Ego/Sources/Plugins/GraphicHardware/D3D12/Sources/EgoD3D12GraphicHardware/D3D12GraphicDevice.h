@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "EgoGraphicHardware/GraphicDevice.h"
-#include "EgoRuntime/Resource/ResourceProviderPlugin.h"
 
 #include "D3D12DescriptorFactory.h"
 #include "D3D12DeviceContext.h"
@@ -28,8 +27,10 @@ namespace ego::gpu::d3d12
         using GraphicDevice::createBuffer;
         using GraphicDevice::createTexture2D;
 
-        bool init(const GraphicDevice::InitParams& _params) override;
+        bool init(const GraphicDevice::InitData& _initData) override;
         void release() override;
+
+        std::string getResourceProviderName() const override;
 
         void* getNativeHandle() const override;
         void setName(const char* _name) override;
@@ -109,13 +110,8 @@ namespace ego::gpu::d3d12
             const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& _inputs,
             const GpuOperationOptions& _options,
             const std::vector<GraphicObjectReference>& _keepAliveObjects = std::vector<GraphicObjectReference>());
-        bool registerResourceProviders();
-        void unregisterResourceProviders();
-
         D3D12DeviceContext m_deviceContext;
         D3D12ImmediateContext m_immediateContext;
         D3D12DescriptorFactory m_descriptorFactory;
-
-        ResourceProviderPluginPointer m_resourceProviderPlugin = nullptr;
     };
 } // namespace ego::gpu::d3d12

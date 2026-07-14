@@ -1,6 +1,6 @@
 #include "RenderPassGraph.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 ego::render::RenderPassGraphNode::RenderPassGraphNode(const char* _name, RenderPass& _pass)
     : m_name(_name),

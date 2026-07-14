@@ -1,6 +1,6 @@
 #include "D3D12GraphicHardwarePlugin.h"
 
-#include "EgoRuntime/Plugin/ExternalModule.h"
+#include "EgoPlugin/ExternalModule.h"
 
 #include "D3D12GraphicDevice.h"
 

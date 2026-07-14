@@ -7,7 +7,7 @@
 
 #include "EgoMath/Vector.h"
 
-#include "EgoGraphicHardware/GraphicHardwareContext.h"
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 namespace
 {

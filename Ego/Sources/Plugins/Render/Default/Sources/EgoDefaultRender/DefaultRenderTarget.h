@@ -1,8 +1,9 @@
 #pragma once
 
+#include "EgoGraphicHardware/GraphicDevice.h"
+
 #include "EgoEngine/Graphic/Render/Render.h"
 #include "EgoEngine/Graphic/Render/RenderGpuObject.h"
-#include "EgoGraphicHardware/GraphicDevice.h"
 
 namespace ego::render
 {

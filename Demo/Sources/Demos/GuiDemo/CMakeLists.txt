@@ -10,8 +10,10 @@ ego_add_demo_plugin(
 target_link_libraries(
     EgoGuiDemo
         PRIVATE
-            Ego::EngineFramework
+            Ego::Core
+            Ego::Engine
             Ego::Gui
+            Ego::Plugin
 )
 
 ego_register_plugin(

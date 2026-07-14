@@ -9,10 +9,6 @@
 
 #include "EgoCore/Memory/Utils.h"
 
-#include "EgoRuntime/Plugin/PluginCatalog.h"
-#include "EgoRuntime/Plugin/PluginController.h"
-#include "EgoRuntime/RuntimeContext.h"
-
 #include "Objects/D3D12AccelerationStructure.h"
 #include "Objects/D3D12Buffer.h"
 #include "Objects/D3D12CommandList.h"
@@ -376,22 +372,26 @@ ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::bui
     return GpuResourceTicket<TReference>{accelerationStructure, buildTask};
 }
 
-bool ego::gpu::d3d12::D3D12GraphicDevice::init(const GraphicDevice::InitParams& _params)
+bool ego::gpu::d3d12::D3D12GraphicDevice::init(const GraphicDevice::InitData& _initData)
 {
-    EGO_CHECK_INITIALIZATION(m_deviceContext.init(_params, D3D12DescriptorFactory::BindlessResourceDescriptorCapacity, D3D12DescriptorFactory::BindlessSamplerDescriptorCapacity));
+    EGO_CHECK_INITIALIZATION(
+        m_deviceContext.init(_initData, D3D12DescriptorFactory::BindlessResourceDescriptorCapacity, D3D12DescriptorFactory::BindlessSamplerDescriptorCapacity));
     EGO_CHECK_INITIALIZATION(m_immediateContext.init(getD3D12Device()));
     EGO_CHECK_INITIALIZATION(m_descriptorFactory.init(getD3D12Device()));
-    EGO_CHECK_INITIALIZATION(registerResourceProviders());
 
     return true;
 }
 
 void ego::gpu::d3d12::D3D12GraphicDevice::release()
 {
-    unregisterResourceProviders();
     m_immediateContext.release();
     m_descriptorFactory.release();
     m_deviceContext.release();
+}
+
+std::string ego::gpu::d3d12::D3D12GraphicDevice::getResourceProviderName() const
+{
+    return "DXC";
 }
 
 void* ego::gpu::d3d12::D3D12GraphicDevice::getNativeHandle() const
@@ -1515,35 +1515,4 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::submitImmediateC
 bool ego::gpu::d3d12::D3D12GraphicDevice::executeImmediateCommands(const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands)
 {
     return m_immediateContext.execute(_recordCommands);
-}
-
-bool ego::gpu::d3d12::D3D12GraphicDevice::registerResourceProviders()
-{
-    if (m_resourceProviderPlugin)
-    {
-        return true;
-    }
-
-    const PluginControllerPointer pluginController = GetCurrentPluginController();
-    EGO_CHECK_RETURN_FALSE(pluginController);
-
-    const FileName dxcModuleName = context::GetRuntimeContext().getPluginCatalog().getModulePath(ResourceProviderPlugin::GetPluginType(), "DXC");
-    EGO_CHECK_RETURN_FALSE(dxcModuleName);
-
-    m_resourceProviderPlugin = pluginController->loadPlugin<ResourceProviderPlugin>(dxcModuleName);
-    EGO_CHECK_RETURN_FALSE(m_resourceProviderPlugin);
-
-    m_resourceProviderPlugin->registerResourceProviders();
-
-    return true;
-}
-
-void ego::gpu::d3d12::D3D12GraphicDevice::unregisterResourceProviders()
-{
-    if (m_resourceProviderPlugin)
-    {
-        m_resourceProviderPlugin->unregisterResourceProviders();
-    }
-
-    m_resourceProviderPlugin = nullptr;
 }

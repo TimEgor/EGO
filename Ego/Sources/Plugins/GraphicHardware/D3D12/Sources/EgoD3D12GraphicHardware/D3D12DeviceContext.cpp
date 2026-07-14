@@ -1,11 +1,11 @@
 #include "D3D12DeviceContext.h"
 
-bool ego::gpu::d3d12::D3D12DeviceContext::init(const GraphicDevice::InitParams& _params, uint32_t _bindlessResourceDescriptorCount, uint32_t _bindlessSamplerDescriptorCount)
+bool ego::gpu::d3d12::D3D12DeviceContext::init(const GraphicDevice::InitData& _initData, uint32_t _bindlessResourceDescriptorCount, uint32_t _bindlessSamplerDescriptorCount)
 {
     m_bindlessResourceDescriptorCount = _bindlessResourceDescriptorCount;
     m_bindlessSamplerDescriptorCount = _bindlessSamplerDescriptorCount;
 
-    if (!initializeFactory(_params) || !initializeAdapter() || !initializeDevice())
+    if (!initializeFactory(_initData) || !initializeAdapter() || !initializeDevice())
     {
         release();
         return false;
@@ -44,17 +44,17 @@ const ego::GraphicDevice::Capabilities& ego::gpu::d3d12::D3D12DeviceContext::get
     return m_capabilities;
 }
 
-bool ego::gpu::d3d12::D3D12DeviceContext::initializeFactory(const GraphicDevice::InitParams& _params)
+bool ego::gpu::d3d12::D3D12DeviceContext::initializeFactory(const GraphicDevice::InitData& _initData)
 {
     UINT factoryFlags = 0;
 
-    if (_params.m_debugEnable)
+    if (_initData.m_debugEnable)
     {
         Microsoft::WRL::ComPtr<ID3D12Debug1> debugController;
         if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
         {
             debugController->EnableDebugLayer();
-            debugController->SetEnableGPUBasedValidation(_params.m_gpuValidation);
+            debugController->SetEnableGPUBasedValidation(_initData.m_gpuValidation);
             factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
         }
     }

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 ego::InputDevice::InputDevice(InputDeviceKey _valueCount)
 {

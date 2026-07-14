@@ -7,12 +7,14 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoRuntime/Resource/ResourceController.h"
-#include "EgoRuntime/RuntimeContext.h"
+#include "EgoResource/ResourceSubsystem.h"
+#include "EgoResource/ResourceController.h"
 
 #include "EgoGraphicHardware/Resources/ShaderResource.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoGui/GuiController.h"
+#include "EgoGui/GuiFontAtlas.h"
+
 #include "EgoEngine/Graphic/Render/RenderResourceObject.h"
 
 namespace
@@ -65,7 +67,7 @@ void ego::render::GuiRenderPass::declare(RenderPassBuilder& _builder)
 
 bool ego::render::GuiRenderPass::prepare(RenderPassPrepareContext& _context)
 {
-    gui::GuiController& guiController = engine::GetEngine().getGuiController();
+    gui::GuiController& guiController = _context.m_guiController;
     const gui::GuiViewportPointer guiViewport = guiController.getViewport();
     if (!guiController.isInitialized() || !guiViewport)
     {
@@ -73,7 +75,10 @@ bool ego::render::GuiRenderPass::prepare(RenderPassPrepareContext& _context)
         return true;
     }
 
-    const gpu::Texture2DReference& fontTexture = guiController.getFontTexture();
+    const gui::GuiFontAtlasPointer& fontAtlas = guiController.getFontAtlas();
+    EGO_CHECK_RETURN_FALSE(fontAtlas && fontAtlas->isInitialized());
+
+    const gpu::Texture2DReference& fontTexture = fontAtlas->getTexture();
     EGO_CHECK_RETURN_FALSE(fontTexture);
     EGO_CHECK_RETURN_FALSE(prepareFontTextureView(_context.m_graphicDevice, fontTexture));
     EGO_CHECK_RETURN_FALSE(guiController.buildDrawData(m_drawData));
@@ -117,7 +122,7 @@ bool ego::render::GuiRenderPass::loadShaders()
         return true;
     }
 
-    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+    ResourceController& resourceController = GetResourceSubsystem().getResourceController();
 
     const gpu::VertexShaderResourcePointer vertexShaderResource = resourceController.load<gpu::VertexShaderResource>(GuiVertexShaderPath);
     EGO_CHECK_RETURN_FALSE(vertexShaderResource && vertexShaderResource->isLoaded());
@@ -200,9 +205,7 @@ bool ego::render::GuiRenderPass::initPipeline(GraphicDevice& _graphicDevice, gpu
     return m_pipeline.getObject() != nullptr;
 }
 
-bool ego::render::GuiRenderPass::prepareFontTextureView(
-    GraphicDevice& _graphicDevice,
-    const gpu::Texture2DReference& _fontTexture)
+bool ego::render::GuiRenderPass::prepareFontTextureView(GraphicDevice& _graphicDevice, const gpu::Texture2DReference& _fontTexture)
 {
     if (m_fontTextureView && m_fontTextureView->getResource() == _fontTexture)
     {
@@ -326,7 +329,7 @@ void ego::render::GuiRenderPass::renderDrawData(RenderPassExecuteContext& _conte
 
         GuiRootConstants guiConstants;
         guiConstants.m_viewportSize = FloatVector2(static_cast<float>(resolution.m_x), static_cast<float>(resolution.m_y));
-        if (command.m_textureId != gui::InvalidGuiTextureID && m_fontTextureView && fontSampler)
+        if (command.m_textureId == gui::GuiDefaultFontTextureID && m_fontTextureView && fontSampler)
         {
             guiConstants.m_textureIndex = m_fontTextureView->getBindlessIndex();
             guiConstants.m_samplerIndex = fontSampler->getBindlessIndex();

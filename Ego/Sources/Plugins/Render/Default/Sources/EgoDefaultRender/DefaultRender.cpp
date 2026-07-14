@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <vector>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGraphicHardware/GraphicHardwareContext.h"
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 #include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
 
@@ -59,7 +59,7 @@ void ego::render::DefaultRender::clearResources()
     m_isPrepared = false;
 }
 
-bool ego::render::DefaultRender::prepare(Level& _level, ecs::Entity _cameraEntity)
+bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
 {
     if (!m_isInitialized)
     {
@@ -82,15 +82,15 @@ bool ego::render::DefaultRender::prepare(Level& _level, ecs::Entity _cameraEntit
         return false;
     }
 
-    m_scene.collect(_level);
+    m_scene.collect(_context.m_level);
 
-    if (!m_shaderData.prepare(graphicDevice, _level, _cameraEntity, m_scene, m_renderTarget.getResolution()))
+    if (!m_shaderData.prepare(graphicDevice, _context.m_level, _context.m_cameraEntity, m_scene, m_renderTarget.getResolution()))
     {
         handlePrepareFailure();
         return false;
     }
 
-    RenderPassPrepareContext passContext{graphicDevice, m_renderTarget, m_scene, m_shaderData, m_settings};
+    RenderPassPrepareContext passContext{graphicDevice, m_renderTarget, m_scene, m_shaderData, m_settings, _context.m_guiController, _context.m_deltaTime};
     if (!m_passGraph.prepare(passContext))
     {
         handlePrepareFailure();

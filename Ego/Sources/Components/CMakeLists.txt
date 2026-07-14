@@ -5,12 +5,15 @@ project(EgoComponents)
 add_subdirectory(Core)
 add_subdirectory(ECS)
 add_subdirectory(Math)
-add_subdirectory(Runtime)
+add_subdirectory(Event)
+add_subdirectory(Job)
+add_subdirectory(Plugin)
+add_subdirectory(Resource)
+add_subdirectory(Input)
 add_subdirectory(GraphicHardware)
 add_subdirectory(Gui)
-add_subdirectory(Engine)
-add_subdirectory(EngineFramework)
 add_subdirectory(Application)
+add_subdirectory(Engine)
 
 add_library(EgoComponents INTERFACE)
 add_library(Ego::Components ALIAS EgoComponents)
@@ -21,9 +24,12 @@ target_link_libraries(EgoComponents
         Ego::ECS
         Ego::Gui
         Ego::GraphicHardware
-        Ego::Engine
-        Ego::EngineFramework
         Ego::Application
+        Ego::Engine
+        Ego::Event
+        Ego::Input
+        Ego::Job
         Ego::Math
-        Ego::Runtime
+        Ego::Plugin
+        Ego::Resource
 )

@@ -3,8 +3,9 @@
 #include <string>
 #include <utility>
 
+#include "EgoResource/ResourceLoadingContext.h"
+
 #include "EgoGraphicHardware/Resources/ShaderResource.h"
-#include "EgoRuntime/Resource/ResourceLoadingContext.h"
 
 #include "DXCShaderCompiler.h"
 #include "DXCShaderSourceResolver.h"

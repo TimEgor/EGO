@@ -29,7 +29,7 @@ namespace ego::render
         void release() override;
         void clearResources() override;
 
-        bool prepare(Level& _level, ecs::Entity _cameraEntity) override;
+        bool prepare(const RenderPrepareContext& _context) override;
         void render() override;
         void wait() override;
         void present(GraphicPresenter& _presenter) override;

@@ -2,11 +2,9 @@
 
 #include <cmath>
 
-#include "EgoCore/Context/ContextStack.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoEngine/Engine.h"
-#include "EgoEngine/EngineContext.h"
+#include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/Render/Render.h"
 
@@ -23,19 +21,24 @@ namespace
     constexpr auto White = ego::FloatVector4(1.0f, 1.0f, 1.0f, 1.0f);
 } // namespace
 
-bool ego::demo::DebugDrawDemo::init()
+bool ego::demo::DebugDrawDemo::init(const InitData& _initData)
 {
-    engine::Engine& engine = engine::GetEngine();
+    EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
 
-    m_level = engine.getLevelController().createLevel();
+    m_engineSession = _initData.m_engineSession;
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    EGO_CHECK_INITIALIZATION(engineSession);
+
+    m_level = engineSession->getLevelController().createLevel();
     EGO_CHECK_INITIALIZATION(m_level);
-    EGO_CHECK_INITIALIZATION(engine.getLevelController().setActiveLevel(m_level->getID()));
+    EGO_CHECK_INITIALIZATION(engineSession->getLevelController().setActiveLevel(m_level->getID()));
 
     m_cameraEntity = m_level->createNode();
     EGO_CHECK_INITIALIZATION(m_cameraEntity);
 
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(m_cameraEntity));
-    engine.setRenderCameraEntity(m_cameraEntity);
+    engineSession->setRenderCameraEntity(m_cameraEntity);
 
     return true;
 }
@@ -53,33 +56,39 @@ void ego::demo::DebugDrawDemo::update(float _deltaTime)
         m_time -= FullRotation;
     }
 
-    drawStaticPrimitives();
-    drawAnimatedPrimitives();
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    if (!engineSession)
+    {
+        return;
+    }
+
+    drawStaticPrimitives(engineSession);
+    drawAnimatedPrimitives(engineSession);
 }
 
 void ego::demo::DebugDrawDemo::release()
 {
-    const engine::EngineContextPointer engineContext = context::FindCurrentContext<engine::EngineContext>();
-    const engine::EnginePointer engine = engineContext ? engineContext->getEnginePointer() : nullptr;
-    if (engine && m_level)
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    if (engineSession && m_level)
     {
-        const LevelPointer activeLevel = engine->getLevelController().getActiveLevel();
+        const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
         if (activeLevel && activeLevel->getID() == m_level->getID())
         {
-            engine->getLevelController().clearActiveLevel();
+            engineSession->getLevelController().clearActiveLevel();
         }
 
-        engine->clearRenderCameraEntity();
+        engineSession->clearRenderCameraEntity();
     }
 
     m_level = nullptr;
     m_cameraEntity = ecs::Entity();
     m_time = 0.0f;
+    m_engineSession.reset();
 }
 
-void ego::demo::DebugDrawDemo::drawStaticPrimitives()
+void ego::demo::DebugDrawDemo::drawStaticPrimitives(const engine::EngineSessionPointer& _engineSession)
 {
-    render::Render& render = engine::GetEngine().getRender();
+    render::Render& render = _engineSession->getRender();
 
     render.drawLine(FloatVector3(-0.9f, 0.0f, 0.0f), FloatVector3(0.9f, 0.0f, 0.0f), Red);
     render.drawLine(FloatVector3(0.0f, -0.9f, 0.0f), FloatVector3(0.0f, 0.9f, 0.0f), Green);
@@ -102,9 +111,9 @@ void ego::demo::DebugDrawDemo::drawStaticPrimitives()
     render.drawPoint(FloatVector3(-0.6f, 0.6f, 0.0f), White);
 }
 
-void ego::demo::DebugDrawDemo::drawAnimatedPrimitives()
+void ego::demo::DebugDrawDemo::drawAnimatedPrimitives(const engine::EngineSessionPointer& _engineSession)
 {
-    render::Render& render = engine::GetEngine().getRender();
+    render::Render& render = _engineSession->getRender();
 
     const float pointX = std::cos(m_time) * 0.45f;
     const float pointY = std::sin(m_time) * 0.45f;

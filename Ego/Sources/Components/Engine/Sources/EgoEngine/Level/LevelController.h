@@ -10,7 +10,9 @@
 
 namespace ego
 {
-    class LevelController final : public NonCopyable
+    class LevelController final
+        : public NonCopyable,
+          public EnableSharedFromThis<LevelController>
     {
     public:
         class LevelControllerAccessor final : public NonInstanceable

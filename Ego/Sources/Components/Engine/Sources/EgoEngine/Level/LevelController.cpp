@@ -1,6 +1,6 @@
 #include "LevelController.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 ego::LevelController::~LevelController()
 {
@@ -64,7 +64,7 @@ ego::LevelPointer ego::LevelController::createLevel()
     }
 
     const LevelID levelID = allocateLevelID();
-    LevelPointer level(new Level(levelID), LevelDeleter{});
+    LevelPointer level(new Level(levelID), LevelDeleter(weakFromThis()));
     if (!level)
     {
         return nullptr;

@@ -2,18 +2,18 @@
 
 #include <string>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoRuntime/Resource/ResourceController.h"
-#include "EgoRuntime/RuntimeContext.h"
+#include "EgoResource/GeneralResources/XmlResource.h"
+#include "EgoResource/ResourceSubsystem.h"
+#include "EgoResource/ResourceController.h"
 
 #include "EgoGraphicHardware/Resources/ShaderResource.h"
 
 #include "EgoEngine/Graphic/Render/RenderResourceObject.h"
-#include "EgoEngine/Resources/GeneralResources/XmlResource.h"
 
 #include "EgoDefaultRender/DefaultRenderBindingLayout.h"
 
@@ -40,7 +40,7 @@ namespace ego::render
         EGO_CHECK_RETURN_FALSE(ReadDebugRenderPassRequiredFileName(shaderNode, "VertexShader", vertexShaderPath));
         EGO_CHECK_RETURN_FALSE(ReadDebugRenderPassRequiredFileName(shaderNode, "PixelShader", pixelShaderPath));
 
-        ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+        ResourceController& resourceController = GetResourceSubsystem().getResourceController();
 
         const gpu::VertexShaderResourcePointer vertexShaderResource = resourceController.load<gpu::VertexShaderResource>(vertexShaderPath);
         const gpu::PixelShaderResourcePointer pixelShaderResource = resourceController.load<gpu::PixelShaderResource>(pixelShaderPath);
@@ -89,9 +89,9 @@ void ego::render::DebugRenderPass::declare(RenderPassBuilder& _builder)
     _builder.readBuffer("CameraShaderData");
 }
 
-bool ego::render::DebugRenderPass::prepare(RenderPassPrepareContext&)
+bool ego::render::DebugRenderPass::prepare(RenderPassPrepareContext& _context)
 {
-    return m_debugDraw.prepare();
+    return m_debugDraw.prepare(_context.m_deltaTime);
 }
 
 void ego::render::DebugRenderPass::execute(RenderPassExecuteContext& _context)
@@ -115,11 +115,7 @@ void ego::render::DebugRenderPass::execute(RenderPassExecuteContext& _context)
 
     _context.m_commandList->beginRendering(renderingDesc);
     SetupTargetViewport(_context);
-    m_debugDraw.render(
-        _context.m_graphicDevice,
-        _context.m_pipelineStateCache,
-        _context.m_commandList,
-        _context.m_shaderData.getCameraShaderDataView());
+    m_debugDraw.render(_context.m_graphicDevice, _context.m_pipelineStateCache, _context.m_commandList, _context.m_shaderData.getCameraShaderDataView());
     _context.m_commandList->endRendering();
 }
 
@@ -135,7 +131,7 @@ void ego::render::DebugRenderPass::drawLine(const DebugDrawLineData& _line)
 
 bool ego::render::DebugRenderPass::LoadDebugDrawInitData(DefaultRenderDebugDraw::InitData& _initData)
 {
-    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+    ResourceController& resourceController = GetResourceSubsystem().getResourceController();
     const XmlResourcePointer configResource = resourceController.load<XmlResource>(DebugRenderPassConfigPath);
     return configResource && configResource->isLoaded() && LoadDebugRenderPassInitDataFromNode(configResource->getRootNode(), _initData);
 }

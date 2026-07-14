@@ -6,7 +6,14 @@
 
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
 
+#include "EgoGraphicHardware/GraphicObjects/Texture.h"
+
 #include "GuiTypes.h"
+
+namespace ego
+{
+    class GraphicDevice;
+} // namespace ego
 
 namespace ego::gui
 {
@@ -30,7 +37,6 @@ namespace ego::gui
         uint32_t m_characterCount = 95;
         uint32_t m_oversampleX = 2;
         uint32_t m_oversampleY = 1;
-        GuiTextureID m_textureId = GuiDefaultFontTextureID;
     };
 
     class GuiFontAtlas final
@@ -38,13 +44,13 @@ namespace ego::gui
     public:
         GuiFontAtlas() = default;
 
-        bool init(const GuiFontAtlasDesc& _desc);
+        bool init(GraphicDevice& _graphicDevice, const GuiFontAtlasDesc& _desc);
         void release();
 
         const GuiFontGlyph* getGlyph(char _character) const;
         GuiSize measureText(std::string_view _text) const;
 
-        const std::vector<uint8_t>& getPixels() const;
+        const gpu::Texture2DReference& getTexture() const;
         uint32_t getWidth() const;
         uint32_t getHeight() const;
         float getLineHeight() const;
@@ -53,14 +59,15 @@ namespace ego::gui
         bool isInitialized() const;
 
     private:
+        bool initTexture(GraphicDevice& _graphicDevice, const std::vector<uint8_t>& _pixels);
+
         char m_firstCharacter = ' ';
         uint32_t m_characterCount = 0;
         uint32_t m_width = 0;
         uint32_t m_height = 0;
         float m_lineHeight = 0.0f;
         float m_baseline = 0.0f;
-        GuiTextureID m_textureId = InvalidGuiTextureID;
-        std::vector<uint8_t> m_pixels;
+        gpu::Texture2DReference m_texture = nullptr;
         std::vector<GuiFontGlyph> m_glyphs;
         bool m_isInitialized = false;
     };

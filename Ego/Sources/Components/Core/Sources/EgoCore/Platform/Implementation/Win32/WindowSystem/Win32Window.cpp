@@ -1,9 +1,20 @@
 #include "Win32Window.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
-
 #include "Win32WindowSystem.h"
+
+namespace
+{
+    constexpr int32_t KeyScanCodeOffset = 16;
+    constexpr LPARAM KeyRepeatMask = static_cast<LPARAM>(1) << 30;
+    constexpr LPARAM KeyExtendedMask = static_cast<LPARAM>(1) << 24;
+
+    uint32_t GetKeyScanCode(LPARAM _lParam)
+    {
+        return static_cast<uint32_t>((_lParam >> KeyScanCodeOffset) & 0xff);
+    }
+} // namespace
 
 ego::win32::Win32Window::Win32Window(Win32WindowSystem& _windowSystem, HINSTANCE _instance)
     : m_windowSystem(_windowSystem),
@@ -52,6 +63,7 @@ bool ego::win32::Win32Window::init(const WindowDesc& _desc)
     }
 
     updateSizes();
+    setSizeStabilization(true);
 
     return true;
 }
@@ -185,7 +197,7 @@ bool ego::win32::Win32Window::screenToClient(const WindowPoint& _screenPoint, Wi
     return true;
 }
 
-bool ego::win32::Win32Window::processWindowMessage(UINT _msg, WPARAM _wParam, LPARAM, LRESULT& _result)
+bool ego::win32::Win32Window::processWindowMessage(UINT _msg, WPARAM _wParam, LPARAM _lParam, LRESULT& _result)
 {
     if (!isValid())
     {
@@ -224,6 +236,41 @@ bool ego::win32::Win32Window::processWindowMessage(UINT _msg, WPARAM _wParam, LP
         onWindowActivate(LOWORD(_wParam) != WA_INACTIVE);
         break;
     }
+
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    {
+        onWindowKeyboardInput(WindowKeyboardInputAction::Pressed, _wParam, _lParam);
+        break;
+    }
+
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+    {
+        onWindowKeyboardInput(WindowKeyboardInputAction::Released, _wParam, _lParam);
+        break;
+    }
+
+    case WM_CHAR:
+    case WM_SYSCHAR:
+    {
+        onWindowTextInput(static_cast<WindowTextCodepoint>(_wParam));
+        _result = 0;
+        return true;
+    }
+
+    case WM_UNICHAR:
+    {
+        if (_wParam == UNICODE_NOCHAR)
+        {
+            _result = TRUE;
+            return true;
+        }
+
+        onWindowTextInput(static_cast<WindowTextCodepoint>(_wParam));
+        _result = 0;
+        return true;
+    }
     }
 
     return false;
@@ -256,6 +303,26 @@ void ego::win32::Win32Window::onWindowSizeUpdate()
 void ego::win32::Win32Window::onWindowActivate(bool _isActive)
 {
     m_windowSystem.onWindowActivate(sharedFromThis(), _isActive);
+}
+
+void ego::win32::Win32Window::onWindowKeyboardInput(WindowKeyboardInputAction _action, WPARAM _wParam, LPARAM _lParam)
+{
+    WindowKeyboardInputData inputData;
+    inputData.m_key = static_cast<WindowKeyboardKey>(_wParam);
+    inputData.m_scanCode = GetKeyScanCode(_lParam);
+    inputData.m_isRepeat = _action == WindowKeyboardInputAction::Pressed && (_lParam & KeyRepeatMask) != 0;
+    inputData.m_isExtended = (_lParam & KeyExtendedMask) != 0;
+    inputData.m_action = _action;
+
+    m_windowSystem.onWindowKeyboardInput(sharedFromThis(), inputData);
+}
+
+void ego::win32::Win32Window::onWindowTextInput(WindowTextCodepoint _codepoint)
+{
+    WindowTextInputData inputData;
+    inputData.m_codepoint = _codepoint;
+
+    m_windowSystem.onWindowTextInput(sharedFromThis(), inputData);
 }
 
 void ego::win32::Win32Window::updateSizes()

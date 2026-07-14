@@ -5,27 +5,25 @@
 #include "EgoEngine/Graphic/Render/Resources/MaterialResource.h"
 #include "EgoEngine/Graphic/Render/Resources/MeshResource.h"
 #include "EgoEngine/Level/Level.h"
-
-#include "EgoEngineFramework/EngineLogic.h"
+#include "EgoEngine/Project/EngineLogic.h"
 
 namespace ego::demo
 {
-    class TestDemo final : public engine_framework::EngineLogic
+    class TestDemo final : public engine::EngineLogic
     {
     public:
         TestDemo() = default;
 
-        bool init() override;
+        bool init(const InitData& _initData) override;
         void update(float _deltaTime) override;
         void release() override;
 
     private:
-        bool createTriangleEntity(
-            ecs::Entity& _entity,
-            const render::MaterialResourcePointer& _materialResource,
-            const ComputeVector3& _position);
+        bool createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const ComputeVector3& _position);
         bool setTriangleTransform(ecs::Entity _entity, const ComputeVector3& _position, float _rotationAngle);
 
+        engine::EngineSessionWeakPointer m_engineSession;
+        ResourceControllerPointer m_resourceController = nullptr;
         LevelPointer m_level = nullptr;
         ecs::Entity m_firstTriangleEntity;
         ecs::Entity m_secondTriangleEntity;

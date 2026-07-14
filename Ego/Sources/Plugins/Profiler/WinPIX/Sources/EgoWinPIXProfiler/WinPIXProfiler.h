@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoCore/Profile/Profile.h"
+#include "EgoCore/Profile/ProfileController.h"
 
 namespace ego::winpix
 {

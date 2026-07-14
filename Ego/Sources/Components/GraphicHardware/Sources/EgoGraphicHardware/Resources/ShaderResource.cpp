@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "EgoGraphicHardware/GraphicHardwareContext.h"
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 namespace
 {

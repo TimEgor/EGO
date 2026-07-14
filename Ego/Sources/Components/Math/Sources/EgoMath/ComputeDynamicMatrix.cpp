@@ -1,6 +1,6 @@
 #include "ComputeDynamicMatrix.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 #include "ComputeMath.h"
 

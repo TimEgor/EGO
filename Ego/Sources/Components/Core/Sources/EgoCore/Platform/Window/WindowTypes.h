@@ -58,6 +58,29 @@ namespace ego
 
     inline constexpr WindowArea DefaultWindowArea = WindowArea(0, 0, 0, 0);
 
+    using WindowKeyboardKey = uint32_t;
+    using WindowTextCodepoint = uint32_t;
+
+    enum class WindowKeyboardInputAction
+    {
+        Pressed,
+        Released
+    };
+
+    struct WindowKeyboardInputData final
+    {
+        WindowKeyboardKey m_key = 0;
+        uint32_t m_scanCode = 0;
+        bool m_isRepeat = false;
+        bool m_isExtended = false;
+        WindowKeyboardInputAction m_action = WindowKeyboardInputAction::Pressed;
+    };
+
+    struct WindowTextInputData final
+    {
+        WindowTextCodepoint m_codepoint = 0;
+    };
+
     struct WindowDesc final
     {
         const char* m_title = "";

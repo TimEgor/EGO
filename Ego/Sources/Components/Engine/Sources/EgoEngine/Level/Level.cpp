@@ -1,8 +1,7 @@
 #include "Level.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
-#include "EgoEngine/Engine.h"
 #include "LevelController.h"
 
 ego::Level::Level(LevelID _id)
@@ -17,12 +16,22 @@ ego::Level::~Level()
     release();
 }
 
+ego::LevelDeleter::LevelDeleter(const WeakPointer<LevelController>& _controller)
+    : m_controller(_controller)
+{
+}
+
 void ego::LevelDeleter::operator()(Level* _level) const
 {
-    if (_level)
+    if (!_level)
     {
-        LevelController& levelController = engine::GetEngine().getLevelController();
-        LevelController::LevelControllerAccessor::RemoveLevel(levelController, _level->getID());
+        return;
+    }
+
+    const SharedPointer<LevelController> controller = m_controller.lock();
+    if (controller)
+    {
+        LevelController::LevelControllerAccessor::RemoveLevel(*controller, _level->getID());
     }
 
     Level::LevelAccessor::Destroy(_level);

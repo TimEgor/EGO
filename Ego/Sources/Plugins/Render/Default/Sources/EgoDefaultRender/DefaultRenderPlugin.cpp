@@ -1,6 +1,6 @@
 #include "DefaultRenderPlugin.h"
 
-#include "EgoRuntime/Plugin/ExternalModule.h"
+#include "EgoPlugin/ExternalModule.h"
 
 #include "DefaultRender.h"
 

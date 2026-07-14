@@ -4,13 +4,10 @@
 
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
-
 #include "InputTypes.h"
 
 namespace ego
 {
-    class InputDeviceController;
-
     class InputDevice
     {
     public:
@@ -31,6 +28,9 @@ namespace ego
         InputDeviceKeyValue getPreviousValue(InputDeviceKey _valueIndex) const;
         InputDeviceKey getValueCount() const;
 
+        void storePreviousValues();
+        void setValue(InputDeviceKey _valueIndex, InputDeviceKeyValue _value);
+
         virtual void update() = 0;
 
         EGO_RTTI_VIRTUAL_BASE(InputDevice);
@@ -38,13 +38,8 @@ namespace ego
     protected:
         void resizeValues(InputDeviceKey _valueCount);
         void setKeyType(InputDeviceKey _valueIndex, InputDeviceKeyType _keyType);
-        void setValue(InputDeviceKey _valueIndex, InputDeviceKeyValue _value);
 
     private:
-        friend class InputDeviceController;
-
-        void storePreviousValues();
-
         ValueCollection m_values;
         ValueCollection m_previousValues;
         KeyTypeCollection m_keyTypes;

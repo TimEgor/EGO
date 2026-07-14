@@ -33,6 +33,8 @@ namespace ego::win32
         void onWindowDestroying(const WindowPointer& _window) const;
         void onWindowActivate(const WindowPointer& _window, bool _isActive) const;
         void onWindowSizeChange(const WindowPointer& _window, const WindowSize& _prevSize) const;
+        void onWindowKeyboardInput(const WindowPointer& _window, const WindowKeyboardInputData& _inputData) const;
+        void onWindowTextInput(const WindowPointer& _window, const WindowTextInputData& _inputData) const;
 
         static LRESULT CALLBACK WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam);
 

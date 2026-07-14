@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/Profile/ProfilerPlugin.h"
+#include "EgoApplication/Profile/ProfilerPlugin.h"
 
 namespace ego::winpix
 {

@@ -6,7 +6,7 @@
 
 #include "EgoCore/FileName/FileNameUtils.h"
 
-#include "EgoRuntime/Resource/ResourceLoadingContext.h"
+#include "EgoResource/ResourceLoadingContext.h"
 
 namespace ego::resources::dxc
 {

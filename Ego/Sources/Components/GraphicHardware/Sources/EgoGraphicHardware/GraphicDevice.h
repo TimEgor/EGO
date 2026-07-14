@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+
+#include "EgoCore/Platform/Window/PresentationSurface.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "GraphicObjects/AccelerationStructure.h"
@@ -14,7 +17,6 @@
 #include "GraphicObjects/Shader.h"
 #include "GraphicObjects/SwapChain.h"
 #include "GraphicObjects/Texture.h"
-#include "PresentationSurface.h"
 
 namespace ego::gpu
 {
@@ -29,7 +31,7 @@ namespace ego
     class GraphicDevice : public gpu::GraphicObject
     {
     public:
-        struct InitParams final
+        struct InitData final
         {
             bool m_debugEnable = false;
             bool m_gpuValidation = false;
@@ -50,8 +52,10 @@ namespace ego
 
         GraphicDevice() = default;
 
-        virtual bool init(const InitParams& _params) = 0;
+        virtual bool init(const InitData& _initData) = 0;
         virtual void release() = 0;
+
+        virtual std::string getResourceProviderName() const = 0;
 
         virtual gpu::CommandQueueReference createCommandQueue(const gpu::CommandQueueDesc& _desc) = 0;
         virtual gpu::GraphicCommandListReference createGraphicCommandList() = 0;

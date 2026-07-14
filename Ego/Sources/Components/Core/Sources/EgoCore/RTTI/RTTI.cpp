@@ -1,6 +1,6 @@
 #include "RTTI.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 ego::rtti::TypeMetaInfo::TypeMetaInfo(TypeMetaInfoID _id, size_t _size, ParentTypeMetaInfoCollection&& _parentTypeMetaInfos)
     : m_parentTypeMetaInfos(std::move(_parentTypeMetaInfos)),

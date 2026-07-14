@@ -2,10 +2,10 @@
 
 #include <limits>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGraphicHardware/GraphicHardwareContext.h"
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 ego::render::DebugElementBufferPool::~DebugElementBufferPool()
 {

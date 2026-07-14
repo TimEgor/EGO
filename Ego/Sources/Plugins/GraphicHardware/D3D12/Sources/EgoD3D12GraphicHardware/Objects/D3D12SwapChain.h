@@ -25,9 +25,12 @@ namespace ego::gpu::d3d12
         void setName(const char* _name) override;
 
         Texture2DReference getTargetTexture() override;
+        bool resize(const Texture2DSize& _size) override;
         void present() override;
 
     private:
+        bool createTargetTextures(const Texture2DSize& _size);
+
         Microsoft::WRL::ComPtr<IDXGISwapChain3> m_swapChain;
         std::vector<Texture2DReference> m_targetTextures;
         CommandQueueReference m_presentationQueue;

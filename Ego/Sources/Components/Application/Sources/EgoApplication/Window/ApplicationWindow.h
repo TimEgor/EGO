@@ -1,13 +1,12 @@
 #pragma once
 
+#include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Platform/Window/PresentationSurface.h"
+#include "EgoCore/Platform/Window/WindowTypes.h"
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
-#include "EgoCore/Platform/Window/WindowTypes.h"
-
-#include "EgoRuntime/Event/EventController.h"
-
-#include "EgoGraphicHardware/PresentationSurface.h"
+#include "EgoEvent/EventController.h"
 
 namespace ego
 {
@@ -17,11 +16,13 @@ namespace ego
 
 namespace ego::application
 {
-    class ApplicationWindowManager;
+    class ApplicationWindowController;
 
-    class ApplicationWindow final : public PresentationSurface
+    class ApplicationWindow final
+        : public PresentationSurface
+        , public NonCopyable
     {
-        friend class ApplicationWindowManager;
+        friend class ApplicationWindowController;
 
     public:
         ApplicationWindow() = default;
@@ -44,20 +45,26 @@ namespace ego::application
         const WindowArea& getCutoutsArea() const;
 
         InstancedEventID getSizeEventID() const;
+        InstancedEventID getKeyboardInputEventID() const;
+        InstancedEventID getTextInputEventID() const;
 
         EGO_RTTI_VIRTUAL(::ego::application::ApplicationWindow, PresentationSurface);
 
     private:
-        bool init(const ego::WindowPointer& _nativeWindow);
+        bool init(const WindowPointer& _nativeWindow, const EventControllerPointer& _eventController);
         void detachNativeWindow();
-        ego::WindowPointer getNativeWindowPointer() const;
+        WindowPointer getNativeWindowPointer() const;
 
         bool initInstancedEvents();
         void releaseInstancedEvents();
 
-        ego::WindowPointer m_nativeWindow = nullptr;
+        WindowPointer m_nativeWindow = nullptr;
+        EventControllerPointer m_eventController = nullptr;
         InstancedEventID m_sizeEventID = InvalidInstancedEventID;
+        InstancedEventID m_keyboardInputEventID = InvalidInstancedEventID;
+        InstancedEventID m_textInputEventID = InvalidInstancedEventID;
     };
 
-    EGO_POINTER(ApplicationWindow)
+    EGO_POINTER(ApplicationWindow);
+    EGO_WEAK_POINTER(ApplicationWindow);
 } // namespace ego::application

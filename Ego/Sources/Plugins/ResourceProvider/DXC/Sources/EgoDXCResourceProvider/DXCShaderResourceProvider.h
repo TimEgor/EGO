@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "EgoRuntime/Resource/ResourceProvider.h"
+#include "EgoResource/ResourceProvider.h"
 
 namespace ego::resources::dxc
 {

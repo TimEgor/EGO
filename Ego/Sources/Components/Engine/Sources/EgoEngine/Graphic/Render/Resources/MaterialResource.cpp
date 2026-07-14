@@ -5,9 +5,9 @@
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGraphicHardware/Resources/ShaderResource.h"
+#include "EgoResource/ResourceLoadingContext.h"
 
-#include "EgoRuntime/Resource/ResourceLoadingContext.h"
+#include "EgoGraphicHardware/Resources/ShaderResource.h"
 
 namespace ego::render
 {

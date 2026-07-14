@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 #include "Detail/WorldImplementation.h"
 

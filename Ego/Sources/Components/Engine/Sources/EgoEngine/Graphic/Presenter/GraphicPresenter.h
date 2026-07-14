@@ -18,4 +18,5 @@ namespace ego
     };
 
     EGO_POINTER(GraphicPresenter);
+    EGO_WEAK_POINTER(GraphicPresenter);
 } // namespace ego

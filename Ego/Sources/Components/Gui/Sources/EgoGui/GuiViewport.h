@@ -29,6 +29,7 @@ namespace ego::gui
         void setScale(float _scale);
         float getScale() const;
 
+        void setInputAdapter(const GuiViewportInputAdapterPointer& _inputAdapter);
         GuiViewportInputAdapterPointer getInputAdapter() const;
 
         void setRootWidget(const GuiWidgetPointer& _widget);

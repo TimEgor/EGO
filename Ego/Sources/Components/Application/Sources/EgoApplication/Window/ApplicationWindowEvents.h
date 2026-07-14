@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoRuntime/Event/Event.h"
+#include "EgoEvent/Event.h"
 
 #include "ApplicationWindow.h"
 
@@ -59,5 +59,31 @@ namespace ego::application
         }
 
         EGO_EVENT(ApplicationWindowSizeChangedEvent, ApplicationWindowEvent);
+    };
+
+    struct ApplicationWindowKeyboardInputEvent final : public ApplicationWindowEvent
+    {
+        WindowKeyboardInputData m_inputData;
+
+        ApplicationWindowKeyboardInputEvent(const ApplicationWindowPointer& _window, const WindowKeyboardInputData& _inputData)
+            : ApplicationWindowEvent(_window),
+              m_inputData(_inputData)
+        {
+        }
+
+        EGO_EVENT(ApplicationWindowKeyboardInputEvent, ApplicationWindowEvent);
+    };
+
+    struct ApplicationWindowTextInputEvent final : public ApplicationWindowEvent
+    {
+        WindowTextInputData m_inputData;
+
+        ApplicationWindowTextInputEvent(const ApplicationWindowPointer& _window, const WindowTextInputData& _inputData)
+            : ApplicationWindowEvent(_window),
+              m_inputData(_inputData)
+        {
+        }
+
+        EGO_EVENT(ApplicationWindowTextInputEvent, ApplicationWindowEvent);
     };
 } // namespace ego::application

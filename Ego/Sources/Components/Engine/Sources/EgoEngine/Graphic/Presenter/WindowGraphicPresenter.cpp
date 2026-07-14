@@ -29,6 +29,11 @@ ego::gpu::Texture2DReference ego::WindowGraphicPresenter::getTargetTexture()
     return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DReference();
 }
 
+bool ego::WindowGraphicPresenter::resize(const gpu::Texture2DSize& _size)
+{
+    return m_swapChain && m_swapChain->resize(_size);
+}
+
 void ego::WindowGraphicPresenter::present()
 {
     if (m_swapChain)

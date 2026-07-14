@@ -1,6 +1,6 @@
 #include "D3D12ImmediateContext.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 #include "Objects/D3D12Fence.h"
 

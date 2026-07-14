@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Memory/Utils.h"
 
 namespace ego::detail

@@ -1,8 +1,7 @@
 #include "Win32WindowSystem.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
-
 #include "Win32Window.h"
 
 ego::win32::Win32WindowSystem::Win32WindowSystem(HINSTANCE _instance)
@@ -82,11 +81,19 @@ void ego::win32::Win32WindowSystem::onWindowActivate(const WindowPointer& _windo
     notifyWindowActivate(_window, _isActive);
 }
 
-void ego::win32::Win32WindowSystem::onWindowSizeChange(
-    const WindowPointer& _window,
-    const WindowSize& _prevSize) const
+void ego::win32::Win32WindowSystem::onWindowSizeChange(const WindowPointer& _window, const WindowSize& _prevSize) const
 {
     notifyWindowSizeChange(_window, _prevSize);
+}
+
+void ego::win32::Win32WindowSystem::onWindowKeyboardInput(const WindowPointer& _window, const WindowKeyboardInputData& _inputData) const
+{
+    notifyWindowKeyboardInput(_window, _inputData);
+}
+
+void ego::win32::Win32WindowSystem::onWindowTextInput(const WindowPointer& _window, const WindowTextInputData& _inputData) const
+{
+    notifyWindowTextInput(_window, _inputData);
 }
 
 bool ego::win32::Win32WindowSystem::initWindowClass()

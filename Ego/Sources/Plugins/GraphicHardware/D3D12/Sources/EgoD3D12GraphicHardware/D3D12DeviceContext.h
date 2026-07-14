@@ -15,7 +15,7 @@ namespace ego::gpu::d3d12
     public:
         D3D12DeviceContext() = default;
 
-        bool init(const GraphicDevice::InitParams& _params, uint32_t _bindlessResourceDescriptorCount, uint32_t _bindlessSamplerDescriptorCount);
+        bool init(const GraphicDevice::InitData& _initData, uint32_t _bindlessResourceDescriptorCount, uint32_t _bindlessSamplerDescriptorCount);
         void release();
 
         IDXGIFactory6* getFactory() const;
@@ -24,7 +24,7 @@ namespace ego::gpu::d3d12
         const GraphicDevice::Capabilities& getCapabilities() const;
 
     private:
-        bool initializeFactory(const GraphicDevice::InitParams& _params);
+        bool initializeFactory(const GraphicDevice::InitData& _initData);
         bool initializeAdapter();
         bool initializeDevice();
         void initializeCapabilities();

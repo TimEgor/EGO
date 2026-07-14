@@ -6,8 +6,9 @@
 
 #include "EgoMath/Matrix.h"
 
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
 #include "EgoGraphicHardware/GraphicDevice.h"
+
+#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
 
 #include "DefaultRenderScene.h"
 

@@ -1,6 +1,6 @@
 #include "MTCountable.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 ego::MTCountable::MTCountable(uint32_t _initialCounterVal)
     : m_count(_initialCounterVal)

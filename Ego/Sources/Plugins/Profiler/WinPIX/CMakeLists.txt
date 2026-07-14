@@ -24,7 +24,7 @@ target_compile_definitions(EgoWinPIXProfiler PRIVATE USE_PIX)
 target_link_libraries(
     EgoWinPIXProfiler
         PUBLIC
-            Ego::Engine
+            Ego::Application
         PRIVATE
             Ego::ThirdParty::WinPixEventRuntime
 )

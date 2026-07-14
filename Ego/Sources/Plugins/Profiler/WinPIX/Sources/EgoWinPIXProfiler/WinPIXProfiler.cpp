@@ -9,7 +9,6 @@
 #endif
 
 #include <Windows.h>
-
 #include <WinPixEventRuntime/pix3.h>
 
 void ego::winpix::WinPIXProfiler::beginEvent(const char* _titleName, const char* _contextName)

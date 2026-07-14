@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "EgoCore/Reference/Pointer.h"
-
 #include "InputDeviceProvider.h"
 
 namespace ego

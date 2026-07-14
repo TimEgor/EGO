@@ -1,7 +1,6 @@
 #pragma once
 
 #include "EgoCore/Platform/Input/KeyboardInputDevice.h"
-#include "EgoCore/Platform/PlatformMacros.h"
 
 namespace ego::win32
 {

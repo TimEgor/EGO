@@ -20,13 +20,7 @@ namespace
     constexpr uint32_t KeyLeft = 37;
     constexpr uint32_t KeyRight = 39;
     constexpr uint32_t KeyDelete = 46;
-    constexpr uint32_t KeySpace = 32;
-    constexpr uint32_t Key0 = 48;
-    constexpr uint32_t Key9 = 57;
     constexpr uint32_t KeyA = 65;
-    constexpr uint32_t KeyZ = 90;
-    constexpr uint32_t KeyNumpad0 = 96;
-    constexpr uint32_t KeyNumpad9 = 105;
     constexpr uint32_t KeyLeftShift = 160;
     constexpr uint32_t KeyRightShift = 161;
     constexpr uint32_t KeyLeftControl = 162;
@@ -45,49 +39,6 @@ namespace
     bool IsControlKey(uint32_t _key)
     {
         return _key == KeyControl || _key == KeyLeftControl || _key == KeyRightControl;
-    }
-
-    bool TryConvertKeyToCharacter(uint32_t _key, bool _isShiftPressed, char& _character)
-    {
-        if (_key >= KeyA && _key <= KeyZ)
-        {
-            const char character = static_cast<char>('a' + (_key - KeyA));
-            _character = _isShiftPressed ? static_cast<char>(character - 'a' + 'A') : character;
-            return true;
-        }
-
-        if (_key >= Key0 && _key <= Key9)
-        {
-            static constexpr char ShiftDigits[] = {
-                ')',
-                '!',
-                '@',
-                '#',
-                '$',
-                '%',
-                '^',
-                '&',
-                '*',
-                '(',
-            };
-            const uint32_t digitIndex = _key - Key0;
-            _character = _isShiftPressed ? ShiftDigits[digitIndex] : static_cast<char>('0' + digitIndex);
-            return true;
-        }
-
-        if (_key >= KeyNumpad0 && _key <= KeyNumpad9)
-        {
-            _character = static_cast<char>('0' + (_key - KeyNumpad0));
-            return true;
-        }
-
-        if (_key == KeySpace)
-        {
-            _character = ' ';
-            return true;
-        }
-
-        return false;
     }
 
     bool TryConvertCodepointToCharacter(uint32_t _codepoint, char& _character)
@@ -235,9 +186,7 @@ ego::gui::GuiSize ego::gui::GuiTextInput::onMeasure(const GuiLayoutContext& _con
     }
 
     const float nameHeight = m_name.empty() ? 0.0f : nameSize.m_y + NameSpacing;
-    const float width = (std::max)(
-        FieldMinWidth,
-        (std::max)(nameSize.m_x, textSize.m_x + TextPaddingX * 2.0f));
+    const float width = (std::max)(FieldMinWidth, (std::max)(nameSize.m_x, textSize.m_x + TextPaddingX * 2.0f));
     return GuiSize(width, nameHeight + FieldHeight);
 }
 
@@ -295,11 +244,7 @@ void ego::gui::GuiTextInput::onPaint(GuiPaintContext& _context) const
         const float clippedSelectionRight = (std::min)(textRect.getRight(), selectionRight);
         if (clippedSelectionRight > clippedSelectionLeft)
         {
-            const GuiRect selectionRect(
-                clippedSelectionLeft,
-                textRect.m_position.m_y,
-                clippedSelectionRight - clippedSelectionLeft,
-                textRect.m_size.m_y);
+            const GuiRect selectionRect(clippedSelectionLeft, textRect.m_position.m_y, clippedSelectionRight - clippedSelectionLeft, textRect.m_size.m_y);
             _context.drawBox(selectionRect, GuiColor(0.12f, 0.34f, 0.62f, 1.0f));
         }
     }
@@ -314,9 +259,7 @@ void ego::gui::GuiTextInput::onPaint(GuiPaintContext& _context) const
 
     if (m_isFocused)
     {
-        const float caretX = (std::min)(
-            textRect.m_position.m_x + getCaretOffset(m_caretIndex) + 1.0f,
-            textRect.m_position.m_x + textRect.m_size.m_x);
+        const float caretX = (std::min)(textRect.m_position.m_x + getCaretOffset(m_caretIndex) + 1.0f, textRect.m_position.m_x + textRect.m_size.m_x);
         const GuiRect caretRect(caretX, textRect.m_position.m_y, 1.0f, textRect.m_size.m_y);
         _context.drawBox(caretRect, GuiColorWhite);
     }
@@ -389,14 +332,7 @@ bool ego::gui::GuiTextInput::handleKeyDown(uint32_t _key)
         return false;
     }
 
-    char character = '\0';
-    if (!TryConvertKeyToCharacter(_key, m_isShiftPressed, character))
-    {
-        return false;
-    }
-
-    insertCharacter(character);
-    return true;
+    return false;
 }
 
 bool ego::gui::GuiTextInput::handleTextInput(uint32_t _codepoint)

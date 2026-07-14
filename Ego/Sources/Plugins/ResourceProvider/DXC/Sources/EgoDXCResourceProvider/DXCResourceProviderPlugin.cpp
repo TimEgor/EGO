@@ -1,8 +1,6 @@
 #include "DXCResourceProviderPlugin.h"
 
-#include "EgoRuntime/Plugin/ExternalModule.h"
-#include "EgoRuntime/Resource/ResourceController.h"
-#include "EgoRuntime/RuntimeContext.h"
+#include "EgoPlugin/ExternalModule.h"
 
 #include "DXCShaderResourceProvider.h"
 
@@ -17,18 +15,16 @@ namespace ego::resources::dxc
     {
     }
 
-    void DXCResourceProviderPlugin::registerResourceProviders()
+    bool DXCResourceProviderPlugin::createRegistrations(RegistrationCollection& _registrations)
     {
         const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
-        ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
-        resourceController.addResourceProvider(".shader", shaderProvider);
-        resourceController.addResourceProvider(".hlsl", shaderProvider);
-    }
+        if (!shaderProvider)
+        {
+            return false;
+        }
 
-    void DXCResourceProviderPlugin::unregisterResourceProviders()
-    {
-        ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
-        resourceController.removeResourceProvider(".hlsl");
-        resourceController.removeResourceProvider(".shader");
+        _registrations.push_back({".shader", shaderProvider});
+        _registrations.push_back({".hlsl", shaderProvider});
+        return true;
     }
 } // namespace ego::resources::dxc

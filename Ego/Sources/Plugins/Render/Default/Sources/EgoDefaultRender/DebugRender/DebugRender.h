@@ -1,8 +1,9 @@
 #pragma once
 
+#include "EgoGraphicHardware/GraphicDevice.h"
+
 #include "EgoEngine/Graphic/Render/DebugDrawData.h"
 #include "EgoEngine/Graphic/Render/RenderObject.h"
-#include "EgoGraphicHardware/GraphicDevice.h"
 
 #include "DebugRenderElementData.h"
 
@@ -29,7 +30,7 @@ namespace ego::render
         void release();
         void clearResources();
 
-        bool prepare();
+        bool prepare(float _deltaTime);
         void render(
             GraphicDevice& _graphicDevice,
             RenderPipelineStateCache& _pipelineStateCache,
@@ -41,10 +42,10 @@ namespace ego::render
 
     private:
         void clearCommands();
-        bool preparePointData();
+        bool preparePointData(float _deltaTime);
         void appendLine(const DebugLineRenderData::VertexData& _start, const DebugLineRenderData::VertexData& _end);
 
-        bool prepareLineData();
+        bool prepareLineData(float _deltaTime);
 
         RenderGraphicPipeline getOrCreateDebugDrawPipeline(
             GraphicDevice& _graphicDevice,

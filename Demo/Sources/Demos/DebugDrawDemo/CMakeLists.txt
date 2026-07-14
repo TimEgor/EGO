@@ -10,7 +10,10 @@ ego_add_demo_plugin(
 target_link_libraries(
     EgoDebugDrawDemo
         PRIVATE
-            Ego::EngineFramework
+            Ego::Core
+            Ego::ECS
+            Ego::Engine
+            Ego::Plugin
 )
 
 ego_register_plugin(

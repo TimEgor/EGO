@@ -1,6 +1,7 @@
 #pragma once
 
-#include "EgoRuntime/Plugin/Plugin.h"
+#include "EgoPlugin/Plugin.h"
+
 #include "GraphicDevice.h"
 
 namespace ego::gpu

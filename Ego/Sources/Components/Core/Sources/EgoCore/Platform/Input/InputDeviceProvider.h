@@ -4,7 +4,6 @@
 
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
-
 #include "InputDevice.h"
 
 namespace ego

@@ -1,17 +1,17 @@
 #pragma once
 
-#include "EgoEngineFramework/Plugin/EngineLogicPlugin.h"
+#include "EgoEngine/Project/EngineLogicPlugin.h"
 
 namespace ego::demo
 {
-    class DebugDrawDemoPlugin final : public engine_framework::EngineLogicPlugin
+    class DebugDrawDemoPlugin final : public engine::EngineLogicPlugin
     {
     public:
         DebugDrawDemoPlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        engine_framework::EngineLogicPointer createEngineLogic() override;
+        engine::EngineLogicPointer createEngineLogic() override;
 
-        EGO_PLUGIN(DebugDrawDemoPlugin, engine_framework::EngineLogicPlugin);
+        EGO_PLUGIN(DebugDrawDemoPlugin, engine::EngineLogicPlugin);
     };
 
     EGO_POINTER(DebugDrawDemoPlugin);

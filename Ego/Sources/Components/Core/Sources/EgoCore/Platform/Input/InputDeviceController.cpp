@@ -1,6 +1,6 @@
 #include "InputDeviceController.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
 bool ego::InputDeviceController::init()

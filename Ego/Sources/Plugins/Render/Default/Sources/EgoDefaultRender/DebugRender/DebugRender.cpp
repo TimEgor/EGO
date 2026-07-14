@@ -4,10 +4,8 @@
 #include <cstddef>
 #include <limits>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
-
-#include "EgoEngine/Engine.h"
 
 #include "EgoDefaultRender/PipelineState/RenderPipelineStateCache.h"
 #include "EgoDefaultRender/RenderShaderData.h"
@@ -180,9 +178,9 @@ void ego::render::DefaultRenderDebugDraw::clearResources()
     m_lineRenderData.m_lineCount = 0;
 }
 
-bool ego::render::DefaultRenderDebugDraw::prepare()
+bool ego::render::DefaultRenderDebugDraw::prepare(float _deltaTime)
 {
-    return preparePointData() && prepareLineData();
+    return preparePointData(_deltaTime) && prepareLineData(_deltaTime);
 }
 
 void ego::render::DefaultRenderDebugDraw::render(
@@ -219,12 +217,12 @@ void ego::render::DefaultRenderDebugDraw::appendLine(const DebugLineRenderData::
     m_lineRenderData.m_lineCommands.emplace_back(_start, _end);
 }
 
-bool ego::render::DefaultRenderDebugDraw::preparePointData()
+bool ego::render::DefaultRenderDebugDraw::preparePointData(float _deltaTime)
 {
     EGO_CHECK_RETURN_FALSE(m_pointRenderData.m_pointCommands.size() <= (std::numeric_limits<uint32_t>::max)());
 
     m_pointRenderData.m_pointCount = static_cast<uint32_t>(m_pointRenderData.m_pointCommands.size());
-    EGO_CHECK_RETURN_FALSE(m_pointRenderData.m_pointData.updateBuffers(engine::GetEngine().getDeltaTime(), m_pointRenderData.m_pointCount));
+    EGO_CHECK_RETURN_FALSE(m_pointRenderData.m_pointData.updateBuffers(_deltaTime, m_pointRenderData.m_pointCount));
 
     if (m_pointRenderData.m_pointCount == 0)
     {
@@ -246,12 +244,12 @@ bool ego::render::DefaultRenderDebugDraw::preparePointData()
     return true;
 }
 
-bool ego::render::DefaultRenderDebugDraw::prepareLineData()
+bool ego::render::DefaultRenderDebugDraw::prepareLineData(float _deltaTime)
 {
     EGO_CHECK_RETURN_FALSE(m_lineRenderData.m_lineCommands.size() <= (std::numeric_limits<uint32_t>::max)());
 
     m_lineRenderData.m_lineCount = static_cast<uint32_t>(m_lineRenderData.m_lineCommands.size());
-    EGO_CHECK_RETURN_FALSE(m_lineRenderData.m_lineData.updateBuffers(engine::GetEngine().getDeltaTime(), m_lineRenderData.m_lineCount));
+    EGO_CHECK_RETURN_FALSE(m_lineRenderData.m_lineData.updateBuffers(_deltaTime, m_lineRenderData.m_lineCount));
 
     if (m_lineRenderData.m_lineCount == 0)
     {

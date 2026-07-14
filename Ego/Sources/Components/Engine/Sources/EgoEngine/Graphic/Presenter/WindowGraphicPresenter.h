@@ -1,9 +1,11 @@
 #pragma once
 
+#include "EgoCore/Platform/Window/PresentationSurface.h"
+
 #include "EgoGraphicHardware/GraphicDevice.h"
 #include "EgoGraphicHardware/GraphicObjects/CommandQueue.h"
 #include "EgoGraphicHardware/GraphicObjects/SwapChain.h"
-#include "EgoGraphicHardware/PresentationSurface.h"
+
 #include "GraphicPresenter.h"
 
 namespace ego
@@ -23,6 +25,7 @@ namespace ego
 
         gpu::Texture2DReference getTargetTexture() override;
 
+        bool resize(const gpu::Texture2DSize& _size);
         void present() override;
 
     private:

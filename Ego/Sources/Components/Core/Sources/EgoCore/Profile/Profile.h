@@ -1,10 +1,5 @@
 #pragma once
 
-#include <atomic>
-#include <mutex>
-
-#include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/UtilsMacros.h"
 
 #ifndef EGO_ENABLE_PROFILING
@@ -17,41 +12,6 @@
 
 namespace ego::profile
 {
-    class Profiler
-    {
-    public:
-        Profiler() = default;
-        virtual ~Profiler() = default;
-
-        virtual void beginEvent(const char* _titleName, const char* _contextName = nullptr) = 0;
-        virtual void endEvent() = 0;
-    };
-
-    EGO_POINTER(Profiler);
-
-    class ProfilerController final : public NonCopyable
-    {
-    public:
-        ProfilerController();
-
-        bool setProfiler(const ProfilerPointer& _profiler);
-        void resetProfiler(const ProfilerPointer& _profiler = nullptr);
-
-        ProfilerPointer getProfiler() const;
-
-        void beginEvent(const char* _titleName, const char* _contextName = nullptr) const;
-        void endEvent() const;
-
-    private:
-        mutable std::mutex m_lock;
-        ProfilerPointer m_profiler = nullptr;
-        std::atomic<Profiler*> m_profilerRaw;
-    };
-
-    EGO_POINTER(ProfilerController);
-
-    ProfilerControllerPointer GetProfilerController();
-
     void BeginEvent(const char* _titleName, const char* _contextName = nullptr);
     void EndEvent();
 

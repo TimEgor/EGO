@@ -24,7 +24,12 @@ namespace ego
 
     struct LevelDeleter final
     {
+        explicit LevelDeleter(const WeakPointer<LevelController>& _controller);
+
         void operator()(Level* _level) const;
+
+    private:
+        WeakPointer<LevelController> m_controller;
     };
 
     class Level final : public NonCopyable

@@ -1,7 +1,8 @@
 #pragma once
 
+#include "EgoResource/Resource.h"
+
 #include "EgoEngine/Graphic/Render/RenderObject.h"
-#include "EgoRuntime/Resource/Resource.h"
 
 namespace ego::render
 {

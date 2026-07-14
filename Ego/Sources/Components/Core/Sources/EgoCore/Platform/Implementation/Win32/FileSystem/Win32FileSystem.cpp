@@ -5,7 +5,7 @@
 #include <limits>
 #include <vector>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Platform/PlatformMacros.h"
 #include "EgoCore/String/StringConverter.h"
 

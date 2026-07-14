@@ -1,7 +1,8 @@
 #pragma once
 
+#include "EgoResource/Resource.h"
+
 #include "EgoGraphicHardware/GraphicObjects/Shader.h"
-#include "EgoRuntime/Resource/Resource.h"
 
 namespace ego::gpu
 {

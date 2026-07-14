@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 
 namespace ego
 {

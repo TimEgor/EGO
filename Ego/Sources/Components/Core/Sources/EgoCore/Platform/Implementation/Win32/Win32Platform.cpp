@@ -2,12 +2,11 @@
 
 #include <string>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/String/Format.h"
 #include "EgoCore/String/StringConverter.h"
 #include "EgoCore/UtilsMacros.h"
-
 #include "Input/Win32InputDeviceProvider.h"
 #include "WindowSystem/Win32WindowSystem.h"
 

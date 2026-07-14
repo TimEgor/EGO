@@ -4,10 +4,12 @@
 
 #include "EgoCore/UtilsMacros.h"
 
+#include "EgoGraphicHardware/GraphicDevice.h"
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-bool ego::gui::GuiFontAtlas::init(const GuiFontAtlasDesc& _desc)
+bool ego::gui::GuiFontAtlas::init(GraphicDevice& _graphicDevice, const GuiFontAtlasDesc& _desc)
 {
     release();
 
@@ -18,7 +20,6 @@ bool ego::gui::GuiFontAtlas::init(const GuiFontAtlasDesc& _desc)
     EGO_CHECK_RETURN_FALSE(_desc.m_characterCount > 0);
     EGO_CHECK_RETURN_FALSE(_desc.m_oversampleX > 0);
     EGO_CHECK_RETURN_FALSE(_desc.m_oversampleY > 0);
-    EGO_CHECK_RETURN_FALSE(_desc.m_textureId != InvalidGuiTextureID);
 
     const int fontOffset = stbtt_GetFontOffsetForIndex(_desc.m_fontData.data(), 0);
     EGO_CHECK_RETURN_FALSE(fontOffset >= 0);
@@ -26,9 +27,11 @@ bool ego::gui::GuiFontAtlas::init(const GuiFontAtlasDesc& _desc)
     std::vector<stbtt_packedchar> packedGlyphs;
     packedGlyphs.resize(_desc.m_characterCount);
 
-    m_pixels.assign(static_cast<size_t>(_desc.m_width) * _desc.m_height, 0);
+    std::vector<uint8_t> pixels;
+    pixels.assign(static_cast<size_t>(_desc.m_width) * _desc.m_height, 0);
+
     stbtt_pack_context packContext;
-    const int packBeginResult = stbtt_PackBegin(&packContext, m_pixels.data(), static_cast<int>(_desc.m_width), static_cast<int>(_desc.m_height), 0, 1, nullptr);
+    const int packBeginResult = stbtt_PackBegin(&packContext, pixels.data(), static_cast<int>(_desc.m_width), static_cast<int>(_desc.m_height), 0, 1, nullptr);
     EGO_CHECK_RETURN_CALL_FALSE(packBeginResult != 0, release());
 
     stbtt_PackSetOversampling(&packContext, static_cast<unsigned int>(_desc.m_oversampleX), static_cast<unsigned int>(_desc.m_oversampleY));
@@ -57,7 +60,6 @@ bool ego::gui::GuiFontAtlas::init(const GuiFontAtlasDesc& _desc)
     m_characterCount = _desc.m_characterCount;
     m_width = _desc.m_width;
     m_height = _desc.m_height;
-    m_textureId = _desc.m_textureId;
     m_glyphs.resize(_desc.m_characterCount);
 
     for (uint32_t index = 0; index < _desc.m_characterCount; ++index)
@@ -74,13 +76,15 @@ bool ego::gui::GuiFontAtlas::init(const GuiFontAtlasDesc& _desc)
         glyph.m_advance = packedGlyph.xadvance;
     }
 
+    EGO_CHECK_RETURN_CALL_FALSE(initTexture(_graphicDevice, pixels), release());
+
     m_isInitialized = true;
     return true;
 }
 
 void ego::gui::GuiFontAtlas::release()
 {
-    m_pixels.clear();
+    m_texture = nullptr;
     m_glyphs.clear();
     m_firstCharacter = ' ';
     m_characterCount = 0;
@@ -88,7 +92,6 @@ void ego::gui::GuiFontAtlas::release()
     m_height = 0;
     m_lineHeight = 0.0f;
     m_baseline = 0.0f;
-    m_textureId = InvalidGuiTextureID;
     m_isInitialized = false;
 }
 
@@ -140,9 +143,9 @@ ego::gui::GuiSize ego::gui::GuiFontAtlas::measureText(std::string_view _text) co
     return GuiSize(maxLineWidth, height);
 }
 
-const std::vector<uint8_t>& ego::gui::GuiFontAtlas::getPixels() const
+const ego::gpu::Texture2DReference& ego::gui::GuiFontAtlas::getTexture() const
 {
-    return m_pixels;
+    return m_texture;
 }
 
 uint32_t ego::gui::GuiFontAtlas::getWidth() const
@@ -167,10 +170,37 @@ float ego::gui::GuiFontAtlas::getBaseline() const
 
 ego::gui::GuiTextureID ego::gui::GuiFontAtlas::getTextureId() const
 {
-    return m_textureId;
+    return m_isInitialized ? GuiDefaultFontTextureID : InvalidGuiTextureID;
 }
 
 bool ego::gui::GuiFontAtlas::isInitialized() const
 {
     return m_isInitialized;
+}
+
+bool ego::gui::GuiFontAtlas::initTexture(GraphicDevice& _graphicDevice, const std::vector<uint8_t>& _pixels)
+{
+    EGO_CHECK_RETURN_FALSE(!_pixels.empty());
+    EGO_CHECK_RETURN_FALSE(m_width > 0);
+    EGO_CHECK_RETURN_FALSE(m_height > 0);
+
+    gpu::Texture2DDesc textureDesc;
+    textureDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(gpu::GraphicResourceUsageTransferDst | gpu::GraphicResourceUsageShaderResource);
+    textureDesc.m_size = gpu::Texture2DSize(m_width, m_height);
+    textureDesc.m_arrayLayers = 1;
+    textureDesc.m_mipLevels = 1;
+    textureDesc.m_samples.m_count = 1;
+    textureDesc.m_format = gpu::GraphicResourceFormat::R8UNorm;
+
+    const gpu::InitialGraphicResourceData initialData(_pixels.data(), static_cast<uint32_t>(_pixels.size()), m_width, m_width * m_height);
+
+    gpu::GpuOperationOptions uploadOptions;
+    uploadOptions.m_completionMode = gpu::GpuCompletionMode::WaitForCompletion;
+
+    const gpu::GpuTexture2DTicket textureTicket = _graphicDevice.createAndUploadTexture2D(textureDesc, initialData, uploadOptions);
+    EGO_CHECK_RETURN_FALSE(textureTicket.m_resource);
+    textureTicket.waitReady();
+
+    m_texture = textureTicket.m_resource;
+    return m_texture != nullptr;
 }

@@ -1,6 +1,6 @@
 #include "WinPIXProfilerPlugin.h"
 
-#include "EgoRuntime/Plugin/ExternalModule.h"
+#include "EgoPlugin/ExternalModule.h"
 
 #include "WinPIXProfiler.h"
 

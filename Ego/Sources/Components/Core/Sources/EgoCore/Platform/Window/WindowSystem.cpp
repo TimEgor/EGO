@@ -7,60 +7,120 @@ bool ego::WindowSystem::init()
 
 void ego::WindowSystem::release()
 {
-    m_windowSizeChangeHandler = nullptr;
-    m_windowActivationHandler = nullptr;
-    m_windowDestroyingHandler = nullptr;
-    m_quitRequestedHandler = nullptr;
+    m_eventListeners.clear();
 }
 
-void ego::WindowSystem::setQuitRequestedHandler(const WindowSystemQuitRequestedHandler& _handler)
+bool ego::WindowSystem::registerEventListener(const WindowSystemEventListenerPointer& _listener)
 {
-    m_quitRequestedHandler = _handler;
+    if (!_listener)
+    {
+        return false;
+    }
+
+    for (EventListenerCollection::iterator listenerIt = m_eventListeners.begin(); listenerIt != m_eventListeners.end();)
+    {
+        const WindowSystemEventListenerPointer listener = listenerIt->lock();
+        if (!listener)
+        {
+            listenerIt = m_eventListeners.erase(listenerIt);
+            continue;
+        }
+
+        if (listener.get() == _listener.get())
+        {
+            return true;
+        }
+
+        ++listenerIt;
+    }
+
+    m_eventListeners.emplace_back(_listener);
+
+    return true;
 }
 
-void ego::WindowSystem::setWindowDestroyingHandler(const WindowSystemWindowDestroyingHandler& _handler)
+void ego::WindowSystem::unregisterEventListener(const WindowSystemEventListenerPointer& _listener)
 {
-    m_windowDestroyingHandler = _handler;
+    for (EventListenerCollection::iterator listenerIt = m_eventListeners.begin(); listenerIt != m_eventListeners.end();)
+    {
+        const WindowSystemEventListenerPointer listener = listenerIt->lock();
+        if (!listener || listener.get() == _listener.get())
+        {
+            listenerIt = m_eventListeners.erase(listenerIt);
+            continue;
+        }
+
+        ++listenerIt;
+    }
 }
 
-void ego::WindowSystem::setWindowActivationHandler(const WindowSystemWindowActivationHandler& _handler)
+std::vector<ego::WindowSystemEventListenerPointer> ego::WindowSystem::collectEventListeners() const
 {
-    m_windowActivationHandler = _handler;
-}
+    std::vector<WindowSystemEventListenerPointer> listeners;
+    listeners.reserve(m_eventListeners.size());
 
-void ego::WindowSystem::setWindowSizeChangeHandler(const WindowSystemWindowSizeChangeHandler& _handler)
-{
-    m_windowSizeChangeHandler = _handler;
+    for (const WindowSystemEventListenerWeakPointer& listener : m_eventListeners)
+    {
+        const WindowSystemEventListenerPointer listenerPointer = listener.lock();
+        if (listenerPointer)
+        {
+            listeners.push_back(listenerPointer);
+        }
+    }
+
+    return listeners;
 }
 
 void ego::WindowSystem::notifyQuitRequested() const
 {
-    if (m_quitRequestedHandler)
+    const std::vector<WindowSystemEventListenerPointer> listeners = collectEventListeners();
+    for (const WindowSystemEventListenerPointer& listener : listeners)
     {
-        m_quitRequestedHandler();
+        listener->onWindowSystemQuitRequested();
     }
 }
 
 void ego::WindowSystem::notifyWindowDestroying(const WindowPointer& _window) const
 {
-    if (m_windowDestroyingHandler)
+    const std::vector<WindowSystemEventListenerPointer> listeners = collectEventListeners();
+    for (const WindowSystemEventListenerPointer& listener : listeners)
     {
-        m_windowDestroyingHandler(_window);
+        listener->onWindowDestroying(_window);
     }
 }
 
 void ego::WindowSystem::notifyWindowActivate(const WindowPointer& _window, bool _isActive) const
 {
-    if (m_windowActivationHandler)
+    const std::vector<WindowSystemEventListenerPointer> listeners = collectEventListeners();
+    for (const WindowSystemEventListenerPointer& listener : listeners)
     {
-        m_windowActivationHandler(_window, _isActive);
+        listener->onWindowActivation(_window, _isActive);
     }
 }
 
 void ego::WindowSystem::notifyWindowSizeChange(const WindowPointer& _window, const WindowSize& _prevSize) const
 {
-    if (m_windowSizeChangeHandler)
+    const std::vector<WindowSystemEventListenerPointer> listeners = collectEventListeners();
+    for (const WindowSystemEventListenerPointer& listener : listeners)
     {
-        m_windowSizeChangeHandler(_window, _prevSize);
+        listener->onWindowSizeChanged(_window, _prevSize);
+    }
+}
+
+void ego::WindowSystem::notifyWindowKeyboardInput(const WindowPointer& _window, const WindowKeyboardInputData& _inputData) const
+{
+    const std::vector<WindowSystemEventListenerPointer> listeners = collectEventListeners();
+    for (const WindowSystemEventListenerPointer& listener : listeners)
+    {
+        listener->onWindowKeyboardInput(_window, _inputData);
+    }
+}
+
+void ego::WindowSystem::notifyWindowTextInput(const WindowPointer& _window, const WindowTextInputData& _inputData) const
+{
+    const std::vector<WindowSystemEventListenerPointer> listeners = collectEventListeners();
+    for (const WindowSystemEventListenerPointer& listener : listeners)
+    {
+        listener->onWindowTextInput(_window, _inputData);
     }
 }

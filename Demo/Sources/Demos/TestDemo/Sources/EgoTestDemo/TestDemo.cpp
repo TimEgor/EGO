@@ -1,15 +1,12 @@
 #include "TestDemo.h"
 
-#include "EgoCore/Context/ContextStack.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoMath/ComputeQuaternion.h"
 
-#include "EgoRuntime/Resource/ResourceController.h"
-#include "EgoRuntime/RuntimeContext.h"
+#include "EgoResource/ResourceController.h"
 
-#include "EgoEngine/Engine.h"
-#include "EgoEngine/EngineContext.h"
+#include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
 
@@ -23,29 +20,37 @@ namespace
     const ego::ComputeVector3 SecondTrianglePosition(0.60f, 0.0f, 0.0f);
 } // namespace
 
-bool ego::demo::TestDemo::init()
+bool ego::demo::TestDemo::init(const InitData& _initData)
 {
-    engine::Engine& engine = engine::GetEngine();
-    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+    EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(_initData.m_resourceController);
+    EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(!m_resourceController);
 
-    m_triangleMesh = resourceController.load<render::MeshResource>("TestTriangle.mesh.xml");
+    m_engineSession = _initData.m_engineSession;
+    m_resourceController = _initData.m_resourceController;
+
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    EGO_CHECK_INITIALIZATION(engineSession);
+
+    m_triangleMesh = m_resourceController->load<render::MeshResource>("TestTriangle.mesh.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMesh && m_triangleMesh->isLoaded());
 
-    m_firstTriangleMaterial = resourceController.load<render::MaterialResource>("TestTriangle.material.xml");
+    m_firstTriangleMaterial = m_resourceController->load<render::MaterialResource>("TestTriangle.material.xml");
     EGO_CHECK_INITIALIZATION(m_firstTriangleMaterial && m_firstTriangleMaterial->isLoaded());
 
-    m_secondTriangleMaterial = resourceController.load<render::MaterialResource>("TestTriangleSecond.material.xml");
+    m_secondTriangleMaterial = m_resourceController->load<render::MaterialResource>("TestTriangleSecond.material.xml");
     EGO_CHECK_INITIALIZATION(m_secondTriangleMaterial && m_secondTriangleMaterial->isLoaded());
 
-    m_level = engine.getLevelController().createLevel();
+    m_level = engineSession->getLevelController().createLevel();
     EGO_CHECK_INITIALIZATION(m_level);
-    EGO_CHECK_INITIALIZATION(engine.getLevelController().setActiveLevel(m_level->getID()));
+    EGO_CHECK_INITIALIZATION(engineSession->getLevelController().setActiveLevel(m_level->getID()));
 
     const ecs::Entity cameraNode = m_level->createNode();
     EGO_CHECK_INITIALIZATION(cameraNode);
 
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(cameraNode));
-    engine.setRenderCameraEntity(cameraNode);
+    engineSession->setRenderCameraEntity(cameraNode);
 
     EGO_CHECK_INITIALIZATION(createTriangleEntity(m_firstTriangleEntity, m_firstTriangleMaterial, FirstTrianglePosition));
     EGO_CHECK_INITIALIZATION(createTriangleEntity(m_secondTriangleEntity, m_secondTriangleMaterial, SecondTrianglePosition));
@@ -76,17 +81,16 @@ void ego::demo::TestDemo::update(float _deltaTime)
 
 void ego::demo::TestDemo::release()
 {
-    const engine::EngineContextPointer engineContext = context::FindCurrentContext<engine::EngineContext>();
-    const engine::EnginePointer engine = engineContext ? engineContext->getEnginePointer() : nullptr;
-    if (engine && m_level)
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    if (engineSession && m_level)
     {
-        const LevelPointer activeLevel = engine->getLevelController().getActiveLevel();
+        const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
         if (activeLevel && activeLevel->getID() == m_level->getID())
         {
-            engine->getLevelController().clearActiveLevel();
+            engineSession->getLevelController().clearActiveLevel();
         }
 
-        engine->clearRenderCameraEntity();
+        engineSession->clearRenderCameraEntity();
     }
 
     m_level = nullptr;
@@ -96,6 +100,8 @@ void ego::demo::TestDemo::release()
     m_secondTriangleMaterial = nullptr;
     m_firstTriangleMaterial = nullptr;
     m_triangleMesh = nullptr;
+    m_resourceController = nullptr;
+    m_engineSession.reset();
 }
 
 bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const ComputeVector3& _position)

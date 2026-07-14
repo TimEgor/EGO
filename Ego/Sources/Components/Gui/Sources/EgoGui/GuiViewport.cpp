@@ -28,6 +28,11 @@ float ego::gui::GuiViewport::getScale() const
     return m_scale;
 }
 
+void ego::gui::GuiViewport::setInputAdapter(const GuiViewportInputAdapterPointer& _inputAdapter)
+{
+    m_inputAdapter = _inputAdapter;
+}
+
 ego::gui::GuiViewportInputAdapterPointer ego::gui::GuiViewport::getInputAdapter() const
 {
     return m_inputAdapter;

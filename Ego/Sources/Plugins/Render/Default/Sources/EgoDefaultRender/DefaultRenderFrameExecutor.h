@@ -2,8 +2,9 @@
 
 #include <vector>
 
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
 #include "EgoGraphicHardware/GraphicDevice.h"
+
+#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
 
 namespace ego::render
 {

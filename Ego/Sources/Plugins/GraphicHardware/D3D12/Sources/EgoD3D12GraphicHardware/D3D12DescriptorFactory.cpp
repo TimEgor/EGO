@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Memory/Utils.h"
 
 #include "Objects/D3D12AccelerationStructure.h"

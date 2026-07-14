@@ -1,24 +1,24 @@
 #include "ApplicationWindow.h"
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Platform/Window/Window.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoRuntime/RuntimeContext.h"
-
 #include "ApplicationWindowEvents.h"
-
-namespace
-{
-    ego::EventController& GetCurrentEventController()
-    {
-        return ego::context::GetRuntimeContext().getEventController();
-    }
-} // namespace
 
 ego::InstancedEventID ego::application::ApplicationWindow::getSizeEventID() const
 {
     return m_sizeEventID;
+}
+
+ego::InstancedEventID ego::application::ApplicationWindow::getKeyboardInputEventID() const
+{
+    return m_keyboardInputEventID;
+}
+
+ego::InstancedEventID ego::application::ApplicationWindow::getTextInputEventID() const
+{
+    return m_textInputEventID;
 }
 
 ego::application::ApplicationWindow::~ApplicationWindow()
@@ -26,12 +26,15 @@ ego::application::ApplicationWindow::~ApplicationWindow()
     release();
 }
 
-bool ego::application::ApplicationWindow::init(const ego::WindowPointer& _nativeWindow)
+bool ego::application::ApplicationWindow::init(const WindowPointer& _nativeWindow, const EventControllerPointer& _eventController)
 {
     EGO_CHECK_RETURN_FALSE(_nativeWindow);
+    EGO_CHECK_RETURN_FALSE(_eventController);
     EGO_CHECK_RETURN_FALSE(!m_nativeWindow);
+    EGO_CHECK_RETURN_FALSE(!m_eventController);
 
     m_nativeWindow = _nativeWindow;
+    m_eventController = _eventController;
 
     EGO_CHECK_INITIALIZATION(initInstancedEvents());
 
@@ -42,12 +45,14 @@ void ego::application::ApplicationWindow::release()
 {
     releaseInstancedEvents();
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_nativeWindow);
+    m_eventController = nullptr;
 }
 
 void ego::application::ApplicationWindow::detachNativeWindow()
 {
     releaseInstancedEvents();
     m_nativeWindow = nullptr;
+    m_eventController = nullptr;
 }
 
 bool ego::application::ApplicationWindow::isValid() const
@@ -109,21 +114,41 @@ ego::WindowPointer ego::application::ApplicationWindow::getNativeWindowPointer()
 
 bool ego::application::ApplicationWindow::initInstancedEvents()
 {
-    EventController& eventController = GetCurrentEventController();
+    EGO_CHECK_RETURN_FALSE(m_eventController);
 
-    m_sizeEventID = eventController.registerInstancedEvent<ApplicationWindowSizeChangedEvent>();
+    m_sizeEventID = m_eventController->registerInstancedEvent<ApplicationWindowSizeChangedEvent>();
     EGO_CHECK_RETURN_FALSE(m_sizeEventID != InvalidInstancedEventID);
+
+    m_keyboardInputEventID = m_eventController->registerInstancedEvent<ApplicationWindowKeyboardInputEvent>();
+    EGO_CHECK_RETURN_FALSE(m_keyboardInputEventID != InvalidInstancedEventID);
+
+    m_textInputEventID = m_eventController->registerInstancedEvent<ApplicationWindowTextInputEvent>();
+    EGO_CHECK_RETURN_FALSE(m_textInputEventID != InvalidInstancedEventID);
 
     return true;
 }
 
 void ego::application::ApplicationWindow::releaseInstancedEvents()
 {
-    EventController& eventController = GetCurrentEventController();
-
-    if (m_sizeEventID != InvalidInstancedEventID)
+    if (m_eventController)
     {
-        eventController.unregisterInstancedEvent(m_sizeEventID);
-        m_sizeEventID = InvalidInstancedEventID;
+        if (m_textInputEventID != InvalidInstancedEventID)
+        {
+            m_eventController->unregisterInstancedEvent(m_textInputEventID);
+        }
+
+        if (m_keyboardInputEventID != InvalidInstancedEventID)
+        {
+            m_eventController->unregisterInstancedEvent(m_keyboardInputEventID);
+        }
+
+        if (m_sizeEventID != InvalidInstancedEventID)
+        {
+            m_eventController->unregisterInstancedEvent(m_sizeEventID);
+        }
     }
+
+    m_textInputEventID = InvalidInstancedEventID;
+    m_keyboardInputEventID = InvalidInstancedEventID;
+    m_sizeEventID = InvalidInstancedEventID;
 }

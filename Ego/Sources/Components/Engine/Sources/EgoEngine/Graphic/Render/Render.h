@@ -5,9 +5,10 @@
 
 #include "EgoECS/Entity.h"
 
+#include "EgoGraphicHardware/GraphicObjects/Texture.h"
+
 #include "EgoEngine/Graphic/Render/DebugDrawData.h"
 #include "EgoEngine/Graphic/Render/RenderObject.h"
-#include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
 namespace ego
 {
@@ -15,12 +16,25 @@ namespace ego
     class Level;
 } // namespace ego
 
+namespace ego::gui
+{
+    class GuiController;
+} // namespace ego::gui
+
 namespace ego::render
 {
     using RenderType = rtti::TypeMetaInfoID;
     inline constexpr RenderType InvalidRenderType = rtti::InvalidTypeMetaInfoID;
 
     inline constexpr auto DefaultRenderResolution = gpu::Texture2DSize(500, 500);
+
+    struct RenderPrepareContext final
+    {
+        Level& m_level;
+        ecs::Entity m_cameraEntity;
+        gui::GuiController& m_guiController;
+        float m_deltaTime = 0.0f;
+    };
 
     class Render
     {
@@ -32,7 +46,7 @@ namespace ego::render
         virtual void release() = 0;
         virtual void clearResources() = 0;
 
-        virtual bool prepare(Level& _level, ecs::Entity _cameraEntity) = 0;
+        virtual bool prepare(const RenderPrepareContext& _context) = 0;
         virtual void render() = 0;
         virtual void wait() = 0;
         virtual void present(GraphicPresenter& _presenter) = 0;

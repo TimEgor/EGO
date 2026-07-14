@@ -2,17 +2,16 @@
 
 #include <string>
 
-#include "EgoCore/Context/ContextStack.h"
-#include "EgoCore/Context/PlatformContext.h"
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
+#include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoRuntime/Plugin/PluginModule.h"
-#include "EgoRuntime/Resource/ResourceController.h"
-#include "EgoRuntime/RuntimeContext.h"
+#include "EgoPlugin/PluginModule.h"
 
-#include "EgoEngine/Resources/GeneralResources/XmlResource.h"
+#include "EgoResource/GeneralResources/XmlResource.h"
+#include "EgoResource/ResourceSubsystem.h"
+#include "EgoResource/ResourceController.h"
 
 #include "DefaultRenderConstants.h"
 
@@ -44,7 +43,7 @@ bool ego::render::DefaultRenderFileSystems::loadAssetsRootPath(FileName& _assets
     RootedFileSystemPointer configFileSystem = CreateFileSystem(pluginDirectoryPath);
     EGO_CHECK_RETURN_FALSE(configFileSystem);
 
-    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+    ResourceController& resourceController = GetResourceSubsystem().getResourceController();
     resourceController.addFileSystem(configFileSystem);
 
     const XmlResourcePointer configResource = resourceController.load<XmlResource>(DefaultRenderConfigPath);
@@ -59,7 +58,7 @@ bool ego::render::DefaultRenderFileSystems::initAssetsFileSystem(const FileName&
 {
     EGO_CHECK_RETURN_FALSE(_assetsRootPath);
 
-    ResourceController& resourceController = context::GetRuntimeContext().getResourceController();
+    ResourceController& resourceController = GetResourceSubsystem().getResourceController();
     if (m_assetsFileSystem)
     {
         resourceController.removeFileSystem(m_assetsFileSystem);
@@ -77,8 +76,8 @@ bool ego::render::DefaultRenderFileSystems::initAssetsFileSystem(const FileName&
 
 void ego::render::DefaultRenderFileSystems::release()
 {
-    const context::RuntimeContextPointer runtimeContext = context::GetRuntimeContextPointer();
-    const ResourceControllerPointer resourceController = runtimeContext ? runtimeContext->getResourceControllerPointer() : nullptr;
+    const ResourceSubsystemPointer resourceSubsystem = GetResourceSubsystemPointer();
+    const ResourceControllerPointer resourceController = resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
     if (!m_assetsFileSystem)
     {
         return;
@@ -95,7 +94,7 @@ void ego::render::DefaultRenderFileSystems::release()
 
 ego::RootedFileSystemPointer ego::render::DefaultRenderFileSystems::CreateFileSystem(const FileName& _rootPath)
 {
-    const PlatformPointer platform = context::GetPlatformPointer();
+    const PlatformPointer platform = GetPlatformPointer();
     EGO_CHECK_RETURN_NULL(platform);
 
     const FileSystemPointer sourceFileSystem = platform->getFileSystem();

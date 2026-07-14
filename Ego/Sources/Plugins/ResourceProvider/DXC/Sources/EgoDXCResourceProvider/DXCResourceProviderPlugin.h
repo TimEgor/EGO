@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoRuntime/Resource/ResourceProviderPlugin.h"
+#include "EgoResource/ResourceProviderPlugin.h"
 
 namespace ego::resources::dxc
 {
@@ -9,8 +9,7 @@ namespace ego::resources::dxc
     public:
         DXCResourceProviderPlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        void registerResourceProviders() override;
-        void unregisterResourceProviders() override;
+        bool createRegistrations(RegistrationCollection& _registrations) override;
 
         EGO_PLUGIN(DXCResourceProviderPlugin, ResourceProviderPlugin);
     };

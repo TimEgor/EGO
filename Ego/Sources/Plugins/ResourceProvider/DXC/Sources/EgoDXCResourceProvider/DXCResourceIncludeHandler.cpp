@@ -7,7 +7,7 @@
 #include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/String/StringConverter.h"
 
-#include "EgoRuntime/Resource/ResourceLoadingContext.h"
+#include "EgoResource/ResourceLoadingContext.h"
 
 namespace ego::resources::dxc
 {

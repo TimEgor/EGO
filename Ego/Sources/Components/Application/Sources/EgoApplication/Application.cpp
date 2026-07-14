@@ -1,15 +1,29 @@
 #include "Application.h"
 
-#include "EgoCore/Assert/AssertCore.h"
-#include "EgoCore/Context/ContextStack.h"
+#include <string>
+
+#include "EgoCore/Assert/Assert.h"
+#include "EgoCore/Diagnostic/DiagnosticSubsystem.h"
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
-#include "EgoCore/Profile/Profile.h"
+#include "EgoCore/Platform/Platform.h"
+#include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoRuntime/Plugin/PluginCatalogBuilder.h"
-#include "EgoRuntime/RuntimeContext.h"
+#include "EgoEvent/EventSubsystem.h"
 
-#include "EgoGraphicHardware/GraphicHardwareContext.h"
+#include "EgoPlugin/PlatformPluginSubsystem.h"
+#include "EgoPlugin/PluginCatalogBuilder.h"
+#include "EgoPlugin/PluginSubsystem.h"
+
+#include "EgoResource/ResourceSubsystem.h"
+
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
+
+#include "Profile/ApplicationProfiler.h"
+#include "Window/ApplicationWindowController.h"
+#include "Window/ApplicationWindowEvents.h"
+
+ego::application::Application::Application() = default;
 
 ego::application::Application::~Application()
 {
@@ -18,362 +32,284 @@ ego::application::Application::~Application()
 
 bool ego::application::Application::init(const InitData& _initData)
 {
-    ContextInitData contextInitData;
-    contextInitData.m_nativeInstanceHandle = _initData.m_nativeInstanceHandle;
+    EGO_CHECK_RETURN_FALSE(!m_subsystemRegistry);
 
-    EGO_CHECK_INITIALIZATION(initContext(contextInitData));
-    EGO_CHECK_INITIALIZATION(initRuntime(_initData));
+    m_isExitRequested = false;
 
-    return true;
-}
+    EGO_CHECK_INITIALIZATION(initSubsystems(_initData));
 
-bool ego::application::Application::initContext(const ContextInitData& _initData)
-{
-    EGO_CHECK_RETURN_CALL_FALSE(initContextStack(), releaseContextScope());
-    EGO_CHECK_RETURN_CALL_FALSE(initPlatformContext(_initData), releaseContextScope());
-    EGO_CHECK_RETURN_CALL_FALSE(initDiagnosticContext(), releaseContextScope());
-    EGO_CHECK_RETURN_CALL_FALSE(initRuntimeContext(), releaseContextScope());
-    EGO_CHECK_RETURN_CALL_FALSE(initPlatformRuntimeContext(), releaseContextScope());
-
-    context::ContextStackCore::GetInstance().setDefaultScope(m_contextScope);
-    return true;
-}
-
-bool ego::application::Application::initRuntime(const InitData& _initData)
-{
-    EGO_CHECK_RETURN_CALL_FALSE(initProfilerPlugin(_initData), releaseRuntimeObjects());
-    EGO_CHECK_RETURN_CALL_FALSE(initPluginCatalog(_initData), releaseRuntimeObjects());
-    EGO_CHECK_RETURN_CALL_FALSE(initApplicationScopedContext(), releaseRuntimeObjects());
-    EGO_CHECK_RETURN_CALL_FALSE(initApplicationWindowManager(), releaseRuntimeObjects());
-    EGO_CHECK_RETURN_CALL_FALSE(initGraphicHardware(_initData), releaseRuntimeObjects());
+    if (_initData.m_enableWindowing)
+    {
+        EGO_CHECK_INITIALIZATION(initWindowing());
+    }
 
     return true;
 }
 
 void ego::application::Application::release()
 {
-    releaseRuntimeObjects();
-    releaseContextScope();
+    releaseWindowing();
+    releaseSubsystems();
+
+    m_isExitRequested = false;
 }
 
-void ego::application::Application::releaseRuntimeObjects()
+ego::application::ApplicationWindowPointer ego::application::Application::createWindow(const WindowDesc& _desc)
 {
-    releaseGraphicHardwareContext();
-    releaseApplicationWindowManager();
-    releaseApplicationScopedContext();
-    releaseProfilerPlugin();
+    return m_windowController ? m_windowController->createApplicationWindow(_desc) : nullptr;
 }
 
-ego::PlatformPointer ego::application::Application::getPlatformPointer() const
+void ego::application::Application::processWindowEvents()
 {
-    return context::GetPlatformPointer();
+    if (m_windowController)
+    {
+        m_windowController->processWindowEvents();
+    }
 }
 
-const ego::Platform& ego::application::Application::getPlatform() const
+void ego::application::Application::updateInputDevices()
 {
-    return context::GetPlatform();
+    const PlatformPointer platform = GetPlatformPointer();
+    EGO_ASSERT(platform);
+    if (platform)
+    {
+        platform->getInputDeviceController().update();
+    }
 }
 
-ego::Platform& ego::application::Application::getPlatform()
+void ego::application::Application::requestExit()
 {
-    return context::GetPlatform();
+    m_isExitRequested = true;
 }
 
-const ego::application::ApplicationWindowManager& ego::application::Application::getApplicationWindowManager() const
+bool ego::application::Application::isExitRequested() const
 {
-    EGO_ASSERT(m_applicationWindowManager);
-    return *m_applicationWindowManager;
+    return m_isExitRequested;
 }
 
-ego::application::ApplicationWindowManager& ego::application::Application::getApplicationWindowManager()
+bool ego::application::Application::initSubsystems(const InitData& _initData)
 {
-    EGO_ASSERT(m_applicationWindowManager);
-    return *m_applicationWindowManager;
-}
+    EGO_CHECK_RETURN_FALSE(initSubsystemRegistry());
 
-bool ego::application::Application::initContextStack()
-{
-    EGO_CHECK_RETURN_FALSE(!m_contextStack);
-    EGO_CHECK_RETURN_FALSE(!m_contextScope);
+    m_diagnosticSubsystem = new DiagnosticSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem->init());
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_diagnosticSubsystem));
 
-    m_contextStack = new context::ContextStack();
-    EGO_CHECK_RETURN_FALSE(m_contextStack);
-    EGO_CHECK_RETURN_FALSE(context::ContextStackCore::GetInstance().init(m_contextStack));
-    m_isContextStackInitialized = true;
+    m_platformSubsystem = new PlatformSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_platformSubsystem);
 
-    m_contextScope = new context::ContextScope();
-    EGO_CHECK_RETURN_FALSE(m_contextScope);
+    PlatformSubsystem::InitData platformSubsystemInitData;
+    platformSubsystemInitData.m_nativeInstanceHandle = _initData.m_nativeInstanceHandle;
+    EGO_CHECK_RETURN_FALSE(m_platformSubsystem->init(platformSubsystemInitData));
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_platformSubsystem));
 
-    context::ContextStackCore::GetInstance().pushScope(m_contextScope);
-    m_isContextScopePushed = true;
+    m_platformPluginSubsystem = new PlatformPluginSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_platformPluginSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_platformPluginSubsystem->init());
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_platformPluginSubsystem));
+
+    m_pluginSubsystem = new PluginSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_pluginSubsystem->init());
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_pluginSubsystem));
+    EGO_CHECK_RETURN_FALSE(registerPluginDirectory(_initData.m_pluginDirectory));
+
+    m_applicationProfiler = new ApplicationProfiler();
+    EGO_CHECK_RETURN_FALSE(m_applicationProfiler);
+    EGO_CHECK_RETURN_FALSE(m_applicationProfiler->init(_initData.m_profilerPluginModuleName));
+
+    m_eventSubsystem = new EventSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_eventSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_eventSubsystem->init());
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_eventSubsystem));
+
+    if (_initData.m_enableGraphicHardware)
+    {
+        m_graphicHardwareSubsystem = new gpu::GraphicHardwareSubsystem();
+        EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem);
+
+        gpu::GraphicHardwareSubsystem::InitData graphicHardwareSubsystemInitData;
+        graphicHardwareSubsystemInitData.m_pluginModuleName = _initData.m_graphicHardwarePluginModuleName;
+        EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem->init(graphicHardwareSubsystemInitData));
+        EGO_CHECK_RETURN_FALSE(registerSubsystem(m_graphicHardwareSubsystem));
+    }
+
+    const PlatformPointer platform = GetPlatformPointer();
+    const FileSystemPointer resourceFileSystem = platform ? platform->getFileSystem() : nullptr;
+    EGO_CHECK_RETURN_FALSE(resourceFileSystem);
+
+    m_resourceSubsystem = new ResourceSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_resourceSubsystem);
+
+    ResourceSubsystem::InitData resourceSubsystemInitData;
+    resourceSubsystemInitData.m_resourceFileSystem = resourceFileSystem;
+    EGO_CHECK_RETURN_FALSE(m_resourceSubsystem->init(resourceSubsystemInitData));
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_resourceSubsystem));
+    EGO_CHECK_RETURN_FALSE(registerGraphicResourceProvider());
 
     return true;
 }
 
-bool ego::application::Application::initPlatformContext(const ContextInitData& _initData)
+void ego::application::Application::releaseSubsystems()
 {
-    EGO_CHECK_RETURN_FALSE(!m_platformContext);
+    releaseSubsystem(m_resourceSubsystem);
+    m_resourceSubsystem = nullptr;
 
-    m_platformContext = new context::PlatformContext();
-    EGO_CHECK_RETURN_FALSE(m_platformContext);
-    EGO_CHECK_RETURN_FALSE(context::ContextStackCore::GetInstance().setGlobalContext(m_platformContext));
+    releaseSubsystem(m_graphicHardwareSubsystem);
+    m_graphicHardwareSubsystem = nullptr;
 
-    context::PlatformContext::InitData platformContextInitData;
-    platformContextInitData.m_nativeInstanceHandle = _initData.m_nativeInstanceHandle;
-    EGO_CHECK_RETURN_FALSE(m_platformContext->init(platformContextInitData));
+    releaseSubsystem(m_eventSubsystem);
+    m_eventSubsystem = nullptr;
+
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationProfiler);
+
+    releaseSubsystem(m_pluginSubsystem);
+    m_pluginSubsystem = nullptr;
+
+    releaseSubsystem(m_platformPluginSubsystem);
+    m_platformPluginSubsystem = nullptr;
+
+    releaseSubsystem(m_platformSubsystem);
+    m_platformSubsystem = nullptr;
+
+    releaseSubsystem(m_diagnosticSubsystem);
+    m_diagnosticSubsystem = nullptr;
+
+    releaseSubsystemRegistry();
+}
+
+bool ego::application::Application::initSubsystemRegistry()
+{
+    EGO_CHECK_RETURN_FALSE(!m_subsystemRegistry);
+
+    m_subsystemRegistry = new subsystem::SubsystemRegistry();
+    EGO_CHECK_RETURN_FALSE(m_subsystemRegistry);
+
+    if (!subsystem::SubsystemLocator::GetInstance().bind(m_subsystemRegistry))
+    {
+        m_subsystemRegistry = nullptr;
+        return false;
+    }
 
     return true;
 }
 
-bool ego::application::Application::initDiagnosticContext()
+void ego::application::Application::releaseSubsystemRegistry()
 {
-    EGO_CHECK_RETURN_FALSE(!m_diagnosticContext);
+    if (!m_subsystemRegistry)
+    {
+        return;
+    }
 
-    m_diagnosticContext = new context::DiagnosticContext();
-    EGO_CHECK_RETURN_FALSE(m_diagnosticContext);
-    EGO_CHECK_RETURN_FALSE(context::ContextStackCore::GetInstance().setGlobalContext(m_diagnosticContext));
-    m_diagnosticContext->setProfilerController(profile::GetProfilerController());
+    subsystem::SubsystemLocator& subsystemLocator = subsystem::SubsystemLocator::GetInstance();
+    if (subsystemLocator.getRegistryPointer().get() == m_subsystemRegistry.get())
+    {
+        subsystemLocator.unbind();
+    }
 
-    return true;
+    m_subsystemRegistry = nullptr;
 }
 
-bool ego::application::Application::initRuntimeContext()
+bool ego::application::Application::registerSubsystem(const subsystem::SubsystemPointer& _subsystem)
 {
-    EGO_CHECK_RETURN_FALSE(!m_runtimeContext);
-
-    m_runtimeContext = new context::RuntimeContext();
-    EGO_CHECK_RETURN_FALSE(m_runtimeContext);
-    EGO_ASSERT(m_contextScope);
-    EGO_CHECK_RETURN_FALSE(m_contextScope);
-    m_contextScope->addContext(m_runtimeContext);
-
-    context::RuntimeContext::InitData runtimeContextInitData;
-    runtimeContextInitData.m_resourceFileSystem = context::GetPlatform().getFileSystem();
-    EGO_CHECK_RETURN_FALSE(m_runtimeContext->init(runtimeContextInitData));
-
-    return true;
+    return m_subsystemRegistry && m_subsystemRegistry->registerSubsystem(_subsystem);
 }
 
-bool ego::application::Application::initPlatformRuntimeContext()
+void ego::application::Application::releaseSubsystem(const subsystem::SubsystemPointer& _subsystem)
 {
-    EGO_CHECK_RETURN_FALSE(!m_platformRuntimeContext);
+    if (!_subsystem)
+    {
+        return;
+    }
+    
+    _subsystem->release();
 
-    m_platformRuntimeContext = new context::PlatformRuntimeContext();
-    EGO_CHECK_RETURN_FALSE(m_platformRuntimeContext);
-    EGO_CHECK_RETURN_FALSE(context::ContextStackCore::GetInstance().setGlobalContext(m_platformRuntimeContext));
-    EGO_CHECK_RETURN_FALSE(m_platformRuntimeContext->init());
-
-    return true;
+    if (m_subsystemRegistry)
+    {
+        const subsystem::SubsystemType subsystemType = _subsystem->getType();
+        if (m_subsystemRegistry->findSubsystem(subsystemType).get() == _subsystem.get())
+        {
+            m_subsystemRegistry->unregisterSubsystem(_subsystem);
+        }
+    }
 }
 
-bool ego::application::Application::initApplicationScopedContext()
+bool ego::application::Application::registerPluginDirectory(const FileName& _pluginDirectory)
 {
-    EGO_CHECK_RETURN_FALSE(!m_applicationContext);
-
-    m_applicationContext = new ApplicationContext();
-    EGO_CHECK_RETURN_FALSE(m_applicationContext);
-
-    EGO_ASSERT(m_contextScope);
-    EGO_CHECK_RETURN_FALSE(m_contextScope);
-    m_contextScope->addContext(m_applicationContext);
-
-    ApplicationContext::InitData contextInitData{*this};
-    EGO_CHECK_RETURN_FALSE(m_applicationContext->init(contextInitData));
-
-    return true;
-}
-
-bool ego::application::Application::initProfilerPlugin(const InitData& _initData)
-{
-    m_profilerPlugin = _initData.m_profilerPlugin;
-    return true;
-}
-
-bool ego::application::Application::initPluginCatalog(const InitData& _initData)
-{
-    if (!_initData.m_pluginDirectory)
+    if (!_pluginDirectory)
     {
         return true;
     }
 
-    const FileSystemPointer fileSystem = context::GetPlatform().getFileSystem();
+    const PlatformPointer platform = GetPlatformPointer();
+    EGO_CHECK_RETURN_FALSE(platform);
+
+    const FileSystemPointer fileSystem = platform->getFileSystem();
     EGO_CHECK_RETURN_FALSE(fileSystem);
 
-    PluginCatalog& pluginCatalog = context::GetRuntimeContext().getPluginCatalog();
-    PluginCatalogBuilder::AddPluginsFromPath(pluginCatalog, *fileSystem, _initData.m_pluginDirectory);
+    EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
+
+    PluginCatalogBuilder::AddPluginsFromPath(m_pluginSubsystem->getPluginCatalog(), *fileSystem, _pluginDirectory);
 
     return true;
 }
 
-bool ego::application::Application::initApplicationWindowManager()
+bool ego::application::Application::registerGraphicResourceProvider()
 {
-    EGO_CHECK_RETURN_FALSE(!m_applicationWindowManager);
+    EGO_CHECK_RETURN_FALSE(m_resourceSubsystem);
 
-    m_applicationWindowManager = new ApplicationWindowManager();
-    EGO_CHECK_RETURN_FALSE(m_applicationWindowManager && m_applicationWindowManager->init());
+    if (!m_graphicHardwareSubsystem)
+    {
+        return true;
+    }
 
-    return true;
+    const GraphicDevicePointer graphicDevice = m_graphicHardwareSubsystem->getGraphicDevicePointer();
+    EGO_CHECK_RETURN_FALSE(graphicDevice);
+
+    const std::string resourceProviderName = graphicDevice->getResourceProviderName();
+    EGO_CHECK_RETURN_FALSE(!resourceProviderName.empty());
+
+    return m_resourceSubsystem->getResourceProviderPluginController().registerProvider(resourceProviderName);
 }
 
-bool ego::application::Application::initGraphicHardware(const InitData& _initData)
+bool ego::application::Application::initWindowing()
 {
-    EGO_CHECK_RETURN_FALSE(!m_graphicHardwareContext);
+    EGO_CHECK_RETURN_FALSE(!m_windowController);
+    EGO_CHECK_RETURN_FALSE(m_applicationQuitRequestedEventCallbackID == InvalidEventCallbackID);
 
-    m_graphicHardwareContext = new gpu::GraphicHardwareContext();
-    EGO_CHECK_RETURN_FALSE(m_graphicHardwareContext);
-    EGO_CHECK_RETURN_FALSE(context::ContextStackCore::GetInstance().setGlobalContext(m_graphicHardwareContext));
+    const PlatformPointer platform = GetPlatformPointer();
+    const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
+    const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(platform);
+    EGO_CHECK_RETURN_FALSE(eventController);
 
-    gpu::GraphicHardwareContext::InitData graphicHardwareContextInitData;
-    graphicHardwareContextInitData.m_graphicHardwarePlugin = _initData.m_graphicHardwarePlugin;
-    EGO_CHECK_RETURN_FALSE(m_graphicHardwareContext->init(graphicHardwareContextInitData));
+    m_windowController = new ApplicationWindowController();
+    EGO_CHECK_RETURN_FALSE(m_windowController);
+    EGO_CHECK_RETURN_FALSE(m_windowController->init(platform, eventController));
 
-    return true;
-}
-
-void ego::application::Application::releaseGraphicHardwareContext()
-{
-    if (!m_graphicHardwareContext)
-    {
-        return;
-    }
-
-    m_graphicHardwareContext->release();
-
-    if (context::ContextStackCore::GetInstance().getStackPointer() && gpu::GetGraphicHardwareContextPointer().get() == m_graphicHardwareContext.get())
-    {
-        context::ContextStackCore::GetInstance().removeGlobalContext(m_graphicHardwareContext);
-    }
-
-    m_graphicHardwareContext = nullptr;
-}
-
-void ego::application::Application::releaseApplicationWindowManager()
-{
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationWindowManager);
-}
-
-void ego::application::Application::releaseApplicationScopedContext()
-{
-    if (!m_applicationContext)
-    {
-        return;
-    }
-
-    m_applicationContext->release();
-
-    if (m_contextScope)
-    {
-        m_contextScope->removeContext(m_applicationContext);
-    }
-
-    m_applicationContext = nullptr;
-}
-
-void ego::application::Application::releaseProfilerPlugin()
-{
-    m_profilerPlugin = nullptr;
-}
-
-void ego::application::Application::releaseContextScope()
-{
-    const bool hasContextStack = context::ContextStackCore::GetInstance().getStackPointer().get() != nullptr;
-
-    releasePlatformRuntimeContext(hasContextStack);
-    releaseRuntimeContext();
-    releaseDiagnosticContext(hasContextStack);
-    releasePlatformContext(hasContextStack);
-    releaseContextStack(hasContextStack);
-}
-
-void ego::application::Application::releasePlatformRuntimeContext(bool _hasContextStack)
-{
-    if (!m_platformRuntimeContext)
-    {
-        return;
-    }
-
-    m_platformRuntimeContext->release();
-
-    if (_hasContextStack && context::GetPlatformRuntimeContextPointer().get() == m_platformRuntimeContext.get())
-    {
-        context::ContextStackCore::GetInstance().removeGlobalContext(m_platformRuntimeContext);
-    }
-
-    m_platformRuntimeContext = nullptr;
-}
-
-void ego::application::Application::releaseRuntimeContext()
-{
-    if (!m_runtimeContext)
-    {
-        return;
-    }
-
-    m_runtimeContext->release();
-
-    if (m_contextScope)
-    {
-        m_contextScope->removeContext(m_runtimeContext);
-    }
-
-    m_runtimeContext = nullptr;
-}
-
-void ego::application::Application::releaseDiagnosticContext(bool _hasContextStack)
-{
-    if (!m_diagnosticContext)
-    {
-        return;
-    }
-
-    m_diagnosticContext->release();
-
-    if (_hasContextStack && context::GetDiagnosticContextPointer().get() == m_diagnosticContext.get())
-    {
-        context::ContextStackCore::GetInstance().removeGlobalContext(m_diagnosticContext);
-    }
-
-    m_diagnosticContext = nullptr;
-}
-
-void ego::application::Application::releasePlatformContext(bool _hasContextStack)
-{
-    if (!m_platformContext)
-    {
-        return;
-    }
-
-    m_platformContext->release();
-
-    if (_hasContextStack && context::GetPlatformContextPointer().get() == m_platformContext.get())
-    {
-        context::ContextStackCore::GetInstance().removeGlobalContext(m_platformContext);
-    }
-
-    m_platformContext = nullptr;
-}
-
-void ego::application::Application::releaseContextStack(bool _hasContextStack)
-{
-    if (_hasContextStack && m_isContextStackInitialized)
-    {
-        context::ContextStackCore::GetInstance().setDefaultScope(nullptr);
-
-        if (m_isContextScopePushed)
+    m_applicationQuitRequestedEventCallbackID = eventController->addEventCallback<ApplicationQuitRequestedEvent>(
+        [this](const ApplicationQuitRequestedEvent&)
         {
-            context::ContextStackCore::GetInstance().popScope(m_contextScope);
-            m_isContextScopePushed = false;
+            requestExit();
+        });
+
+    return m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID;
+}
+
+void ego::application::Application::releaseWindowing()
+{
+    if (m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID)
+    {
+        const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
+        const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
+        if (eventController)
+        {
+            eventController->removeEventCallback(m_applicationQuitRequestedEventCallbackID);
         }
 
-        context::ContextStackCore::GetInstance().release();
-        m_isContextStackInitialized = false;
-    }
-    else
-    {
-        m_isContextStackInitialized = false;
-        m_isContextScopePushed = false;
+        m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
     }
 
-    m_contextScope = nullptr;
-    m_contextStack = nullptr;
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_windowController);
 }

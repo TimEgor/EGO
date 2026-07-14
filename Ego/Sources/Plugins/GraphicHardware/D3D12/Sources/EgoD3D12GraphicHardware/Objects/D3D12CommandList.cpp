@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "EgoCore/Assert/AssertCore.h"
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Memory/Utils.h"
 
 #include "../D3D12DescriptorFactory.h"

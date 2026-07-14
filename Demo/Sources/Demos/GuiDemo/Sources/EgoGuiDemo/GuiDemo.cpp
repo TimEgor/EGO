@@ -1,18 +1,16 @@
 #include "GuiDemo.h"
 
-#include "EgoCore/Context/ContextStack.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoGui/Docking/GuiDockSpace.h"
 #include "EgoGui/Widgets/GuiButton.h"
 #include "EgoGui/Widgets/GuiCheckBox.h"
 #include "EgoGui/Widgets/GuiRadioGroup.h"
-#include "EgoGui/Widgets/GuiTextInput.h"
 #include "EgoGui/Widgets/GuiTextBlock.h"
+#include "EgoGui/Widgets/GuiTextInput.h"
 #include "EgoGui/Widgets/GuiVerticalBox.h"
 
-#include "EgoEngine/Engine.h"
-#include "EgoEngine/EngineContext.h"
+#include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
 
 namespace
@@ -20,10 +18,17 @@ namespace
     constexpr ego::gui::GuiDockTabID DemoTabID = 1;
 } // namespace
 
-bool ego::demo::GuiDemo::init()
+bool ego::demo::GuiDemo::init(const InitData& _initData)
 {
-    EGO_CHECK_INITIALIZATION(createGuiTree());
-    EGO_CHECK_INITIALIZATION(createLevel());
+    EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
+
+    m_engineSession = _initData.m_engineSession;
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    EGO_CHECK_INITIALIZATION(engineSession);
+
+    EGO_CHECK_INITIALIZATION(createGuiTree(engineSession));
+    EGO_CHECK_INITIALIZATION(createLevel(engineSession));
 
     return true;
 }
@@ -32,8 +37,10 @@ void ego::demo::GuiDemo::update(float _deltaTime)
 {
     (void)_deltaTime;
 
-    engine::Engine& engine = engine::GetEngine();
-    gui::GuiController& guiController = engine.getGuiController();
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    EGO_CHECK_RETURN(engineSession);
+
+    gui::GuiController& guiController = engineSession->getGuiController();
     if (!guiController.isInitialized() || !guiController.getViewport())
     {
         return;
@@ -45,11 +52,10 @@ void ego::demo::GuiDemo::update(float _deltaTime)
 
 void ego::demo::GuiDemo::release()
 {
-    const engine::EngineContextPointer engineContext = context::FindCurrentContext<engine::EngineContext>();
-    const engine::EnginePointer engine = engineContext ? engineContext->getEnginePointer() : nullptr;
-    if (engine)
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    if (engineSession)
     {
-        const gui::GuiControllerPointer guiController = engine->getGuiControllerPointer();
+        const gui::GuiControllerPointer guiController = engineSession->getGuiControllerPointer();
         if (guiController && guiController->isInitialized() && guiController->getViewport())
         {
             guiController->getViewport()->setRootWidget(nullptr);
@@ -57,21 +63,22 @@ void ego::demo::GuiDemo::release()
 
         if (m_level)
         {
-            const LevelPointer activeLevel = engine->getLevelController().getActiveLevel();
+            const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
             if (activeLevel && activeLevel->getID() == m_level->getID())
             {
-                engine->getLevelController().clearActiveLevel();
+                engineSession->getLevelController().clearActiveLevel();
             }
 
-            engine->clearRenderCameraEntity();
+            engineSession->clearRenderCameraEntity();
         }
     }
 
     m_level = nullptr;
     m_cameraEntity = ecs::Entity();
+    m_engineSession.reset();
 }
 
-bool ego::demo::GuiDemo::createGuiTree()
+bool ego::demo::GuiDemo::createGuiTree(const engine::EngineSessionPointer& _engineSession)
 {
     const gui::GuiDockSpacePointer dockSpace = gui::GuiDockSpace::Create();
     EGO_CHECK_RETURN_FALSE(dockSpace);
@@ -121,27 +128,24 @@ bool ego::demo::GuiDemo::createGuiTree()
     tabDesc.m_content = panel;
     EGO_CHECK_RETURN_FALSE(dockSpace->openTab(tabDesc));
 
-    engine::Engine& engine = engine::GetEngine();
-    const gui::GuiViewportPointer guiViewport = engine.getGuiController().getViewport();
+    const gui::GuiViewportPointer guiViewport = _engineSession->getGuiController().getViewport();
     EGO_CHECK_RETURN_FALSE(guiViewport);
 
     guiViewport->setRootWidget(dockSpace);
     return true;
 }
 
-bool ego::demo::GuiDemo::createLevel()
+bool ego::demo::GuiDemo::createLevel(const engine::EngineSessionPointer& _engineSession)
 {
-    engine::Engine& engine = engine::GetEngine();
-
-    m_level = engine.getLevelController().createLevel();
+    m_level = _engineSession->getLevelController().createLevel();
     EGO_CHECK_RETURN_FALSE(m_level);
-    EGO_CHECK_RETURN_FALSE(engine.getLevelController().setActiveLevel(m_level->getID()));
+    EGO_CHECK_RETURN_FALSE(_engineSession->getLevelController().setActiveLevel(m_level->getID()));
 
     m_cameraEntity = m_level->createNode();
     EGO_CHECK_RETURN_FALSE(m_cameraEntity);
 
     EGO_CHECK_RETURN_FALSE(m_level->addOrReplaceComponent<render::CameraComponent>(m_cameraEntity));
-    engine.setRenderCameraEntity(m_cameraEntity);
+    _engineSession->setRenderCameraEntity(m_cameraEntity);
 
     return true;
 }

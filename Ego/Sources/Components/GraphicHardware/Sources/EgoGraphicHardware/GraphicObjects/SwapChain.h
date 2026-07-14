@@ -17,6 +17,7 @@ namespace ego::gpu
 
         virtual Texture2DReference getTargetTexture() = 0;
 
+        virtual bool resize(const Texture2DSize& _size) = 0;
         virtual void present() = 0;
 
         const SwapChainDesc& getDesc() const;

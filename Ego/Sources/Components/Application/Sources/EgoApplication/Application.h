@@ -1,105 +1,105 @@
 #pragma once
 
-#include "EgoCore/Context/ContextScope.h"
-#include "EgoCore/Context/ContextStack.h"
-#include "EgoCore/Context/DiagnosticContext.h"
-#include "EgoCore/Context/PlatformContext.h"
+#include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Platform/Platform.h"
+#include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Platform/Window/WindowTypes.h"
 #include "EgoCore/Reference/Pointer.h"
 
-#include "EgoRuntime/PlatformRuntimeContext.h"
-#include "EgoRuntime/RuntimeContext.h"
-
-#include "ApplicationContext.h"
-#include "Window/ApplicationWindowManager.h"
+#include "EgoEvent/EventController.h"
 
 namespace ego
 {
-    class ProfilerPlugin;
-    EGO_POINTER(ProfilerPlugin);
+    class DiagnosticSubsystem;
+    class EventSubsystem;
+    class PlatformSubsystem;
+    class PlatformPluginSubsystem;
+    class PluginSubsystem;
+    class ResourceSubsystem;
+
+    EGO_POINTER(DiagnosticSubsystem);
+    EGO_POINTER(EventSubsystem);
+    EGO_POINTER(PlatformSubsystem);
+    EGO_POINTER(PlatformPluginSubsystem);
+    EGO_POINTER(PluginSubsystem);
+    EGO_POINTER(ResourceSubsystem);
 } // namespace ego
 
 namespace ego::gpu
 {
-    class GraphicHardwareContext;
-    class GraphicHardwarePlugin;
+    class GraphicHardwareSubsystem;
 
-    EGO_POINTER(GraphicHardwareContext);
-    EGO_POINTER(GraphicHardwarePlugin);
+    EGO_POINTER(GraphicHardwareSubsystem);
 } // namespace ego::gpu
 
 namespace ego::application
 {
-    class Application
+    class ApplicationWindow;
+    class ApplicationWindowController;
+    class ApplicationProfiler;
+
+    EGO_POINTER(ApplicationWindow);
+    EGO_POINTER(ApplicationWindowController);
+    EGO_POINTER(ApplicationProfiler);
+
+    class Application final : public NonCopyable
     {
     public:
-        struct ContextInitData final
-        {
-            void* m_nativeInstanceHandle = nullptr;
-        };
-
         struct InitData final
         {
             void* m_nativeInstanceHandle = nullptr;
             FileName m_pluginDirectory;
-            ProfilerPluginPointer m_profilerPlugin = nullptr;
-            gpu::GraphicHardwarePluginPointer m_graphicHardwarePlugin = nullptr;
+            FileName m_profilerPluginModuleName;
+            FileName m_graphicHardwarePluginModuleName;
+            bool m_enableGraphicHardware = false;
+            bool m_enableWindowing = true;
         };
 
-        Application() = default;
-        virtual ~Application();
+        Application();
+        ~Application() override;
 
         bool init(const InitData& _initData);
-        bool initContext(const ContextInitData& _initData);
-        bool initRuntime(const InitData& _initData);
         void release();
 
-        PlatformPointer getPlatformPointer() const;
-        const Platform& getPlatform() const;
-        Platform& getPlatform();
+        ApplicationWindowPointer createWindow(const WindowDesc& _desc);
 
-        const ApplicationWindowManager& getApplicationWindowManager() const;
-        ApplicationWindowManager& getApplicationWindowManager();
+        void processWindowEvents();
+        void updateInputDevices();
+
+        void requestExit();
+        bool isExitRequested() const;
 
     private:
-        bool initContextStack();
-        bool initPlatformContext(const ContextInitData& _initData);
-        bool initDiagnosticContext();
-        bool initRuntimeContext();
-        bool initPlatformRuntimeContext();
+        bool initSubsystems(const InitData& _initData);
+        void releaseSubsystems();
 
-        bool initProfilerPlugin(const InitData& _initData);
-        bool initPluginCatalog(const InitData& _initData);
-        bool initApplicationScopedContext();
-        bool initApplicationWindowManager();
-        bool initGraphicHardware(const InitData& _initData);
+        bool initSubsystemRegistry();
+        void releaseSubsystemRegistry();
 
-        void releaseRuntimeObjects();
-        void releaseGraphicHardwareContext();
-        void releaseApplicationWindowManager();
-        void releaseApplicationScopedContext();
-        void releaseProfilerPlugin();
+        bool registerSubsystem(const subsystem::SubsystemPointer& _subsystem);
+        void releaseSubsystem(const subsystem::SubsystemPointer& _subsystem);
 
-        void releaseContextScope();
-        void releasePlatformRuntimeContext(bool _hasContextStack);
-        void releaseRuntimeContext();
-        void releaseDiagnosticContext(bool _hasContextStack);
-        void releasePlatformContext(bool _hasContextStack);
-        void releaseContextStack(bool _hasContextStack);
+        bool registerPluginDirectory(const FileName& _pluginDirectory);
+        bool registerGraphicResourceProvider();
 
-        context::PlatformContextPointer m_platformContext = nullptr;
-        context::DiagnosticContextPointer m_diagnosticContext = nullptr;
-        context::RuntimeContextPointer m_runtimeContext = nullptr;
-        context::PlatformRuntimeContextPointer m_platformRuntimeContext = nullptr;
-        ApplicationContextPointer m_applicationContext = nullptr;
-        context::ContextScopePointer m_contextScope = nullptr;
-        context::ContextStackPointer m_contextStack = nullptr;
-        bool m_isContextStackInitialized = false;
-        bool m_isContextScopePushed = false;
-        ProfilerPluginPointer m_profilerPlugin = nullptr;
-        ApplicationWindowManagerPointer m_applicationWindowManager = nullptr;
-        gpu::GraphicHardwareContextPointer m_graphicHardwareContext = nullptr;
+        bool initWindowing();
+        void releaseWindowing();
+
+        subsystem::SubsystemRegistryPointer m_subsystemRegistry = nullptr;
+        DiagnosticSubsystemPointer m_diagnosticSubsystem = nullptr;
+        PlatformSubsystemPointer m_platformSubsystem = nullptr;
+        PlatformPluginSubsystemPointer m_platformPluginSubsystem = nullptr;
+        PluginSubsystemPointer m_pluginSubsystem = nullptr;
+        EventSubsystemPointer m_eventSubsystem = nullptr;
+        gpu::GraphicHardwareSubsystemPointer m_graphicHardwareSubsystem = nullptr;
+        ResourceSubsystemPointer m_resourceSubsystem = nullptr;
+
+        ApplicationProfilerPointer m_applicationProfiler = nullptr;
+
+        ApplicationWindowControllerPointer m_windowController = nullptr;
+        EventCallbackID m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
+
+        bool m_isExitRequested = false;
     };
 
     EGO_POINTER(Application);
