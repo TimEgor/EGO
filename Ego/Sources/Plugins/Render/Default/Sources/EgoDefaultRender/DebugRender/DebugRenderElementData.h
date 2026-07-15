@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "EgoMath/Vector.h"
+#include "EgoCore/Math/Vector.h"
 
 #include "EgoEngine/Graphic/Render/MaterialRenderPassInfo.h"
 

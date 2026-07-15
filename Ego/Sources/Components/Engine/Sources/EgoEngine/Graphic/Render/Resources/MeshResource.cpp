@@ -2,10 +2,9 @@
 
 #include <vector>
 
+#include "EgoCore/Math/Vector.h"
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/UtilsMacros.h"
-
-#include "EgoMath/Vector.h"
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 

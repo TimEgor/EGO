@@ -7,21 +7,21 @@
 #include "EgoGui/GuiController.h"
 #include "EgoGui/GuiViewport.h"
 
+#include "EgoEngine/EngineSession.h"
+
+#include "EgoApplication/Engine/Gui/ApplicationWindowGuiViewportInputAdapter.h"
+#include "EgoApplication/Engine/Input/ApplicationWindowInputKeyProvider.h"
 #include "EgoApplication/Window/ApplicationWindow.h"
 
-#include "EgoEngine/EngineSession.h"
-#include "../Gui/ApplicationWindowGuiViewportInputAdapter.h"
-#include "ApplicationWindowInputKeyProvider.h"
-
-ego::engine::EngineWindowInputBinding::~EngineWindowInputBinding()
+ego::application::EngineWindowInputBinding::~EngineWindowInputBinding()
 {
     release();
 }
 
-bool ego::engine::EngineWindowInputBinding::init(
-    const EngineSessionPointer& _engineSession,
+bool ego::application::EngineWindowInputBinding::init(
+    const engine::EngineSessionPointer& _engineSession,
     const EventControllerPointer& _eventController,
-    const application::ApplicationWindowPointer& _window)
+    const ApplicationWindowPointer& _window)
 {
     EGO_CHECK_INITIALIZATION(!m_inputController);
     EGO_CHECK_INITIALIZATION(!m_guiViewport);
@@ -55,7 +55,7 @@ bool ego::engine::EngineWindowInputBinding::init(
     return true;
 }
 
-void ego::engine::EngineWindowInputBinding::release()
+void ego::application::EngineWindowInputBinding::release()
 {
     if (m_inputKeyProvider)
     {
@@ -78,7 +78,7 @@ void ego::engine::EngineWindowInputBinding::release()
     m_inputController = nullptr;
 }
 
-void ego::engine::EngineWindowInputBinding::updateInputDevices()
+void ego::application::EngineWindowInputBinding::updateInputDevices()
 {
     if (m_inputKeyProvider)
     {

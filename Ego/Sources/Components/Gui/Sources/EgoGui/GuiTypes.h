@@ -2,9 +2,8 @@
 
 #include <cstdint>
 
+#include "EgoCore/Math/Vector.h"
 #include "EgoCore/Reference/Pointer.h"
-
-#include "EgoMath/Vector.h"
 
 namespace ego::gui
 {

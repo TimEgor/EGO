@@ -1,9 +1,9 @@
 #pragma once
 
+#include "EgoCore/Math/Transform.h"
+
 #include "EgoECS/Component.h"
 #include "EgoECS/Entity.h"
-
-#include "EgoMath/Transform.h"
 
 namespace ego
 {

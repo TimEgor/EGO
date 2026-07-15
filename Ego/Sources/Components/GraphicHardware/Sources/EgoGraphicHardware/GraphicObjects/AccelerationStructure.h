@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "EgoMath/Matrix.h"
+#include "EgoCore/Math/Matrix.h"
 
 #include "Buffer.h"
 #include "GraphicResource.h"

@@ -12,7 +12,6 @@ target_link_libraries(
         PRIVATE
             Ego::Core
             Ego::Engine
-            Ego::Math
             Ego::Plugin
             Ego::Resource
 )

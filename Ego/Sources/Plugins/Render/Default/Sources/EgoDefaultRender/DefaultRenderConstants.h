@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "EgoMath/Vector.h"
+#include "EgoCore/Math/Vector.h"
 
 #include "EgoGraphicHardware/GraphicObjects/Format.h"
 

@@ -7,60 +7,45 @@
 
 namespace ego
 {
-    class WindowGraphicPresenter;
+    class GraphicPresenter;
 
-    EGO_POINTER(WindowGraphicPresenter);
+    EGO_POINTER(GraphicPresenter);
 } // namespace ego
-
-namespace ego::gpu
-{
-    class GraphicHardwareSubsystem;
-
-    EGO_POINTER(GraphicHardwareSubsystem);
-} // namespace ego::gpu
 
 namespace ego::application
 {
     class ApplicationWindow;
+    class WindowGraphicPresenter;
     struct ApplicationWindowSizeChangedEvent;
 
     EGO_POINTER(ApplicationWindow);
+    EGO_POINTER(WindowGraphicPresenter);
 } // namespace ego::application
 
-namespace ego::engine
+namespace ego::application
 {
-    class EngineSession;
-
-    EGO_POINTER(EngineSession);
-
     class EngineWindowPresentation final : public NonCopyable
     {
     public:
         EngineWindowPresentation() = default;
         ~EngineWindowPresentation() override;
 
-        bool init(
-            const EngineSessionPointer& _engineSession,
-            const gpu::GraphicHardwareSubsystemPointer& _graphicHardwareSubsystem,
-            const EventControllerPointer& _eventController,
-            const application::ApplicationWindowPointer& _window,
-            bool _makePrimary);
+        bool init(const ApplicationWindowPointer& _window);
         void release();
 
         bool update();
+        GraphicPresenterPointer getGraphicPresenterPointer() const;
 
     private:
         bool registerWindowEvents();
         void unregisterWindowEvents();
-        void handleWindowSizeChanged(const application::ApplicationWindowSizeChangedEvent& _event);
+        void handleWindowSizeChanged(const ApplicationWindowSizeChangedEvent& _event);
 
-        EngineSessionPointer m_engineSession = nullptr;
-        application::ApplicationWindowPointer m_window = nullptr;
+        ApplicationWindowPointer m_window = nullptr;
         WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
-        EventControllerPointer m_eventController = nullptr;
         InstancedEventCallbackID m_sizeChangedCallbackID = InvalidInstancedEventCallbackID;
         bool m_isResizePending = false;
     };
 
     EGO_POINTER(EngineWindowPresentation);
-} // namespace ego::engine
+} // namespace ego::application

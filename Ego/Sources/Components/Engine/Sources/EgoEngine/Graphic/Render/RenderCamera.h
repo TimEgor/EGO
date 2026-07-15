@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoMath/Transform.h"
+#include "EgoCore/Math/Transform.h"
 
 namespace ego::render
 {

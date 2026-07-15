@@ -3,7 +3,7 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Platform/Window/WindowTypes.h"
+#include "EgoCore/Platform/Window/Window.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "EgoEvent/EventController.h"

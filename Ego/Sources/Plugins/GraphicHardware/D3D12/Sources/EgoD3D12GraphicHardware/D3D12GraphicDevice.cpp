@@ -1419,7 +1419,7 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
         return SwapChainReference();
     }
 
-    const PresentationSurfaceSize& clientAreaSize = _surface.getClientAreaSize();
+    const PresentationSurfaceSize& clientAreaSize = _surface.getSize();
     const uint32_t width = clientAreaSize.m_x;
     const uint32_t height = clientAreaSize.m_y;
 

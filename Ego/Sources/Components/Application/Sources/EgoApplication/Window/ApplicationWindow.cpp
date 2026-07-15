@@ -97,7 +97,7 @@ const ego::WindowSize& ego::application::ApplicationWindow::getWindowSize() cons
     return m_nativeWindow ? m_nativeWindow->getWindowSize() : DefaultWindowSize;
 }
 
-const ego::WindowSize& ego::application::ApplicationWindow::getClientAreaSize() const
+const ego::WindowSize& ego::application::ApplicationWindow::getSize() const
 {
     return m_nativeWindow ? m_nativeWindow->getClientAreaSize() : DefaultWindowSize;
 }

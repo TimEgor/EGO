@@ -112,12 +112,12 @@ namespace
     }
 } // namespace
 
-ego::engine::ApplicationWindowGuiViewportInputAdapter::~ApplicationWindowGuiViewportInputAdapter()
+ego::application::ApplicationWindowGuiViewportInputAdapter::~ApplicationWindowGuiViewportInputAdapter()
 {
     release();
 }
 
-bool ego::engine::ApplicationWindowGuiViewportInputAdapter::init(
+bool ego::application::ApplicationWindowGuiViewportInputAdapter::init(
     const application::ApplicationWindowPointer& _window,
     const EventControllerPointer& _applicationEventController,
     const EventControllerPointer& _inputEventController)
@@ -136,7 +136,7 @@ bool ego::engine::ApplicationWindowGuiViewportInputAdapter::init(
     return true;
 }
 
-bool ego::engine::ApplicationWindowGuiViewportInputAdapter::setGuiController(const SharedPointer<gui::GuiController>& _guiController)
+bool ego::application::ApplicationWindowGuiViewportInputAdapter::setGuiController(const SharedPointer<gui::GuiController>& _guiController)
 {
     EGO_CHECK_RETURN_FALSE(_guiController);
 
@@ -149,7 +149,7 @@ bool ego::engine::ApplicationWindowGuiViewportInputAdapter::setGuiController(con
     return true;
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::release()
+void ego::application::ApplicationWindowGuiViewportInputAdapter::release()
 {
     unregisterInputEventCallbacks();
     unregisterWindowInputEventCallbacks();
@@ -159,7 +159,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::release()
     m_window = nullptr;
 }
 
-bool ego::engine::ApplicationWindowGuiViewportInputAdapter::adaptInputEvent(gui::GuiInputEvent& _event, const gui::GuiViewport& _viewport) const
+bool ego::application::ApplicationWindowGuiViewportInputAdapter::adaptInputEvent(gui::GuiInputEvent& _event, const gui::GuiViewport& _viewport) const
 {
     if (!_event.m_hasPosition)
     {
@@ -168,7 +168,7 @@ bool ego::engine::ApplicationWindowGuiViewportInputAdapter::adaptInputEvent(gui:
 
     EGO_CHECK_RETURN_FALSE(m_window);
 
-    const WindowSize& clientSize = m_window->getClientAreaSize();
+    const WindowSize& clientSize = m_window->getSize();
     EGO_CHECK_RETURN_FALSE(clientSize.m_x != 0 && clientSize.m_y != 0);
 
     WindowPoint screenPoint(static_cast<int32_t>(_event.m_position.m_x), static_cast<int32_t>(_event.m_position.m_y));
@@ -186,7 +186,7 @@ bool ego::engine::ApplicationWindowGuiViewportInputAdapter::adaptInputEvent(gui:
     return true;
 }
 
-bool ego::engine::ApplicationWindowGuiViewportInputAdapter::registerWindowInputEventCallbacks()
+bool ego::application::ApplicationWindowGuiViewportInputAdapter::registerWindowInputEventCallbacks()
 {
     EGO_CHECK_RETURN_FALSE(m_window);
     EGO_CHECK_RETURN_FALSE(m_applicationEventController);
@@ -210,7 +210,7 @@ bool ego::engine::ApplicationWindowGuiViewportInputAdapter::registerWindowInputE
     return true;
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::unregisterWindowInputEventCallbacks()
+void ego::application::ApplicationWindowGuiViewportInputAdapter::unregisterWindowInputEventCallbacks()
 {
     if (!m_applicationEventController)
     {
@@ -232,7 +232,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::unregisterWindowInpu
     }
 }
 
-bool ego::engine::ApplicationWindowGuiViewportInputAdapter::registerInputEventCallbacks()
+bool ego::application::ApplicationWindowGuiViewportInputAdapter::registerInputEventCallbacks()
 {
     EGO_CHECK_RETURN_FALSE(m_inputEventController);
 
@@ -267,7 +267,7 @@ bool ego::engine::ApplicationWindowGuiViewportInputAdapter::registerInputEventCa
     return true;
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::unregisterInputEventCallbacks()
+void ego::application::ApplicationWindowGuiViewportInputAdapter::unregisterInputEventCallbacks()
 {
     if (!m_inputEventController)
     {
@@ -303,7 +303,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::unregisterInputEvent
     }
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleWindowKeyboardInputEvent(const application::ApplicationWindowKeyboardInputEvent& _event) const
+void ego::application::ApplicationWindowGuiViewportInputAdapter::handleWindowKeyboardInputEvent(const ApplicationWindowKeyboardInputEvent& _event) const
 {
     const SharedPointer<gui::GuiController> guiController = m_guiController.lock();
     if (!guiController || !guiController->isInitialized())
@@ -314,7 +314,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleWindowKeyboard
     guiController->processEvent(CreateKeyboardInputEvent(_event.m_inputData));
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleWindowTextInputEvent(const application::ApplicationWindowTextInputEvent& _event) const
+void ego::application::ApplicationWindowGuiViewportInputAdapter::handleWindowTextInputEvent(const ApplicationWindowTextInputEvent& _event) const
 {
     const SharedPointer<gui::GuiController> guiController = m_guiController.lock();
     if (!guiController || !guiController->isInitialized() || _event.m_inputData.m_codepoint == 0)
@@ -325,7 +325,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleWindowTextInpu
     guiController->processEvent(CreateTextInputEvent(_event.m_inputData));
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputDeviceChangedEvent(const InputDeviceChangedEvent& _event) const
+void ego::application::ApplicationWindowGuiViewportInputAdapter::handleInputDeviceChangedEvent(const InputDeviceChangedEvent& _event) const
 {
     const SharedPointer<gui::GuiController> guiController = m_guiController.lock();
     if (!guiController || !guiController->isInitialized() || !IsMouseDevice(_event.m_device) || !IsMousePositionChanged(_event.m_device))
@@ -336,7 +336,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputDeviceCha
     guiController->processEvent(CreateMouseEvent(gui::GuiInputEventType::MouseMove, _event.m_device));
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputKeyChangedEvent(const InputKeyChangedEvent& _event) const
+void ego::application::ApplicationWindowGuiViewportInputAdapter::handleInputKeyChangedEvent(const InputKeyChangedEvent& _event) const
 {
     const SharedPointer<gui::GuiController> guiController = m_guiController.lock();
     if (!guiController || !guiController->isInitialized() || !IsMouseDevice(_event.m_device) || !IsMouseWheelKey(_event.m_key))
@@ -347,7 +347,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputKeyChange
     guiController->processEvent(CreateMouseWheelEvent(_event.m_device, _event.m_value - _event.m_previousValue));
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputButtonPressedEvent(const InputButtonPressedEvent& _event) const
+void ego::application::ApplicationWindowGuiViewportInputAdapter::handleInputButtonPressedEvent(const InputButtonPressedEvent& _event) const
 {
     const SharedPointer<gui::GuiController> guiController = m_guiController.lock();
     if (!guiController || !guiController->isInitialized() || !IsMouseDevice(_event.m_device))
@@ -362,7 +362,7 @@ void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputButtonPre
     }
 }
 
-void ego::engine::ApplicationWindowGuiViewportInputAdapter::handleInputButtonReleasedEvent(const InputButtonReleasedEvent& _event) const
+void ego::application::ApplicationWindowGuiViewportInputAdapter::handleInputButtonReleasedEvent(const InputButtonReleasedEvent& _event) const
 {
     const SharedPointer<gui::GuiController> guiController = m_guiController.lock();
     if (!guiController || !guiController->isInitialized() || !IsMouseDevice(_event.m_device))

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoMath/ComputeVector3.h"
+#include "EgoCore/Math/ComputeVector3.h"
 
 #include "EgoEngine/Graphic/Render/Resources/MaterialResource.h"
 #include "EgoEngine/Graphic/Render/Resources/MeshResource.h"

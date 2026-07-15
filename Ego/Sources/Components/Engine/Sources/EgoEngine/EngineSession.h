@@ -81,8 +81,8 @@ namespace ego::engine
 
         render::Render& getRender();
 
-        bool registerGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter, bool _makePrimary = false);
-        void unregisterGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter);
+        bool setGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter);
+        void clearGraphicPresenter();
 
         void setRenderCameraEntity(ecs::Entity _cameraEntity);
         void clearRenderCameraEntity();
@@ -125,10 +125,6 @@ namespace ego::engine
         void unregisterEngineLogicFrameLogicJob();
         void updateEngineLogic();
 
-        void syncPresenterTargetResolution();
-        bool containsGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter) const;
-        void selectFirstGraphicPresenterAsPrimary();
-
         void beginFrame();
         void endFrame();
         float getDeltaTime() const;
@@ -153,10 +149,7 @@ namespace ego::engine
 
         FrameLogic m_frameLogic;
 
-        using GraphicPresenterCollection = std::vector<GraphicPresenterWeakPointer>;
-
-        GraphicPresenterCollection m_graphicPresenters;
-        GraphicPresenterWeakPointer m_primaryGraphicPresenter;
+        GraphicPresenterWeakPointer m_graphicPresenter;
         render::RenderPluginPointer m_renderPlugin = nullptr;
         render::RenderPointer m_render = nullptr;
 

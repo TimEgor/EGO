@@ -28,7 +28,7 @@ namespace ego::gui
     class GuiController;
 } // namespace ego::gui
 
-namespace ego::engine
+namespace ego::application
 {
     class ApplicationWindowGuiViewportInputAdapter final : public gui::GuiViewportInputAdapter
     {
@@ -73,4 +73,4 @@ namespace ego::engine
     };
 
     EGO_POINTER(ApplicationWindowGuiViewportInputAdapter);
-} // namespace ego::engine
+} // namespace ego::application

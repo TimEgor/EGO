@@ -7,6 +7,7 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEvent/EventController.h"
+#include "EgoEvent/EventSubsystem.h"
 
 #include "InputEvents.h"
 
@@ -65,10 +66,6 @@ bool ego::InputController::init()
         return true;
     }
 
-    EGO_CHECK_RETURN_FALSE(!m_eventController);
-
-    m_eventController = new EventController();
-    EGO_CHECK_INITIALIZATION(m_eventController && m_eventController->init());
     EGO_CHECK_INITIALIZATION(registerInputEvents());
 
     m_isInitialized = true;
@@ -78,31 +75,27 @@ bool ego::InputController::init()
 
 void ego::InputController::release()
 {
-    if (m_eventController)
-    {
-        unregisterInputEvents();
-    }
-
+    unregisterInputEvents();
     m_keyProviders.clear();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
     m_isInitialized = false;
 }
 
 void ego::InputController::update() const
 {
     EGO_CHECK_RETURN(m_isInitialized);
-    EGO_CHECK_RETURN(m_eventController);
 
-    EventController& eventController = *m_eventController;
+    const EventControllerPointer eventController = getEventControllerPointer();
+    EGO_CHECK_RETURN(eventController);
+
     const InputDeviceController::DeviceCollection& devices = GetPlatform().getInputDeviceController().getDevices();
     for (const InputDevicePointer& device : devices)
     {
-        emitDeviceEvents(eventController, device);
+        emitDeviceEvents(*eventController, device);
     }
 
     for (const InputKeyProviderPointer& provider : m_keyProviders)
     {
-        emitKeyProviderDeviceEvents(eventController, provider);
+        emitKeyProviderDeviceEvents(*eventController, provider);
     }
 }
 
@@ -142,80 +135,44 @@ bool ego::InputController::isInitialized() const
 
 ego::EventControllerPointer ego::InputController::getEventControllerPointer() const
 {
-    return m_eventController;
+    const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
+    return eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
 }
 
 ego::EventController& ego::InputController::getEventController() const
 {
-    EGO_ASSERT(m_eventController);
-    return *m_eventController;
+    return GetEventSubsystem().getEventController();
 }
 
 bool ego::InputController::registerInputEvents()
 {
-    EGO_CHECK_RETURN_FALSE(m_eventController);
+    const EventControllerPointer eventController = getEventControllerPointer();
+    EGO_CHECK_RETURN_FALSE(eventController);
 
-    EventController& eventController = *m_eventController;
-
-    EGO_CHECK_RETURN_FALSE(eventController.registerEvent<InputDeviceEvent>());
-    if (!eventController.registerEvent<InputDeviceChangedEvent>())
-    {
-        eventController.unregisterEvent<InputDeviceEvent>();
-        return false;
-    }
-
-    if (!eventController.registerEvent<InputKeyEvent>())
-    {
-        eventController.unregisterEvent<InputDeviceChangedEvent>();
-        eventController.unregisterEvent<InputDeviceEvent>();
-        return false;
-    }
-
-    if (!eventController.registerEvent<InputKeyChangedEvent>())
-    {
-        eventController.unregisterEvent<InputKeyEvent>();
-        eventController.unregisterEvent<InputDeviceChangedEvent>();
-        eventController.unregisterEvent<InputDeviceEvent>();
-        return false;
-    }
-
-    if (!eventController.registerEvent<InputButtonPressedEvent>())
-    {
-        eventController.unregisterEvent<InputKeyChangedEvent>();
-        eventController.unregisterEvent<InputKeyEvent>();
-        eventController.unregisterEvent<InputDeviceChangedEvent>();
-        eventController.unregisterEvent<InputDeviceEvent>();
-        return false;
-    }
-
-    if (!eventController.registerEvent<InputButtonReleasedEvent>())
-    {
-        eventController.unregisterEvent<InputButtonPressedEvent>();
-        eventController.unregisterEvent<InputKeyChangedEvent>();
-        eventController.unregisterEvent<InputKeyEvent>();
-        eventController.unregisterEvent<InputDeviceChangedEvent>();
-        eventController.unregisterEvent<InputDeviceEvent>();
-        return false;
-    }
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<InputDeviceEvent>());
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<InputDeviceChangedEvent>());
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<InputKeyEvent>());
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<InputKeyChangedEvent>());
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<InputButtonPressedEvent>());
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<InputButtonReleasedEvent>());
 
     return true;
 }
 
 void ego::InputController::unregisterInputEvents()
 {
-    if (!m_eventController)
+    const EventControllerPointer eventController = getEventControllerPointer();
+    if (!eventController)
     {
         return;
     }
 
-    EventController& eventController = *m_eventController;
-
-    eventController.unregisterEvent<InputButtonReleasedEvent>();
-    eventController.unregisterEvent<InputButtonPressedEvent>();
-    eventController.unregisterEvent<InputKeyChangedEvent>();
-    eventController.unregisterEvent<InputKeyEvent>();
-    eventController.unregisterEvent<InputDeviceChangedEvent>();
-    eventController.unregisterEvent<InputDeviceEvent>();
+    eventController->unregisterEvent<InputButtonReleasedEvent>();
+    eventController->unregisterEvent<InputButtonPressedEvent>();
+    eventController->unregisterEvent<InputKeyChangedEvent>();
+    eventController->unregisterEvent<InputKeyEvent>();
+    eventController->unregisterEvent<InputDeviceChangedEvent>();
+    eventController->unregisterEvent<InputDeviceEvent>();
 }
 
 bool ego::InputController::hasKeyProvider(const InputKeyProviderPointer& _provider) const

@@ -16,7 +16,7 @@ namespace ego::application
     struct ApplicationWindowKeyboardInputEvent;
 } // namespace ego::application
 
-namespace ego::engine
+namespace ego::application
 {
     class ApplicationWindowInputKeyProvider final : public InputKeyProvider
     {
@@ -54,4 +54,4 @@ namespace ego::engine
     };
 
     EGO_POINTER(ApplicationWindowInputKeyProvider);
-} // namespace ego::engine
+} // namespace ego::application

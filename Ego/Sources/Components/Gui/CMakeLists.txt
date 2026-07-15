@@ -15,7 +15,6 @@ target_link_libraries(
             Ego::Core
             Ego::GraphicHardware
             Ego::Input
-            Ego::Math
         PRIVATE
             Ego::ThirdParty::Stb
 )

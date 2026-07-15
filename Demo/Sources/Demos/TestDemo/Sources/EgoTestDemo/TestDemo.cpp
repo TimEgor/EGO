@@ -1,8 +1,7 @@
 #include "TestDemo.h"
 
+#include "EgoCore/Math/ComputeQuaternion.h"
 #include "EgoCore/UtilsMacros.h"
-
-#include "EgoMath/ComputeQuaternion.h"
 
 #include "EgoResource/ResourceController.h"
 

@@ -1,26 +1,19 @@
 #pragma once
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Platform/Window/PresentationSurface.h"
-#include "EgoCore/Platform/Window/WindowTypes.h"
+#include "EgoCore/Platform/Window/Window.h"
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 #include "EgoEvent/EventController.h"
 
-namespace ego
-{
-    class Window;
-    EGO_POINTER(Window);
-} // namespace ego
+#include "EgoGraphicHardware/PresentationSurface.h"
 
 namespace ego::application
 {
     class ApplicationWindowController;
 
-    class ApplicationWindow final
-        : public PresentationSurface
-        , public NonCopyable
+    class ApplicationWindow final : public PresentationSurface, public NonCopyable
     {
         friend class ApplicationWindowController;
 
@@ -41,7 +34,7 @@ namespace ego::application
         bool screenToClient(const WindowPoint& _screenPoint, WindowPoint& _clientPoint) const;
 
         const WindowSize& getWindowSize() const;
-        const WindowSize& getClientAreaSize() const override;
+        const WindowSize& getSize() const override;
         const WindowArea& getCutoutsArea() const;
 
         InstancedEventID getSizeEventID() const;

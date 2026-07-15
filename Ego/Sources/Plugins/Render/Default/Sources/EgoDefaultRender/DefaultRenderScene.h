@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "EgoMath/Transform.h"
+#include "EgoCore/Math/Transform.h"
 
 #include "EgoEngine/Graphic/Render/RenderObject.h"
 

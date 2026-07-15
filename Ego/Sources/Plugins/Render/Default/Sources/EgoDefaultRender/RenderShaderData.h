@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include "EgoMath/Matrix.h"
-#include "EgoMath/Vector.h"
+#include "EgoCore/Math/Matrix.h"
+#include "EgoCore/Math/Vector.h"
 
 #include "EgoGraphicHardware/GraphicObjects/Shader.h"
 

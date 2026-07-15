@@ -28,13 +28,18 @@ namespace ego::gui
 
 namespace ego::engine
 {
+    class EngineSession;
+
+    EGO_POINTER(EngineSession);
+} // namespace ego::engine
+
+namespace ego::application
+{
     class ApplicationWindowGuiViewportInputAdapter;
     class ApplicationWindowInputKeyProvider;
-    class EngineSession;
 
     EGO_POINTER(ApplicationWindowGuiViewportInputAdapter);
     EGO_POINTER(ApplicationWindowInputKeyProvider);
-    EGO_POINTER(EngineSession);
 
     class EngineWindowInputBinding final : public NonCopyable
     {
@@ -42,7 +47,7 @@ namespace ego::engine
         EngineWindowInputBinding() = default;
         ~EngineWindowInputBinding() override;
 
-        bool init(const EngineSessionPointer& _engineSession, const EventControllerPointer& _eventController, const application::ApplicationWindowPointer& _window);
+        bool init(const engine::EngineSessionPointer& _engineSession, const EventControllerPointer& _eventController, const ApplicationWindowPointer& _window);
         void release();
 
         void updateInputDevices();
@@ -55,4 +60,4 @@ namespace ego::engine
     };
 
     EGO_POINTER(EngineWindowInputBinding);
-} // namespace ego::engine
+} // namespace ego::application

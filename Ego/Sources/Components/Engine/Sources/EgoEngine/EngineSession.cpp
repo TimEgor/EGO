@@ -60,7 +60,6 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     EGO_CHECK_INITIALIZATION(initGuiController(_initData));
 
     EGO_CHECK_INITIALIZATION(initRender(_initData));
-    syncPresenterTargetResolution();
 
     EGO_CHECK_INITIALIZATION(initFrameLogic());
     EGO_CHECK_INITIALIZATION(initEngineLogic());
@@ -79,8 +78,7 @@ void ego::engine::EngineSession::release()
     m_renderPlugin = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
-    m_primaryGraphicPresenter.reset();
-    m_graphicPresenters.clear();
+    m_graphicPresenter.reset();
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
     releaseProject();
@@ -347,56 +345,17 @@ ego::render::Render& ego::engine::EngineSession::getRender()
     return *m_render;
 }
 
-bool ego::engine::EngineSession::registerGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter, bool _makePrimary)
+bool ego::engine::EngineSession::setGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter)
 {
     EGO_CHECK_RETURN_FALSE(_graphicPresenter);
 
-    if (!containsGraphicPresenter(_graphicPresenter))
-    {
-        m_graphicPresenters.emplace_back(_graphicPresenter);
-    }
-
-    if (_makePrimary || m_primaryGraphicPresenter.isExpired())
-    {
-        m_primaryGraphicPresenter = _graphicPresenter;
-    }
-
-    syncPresenterTargetResolution();
+    m_graphicPresenter = _graphicPresenter;
     return true;
 }
 
-void ego::engine::EngineSession::unregisterGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter)
+void ego::engine::EngineSession::clearGraphicPresenter()
 {
-    if (!_graphicPresenter)
-    {
-        return;
-    }
-
-    const GraphicPresenterPointer primaryGraphicPresenter = m_primaryGraphicPresenter.lock();
-    if (primaryGraphicPresenter.get() == _graphicPresenter.get())
-    {
-        m_primaryGraphicPresenter.reset();
-    }
-
-    for (GraphicPresenterCollection::iterator presenterIter = m_graphicPresenters.begin(); presenterIter != m_graphicPresenters.end();)
-    {
-        const GraphicPresenterPointer presenter = presenterIter->lock();
-        if (!presenter || presenter.get() == _graphicPresenter.get())
-        {
-            presenterIter = m_graphicPresenters.erase(presenterIter);
-        }
-        else
-        {
-            ++presenterIter;
-        }
-    }
-
-    if (m_primaryGraphicPresenter.isExpired())
-    {
-        selectFirstGraphicPresenterAsPrimary();
-    }
-
-    syncPresenterTargetResolution();
+    m_graphicPresenter.reset();
 }
 
 void ego::engine::EngineSession::setRenderCameraEntity(ecs::Entity _cameraEntity)
@@ -580,74 +539,6 @@ void ego::engine::EngineSession::updateEngineLogic()
     }
 }
 
-void ego::engine::EngineSession::syncPresenterTargetResolution()
-{
-    gpu::Texture2DSize targetResolution(0);
-    bool hasTargetResolution = false;
-    const GraphicPresenterPointer graphicPresenter = m_primaryGraphicPresenter.lock();
-    if (graphicPresenter)
-    {
-        const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
-        if (targetTexture)
-        {
-            targetResolution = targetTexture->getDesc().m_size;
-            hasTargetResolution = targetResolution.m_x != 0 && targetResolution.m_y != 0;
-        }
-    }
-
-    if (hasTargetResolution && m_render)
-    {
-        const gpu::Texture2DSize& renderResolution = m_render->getResolution();
-        if (renderResolution.m_x != targetResolution.m_x || renderResolution.m_y != targetResolution.m_y)
-        {
-            m_render->setResolution(targetResolution);
-        }
-    }
-
-    if (hasTargetResolution && m_guiController && m_guiController->isInitialized())
-    {
-        const gui::GuiViewportPointer guiViewport = m_guiController->getViewport();
-        if (guiViewport)
-        {
-            const gui::GuiSize viewportSize(static_cast<float>(targetResolution.m_x), static_cast<float>(targetResolution.m_y));
-            const gui::GuiSize& currentViewportSize = guiViewport->getSize();
-            if (currentViewportSize.m_x != viewportSize.m_x || currentViewportSize.m_y != viewportSize.m_y)
-            {
-                guiViewport->setSize(viewportSize);
-            }
-        }
-    }
-}
-
-bool ego::engine::EngineSession::containsGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter) const
-{
-    for (const GraphicPresenterWeakPointer& weakPresenter : m_graphicPresenters)
-    {
-        const GraphicPresenterPointer presenter = weakPresenter.lock();
-        if (presenter && presenter.get() == _graphicPresenter.get())
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void ego::engine::EngineSession::selectFirstGraphicPresenterAsPrimary()
-{
-    for (const GraphicPresenterWeakPointer& weakPresenter : m_graphicPresenters)
-    {
-        const GraphicPresenterPointer presenter = weakPresenter.lock();
-        if (presenter)
-        {
-            m_primaryGraphicPresenter = presenter;
-            return;
-        }
-    }
-
-    m_primaryGraphicPresenter.reset();
-}
-
 void ego::engine::EngineSession::beginFrame()
 {
     m_currentFrameTime = Clock::GetCurrentTimePoint();
@@ -696,24 +587,15 @@ void ego::engine::EngineSession::presentFrame()
         return;
     }
 
-    for (GraphicPresenterCollection::iterator presenterIter = m_graphicPresenters.begin(); presenterIter != m_graphicPresenters.end();)
+    const GraphicPresenterPointer graphicPresenter = m_graphicPresenter.lock();
+    if (graphicPresenter)
     {
-        const GraphicPresenterPointer presenter = presenterIter->lock();
-        if (!presenter)
-        {
-            presenterIter = m_graphicPresenters.erase(presenterIter);
-            continue;
-        }
-
-        m_render->present(*presenter);
-        ++presenterIter;
+        m_render->present(*graphicPresenter);
     }
 }
 
 void ego::engine::EngineSession::prepareRenderFrame()
 {
-    syncPresenterTargetResolution();
-
     if (!m_render || !m_levelController || !m_guiController)
     {
         return;
@@ -722,6 +604,16 @@ void ego::engine::EngineSession::prepareRenderFrame()
     const LevelPointer activeLevel = m_levelController->getActiveLevel();
     if (activeLevel && m_renderCameraEntity)
     {
+        const GraphicPresenterPointer graphicPresenter = m_graphicPresenter.lock();
+        if (graphicPresenter)
+        {
+            const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
+            if (targetTexture)
+            {
+                m_render->setResolution(targetTexture->getDesc().m_size);
+            }
+        }
+
         const render::RenderPrepareContext prepareContext{*activeLevel, m_renderCameraEntity, *m_guiController, getDeltaTime()};
         m_render->prepare(prepareContext);
     }

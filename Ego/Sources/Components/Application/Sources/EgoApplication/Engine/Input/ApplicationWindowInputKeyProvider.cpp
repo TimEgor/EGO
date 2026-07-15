@@ -28,17 +28,17 @@ namespace
     }
 } // namespace
 
-ego::engine::ApplicationWindowInputKeyProvider::ApplicationWindowInputKeyProvider()
+ego::application::ApplicationWindowInputKeyProvider::ApplicationWindowInputKeyProvider()
 {
     resetKeyValues();
 }
 
-ego::engine::ApplicationWindowInputKeyProvider::~ApplicationWindowInputKeyProvider()
+ego::application::ApplicationWindowInputKeyProvider::~ApplicationWindowInputKeyProvider()
 {
     release();
 }
 
-bool ego::engine::ApplicationWindowInputKeyProvider::init(const application::ApplicationWindowPointer& _window, const EventControllerPointer& _eventController)
+bool ego::application::ApplicationWindowInputKeyProvider::init(const ApplicationWindowPointer& _window, const EventControllerPointer& _eventController)
 {
     if (m_isInitialized)
     {
@@ -61,7 +61,7 @@ bool ego::engine::ApplicationWindowInputKeyProvider::init(const application::App
     return true;
 }
 
-void ego::engine::ApplicationWindowInputKeyProvider::release()
+void ego::application::ApplicationWindowInputKeyProvider::release()
 {
     unregisterEventCallbacks();
     resetKeyValues();
@@ -72,12 +72,12 @@ void ego::engine::ApplicationWindowInputKeyProvider::release()
     m_isInitialized = false;
 }
 
-const ego::InputKeyProvider::DeviceCollection& ego::engine::ApplicationWindowInputKeyProvider::getDevices() const
+const ego::InputKeyProvider::DeviceCollection& ego::application::ApplicationWindowInputKeyProvider::getDevices() const
 {
     return m_devices;
 }
 
-void ego::engine::ApplicationWindowInputKeyProvider::updateDevices()
+void ego::application::ApplicationWindowInputKeyProvider::updateDevices()
 {
     if (!m_keyboardDevice)
     {
@@ -92,7 +92,7 @@ void ego::engine::ApplicationWindowInputKeyProvider::updateDevices()
     }
 }
 
-bool ego::engine::ApplicationWindowInputKeyProvider::registerEventCallbacks()
+bool ego::application::ApplicationWindowInputKeyProvider::registerEventCallbacks()
 {
     EGO_CHECK_RETURN_FALSE(m_eventController);
 
@@ -117,7 +117,7 @@ bool ego::engine::ApplicationWindowInputKeyProvider::registerEventCallbacks()
     return true;
 }
 
-void ego::engine::ApplicationWindowInputKeyProvider::unregisterEventCallbacks()
+void ego::application::ApplicationWindowInputKeyProvider::unregisterEventCallbacks()
 {
     if (!m_eventController)
     {
@@ -139,12 +139,12 @@ void ego::engine::ApplicationWindowInputKeyProvider::unregisterEventCallbacks()
     }
 }
 
-void ego::engine::ApplicationWindowInputKeyProvider::resetKeyValues()
+void ego::application::ApplicationWindowInputKeyProvider::resetKeyValues()
 {
     m_keyValues.fill(MinInputDeviceKeyValue);
 }
 
-void ego::engine::ApplicationWindowInputKeyProvider::handleApplicationWindowKeyboardInputEvent(const application::ApplicationWindowKeyboardInputEvent& _event)
+void ego::application::ApplicationWindowInputKeyProvider::handleApplicationWindowKeyboardInputEvent(const ApplicationWindowKeyboardInputEvent& _event)
 {
     const application::ApplicationWindowPointer window = m_window.lock();
     if (!window || _event.m_window.get() != window.get())
@@ -160,7 +160,7 @@ void ego::engine::ApplicationWindowInputKeyProvider::handleApplicationWindowKeyb
     m_keyValues[_event.m_inputData.m_key] = GetKeyValue(_event.m_inputData);
 }
 
-void ego::engine::ApplicationWindowInputKeyProvider::handleApplicationWindowActivationEvent(const application::ApplicationWindowActivationEvent& _event)
+void ego::application::ApplicationWindowInputKeyProvider::handleApplicationWindowActivationEvent(const ApplicationWindowActivationEvent& _event)
 {
     const application::ApplicationWindowPointer window = m_window.lock();
     if (window && _event.m_window.get() == window.get() && !_event.m_isActive)

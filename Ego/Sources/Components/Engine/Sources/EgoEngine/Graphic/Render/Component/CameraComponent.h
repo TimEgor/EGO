@@ -1,8 +1,8 @@
 #pragma once
 
-#include "EgoECS/Component.h"
+#include "EgoCore/Math/ComputeMatrix44.h"
 
-#include "EgoMath/ComputeMatrix44.h"
+#include "EgoECS/Component.h"
 
 namespace ego::render
 {

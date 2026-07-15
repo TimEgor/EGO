@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "EgoCore/Platform/Window/PresentationSurface.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "GraphicObjects/AccelerationStructure.h"
@@ -17,6 +16,7 @@
 #include "GraphicObjects/Shader.h"
 #include "GraphicObjects/SwapChain.h"
 #include "GraphicObjects/Texture.h"
+#include "PresentationSurface.h"
 
 namespace ego::gpu
 {

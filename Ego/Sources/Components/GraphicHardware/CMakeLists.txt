@@ -11,7 +11,6 @@ target_link_libraries(
     EgoGraphicHardware
         PUBLIC
             Ego::Core
-            Ego::Math
             Ego::Plugin
             Ego::Resource
 )

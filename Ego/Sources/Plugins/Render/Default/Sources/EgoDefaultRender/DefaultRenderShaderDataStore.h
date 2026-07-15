@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-#include "EgoECS/Entity.h"
+#include "EgoCore/Math/Matrix.h"
 
-#include "EgoMath/Matrix.h"
+#include "EgoECS/Entity.h"
 
 #include "EgoGraphicHardware/GraphicDevice.h"
 

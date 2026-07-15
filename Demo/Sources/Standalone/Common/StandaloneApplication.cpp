@@ -8,11 +8,9 @@
 
 #include "EgoEvent/EventSubsystem.h"
 
-#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
+#include "EgoEngine/Project/ProjectReader.h"
 
 #include "EgoApplication/Window/ApplicationWindowEvents.h"
-
-#include "EgoEngine/Project/ProjectReader.h"
 
 ego::demo::standalone::StandaloneApplication::~StandaloneApplication()
 {
@@ -100,8 +98,7 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     EGO_CHECK_RETURN_FALSE(m_engineSession);
 
     const EventSubsystemPointer eventSubsystem = subsystem::FindSubsystem<EventSubsystem>();
-    const gpu::GraphicHardwareSubsystemPointer graphicHardwareSubsystem = subsystem::FindSubsystem<gpu::GraphicHardwareSubsystem>();
-    EGO_CHECK_RETURN_FALSE(eventSubsystem && graphicHardwareSubsystem);
+    EGO_CHECK_RETURN_FALSE(eventSubsystem);
 
     const EventControllerPointer eventController = eventSubsystem->getEventControllerPointer();
     EGO_CHECK_RETURN_FALSE(eventController);
@@ -110,11 +107,12 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
     m_mainWindow = mainWindow;
 
-    m_mainWindowPresentation = new engine::EngineWindowPresentation();
+    m_mainWindowPresentation = new application::EngineWindowPresentation();
     EGO_CHECK_RETURN_FALSE(m_mainWindowPresentation);
-    EGO_CHECK_RETURN_FALSE(m_mainWindowPresentation->init(m_engineSession, graphicHardwareSubsystem, eventController, mainWindow, true));
+    EGO_CHECK_RETURN_FALSE(m_mainWindowPresentation->init(mainWindow));
+    EGO_CHECK_RETURN_FALSE(m_engineSession->setGraphicPresenter(m_mainWindowPresentation->getGraphicPresenterPointer()));
 
-    m_mainWindowInputBinding = new engine::EngineWindowInputBinding();
+    m_mainWindowInputBinding = new application::EngineWindowInputBinding();
     EGO_CHECK_RETURN_FALSE(m_mainWindowInputBinding);
     EGO_CHECK_RETURN_FALSE(m_mainWindowInputBinding->init(m_engineSession, eventController, mainWindow));
     EGO_CHECK_RETURN_FALSE(registerMainWindowEvents(mainWindow));
@@ -127,6 +125,10 @@ void ego::demo::standalone::StandaloneApplication::releaseEngine()
     unregisterMainWindowEvents();
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_mainWindowInputBinding);
+    if (m_engineSession)
+    {
+        m_engineSession->clearGraphicPresenter();
+    }
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_mainWindowPresentation);
     m_mainWindow.reset();
 

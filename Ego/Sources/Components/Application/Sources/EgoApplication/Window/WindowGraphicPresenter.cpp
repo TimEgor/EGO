@@ -2,12 +2,12 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-ego::WindowGraphicPresenter::~WindowGraphicPresenter()
+ego::application::WindowGraphicPresenter::~WindowGraphicPresenter()
 {
     release();
 }
 
-bool ego::WindowGraphicPresenter::init(
+bool ego::application::WindowGraphicPresenter::init(
     GraphicDevice& _graphicDevice,
     const PresentationSurface& _surface,
     const gpu::SwapChainDesc& _swapChainDesc,
@@ -19,22 +19,22 @@ bool ego::WindowGraphicPresenter::init(
     return true;
 }
 
-void ego::WindowGraphicPresenter::release()
+void ego::application::WindowGraphicPresenter::release()
 {
     m_swapChain.reset();
 }
 
-ego::gpu::Texture2DReference ego::WindowGraphicPresenter::getTargetTexture()
+ego::gpu::Texture2DReference ego::application::WindowGraphicPresenter::getTargetTexture()
 {
     return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DReference();
 }
 
-bool ego::WindowGraphicPresenter::resize(const gpu::Texture2DSize& _size)
+bool ego::application::WindowGraphicPresenter::resize(const gpu::Texture2DSize& _size)
 {
     return m_swapChain && m_swapChain->resize(_size);
 }
 
-void ego::WindowGraphicPresenter::present()
+void ego::application::WindowGraphicPresenter::present()
 {
     if (m_swapChain)
     {

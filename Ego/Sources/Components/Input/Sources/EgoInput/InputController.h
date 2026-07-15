@@ -50,7 +50,6 @@ namespace ego
             InputDeviceKeyValue _previousValue) const;
 
         KeyProviderCollection m_keyProviders;
-        EventControllerPointer m_eventController = nullptr;
         bool m_isInitialized = false;
     };
 

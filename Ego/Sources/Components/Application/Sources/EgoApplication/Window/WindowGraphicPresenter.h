@@ -1,14 +1,13 @@
 #pragma once
 
-#include "EgoCore/Platform/Window/PresentationSurface.h"
-
 #include "EgoGraphicHardware/GraphicDevice.h"
 #include "EgoGraphicHardware/GraphicObjects/CommandQueue.h"
 #include "EgoGraphicHardware/GraphicObjects/SwapChain.h"
+#include "EgoGraphicHardware/PresentationSurface.h"
 
-#include "GraphicPresenter.h"
+#include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
 
-namespace ego
+namespace ego::application
 {
     class WindowGraphicPresenter final : public GraphicPresenter
     {
@@ -33,4 +32,4 @@ namespace ego
     };
 
     EGO_POINTER(WindowGraphicPresenter);
-} // namespace ego
+} // namespace ego::application

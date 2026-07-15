@@ -4,7 +4,6 @@ project(EgoComponents)
 
 add_subdirectory(Core)
 add_subdirectory(ECS)
-add_subdirectory(Math)
 add_subdirectory(Event)
 add_subdirectory(Job)
 add_subdirectory(Plugin)
@@ -12,8 +11,8 @@ add_subdirectory(Resource)
 add_subdirectory(Input)
 add_subdirectory(GraphicHardware)
 add_subdirectory(Gui)
-add_subdirectory(Application)
 add_subdirectory(Engine)
+add_subdirectory(Application)
 
 add_library(EgoComponents INTERFACE)
 add_library(Ego::Components ALIAS EgoComponents)
@@ -29,7 +28,6 @@ target_link_libraries(EgoComponents
         Ego::Event
         Ego::Input
         Ego::Job
-        Ego::Math
         Ego::Plugin
         Ego::Resource
 )

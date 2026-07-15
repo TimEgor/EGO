@@ -10,7 +10,6 @@ ego_add_component(
 target_link_libraries(
     EgoEngine
         PUBLIC
-            Ego::Application
             Ego::Core
             Ego::ECS
             Ego::Event
@@ -18,7 +17,6 @@ target_link_libraries(
             Ego::GraphicHardware
             Ego::Input
             Ego::Job
-            Ego::Math
             Ego::Plugin
             Ego::Resource
 )

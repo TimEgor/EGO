@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoMath/Vector.h"
+#include "EgoCore/Math/Vector.h"
 
 #include "EgoEngine/Graphic/Render/Render.h"
 

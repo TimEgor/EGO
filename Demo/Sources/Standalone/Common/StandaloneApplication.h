@@ -6,14 +6,14 @@
 
 #include "EgoEvent/EventController.h"
 
-#include "EgoApplication/Application.h"
-#include "EgoApplication/Window/ApplicationWindow.h"
-
-#include "EgoEngine/Application/Input/EngineWindowInputBinding.h"
-#include "EgoEngine/Application/Presentation/EngineWindowPresentation.h"
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Project/Project.h"
+
+#include "EgoApplication/Application.h"
+#include "EgoApplication/Engine/Input/EngineWindowInputBinding.h"
+#include "EgoApplication/Engine/Presentation/EngineWindowPresentation.h"
+#include "EgoApplication/Window/ApplicationWindow.h"
 
 namespace ego::demo::standalone
 {
@@ -65,8 +65,8 @@ namespace ego::demo::standalone
         engine::EngineSessionPointer m_engineSession = nullptr;
 
         application::ApplicationWindowWeakPointer m_mainWindow;
-        engine::EngineWindowPresentationPointer m_mainWindowPresentation = nullptr;
-        engine::EngineWindowInputBindingPointer m_mainWindowInputBinding = nullptr;
+        application::EngineWindowPresentationPointer m_mainWindowPresentation = nullptr;
+        application::EngineWindowInputBindingPointer m_mainWindowInputBinding = nullptr;
         EventCallbackID m_mainWindowDestroyingEventCallbackID = InvalidEventCallbackID;
     };
 } // namespace ego::demo::standalone
