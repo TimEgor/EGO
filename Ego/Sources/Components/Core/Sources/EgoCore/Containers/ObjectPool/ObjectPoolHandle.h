@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <type_traits>
 
 namespace ego
@@ -227,3 +228,16 @@ namespace ego
     static_assert(ObjectPoolHandle16::makeKey(0xFF, 0xFF) == 0xFFFF);
     static_assert(ObjectPoolHandle32::makeKey(0xFFFF, 0xFFFF) == 0xFFFFFFFF);
 } // namespace ego
+
+namespace std
+{
+    template <typename ObjectPoolHandleStorageType>
+    struct hash<ego::ObjectPoolHandle<ObjectPoolHandleStorageType>>
+    {
+        size_t operator()(ego::ObjectPoolHandle<ObjectPoolHandleStorageType> _handle) const noexcept
+        {
+            using KeyType = typename ego::ObjectPoolHandle<ObjectPoolHandleStorageType>::KeyType;
+            return hash<KeyType>()(_handle.getKey());
+        }
+    };
+} // namespace std

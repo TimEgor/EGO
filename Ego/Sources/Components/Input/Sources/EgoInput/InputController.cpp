@@ -95,6 +95,7 @@ void ego::InputController::update() const
 
     for (const InputKeyProviderPointer& provider : m_keyProviders)
     {
+        provider->updateDevices();
         emitKeyProviderDeviceEvents(*eventController, provider);
     }
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <string_view>
 #include <vector>
@@ -15,10 +16,13 @@
 
 #include "EgoGui/GuiController.h"
 
+#include "EgoGuiRender/GuiRenderPlugin.h"
+
 #include "EgoPlugin/Catalog/PluginCatalog.h"
 
-#include "Graphic/Presenter/GraphicPresenter.h"
 #include "Graphic/Render/Render.h"
+#include "Gui/Rendering/EngineGuiRenderCoordinator.h"
+#include "Gui/Viewport/EngineGuiViewportBackend.h"
 #include "Level/LevelController.h"
 #include "Project/Project.h"
 #include "FrameLogic.h"
@@ -65,7 +69,9 @@ namespace ego::engine
         {
             ProjectPointer m_project = nullptr;
             FileName m_renderPluginModuleName;
-            gui::GuiViewportDesc m_guiViewportDesc;
+            FileName m_guiRenderPluginModuleName;
+            gui::GuiViewportDesc m_primaryGuiViewportDesc;
+            EngineGuiViewportBackendPointer m_guiViewportBackend = nullptr;
         };
 
         EngineSession() = default;
@@ -80,9 +86,6 @@ namespace ego::engine
         LevelController& getLevelController();
 
         render::Render& getRender();
-
-        bool setGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter);
-        void clearGraphicPresenter();
 
         void setRenderCameraEntity(ecs::Entity _cameraEntity);
         void clearRenderCameraEntity();
@@ -116,6 +119,8 @@ namespace ego::engine
         bool loadDefaultGuiFont(gui::GuiFontAtlasDesc& _fontAtlasDesc) const;
         bool initGuiController(const InitData& _initData);
         bool initRender(const InitData& _initData);
+        bool initGuiRenderCoordinator(const InitData& _initData);
+        void releaseGuiRenderCoordinator();
         bool initFrameLogic();
         void cleanResources();
 
@@ -149,9 +154,11 @@ namespace ego::engine
 
         FrameLogic m_frameLogic;
 
-        GraphicPresenterWeakPointer m_graphicPresenter;
         render::RenderPluginPointer m_renderPlugin = nullptr;
         render::RenderPointer m_render = nullptr;
+        gui::GuiRenderPluginPointer m_guiRenderPlugin = nullptr;
+        EngineGuiRenderCoordinator m_guiRenderCoordinator;
+        EngineGuiViewportBackendPointer m_guiViewportBackend = nullptr;
 
         InputControllerPointer m_inputController = nullptr;
         gui::GuiControllerPointer m_guiController = nullptr;
@@ -163,6 +170,7 @@ namespace ego::engine
         ecs::Entity m_renderCameraEntity;
 
         float m_deltaTime = 0.0f;
+        std::atomic<bool> m_frameSucceeded = true;
     };
 
     EGO_POINTER(EngineSession);

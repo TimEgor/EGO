@@ -5,41 +5,15 @@
 #include <cstdint>
 #include <utility>
 
-#include "EgoGui/GuiFontAtlas.h"
+#include "EgoGui/Rendering/GuiFontAtlas.h"
 
 namespace
 {
-    constexpr uint32_t KeyBackspace = 8;
-    constexpr uint32_t KeyTab = 9;
-    constexpr uint32_t KeyEnter = 13;
-    constexpr uint32_t KeyShift = 16;
-    constexpr uint32_t KeyControl = 17;
-    constexpr uint32_t KeyEscape = 27;
-    constexpr uint32_t KeyEnd = 35;
-    constexpr uint32_t KeyHome = 36;
-    constexpr uint32_t KeyLeft = 37;
-    constexpr uint32_t KeyRight = 39;
-    constexpr uint32_t KeyDelete = 46;
-    constexpr uint32_t KeyA = 65;
-    constexpr uint32_t KeyLeftShift = 160;
-    constexpr uint32_t KeyRightShift = 161;
-    constexpr uint32_t KeyLeftControl = 162;
-    constexpr uint32_t KeyRightControl = 163;
     constexpr float NameSpacing = 4.0f;
     constexpr float FieldHeight = 26.0f;
     constexpr float FieldMinWidth = 160.0f;
     constexpr float TextPaddingX = 6.0f;
     constexpr float TextPaddingY = 5.0f;
-
-    bool IsShiftKey(uint32_t _key)
-    {
-        return _key == KeyShift || _key == KeyLeftShift || _key == KeyRightShift;
-    }
-
-    bool IsControlKey(uint32_t _key)
-    {
-        return _key == KeyControl || _key == KeyLeftControl || _key == KeyRightControl;
-    }
 
     bool TryConvertCodepointToCharacter(uint32_t _codepoint, char& _character)
     {
@@ -108,19 +82,32 @@ bool ego::gui::GuiTextInput::isFocused() const
     return m_isFocused;
 }
 
-ego::gui::GuiReply ego::gui::GuiTextInput::handleEvent(const GuiInputEvent& _event)
+ego::gui::GuiEventResult ego::gui::GuiTextInput::onEvent(const GuiInputEvent& _event)
 {
-    const bool containsMouse = _event.m_hasPosition && m_inputRect.contains(_event.m_position);
+    if (_event.m_type == GuiInputEventType::FocusLost)
+    {
+        setFocused(false);
+        m_isHovered = false;
+        return GuiEventResult::Unhandled;
+    }
+
+    if (_event.m_type == GuiInputEventType::PointerLeave)
+    {
+        m_isHovered = false;
+        return GuiEventResult::Unhandled;
+    }
+
+    const bool containsMouse = m_inputRect.contains(_event.m_position);
     if (_event.m_type == GuiInputEventType::MouseMove)
     {
         m_isHovered = containsMouse;
-        if (m_isSelecting && _event.m_hasPosition)
+        if (m_isSelecting)
         {
             setCaretIndex(getCaretIndexAtPosition(_event.m_position), true);
-            return GuiReply::Handled();
+            return GuiEventResult::Handled;
         }
 
-        return GuiReply::Unhandled();
+        return GuiEventResult::Unhandled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonDown && _event.m_mouseButton == GuiMouseButton::Left)
@@ -134,7 +121,7 @@ ego::gui::GuiReply ego::gui::GuiTextInput::handleEvent(const GuiInputEvent& _eve
             setCaretIndex(getCaretIndexAtPosition(_event.m_position), m_isShiftPressed);
         }
 
-        return containsMouse ? GuiReply::Handled() : GuiReply::Unhandled();
+        return containsMouse ? GuiEventResult::Handled : GuiEventResult::Unhandled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonUp && _event.m_mouseButton == GuiMouseButton::Left && m_isPressed)
@@ -142,32 +129,32 @@ ego::gui::GuiReply ego::gui::GuiTextInput::handleEvent(const GuiInputEvent& _eve
         m_isPressed = false;
         m_isSelecting = false;
         m_isHovered = containsMouse;
-        return GuiReply::Handled();
+        return GuiEventResult::Handled;
     }
 
     if (_event.m_type == GuiInputEventType::KeyDown && m_isFocused)
     {
-        return handleKeyDown(_event.m_key) ? GuiReply::Handled() : GuiReply::Unhandled();
+        return handleKeyDown(_event.m_key) ? GuiEventResult::Handled : GuiEventResult::Unhandled;
     }
 
-    if (_event.m_type == GuiInputEventType::KeyUp && IsShiftKey(_event.m_key))
+    if (_event.m_type == GuiInputEventType::KeyUp && _event.m_key == GuiKey::Shift)
     {
         m_isShiftPressed = false;
-        return m_isFocused ? GuiReply::Handled() : GuiReply::Unhandled();
+        return m_isFocused ? GuiEventResult::Handled : GuiEventResult::Unhandled;
     }
 
-    if (_event.m_type == GuiInputEventType::KeyUp && IsControlKey(_event.m_key))
+    if (_event.m_type == GuiInputEventType::KeyUp && _event.m_key == GuiKey::Control)
     {
         m_isControlPressed = false;
-        return m_isFocused ? GuiReply::Handled() : GuiReply::Unhandled();
+        return m_isFocused ? GuiEventResult::Handled : GuiEventResult::Unhandled;
     }
 
     if (_event.m_type == GuiInputEventType::TextInput && m_isFocused)
     {
-        return handleTextInput(_event.m_textCodepoint) ? GuiReply::Handled() : GuiReply::Unhandled();
+        return handleTextInput(_event.m_textCodepoint) ? GuiEventResult::Handled : GuiEventResult::Unhandled;
     }
 
-    return GuiReply::Unhandled();
+    return GuiEventResult::Unhandled;
 }
 
 ego::gui::GuiSize ego::gui::GuiTextInput::onMeasure(const GuiLayoutContext& _context, const GuiSize&)
@@ -265,69 +252,69 @@ void ego::gui::GuiTextInput::onPaint(GuiPaintContext& _context) const
     }
 }
 
-bool ego::gui::GuiTextInput::handleKeyDown(uint32_t _key)
+bool ego::gui::GuiTextInput::handleKeyDown(GuiKey _key)
 {
-    if (IsShiftKey(_key))
+    if (_key == GuiKey::Shift)
     {
         m_isShiftPressed = true;
         return true;
     }
 
-    if (IsControlKey(_key))
+    if (_key == GuiKey::Control)
     {
         m_isControlPressed = true;
         return true;
     }
 
-    if (m_isControlPressed && _key == KeyA)
+    if (m_isControlPressed && _key == GuiKey::A)
     {
         selectAll();
         return true;
     }
 
-    if (_key == KeyEscape || _key == KeyEnter)
+    if (_key == GuiKey::Escape || _key == GuiKey::Enter)
     {
         setFocused(false);
         return true;
     }
 
-    if (_key == KeyLeft)
+    if (_key == GuiKey::Left)
     {
         moveCaretLeft(m_isShiftPressed);
         return true;
     }
 
-    if (_key == KeyRight)
+    if (_key == GuiKey::Right)
     {
         moveCaretRight(m_isShiftPressed);
         return true;
     }
 
-    if (_key == KeyHome)
+    if (_key == GuiKey::Home)
     {
         moveCaretToStart(m_isShiftPressed);
         return true;
     }
 
-    if (_key == KeyEnd)
+    if (_key == GuiKey::End)
     {
         moveCaretToEnd(m_isShiftPressed);
         return true;
     }
 
-    if (_key == KeyBackspace)
+    if (_key == GuiKey::Backspace)
     {
         deletePreviousCharacter();
         return true;
     }
 
-    if (_key == KeyDelete)
+    if (_key == GuiKey::Delete)
     {
         deleteNextCharacter();
         return true;
     }
 
-    if (_key == KeyTab || m_isControlPressed)
+    if (_key == GuiKey::Tab || m_isControlPressed)
     {
         return false;
     }

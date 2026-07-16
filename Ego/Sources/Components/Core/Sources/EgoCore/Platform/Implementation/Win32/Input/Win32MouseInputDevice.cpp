@@ -14,14 +14,22 @@ namespace
     }
 } // namespace
 
+std::atomic<ego::InputDeviceKeyValue> ego::win32::Win32MouseInputDevice::PendingWheelDelta = 0.0f;
+
 ego::win32::Win32MouseInputDevice::Win32MouseInputDevice()
 {
     resetValues();
 }
 
+void ego::win32::Win32MouseInputDevice::AddWheelDelta(InputDeviceKeyValue _delta)
+{
+    PendingWheelDelta.fetch_add(_delta);
+}
+
 void ego::win32::Win32MouseInputDevice::update()
 {
     updateCursorAxes();
+    updateWheel();
     updateButtons();
 }
 
@@ -32,13 +40,18 @@ void ego::win32::Win32MouseInputDevice::updateCursorAxes()
     {
         setValue(ToInputDeviceKey(MouseInputKey::AxisX), MinInputDeviceKeyValue);
         setValue(ToInputDeviceKey(MouseInputKey::AxisY), MinInputDeviceKeyValue);
-        setValue(ToInputDeviceKey(MouseInputKey::Wheel), MinInputDeviceKeyValue);
         return;
     }
 
     setValue(ToInputDeviceKey(MouseInputKey::AxisX), static_cast<InputDeviceKeyValue>(cursorPosition.x));
     setValue(ToInputDeviceKey(MouseInputKey::AxisY), static_cast<InputDeviceKeyValue>(cursorPosition.y));
-    setValue(ToInputDeviceKey(MouseInputKey::Wheel), MinInputDeviceKeyValue);
+}
+
+void ego::win32::Win32MouseInputDevice::updateWheel()
+{
+    const InputDeviceKey wheelKey = ToInputDeviceKey(MouseInputKey::Wheel);
+    const InputDeviceKeyValue wheelDelta = PendingWheelDelta.exchange(0.0f);
+    setValue(wheelKey, getValue(wheelKey) + wheelDelta);
 }
 
 void ego::win32::Win32MouseInputDevice::updateButtons()

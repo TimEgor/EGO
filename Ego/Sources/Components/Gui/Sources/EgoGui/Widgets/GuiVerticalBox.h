@@ -1,61 +1,51 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
-#include "EgoGui/GuiWidget.h"
+#include "EgoGui/Widgets/GuiContainer.h"
 
 namespace ego::gui
 {
     class GuiVerticalBox;
     EGO_POINTER(GuiVerticalBox);
 
-    class GuiBoxSlot final
+    class GuiBoxLayout final
     {
     public:
-        GuiBoxSlot() = default;
-        explicit GuiBoxSlot(const GuiWidgetPointer& _widget);
+        GuiBoxLayout() = default;
 
-        GuiBoxSlot& setPadding(const GuiMargin& _padding);
-        GuiBoxSlot& setHorizontalAlignment(GuiHorizontalAlignment _alignment);
-        GuiBoxSlot& setSizePolicy(GuiSizePolicy _sizePolicy);
-        GuiBoxSlot& setFill(float _fill);
-
-        GuiWidgetPointer getWidget() const;
-        const GuiMargin& getPadding() const;
-        GuiHorizontalAlignment getHorizontalAlignment() const;
-        GuiSizePolicy getSizePolicy() const;
-        float getFill() const;
+        static GuiBoxLayout Content(const GuiMargin& _padding = GuiMargin(), GuiHorizontalAlignment _horizontalAlignment = GuiHorizontalAlignment::Stretch);
+        static GuiBoxLayout Fill(float _weight = 1.0f, const GuiMargin& _padding = GuiMargin(), GuiHorizontalAlignment _horizontalAlignment = GuiHorizontalAlignment::Stretch);
 
     private:
-        GuiWidgetPointer m_widget = nullptr;
+        friend class GuiVerticalBox;
+
         GuiMargin m_padding;
         GuiHorizontalAlignment m_horizontalAlignment = GuiHorizontalAlignment::Stretch;
-        GuiSizePolicy m_sizePolicy = GuiSizePolicy::Content;
-        float m_fill = 1.0f;
+        float m_fillWeight = 0.0f;
     };
 
-    class GuiVerticalBox final : public GuiWidget
+    class GuiVerticalBox final : public GuiContainer
     {
     public:
-        using SlotCollection = std::vector<GuiBoxSlot>;
-
         GuiVerticalBox() = default;
 
         static GuiVerticalBoxPointer Create();
 
-        GuiBoxSlot& addSlot(const GuiWidgetPointer& _widget);
-        void clearSlots();
-        GuiReply handleEvent(const GuiInputEvent& _event) override;
+        bool addChild(const GuiWidgetPointer& _widget, const GuiBoxLayout& _layout = GuiBoxLayout());
+        void clearChildren();
 
-        EGO_RTTI_VIRTUAL(GuiVerticalBox, GuiWidget);
+        EGO_RTTI_VIRTUAL(GuiVerticalBox, GuiContainer);
 
     protected:
         GuiSize onMeasure(const GuiLayoutContext& _context, const GuiSize& _availableSize) override;
         void onArrange(const GuiLayoutContext& _context, const GuiRect& _rect) override;
-        void onPaint(GuiPaintContext& _context) const override;
 
     private:
-        SlotCollection m_slots;
+        using LayoutCollection = std::vector<GuiBoxLayout>;
+
+        LayoutCollection m_layouts;
     };
 
 } // namespace ego::gui

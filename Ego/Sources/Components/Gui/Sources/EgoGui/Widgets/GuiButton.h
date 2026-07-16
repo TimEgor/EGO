@@ -3,14 +3,14 @@
 #include <functional>
 #include <string>
 
-#include "EgoGui/GuiWidget.h"
+#include "EgoGui/Widgets/GuiWidget.h"
 
 namespace ego::gui
 {
     class GuiButton;
     EGO_POINTER(GuiButton);
 
-    using GuiClickedHandler = std::function<GuiReply()>;
+    using GuiClickedHandler = std::function<GuiEventResult()>;
 
     class GuiButton final : public GuiWidget
     {
@@ -23,11 +23,11 @@ namespace ego::gui
         const std::string& getText() const;
 
         void setOnClicked(GuiClickedHandler _handler);
-        GuiReply handleEvent(const GuiInputEvent& _event) override;
 
         EGO_RTTI_VIRTUAL(GuiButton, GuiWidget);
 
     protected:
+        GuiEventResult onEvent(const GuiInputEvent& _event) override;
         GuiSize onMeasure(const GuiLayoutContext& _context, const GuiSize& _availableSize) override;
         void onPaint(GuiPaintContext& _context) const override;
 

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "EgoGui/GuiController.h"
+#include <string>
 
-#include "EgoEngine/Level/Level.h"
+#include "EgoGui/Gui.h"
+
 #include "EgoEngine/Project/EngineLogic.h"
 
 namespace ego::demo
@@ -17,12 +18,11 @@ namespace ego::demo
         void release() override;
 
     private:
-        bool createGuiTree(const engine::EngineSessionPointer& _engineSession);
-        bool createLevel(const engine::EngineSessionPointer& _engineSession);
+        gui::GuiWindowPointer createGuiWindow(const std::string& _title, const gui::GuiPosition& _position, const gui::GuiSize& _size);
 
         engine::EngineSessionWeakPointer m_engineSession;
-        LevelPointer m_level = nullptr;
-        ecs::Entity m_cameraEntity;
+        gui::GuiWindowPointer m_sceneSettingsWindow = nullptr;
+        gui::GuiWindowPointer m_renderSettingsWindow = nullptr;
     };
 
     EGO_POINTER(GuiDemo);

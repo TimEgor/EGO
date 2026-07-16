@@ -7,6 +7,7 @@ add_library(Ego::Components::Plugins ALIAS EgoComponentsPlugins)
 
 add_subdirectory(Profiler)
 add_subdirectory(Render)
+add_subdirectory(GuiRender)
 add_subdirectory(GraphicHardware)
 add_subdirectory(ResourceProvider)
 
@@ -15,6 +16,7 @@ target_link_libraries(
         INTERFACE
             Ego::Plugins::Profiler
             Ego::Plugins::Render
+            Ego::Plugins::GuiRender
             Ego::Plugins::GraphicHardware
             Ego::Plugins::ResourceProvider
 )

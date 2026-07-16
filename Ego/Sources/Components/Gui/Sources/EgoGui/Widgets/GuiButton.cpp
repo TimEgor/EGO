@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "EgoGui/GuiFontAtlas.h"
+#include "EgoGui/Rendering/GuiFontAtlas.h"
 
 ego::gui::GuiButtonPointer ego::gui::GuiButton::Create()
 {
@@ -24,30 +24,43 @@ void ego::gui::GuiButton::setOnClicked(GuiClickedHandler _handler)
     m_onClicked = std::move(_handler);
 }
 
-ego::gui::GuiReply ego::gui::GuiButton::handleEvent(const GuiInputEvent& _event)
+ego::gui::GuiEventResult ego::gui::GuiButton::onEvent(const GuiInputEvent& _event)
 {
-    const bool containsMouse = _event.m_hasPosition && getRect().contains(_event.m_position);
+    if (_event.m_type == GuiInputEventType::FocusLost)
+    {
+        m_isHovered = false;
+        m_isPressed = false;
+        return GuiEventResult::Unhandled;
+    }
+
+    if (_event.m_type == GuiInputEventType::PointerLeave)
+    {
+        m_isHovered = false;
+        return GuiEventResult::Unhandled;
+    }
+
+    const bool containsMouse = getRect().contains(_event.m_position);
     if (_event.m_type == GuiInputEventType::MouseMove)
     {
         m_isHovered = containsMouse;
-        return GuiReply::Unhandled();
+        return GuiEventResult::Unhandled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonDown && _event.m_mouseButton == GuiMouseButton::Left && containsMouse)
     {
         m_isHovered = true;
         m_isPressed = true;
-        return GuiReply::Handled();
+        return GuiEventResult::Handled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonUp && _event.m_mouseButton == GuiMouseButton::Left && m_isPressed)
     {
         m_isPressed = false;
         m_isHovered = containsMouse;
-        return containsMouse && m_onClicked ? m_onClicked() : GuiReply::Handled();
+        return containsMouse && m_onClicked ? m_onClicked() : GuiEventResult::Handled;
     }
 
-    return GuiReply::Unhandled();
+    return GuiEventResult::Unhandled;
 }
 
 ego::gui::GuiSize ego::gui::GuiButton::onMeasure(const GuiLayoutContext& _context, const GuiSize&)

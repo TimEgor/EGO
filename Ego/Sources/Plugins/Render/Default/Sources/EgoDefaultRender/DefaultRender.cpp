@@ -8,8 +8,6 @@
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
-#include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
-
 #include "DefaultRenderConstants.h"
 
 bool ego::render::DefaultRender::init()
@@ -90,7 +88,7 @@ bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
         return false;
     }
 
-    RenderPassPrepareContext passContext{graphicDevice, m_renderTarget, m_scene, m_shaderData, m_settings, _context.m_guiController, _context.m_deltaTime};
+    RenderPassPrepareContext passContext{graphicDevice, m_renderTarget, m_scene, m_shaderData, m_settings, _context.m_deltaTime};
     if (!m_passGraph.prepare(passContext))
     {
         handlePrepareFailure();
@@ -149,16 +147,10 @@ void ego::render::DefaultRender::wait()
     m_frameExecutor.wait();
 }
 
-void ego::render::DefaultRender::present(GraphicPresenter& _presenter)
+bool ego::render::DefaultRender::copyResultToTarget(const gpu::Texture2DReference& _target)
 {
     wait();
-
-    if (!copyRenderTargetToPresenter(_presenter))
-    {
-        return;
-    }
-
-    _presenter.present();
+    return copyRenderTarget(_target);
 }
 
 void ego::render::DefaultRender::setResolution(const gpu::Texture2DSize& _resolution)
@@ -218,7 +210,6 @@ bool ego::render::DefaultRender::initPassGraph(GraphicDevice& _graphicDevice)
     m_passGraph.addPass("Clear", m_clearPass);
     m_passGraph.addPass("RayTracing", m_rayTracingPass);
     m_passGraph.addPass("Debug", m_debugPass);
-    m_passGraph.addPass("Gui", m_guiPass);
     EGO_CHECK_INITIALIZATION(m_passGraph.compile());
     EGO_CHECK_INITIALIZATION(m_passGraph.prepareCommandLists(_graphicDevice));
 
@@ -239,7 +230,7 @@ void ego::render::DefaultRender::handlePrepareFailure()
     m_pipelineStateCache.releaseUnused();
 }
 
-bool ego::render::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _presenter)
+bool ego::render::DefaultRender::copyRenderTarget(const gpu::Texture2DReference& _target)
 {
     const RenderGraphicCommandList& presentCommandList = m_frameExecutor.getPresentCommandList();
     if (!m_frameExecutor.isValid() || !presentCommandList)
@@ -254,7 +245,7 @@ bool ego::render::DefaultRender::copyRenderTargetToPresenter(GraphicPresenter& _
         return false;
     }
 
-    const RenderTexture2D presenterTargetTexture = _presenter.getTargetTexture();
+    const RenderTexture2D presenterTargetTexture = _target;
     if (!presenterTargetTexture)
     {
         return false;

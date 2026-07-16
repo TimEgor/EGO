@@ -1,6 +1,7 @@
 #include "Win32Window.h"
 
 #include "EgoCore/Assert/Assert.h"
+#include "EgoCore/Platform/Implementation/Win32/Input/Win32MouseInputDevice.h"
 #include "EgoCore/UtilsMacros.h"
 #include "Win32WindowSystem.h"
 
@@ -235,6 +236,14 @@ bool ego::win32::Win32Window::processWindowMessage(UINT _msg, WPARAM _wParam, LP
     {
         onWindowActivate(LOWORD(_wParam) != WA_INACTIVE);
         break;
+    }
+
+    case WM_MOUSEWHEEL:
+    {
+        const InputDeviceKeyValue wheelDelta = static_cast<InputDeviceKeyValue>(GET_WHEEL_DELTA_WPARAM(_wParam)) / WHEEL_DELTA;
+        Win32MouseInputDevice::AddWheelDelta(wheelDelta);
+        _result = 0;
+        return true;
     }
 
     case WM_KEYDOWN:

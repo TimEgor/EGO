@@ -16,6 +16,7 @@ namespace ego
         InputKeyProvider() = default;
         virtual ~InputKeyProvider() = default;
 
+        virtual void updateDevices() {}
         virtual const DeviceCollection& getDevices() const = 0;
 
         EGO_RTTI_VIRTUAL_BASE(InputKeyProvider);

@@ -161,6 +161,17 @@ function(ego_setup_launch_args TARGET_NAME)
         string(APPEND DEBUG_ARGS " --render=\"${EGO_RENDER_PLUGIN}\"")
     endif()
 
+    if (NOT DEFINED EGO_GUI_RENDER_PLUGIN)
+        set(EGO_GUI_RENDER_PLUGIN "$<TARGET_FILE:EgoDefaultGuiRender>")
+        if (TARGET EgoDefaultGuiRender)
+            add_dependencies(${TARGET_NAME} EgoDefaultGuiRender)
+        endif()
+    endif()
+
+    if (NOT "${EGO_GUI_RENDER_PLUGIN}" STREQUAL "")
+        string(APPEND DEBUG_ARGS " --guiRender=\"${EGO_GUI_RENDER_PLUGIN}\"")
+    endif()
+
     if (NOT DEFINED EGO_GRAPHIC_HARDWARE_PLUGIN)
         set(EGO_GRAPHIC_HARDWARE_PLUGIN)
 

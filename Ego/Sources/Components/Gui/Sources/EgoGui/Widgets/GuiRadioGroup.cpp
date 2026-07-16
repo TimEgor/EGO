@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "EgoGui/GuiFontAtlas.h"
+#include "EgoGui/Rendering/GuiFontAtlas.h"
 
 namespace
 {
@@ -83,25 +83,33 @@ const std::string& ego::gui::GuiRadioGroup::getSelectedOptionText() const
     return hasSelectedOption() ? m_options[m_selectedOptionIndex] : EmptyString;
 }
 
-ego::gui::GuiReply ego::gui::GuiRadioGroup::handleEvent(const GuiInputEvent& _event)
+ego::gui::GuiEventResult ego::gui::GuiRadioGroup::onEvent(const GuiInputEvent& _event)
 {
-    if (!isVisible())
+    if (_event.m_type == GuiInputEventType::FocusLost)
     {
-        return GuiReply::Unhandled();
+        m_hoveredOptionIndex = InvalidOptionIndex;
+        m_pressedOptionIndex = InvalidOptionIndex;
+        return GuiEventResult::Unhandled;
     }
 
-    const OptionIndex optionIndex = _event.m_hasPosition ? findOptionAtPosition(_event.m_position) : InvalidOptionIndex;
+    if (_event.m_type == GuiInputEventType::PointerLeave)
+    {
+        m_hoveredOptionIndex = InvalidOptionIndex;
+        return GuiEventResult::Unhandled;
+    }
+
+    const OptionIndex optionIndex = findOptionAtPosition(_event.m_position);
     if (_event.m_type == GuiInputEventType::MouseMove)
     {
         m_hoveredOptionIndex = optionIndex;
-        return GuiReply::Unhandled();
+        return GuiEventResult::Unhandled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonDown && _event.m_mouseButton == GuiMouseButton::Left && isValidOptionIndex(optionIndex))
     {
         m_hoveredOptionIndex = optionIndex;
         m_pressedOptionIndex = optionIndex;
-        return GuiReply::Handled();
+        return GuiEventResult::Handled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonUp && _event.m_mouseButton == GuiMouseButton::Left && isValidOptionIndex(m_pressedOptionIndex))
@@ -113,10 +121,10 @@ ego::gui::GuiReply ego::gui::GuiRadioGroup::handleEvent(const GuiInputEvent& _ev
 
         m_hoveredOptionIndex = optionIndex;
         m_pressedOptionIndex = InvalidOptionIndex;
-        return GuiReply::Handled();
+        return GuiEventResult::Handled;
     }
 
-    return GuiReply::Unhandled();
+    return GuiEventResult::Unhandled;
 }
 
 ego::gui::GuiSize ego::gui::GuiRadioGroup::onMeasure(const GuiLayoutContext& _context, const GuiSize&)

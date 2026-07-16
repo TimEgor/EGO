@@ -5,11 +5,6 @@
 #include "EgoDefaultRender/DefaultRenderShaderDataStore.h"
 #include "EgoDefaultRender/DefaultRenderTarget.h"
 
-namespace ego::gui
-{
-    class GuiController;
-} // namespace ego::gui
-
 namespace ego::render
 {
     class RenderPipelineStateCache;
@@ -27,7 +22,6 @@ namespace ego::render
         DefaultRenderScene& m_scene;
         DefaultRenderShaderDataStore& m_shaderData;
         const DefaultRenderSettings& m_settings;
-        gui::GuiController& m_guiController;
         float m_deltaTime = 0.0f;
     };
 

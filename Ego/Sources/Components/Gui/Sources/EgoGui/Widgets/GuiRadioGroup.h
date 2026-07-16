@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "EgoGui/GuiWidget.h"
+#include "EgoGui/Widgets/GuiWidget.h"
 
 namespace ego::gui
 {
@@ -33,11 +33,10 @@ namespace ego::gui
         bool hasSelectedOption() const;
         const std::string& getSelectedOptionText() const;
 
-        GuiReply handleEvent(const GuiInputEvent& _event) override;
-
         EGO_RTTI_VIRTUAL(GuiRadioGroup, GuiWidget);
 
     protected:
+        GuiEventResult onEvent(const GuiInputEvent& _event) override;
         GuiSize onMeasure(const GuiLayoutContext& _context, const GuiSize& _availableSize) override;
         void onArrange(const GuiLayoutContext& _context, const GuiRect& _rect) override;
         void onPaint(GuiPaintContext& _context) const override;

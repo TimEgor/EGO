@@ -2,21 +2,7 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGui/Docking/GuiDockSpace.h"
-#include "EgoGui/Widgets/GuiButton.h"
-#include "EgoGui/Widgets/GuiCheckBox.h"
-#include "EgoGui/Widgets/GuiRadioGroup.h"
-#include "EgoGui/Widgets/GuiTextBlock.h"
-#include "EgoGui/Widgets/GuiTextInput.h"
-#include "EgoGui/Widgets/GuiVerticalBox.h"
-
 #include "EgoEngine/EngineSession.h"
-#include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
-
-namespace
-{
-    constexpr ego::gui::GuiDockTabID DemoTabID = 1;
-} // namespace
 
 bool ego::demo::GuiDemo::init(const InitData& _initData)
 {
@@ -27,8 +13,17 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     EGO_CHECK_INITIALIZATION(engineSession);
 
-    EGO_CHECK_INITIALIZATION(createGuiTree(engineSession));
-    EGO_CHECK_INITIALIZATION(createLevel(engineSession));
+    gui::GuiController& guiController = engineSession->getGuiController();
+    const gui::GuiViewportPointer primaryViewport = guiController.getPrimaryViewport();
+    EGO_CHECK_INITIALIZATION(primaryViewport);
+
+    m_sceneSettingsWindow = createGuiWindow("Scene Settings", gui::GuiPosition(20.0f, 20.0f), gui::GuiSize(360.0f, 400.0f));
+    EGO_CHECK_INITIALIZATION(m_sceneSettingsWindow);
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(m_sceneSettingsWindow));
+
+    m_renderSettingsWindow = createGuiWindow("Render Settings", gui::GuiPosition(140.0f, 80.0f), gui::GuiSize(320.0f, 300.0f));
+    EGO_CHECK_INITIALIZATION(m_renderSettingsWindow);
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(m_renderSettingsWindow));
 
     return true;
 }
@@ -36,18 +31,6 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
 void ego::demo::GuiDemo::update(float _deltaTime)
 {
     (void)_deltaTime;
-
-    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
-    EGO_CHECK_RETURN(engineSession);
-
-    gui::GuiController& guiController = engineSession->getGuiController();
-    if (!guiController.isInitialized() || !guiController.getViewport())
-    {
-        return;
-    }
-
-    guiController.beginFrame();
-    guiController.endFrame();
 }
 
 void ego::demo::GuiDemo::release()
@@ -56,96 +39,69 @@ void ego::demo::GuiDemo::release()
     if (engineSession)
     {
         const gui::GuiControllerPointer guiController = engineSession->getGuiControllerPointer();
-        if (guiController && guiController->isInitialized() && guiController->getViewport())
+        if (guiController && guiController->isInitialized())
         {
-            guiController->getViewport()->setRootWidget(nullptr);
-        }
-
-        if (m_level)
-        {
-            const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
-            if (activeLevel && activeLevel->getID() == m_level->getID())
+            const gui::GuiViewportPointer primaryViewport = guiController->getPrimaryViewport();
+            if (primaryViewport)
             {
-                engineSession->getLevelController().clearActiveLevel();
+                primaryViewport->removeWindow(m_sceneSettingsWindow);
+                primaryViewport->removeWindow(m_renderSettingsWindow);
             }
-
-            engineSession->clearRenderCameraEntity();
         }
     }
 
-    m_level = nullptr;
-    m_cameraEntity = ecs::Entity();
+    m_sceneSettingsWindow = nullptr;
+    m_renderSettingsWindow = nullptr;
     m_engineSession.reset();
 }
 
-bool ego::demo::GuiDemo::createGuiTree(const engine::EngineSessionPointer& _engineSession)
+ego::gui::GuiWindowPointer ego::demo::GuiDemo::createGuiWindow(const std::string& _title, const gui::GuiPosition& _position, const gui::GuiSize& _size)
 {
-    const gui::GuiDockSpacePointer dockSpace = gui::GuiDockSpace::Create();
-    EGO_CHECK_RETURN_FALSE(dockSpace);
-
     const gui::GuiVerticalBoxPointer panel = gui::GuiVerticalBox::Create();
-    EGO_CHECK_RETURN_FALSE(panel);
-
-    const gui::GuiTextBlockPointer title = gui::GuiTextBlock::Create();
-    EGO_CHECK_RETURN_FALSE(title);
-    title->setText("Scene Settings");
-    panel->addSlot(title).setPadding(gui::GuiMargin(12.0f));
+    EGO_CHECK_RETURN_NULL(panel);
 
     const gui::GuiTextInputPointer objectName = gui::GuiTextInput::Create();
-    EGO_CHECK_RETURN_FALSE(objectName);
+    EGO_CHECK_RETURN_NULL(objectName);
     objectName->setName("Object Name");
     objectName->setText("Directional Light");
     objectName->setPlaceholder("Enter name");
-    panel->addSlot(objectName).setPadding(gui::GuiMargin(12.0f, 4.0f));
+    EGO_CHECK_RETURN_NULL(panel->addChild(objectName, gui::GuiBoxLayout::Content(gui::GuiMargin(12.0f, 4.0f))));
 
-    const gui::GuiCheckBoxPointer dockingEnabled = gui::GuiCheckBox::Create();
-    EGO_CHECK_RETURN_FALSE(dockingEnabled);
-    dockingEnabled->setText("Enable Shadows");
-    dockingEnabled->setChecked(true);
-    panel->addSlot(dockingEnabled).setPadding(gui::GuiMargin(12.0f, 4.0f));
+    const gui::GuiCheckBoxPointer shadowsEnabled = gui::GuiCheckBox::Create();
+    EGO_CHECK_RETURN_NULL(shadowsEnabled);
+    shadowsEnabled->setText("Enable Shadows");
+    shadowsEnabled->setChecked(true);
+    EGO_CHECK_RETURN_NULL(panel->addChild(shadowsEnabled, gui::GuiBoxLayout::Content(gui::GuiMargin(12.0f, 4.0f))));
 
     const gui::GuiRadioGroupPointer renderModeGroup = gui::GuiRadioGroup::Create();
-    EGO_CHECK_RETURN_FALSE(renderModeGroup);
+    EGO_CHECK_RETURN_NULL(renderModeGroup);
     renderModeGroup->setTitle("Render Mode");
     renderModeGroup->addOption("Shaded");
     renderModeGroup->addOption("Wireframe");
     renderModeGroup->addOption("Lighting Only");
-    panel->addSlot(renderModeGroup).setPadding(gui::GuiMargin(12.0f, 4.0f));
+    EGO_CHECK_RETURN_NULL(panel->addChild(renderModeGroup, gui::GuiBoxLayout::Content(gui::GuiMargin(12.0f, 4.0f))));
 
     const gui::GuiButtonPointer button = gui::GuiButton::Create();
-    EGO_CHECK_RETURN_FALSE(button);
+    EGO_CHECK_RETURN_NULL(button);
     button->setText("Apply");
     button->setOnClicked(
         []()
         {
-            return gui::GuiReply::Handled();
+            return gui::GuiEventResult::Handled;
         });
-    panel->addSlot(button).setPadding(gui::GuiMargin(12.0f));
+    EGO_CHECK_RETURN_NULL(panel->addChild(button, gui::GuiBoxLayout::Content(gui::GuiMargin(12.0f))));
 
-    gui::GuiDockTabDesc tabDesc;
-    tabDesc.m_id = DemoTabID;
-    tabDesc.m_title = "Inspector";
-    tabDesc.m_content = panel;
-    EGO_CHECK_RETURN_FALSE(dockSpace->openTab(tabDesc));
+    const gui::GuiScrollBoxPointer scrollBox = gui::GuiScrollBox::Create();
+    EGO_CHECK_RETURN_NULL(scrollBox);
+    scrollBox->setHorizontalScrollBarMode(gui::GuiScrollBarMode::Auto);
+    scrollBox->setContent(panel);
 
-    const gui::GuiViewportPointer guiViewport = _engineSession->getGuiController().getViewport();
-    EGO_CHECK_RETURN_FALSE(guiViewport);
+    const gui::GuiWindowPointer window = gui::GuiWindow::Create();
+    EGO_CHECK_RETURN_NULL(window);
+    window->setTitle(_title);
+    window->setPosition(_position);
+    window->setSize(_size);
+    window->setContent(scrollBox);
 
-    guiViewport->setRootWidget(dockSpace);
-    return true;
-}
-
-bool ego::demo::GuiDemo::createLevel(const engine::EngineSessionPointer& _engineSession)
-{
-    m_level = _engineSession->getLevelController().createLevel();
-    EGO_CHECK_RETURN_FALSE(m_level);
-    EGO_CHECK_RETURN_FALSE(_engineSession->getLevelController().setActiveLevel(m_level->getID()));
-
-    m_cameraEntity = m_level->createNode();
-    EGO_CHECK_RETURN_FALSE(m_cameraEntity);
-
-    EGO_CHECK_RETURN_FALSE(m_level->addOrReplaceComponent<render::CameraComponent>(m_cameraEntity));
-    _engineSession->setRenderCameraEntity(m_cameraEntity);
-
-    return true;
+    return window;
 }

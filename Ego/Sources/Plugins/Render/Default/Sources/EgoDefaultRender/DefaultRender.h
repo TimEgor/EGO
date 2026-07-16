@@ -12,7 +12,6 @@
 #include "DefaultRenderTarget.h"
 #include "Passes/ClearRenderPass.h"
 #include "Passes/DebugRenderPass.h"
-#include "Passes/GuiRenderPass.h"
 #include "Passes/RayTracingRenderPass.h"
 #include "PipelineState/RenderPipelineStateCache.h"
 #include "RenderGraph/RenderPassGraph.h"
@@ -32,7 +31,7 @@ namespace ego::render
         bool prepare(const RenderPrepareContext& _context) override;
         void render() override;
         void wait() override;
-        void present(GraphicPresenter& _presenter) override;
+        bool copyResultToTarget(const gpu::Texture2DReference& _target) override;
 
         void setResolution(const gpu::Texture2DSize& _resolution) override;
         const gpu::Texture2DSize& getResolution() const override;
@@ -55,7 +54,7 @@ namespace ego::render
         bool initPassGraph(GraphicDevice& _graphicDevice);
         void releasePassGraph();
         void handlePrepareFailure();
-        bool copyRenderTargetToPresenter(GraphicPresenter& _presenter);
+        bool copyRenderTarget(const gpu::Texture2DReference& _target);
 
         DefaultRenderFileSystems m_fileSystems;
         DefaultRenderFrameExecutor m_frameExecutor;
@@ -67,7 +66,6 @@ namespace ego::render
         ClearRenderPass m_clearPass;
         RayTracingRenderPass m_rayTracingPass;
         DebugRenderPass m_debugPass;
-        GuiRenderPass m_guiPass;
         gpu::Texture2DSize m_pendingResolution = DefaultRenderResolution;
         DefaultRenderSettings m_settings;
         bool m_isInitialized = false;

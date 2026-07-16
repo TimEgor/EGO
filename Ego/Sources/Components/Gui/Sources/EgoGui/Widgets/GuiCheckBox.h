@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "EgoGui/GuiWidget.h"
+#include "EgoGui/Widgets/GuiWidget.h"
 
 namespace ego::gui
 {
@@ -22,11 +22,10 @@ namespace ego::gui
         void setChecked(bool _isChecked);
         bool isChecked() const;
 
-        GuiReply handleEvent(const GuiInputEvent& _event) override;
-
         EGO_RTTI_VIRTUAL(GuiCheckBox, GuiWidget);
 
     protected:
+        GuiEventResult onEvent(const GuiInputEvent& _event) override;
         GuiSize onMeasure(const GuiLayoutContext& _context, const GuiSize& _availableSize) override;
         void onPaint(GuiPaintContext& _context) const override;
 

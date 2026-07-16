@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "EgoGui/GuiWidget.h"
+#include "EgoGui/Widgets/GuiWidget.h"
 
 namespace ego::gui
 {

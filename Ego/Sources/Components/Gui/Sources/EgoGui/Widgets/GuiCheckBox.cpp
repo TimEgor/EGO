@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "EgoGui/GuiFontAtlas.h"
+#include "EgoGui/Rendering/GuiFontAtlas.h"
 
 ego::gui::GuiCheckBoxPointer ego::gui::GuiCheckBox::Create()
 {
@@ -30,20 +30,33 @@ bool ego::gui::GuiCheckBox::isChecked() const
     return m_isChecked;
 }
 
-ego::gui::GuiReply ego::gui::GuiCheckBox::handleEvent(const GuiInputEvent& _event)
+ego::gui::GuiEventResult ego::gui::GuiCheckBox::onEvent(const GuiInputEvent& _event)
 {
-    const bool containsMouse = _event.m_hasPosition && getRect().contains(_event.m_position);
+    if (_event.m_type == GuiInputEventType::FocusLost)
+    {
+        m_isHovered = false;
+        m_isPressed = false;
+        return GuiEventResult::Unhandled;
+    }
+
+    if (_event.m_type == GuiInputEventType::PointerLeave)
+    {
+        m_isHovered = false;
+        return GuiEventResult::Unhandled;
+    }
+
+    const bool containsMouse = getRect().contains(_event.m_position);
     if (_event.m_type == GuiInputEventType::MouseMove)
     {
         m_isHovered = containsMouse;
-        return GuiReply::Unhandled();
+        return GuiEventResult::Unhandled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonDown && _event.m_mouseButton == GuiMouseButton::Left && containsMouse)
     {
         m_isHovered = true;
         m_isPressed = true;
-        return GuiReply::Handled();
+        return GuiEventResult::Handled;
     }
 
     if (_event.m_type == GuiInputEventType::MouseButtonUp && _event.m_mouseButton == GuiMouseButton::Left && m_isPressed)
@@ -54,10 +67,10 @@ ego::gui::GuiReply ego::gui::GuiCheckBox::handleEvent(const GuiInputEvent& _even
         {
             m_isChecked = !m_isChecked;
         }
-        return GuiReply::Handled();
+        return GuiEventResult::Handled;
     }
 
-    return GuiReply::Unhandled();
+    return GuiEventResult::Unhandled;
 }
 
 ego::gui::GuiSize ego::gui::GuiCheckBox::onMeasure(const GuiLayoutContext& _context, const GuiSize&)

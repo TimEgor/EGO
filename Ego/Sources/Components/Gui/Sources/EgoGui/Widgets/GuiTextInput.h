@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "EgoGui/GuiWidget.h"
+#include "EgoGui/Widgets/GuiWidget.h"
 
 namespace ego::gui
 {
@@ -31,11 +31,10 @@ namespace ego::gui
         void setFocused(bool _isFocused);
         bool isFocused() const;
 
-        GuiReply handleEvent(const GuiInputEvent& _event) override;
-
         EGO_RTTI_VIRTUAL(GuiTextInput, GuiWidget);
 
     protected:
+        GuiEventResult onEvent(const GuiInputEvent& _event) override;
         GuiSize onMeasure(const GuiLayoutContext& _context, const GuiSize& _availableSize) override;
         void onArrange(const GuiLayoutContext& _context, const GuiRect& _rect) override;
         void onPaint(GuiPaintContext& _context) const override;
@@ -43,7 +42,7 @@ namespace ego::gui
     private:
         using TextIndex = size_t;
 
-        bool handleKeyDown(uint32_t _key);
+        bool handleKeyDown(GuiKey _key);
         bool handleTextInput(uint32_t _codepoint);
         void insertCharacter(char _character);
         void deletePreviousCharacter();

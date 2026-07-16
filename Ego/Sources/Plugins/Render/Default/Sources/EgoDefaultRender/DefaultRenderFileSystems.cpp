@@ -1,5 +1,6 @@
 #include "DefaultRenderFileSystems.h"
 
+#include <filesystem>
 #include <string>
 
 #include "EgoCore/FileName/FileNameUtils.h"
@@ -51,7 +52,19 @@ bool ego::render::DefaultRenderFileSystems::loadAssetsRootPath(FileName& _assets
 
     resourceController.removeFileSystem(configFileSystem);
     configFileSystem->release();
-    return loadResult;
+    if (!loadResult)
+    {
+        return false;
+    }
+
+    std::filesystem::path assetsRootPath(_assetsRootPath.c_str());
+    if (assetsRootPath.is_relative())
+    {
+        assetsRootPath = std::filesystem::path(pluginDirectoryPath.c_str()) / assetsRootPath;
+        _assetsRootPath = assetsRootPath.lexically_normal().string();
+    }
+
+    return static_cast<bool>(_assetsRootPath);
 }
 
 bool ego::render::DefaultRenderFileSystems::initAssetsFileSystem(const FileName& _assetsRootPath)

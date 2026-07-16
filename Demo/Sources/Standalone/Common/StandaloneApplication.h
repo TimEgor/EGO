@@ -4,15 +4,12 @@
 
 #include "EgoCore/Patterns/NonCopyable.h"
 
-#include "EgoEvent/EventController.h"
-
 #include "EgoEngine/Engine.h"
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Project/Project.h"
 
 #include "EgoApplication/Application.h"
-#include "EgoApplication/Engine/Input/EngineWindowInputBinding.h"
-#include "EgoApplication/Engine/Presentation/EngineWindowPresentation.h"
+#include "EgoApplication/Engine/Gui/Viewport/ApplicationGuiViewportSystem.h"
 #include "EgoApplication/Window/ApplicationWindow.h"
 
 namespace ego::demo::standalone
@@ -38,6 +35,7 @@ namespace ego::demo::standalone
             std::string m_pluginDirectoryPath;
             std::string m_profilerPluginName;
             std::string m_renderPluginModuleName;
+            std::string m_guiRenderPluginModuleName;
             std::string m_graphicHardwarePluginModuleName;
             std::string m_projectFilePath;
         };
@@ -53,9 +51,6 @@ namespace ego::demo::standalone
         void parseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options) const;
         bool fillEngineSessionInitData(const CommandLineOptions& _options, engine::EngineSession::InitData& _sessionInitData);
         bool loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const;
-        bool registerMainWindowEvents(const application::ApplicationWindowPointer& _mainWindow);
-        void unregisterMainWindowEvents();
-
         static WindowDesc CreateMainWindowDesc();
         FileName selectProjectFile() const;
 
@@ -65,8 +60,6 @@ namespace ego::demo::standalone
         engine::EngineSessionPointer m_engineSession = nullptr;
 
         application::ApplicationWindowWeakPointer m_mainWindow;
-        application::EngineWindowPresentationPointer m_mainWindowPresentation = nullptr;
-        application::EngineWindowInputBindingPointer m_mainWindowInputBinding = nullptr;
-        EventCallbackID m_mainWindowDestroyingEventCallbackID = InvalidEventCallbackID;
+        application::ApplicationGuiViewportSystemPointer m_guiViewportSystem = nullptr;
     };
 } // namespace ego::demo::standalone

@@ -1,5 +1,7 @@
 #include "EngineSession.h"
 
+#include <utility>
+
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Platform/FileSystem/RootedFileSystem.h"
@@ -23,6 +25,8 @@
 
 #include "EgoInput/InputController.h"
 
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
+
 #include "Graphic/Render/RenderPlugin.h"
 #include "Level/LevelController.h"
 #include "Project/EngineLogic.h"
@@ -42,6 +46,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 {
     EGO_CHECK_RETURN_FALSE(_jobController);
     EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
+    EGO_CHECK_RETURN_FALSE(_initData.m_guiViewportBackend);
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(!m_engineLogic);
     EGO_CHECK_RETURN_FALSE(m_id == InvalidEngineSessionID);
@@ -60,6 +65,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     EGO_CHECK_INITIALIZATION(initGuiController(_initData));
 
     EGO_CHECK_INITIALIZATION(initRender(_initData));
+    EGO_CHECK_INITIALIZATION(initGuiRenderCoordinator(_initData));
 
     EGO_CHECK_INITIALIZATION(initFrameLogic());
     EGO_CHECK_INITIALIZATION(initEngineLogic());
@@ -74,11 +80,12 @@ void ego::engine::EngineSession::release()
 
     m_frameLogic.release();
 
+    releaseGuiRenderCoordinator();
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     m_renderPlugin = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
-    m_graphicPresenter.reset();
+    m_guiViewportBackend = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
     releaseProject();
@@ -89,6 +96,7 @@ void ego::engine::EngineSession::release()
     m_currentFrameTime = ClockTimePoint();
     m_prevFrameStartTime = ClockTimePoint();
     m_deltaTime = 0.0f;
+    m_frameSucceeded.store(true);
 }
 
 bool ego::engine::EngineSession::initProject(const ProjectPointer& _project)
@@ -310,6 +318,10 @@ bool ego::engine::EngineSession::tick()
     beginFrame();
 
     m_inputController->update();
+    if (m_guiController)
+    {
+        m_guiController->update();
+    }
 
     JobGraphReference frameLogicJobGraph = getFrameLogicJobGraph();
     if (!frameLogicJobGraph)
@@ -323,9 +335,10 @@ bool ego::engine::EngineSession::tick()
     m_jobController->addJobGraph(frameLogicJobGraph);
     m_jobController->waitAndExecute(frameLogicJobGraph);
 
+    const bool frameSucceeded = m_frameSucceeded.load();
     endFrame();
 
-    return true;
+    return frameSucceeded;
 }
 
 ego::engine::EngineSessionID ego::engine::EngineSession::getID() const
@@ -343,19 +356,6 @@ ego::render::Render& ego::engine::EngineSession::getRender()
 {
     EGO_ASSERT(m_render);
     return *m_render;
-}
-
-bool ego::engine::EngineSession::setGraphicPresenter(const GraphicPresenterPointer& _graphicPresenter)
-{
-    EGO_CHECK_RETURN_FALSE(_graphicPresenter);
-
-    m_graphicPresenter = _graphicPresenter;
-    return true;
-}
-
-void ego::engine::EngineSession::clearGraphicPresenter()
-{
-    m_graphicPresenter.reset();
 }
 
 void ego::engine::EngineSession::setRenderCameraEntity(ecs::Entity _cameraEntity)
@@ -417,7 +417,8 @@ bool ego::engine::EngineSession::initGuiController(const InitData& _initData)
     EGO_CHECK_RETURN_FALSE(m_guiController);
 
     gui::GuiController::InitData guiInitData;
-    guiInitData.m_viewportDesc = _initData.m_guiViewportDesc;
+    guiInitData.m_primaryViewportDesc = _initData.m_primaryGuiViewportDesc;
+    guiInitData.m_viewportBackend = _initData.m_guiViewportBackend;
     EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiInitData.m_fontAtlasDesc));
     EGO_CHECK_RETURN_FALSE(m_guiController->init(guiInitData));
 
@@ -443,6 +444,31 @@ bool ego::engine::EngineSession::initRender(const InitData& _initData)
     EGO_CHECK_RETURN_FALSE(m_render && m_render->init());
 
     return true;
+}
+
+bool ego::engine::EngineSession::initGuiRenderCoordinator(const InitData& _initData)
+{
+    m_guiViewportBackend = _initData.m_guiViewportBackend;
+    EGO_CHECK_RETURN_FALSE(m_guiViewportBackend);
+
+    const PluginControllerPointer pluginController = getPluginControllerPointer();
+    EGO_CHECK_RETURN_FALSE(pluginController);
+
+    const FileName moduleName = _initData.m_guiRenderPluginModuleName ? _initData.m_guiRenderPluginModuleName : resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
+    EGO_CHECK_RETURN_FALSE(moduleName);
+
+    m_guiRenderPlugin = pluginController->loadPlugin<gui::GuiRenderPlugin>(moduleName);
+    EGO_CHECK_RETURN_FALSE(m_guiRenderPlugin);
+
+    const gui::GuiRenderPointer guiRender = m_guiRenderPlugin->createGuiRender(gpu::GetGraphicDevice());
+    EGO_CHECK_RETURN_FALSE(guiRender);
+    return m_guiRenderCoordinator.init(m_guiViewportBackend, guiRender);
+}
+
+void ego::engine::EngineSession::releaseGuiRenderCoordinator()
+{
+    m_guiRenderCoordinator.release();
+    m_guiRenderPlugin = nullptr;
 }
 
 bool ego::engine::EngineSession::initFrameLogic()
@@ -541,21 +567,13 @@ void ego::engine::EngineSession::updateEngineLogic()
 
 void ego::engine::EngineSession::beginFrame()
 {
+    m_frameSucceeded.store(true);
     m_currentFrameTime = Clock::GetCurrentTimePoint();
     m_deltaTime = Clock::CalcTimePointDelta<float>(m_currentFrameTime, m_prevFrameStartTime);
-    if (m_guiController)
-    {
-        m_guiController->beginFrame();
-    }
 }
 
 void ego::engine::EngineSession::endFrame()
 {
-    if (m_guiController)
-    {
-        m_guiController->endFrame();
-    }
-
     m_prevFrameStartTime = m_currentFrameTime;
 }
 
@@ -566,6 +584,8 @@ float ego::engine::EngineSession::getDeltaTime() const
 
 void ego::engine::EngineSession::cleanResources()
 {
+    m_guiRenderCoordinator.clearResources();
+
     if (m_render)
     {
         m_render->clearResources();
@@ -587,24 +607,43 @@ void ego::engine::EngineSession::presentFrame()
         return;
     }
 
-    const GraphicPresenterPointer graphicPresenter = m_graphicPresenter.lock();
-    if (graphicPresenter)
+    if (m_guiRenderCoordinator.isInitialized())
     {
-        m_render->present(*graphicPresenter);
+        const bool presentResult = m_guiRenderCoordinator.renderAndPresent(*m_render);
+        EGO_ASSERT(presentResult);
+        if (!presentResult)
+        {
+            m_frameSucceeded.store(false);
+        }
+        return;
     }
 }
 
 void ego::engine::EngineSession::prepareRenderFrame()
 {
-    if (!m_render || !m_levelController || !m_guiController)
+    if (!m_guiController)
     {
         return;
     }
 
-    const LevelPointer activeLevel = m_levelController->getActiveLevel();
-    if (activeLevel && m_renderCameraEntity)
+    gui::GuiFrame guiFrame = m_guiController->buildFrame();
+    const gui::GuiViewportID primaryViewportID = guiFrame.m_primaryViewportID;
+
+    if (m_guiRenderCoordinator.isInitialized())
     {
-        const GraphicPresenterPointer graphicPresenter = m_graphicPresenter.lock();
+        const bool prepareResult = m_guiRenderCoordinator.prepare(std::move(guiFrame));
+        EGO_ASSERT(prepareResult);
+        if (!prepareResult)
+        {
+            m_frameSucceeded.store(false);
+        }
+    }
+
+    if (m_render && m_levelController)
+    {
+        const LevelPointer activeLevel = m_levelController->getActiveLevel();
+        const EngineViewportHostPointer primaryHost = m_guiViewportBackend->findViewportHost(primaryViewportID);
+        const GraphicPresenterPointer graphicPresenter = primaryHost ? primaryHost->getGraphicPresenterPointer() : nullptr;
         if (graphicPresenter)
         {
             const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
@@ -614,7 +653,15 @@ void ego::engine::EngineSession::prepareRenderFrame()
             }
         }
 
-        const render::RenderPrepareContext prepareContext{*activeLevel, m_renderCameraEntity, *m_guiController, getDeltaTime()};
-        m_render->prepare(prepareContext);
+        if (activeLevel && m_renderCameraEntity)
+        {
+            const render::RenderPrepareContext prepareContext{*activeLevel, m_renderCameraEntity, getDeltaTime()};
+            const bool prepareResult = m_render->prepare(prepareContext);
+            EGO_ASSERT(prepareResult);
+            if (!prepareResult)
+            {
+                m_frameSucceeded.store(false);
+            }
+        }
     }
 }

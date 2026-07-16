@@ -6,11 +6,7 @@
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoEvent/EventSubsystem.h"
-
 #include "EgoEngine/Project/ProjectReader.h"
-
-#include "EgoApplication/Window/ApplicationWindowEvents.h"
 
 ego::demo::standalone::StandaloneApplication::~StandaloneApplication()
 {
@@ -87,8 +83,18 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     EGO_CHECK_RETURN_FALSE(!m_engine);
     EGO_CHECK_RETURN_FALSE(!m_engineSession);
 
+    const application::ApplicationWindowPointer mainWindow = m_application->createWindow(CreateMainWindowDesc());
+    EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
+    m_mainWindow = mainWindow;
+
+    m_guiViewportSystem = new application::ApplicationGuiViewportSystem();
+    EGO_CHECK_RETURN_FALSE(m_guiViewportSystem);
+
+    EGO_CHECK_RETURN_FALSE(m_guiViewportSystem->init(m_application, mainWindow));
+
     engine::EngineSession::InitData sessionInitData;
     EGO_CHECK_RETURN_FALSE(fillEngineSessionInitData(_options, sessionInitData));
+    sessionInitData.m_guiViewportBackend = m_guiViewportSystem;
 
     m_engine = new engine::Engine();
     EGO_CHECK_RETURN_FALSE(m_engine);
@@ -97,47 +103,22 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     m_engineSession = m_engine->createSession(sessionInitData);
     EGO_CHECK_RETURN_FALSE(m_engineSession);
 
-    const EventSubsystemPointer eventSubsystem = subsystem::FindSubsystem<EventSubsystem>();
-    EGO_CHECK_RETURN_FALSE(eventSubsystem);
-
-    const EventControllerPointer eventController = eventSubsystem->getEventControllerPointer();
-    EGO_CHECK_RETURN_FALSE(eventController);
-
-    const application::ApplicationWindowPointer mainWindow = m_application->createWindow(CreateMainWindowDesc());
-    EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
-    m_mainWindow = mainWindow;
-
-    m_mainWindowPresentation = new application::EngineWindowPresentation();
-    EGO_CHECK_RETURN_FALSE(m_mainWindowPresentation);
-    EGO_CHECK_RETURN_FALSE(m_mainWindowPresentation->init(mainWindow));
-    EGO_CHECK_RETURN_FALSE(m_engineSession->setGraphicPresenter(m_mainWindowPresentation->getGraphicPresenterPointer()));
-
-    m_mainWindowInputBinding = new application::EngineWindowInputBinding();
-    EGO_CHECK_RETURN_FALSE(m_mainWindowInputBinding);
-    EGO_CHECK_RETURN_FALSE(m_mainWindowInputBinding->init(m_engineSession, eventController, mainWindow));
-    EGO_CHECK_RETURN_FALSE(registerMainWindowEvents(mainWindow));
+    mainWindow->show();
 
     return true;
 }
 
 void ego::demo::standalone::StandaloneApplication::releaseEngine()
 {
-    unregisterMainWindowEvents();
-
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_mainWindowInputBinding);
-    if (m_engineSession)
-    {
-        m_engineSession->clearGraphicPresenter();
-    }
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_mainWindowPresentation);
-    m_mainWindow.reset();
-
     if (m_engine && m_engineSession)
     {
         m_engine->destroySession(m_engineSession->getID());
     }
     m_engineSession = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engine);
+
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiViewportSystem);
+    m_mainWindow.reset();
 }
 
 bool ego::demo::standalone::StandaloneApplication::runMainLoop()
@@ -154,17 +135,7 @@ bool ego::demo::standalone::StandaloneApplication::runMainLoop()
             break;
         }
 
-        if (m_mainWindowPresentation)
-        {
-            EGO_CHECK_RETURN_FALSE(m_mainWindowPresentation->update());
-        }
-
         m_application->updateInputDevices();
-
-        if (m_mainWindowInputBinding)
-        {
-            m_mainWindowInputBinding->updateInputDevices();
-        }
 
         EGO_CHECK_RETURN_FALSE(m_engine->tick());
     }
@@ -178,6 +149,7 @@ void ego::demo::standalone::StandaloneApplication::parseCommandLine(int _argCoun
     argParser.addOptionValue("--pluginDirectory", _options.m_pluginDirectoryPath);
     argParser.addOptionValue("--profiler", _options.m_profilerPluginName);
     argParser.addOptionValue("--render", _options.m_renderPluginModuleName);
+    argParser.addOptionValue("--guiRender", _options.m_guiRenderPluginModuleName);
     argParser.addOptionValue("--graphicHardware", _options.m_graphicHardwarePluginModuleName);
     argParser.addOptionValue("--project", _options.m_projectFilePath);
 
@@ -194,6 +166,7 @@ bool ego::demo::standalone::StandaloneApplication::fillEngineSessionInitData(con
 
     EGO_CHECK_RETURN_FALSE(loadProject(projectFileName, _sessionInitData.m_project));
     _sessionInitData.m_renderPluginModuleName = FileName(_options.m_renderPluginModuleName);
+    _sessionInitData.m_guiRenderPluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
     return true;
 }
 
@@ -212,59 +185,12 @@ bool ego::demo::standalone::StandaloneApplication::loadProject(const FileName& _
     return true;
 }
 
-bool ego::demo::standalone::StandaloneApplication::registerMainWindowEvents(const application::ApplicationWindowPointer& _mainWindow)
-{
-    EGO_CHECK_RETURN_FALSE(m_mainWindowDestroyingEventCallbackID == InvalidEventCallbackID);
-
-    EGO_CHECK_RETURN_FALSE(m_application);
-
-    const EventSubsystemPointer eventSubsystem = subsystem::FindSubsystem<EventSubsystem>();
-    EGO_CHECK_RETURN_FALSE(eventSubsystem);
-
-    const EventControllerPointer eventController = eventSubsystem->getEventControllerPointer();
-    EGO_CHECK_RETURN_FALSE(eventController);
-
-    m_mainWindowDestroyingEventCallbackID = eventController->addEventCallback<application::ApplicationWindowDestroyingEvent>(
-        [this](const application::ApplicationWindowDestroyingEvent& _event)
-        {
-            const application::ApplicationWindowPointer currentMainWindow = m_mainWindow.lock();
-            if (!currentMainWindow || _event.m_window.get() != currentMainWindow.get())
-            {
-                return;
-            }
-
-            if (m_application)
-            {
-                m_application->requestExit();
-            }
-        });
-
-    return m_mainWindowDestroyingEventCallbackID != InvalidEventCallbackID;
-}
-
-void ego::demo::standalone::StandaloneApplication::unregisterMainWindowEvents()
-{
-    if (m_mainWindowDestroyingEventCallbackID == InvalidEventCallbackID)
-    {
-        return;
-    }
-
-    const EventSubsystemPointer eventSubsystem = subsystem::FindSubsystem<EventSubsystem>();
-    const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
-    if (eventController)
-    {
-        eventController->removeEventCallback(m_mainWindowDestroyingEventCallbackID);
-    }
-
-    m_mainWindowDestroyingEventCallbackID = InvalidEventCallbackID;
-}
-
 ego::WindowDesc ego::demo::standalone::StandaloneApplication::CreateMainWindowDesc()
 {
     WindowDesc windowDesc;
     windowDesc.m_title = "EGO";
     windowDesc.m_size = WindowSize(500, 500);
-    windowDesc.m_showOnInit = true;
+    windowDesc.m_showOnInit = false;
 
     return windowDesc;
 }

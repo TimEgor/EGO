@@ -14,7 +14,6 @@ target_link_libraries(
         PUBLIC
             Ego::Core
             Ego::GraphicHardware
-            Ego::Input
         PRIVATE
             Ego::ThirdParty::Stb
 )

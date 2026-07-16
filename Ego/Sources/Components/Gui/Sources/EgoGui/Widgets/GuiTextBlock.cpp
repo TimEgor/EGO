@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "EgoGui/GuiFontAtlas.h"
+#include "EgoGui/Rendering/GuiFontAtlas.h"
 
 ego::gui::GuiTextBlockPointer ego::gui::GuiTextBlock::Create()
 {

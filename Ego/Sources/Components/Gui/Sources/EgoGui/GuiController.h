@@ -1,12 +1,16 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
-#include "GuiDrawData.h"
-#include "GuiFontAtlas.h"
-#include "GuiInput.h"
-#include "GuiViewport.h"
+#include "EgoGui/Input/GuiInput.h"
+#include "EgoGui/Rendering/GuiFrame.h"
+#include "EgoGui/Rendering/GuiFontAtlas.h"
+
+#include "EgoGui/Viewport/GuiViewport.h"
+#include "EgoGui/Viewport/GuiViewportBackend.h"
 
 namespace ego::gui
 {
@@ -16,7 +20,8 @@ namespace ego::gui
         struct InitData final
         {
             GuiFontAtlasDesc m_fontAtlasDesc;
-            GuiViewportDesc m_viewportDesc;
+            GuiViewportDesc m_primaryViewportDesc;
+            GuiViewportBackendPointer m_viewportBackend = nullptr;
         };
 
         GuiController() = default;
@@ -25,30 +30,35 @@ namespace ego::gui
         bool init(const InitData& _initData);
         void release();
 
-        GuiViewportPointer getViewport() const;
+        GuiViewportID createViewport(const GuiViewportDesc& _desc);
+        bool destroyViewport(GuiViewportID _viewportID);
 
-        void beginFrame();
-        void endFrame();
+        GuiViewportPointer findViewport(GuiViewportID _viewportID) const;
 
-        GuiReply processEvent(const GuiInputEvent& _event);
-        bool buildDrawData(GuiDrawData& _drawData);
+        GuiViewportPointer getPrimaryViewport() const;
 
-        const GuiFontAtlasPointer& getFontAtlas() const;
-        const GuiPosition& getMousePosition() const;
-        bool hasMousePosition() const;
+        void update();
+        GuiFrame buildFrame();
+
+        GuiEventResult processEvent(GuiViewportID _viewportID, const GuiInputEvent& _event);
         bool isInitialized() const;
 
         EGO_RTTI_VIRTUAL_BASE(GuiController);
 
     private:
-        bool initViewport(const GuiViewportDesc& _desc);
-        bool prepareInputEvent(GuiInputEvent& _event);
-        bool updateMousePosition(GuiInputEvent& _event);
+        static constexpr GuiViewportID FirstViewportID = 1;
 
-        GuiViewportPointer m_viewport = nullptr;
+        using ViewportMap = std::unordered_map<GuiViewportID, GuiViewportPointer>;
+
+        GuiViewportID createViewport(GuiViewportRole _role, const GuiViewportDesc& _desc);
+        GuiViewportID createViewport(const GuiViewportCreateRequest& _request);
+        GuiViewportID prepareNewViewportID();
+
+        ViewportMap m_viewports;
+        GuiViewportID m_primaryViewportID = InvalidGuiViewportID;
+        GuiViewportID m_nextViewportID = FirstViewportID;
+        GuiViewportBackendPointer m_viewportBackend = nullptr;
         GuiFontAtlasPointer m_fontAtlas = nullptr;
-        GuiPosition m_mousePosition = GuiPositionZero;
-        bool m_hasMousePosition = false;
         bool m_isInitialized = false;
     };
 

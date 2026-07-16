@@ -12,14 +12,8 @@
 
 namespace ego
 {
-    class GraphicPresenter;
     class Level;
 } // namespace ego
-
-namespace ego::gui
-{
-    class GuiController;
-} // namespace ego::gui
 
 namespace ego::render
 {
@@ -32,7 +26,6 @@ namespace ego::render
     {
         Level& m_level;
         ecs::Entity m_cameraEntity;
-        gui::GuiController& m_guiController;
         float m_deltaTime = 0.0f;
     };
 
@@ -49,7 +42,7 @@ namespace ego::render
         virtual bool prepare(const RenderPrepareContext& _context) = 0;
         virtual void render() = 0;
         virtual void wait() = 0;
-        virtual void present(GraphicPresenter& _presenter) = 0;
+        virtual bool copyResultToTarget(const gpu::Texture2DReference& _target) = 0;
 
         virtual void setResolution(const gpu::Texture2DSize& _resolution) = 0;
         virtual const gpu::Texture2DSize& getResolution() const = 0;
