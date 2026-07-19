@@ -47,7 +47,7 @@ namespace ego::win32
         void onWindowTransformationEnd();
         void onWindowSizeUpdate();
         void onWindowActivate(bool _isActive);
-        void onWindowKeyboardInput(WindowKeyboardInputAction _action, WPARAM _wParam, LPARAM _lParam);
+        void onWindowKeyboardInput(InputButtonAction _action, WPARAM _wParam, LPARAM _lParam);
         void onWindowTextInput(WindowTextCodepoint _codepoint);
 
         void updateSizes();

@@ -56,5 +56,6 @@
 - Do not introduce a new include if a forward declaration is already sufficient and consistent with the surrounding code.
 
 ## Verification
+- Do not add tests for a project or component that has no existing tests.
 - For C++ or CMake changes, when appropriate, verify CMake configuration/build with the project's existing commands.
 - If build or tests cannot be run, state the reason clearly in the final response.

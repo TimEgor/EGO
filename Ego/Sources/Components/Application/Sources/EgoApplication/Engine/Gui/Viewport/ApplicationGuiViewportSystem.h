@@ -25,18 +25,18 @@ namespace ego::application
         bool init(const ApplicationPointer& _application, const ApplicationWindowPointer& _primaryWindow);
         void release();
 
-        bool createViewport(const gui::GuiViewportCreateRequest& _request) override;
-        void destroyViewport(gui::GuiViewportID _viewportID) override;
-        bool updateViewport(gui::GuiViewportID _viewportID, gui::GuiViewportUpdate& _update) override;
+        bool createViewport(const gui::ViewportCreateRequest& _request) override;
+        void destroyViewport(gui::ViewportID _viewportID) override;
+        gui::ViewportUpdate pollViewport(gui::ViewportID _viewportID) override;
 
-        engine::EngineViewportHostPointer findViewportHost(gui::GuiViewportID _viewportID) const override;
+        engine::EngineViewportHostPointer findViewportHost(gui::ViewportID _viewportID) const override;
 
     private:
-        using ViewportMap = std::unordered_map<gui::GuiViewportID, ApplicationWindowGuiViewportHostPointer>;
+        using ViewportMap = std::unordered_map<gui::ViewportID, ApplicationWindowGuiViewportHostPointer>;
 
-        ApplicationWindowGuiViewportHostPointer findViewport(gui::GuiViewportID _viewportID) const;
+        ApplicationWindowGuiViewportHostPointer findViewport(gui::ViewportID _viewportID) const;
 
-        static WindowDesc CreateSecondaryWindowDesc(const gui::GuiViewportCreateRequest& _request);
+        static WindowDesc CreateSecondaryWindowDesc(const gui::ViewportCreateRequest& _request);
 
         ApplicationPointer m_application = nullptr;
         ApplicationWindowPointer m_primaryWindow = nullptr;

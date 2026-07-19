@@ -31,7 +31,7 @@ namespace ego::render
         bool prepare(const RenderPrepareContext& _context) override;
         void render() override;
         void wait() override;
-        bool copyResultToTarget(const gpu::Texture2DReference& _target) override;
+        gpu::Texture2DReference getResultTexture() const override;
 
         void setResolution(const gpu::Texture2DSize& _resolution) override;
         const gpu::Texture2DSize& getResolution() const override;
@@ -54,7 +54,6 @@ namespace ego::render
         bool initPassGraph(GraphicDevice& _graphicDevice);
         void releasePassGraph();
         void handlePrepareFailure();
-        bool copyRenderTarget(const gpu::Texture2DReference& _target);
 
         DefaultRenderFileSystems m_fileSystems;
         DefaultRenderFrameExecutor m_frameExecutor;

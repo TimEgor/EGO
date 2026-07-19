@@ -14,10 +14,11 @@ target_link_libraries(
             Ego::ECS
             Ego::Event
             Ego::Gui
-            Ego::GuiRender
             Ego::GraphicHardware
             Ego::Input
             Ego::Job
             Ego::Plugin
             Ego::Resource
+        PRIVATE
+            Ego::GuiRender
 )

@@ -7,9 +7,6 @@ bool ego::render::DefaultRenderFrameExecutor::init(GraphicDevice& _graphicDevice
     EGO_CHECK_RETURN_FALSE(_commandQueue && _commandQueue->getCommandType() == gpu::CommandType::Graphic);
     m_commandQueue = _commandQueue;
 
-    m_presentCommandList = _graphicDevice.createGraphicCommandList();
-    EGO_CHECK_RETURN_FALSE(m_presentCommandList);
-
     m_frameFence = _graphicDevice.createFence();
     EGO_CHECK_RETURN_FALSE(m_frameFence);
 
@@ -18,7 +15,6 @@ bool ego::render::DefaultRenderFrameExecutor::init(GraphicDevice& _graphicDevice
 
 void ego::render::DefaultRenderFrameExecutor::release()
 {
-    m_presentCommandList = nullptr;
     m_frameFence = nullptr;
     m_frameFenceValue = 0;
     m_commandQueue = nullptr;
@@ -36,17 +32,6 @@ void ego::render::DefaultRenderFrameExecutor::wait()
     {
         m_commandQueue->waitIdle();
     }
-}
-
-void ego::render::DefaultRenderFrameExecutor::submitCommandList(const RenderGraphicCommandList& _commandList)
-{
-    if (!m_commandQueue || !_commandList)
-    {
-        return;
-    }
-
-    m_commandQueue->execute(_commandList.getObject());
-    signalFrameFence();
 }
 
 void ego::render::DefaultRenderFrameExecutor::submitCommandLists(const std::vector<RenderGraphicCommandList>& _commandLists)
@@ -78,12 +63,7 @@ void ego::render::DefaultRenderFrameExecutor::submitCommandLists(const std::vect
 
 bool ego::render::DefaultRenderFrameExecutor::isValid() const
 {
-    return m_commandQueue && m_presentCommandList;
-}
-
-const ego::render::RenderGraphicCommandList& ego::render::DefaultRenderFrameExecutor::getPresentCommandList() const
-{
-    return m_presentCommandList;
+    return m_commandQueue && m_frameFence;
 }
 
 void ego::render::DefaultRenderFrameExecutor::signalFrameFence()

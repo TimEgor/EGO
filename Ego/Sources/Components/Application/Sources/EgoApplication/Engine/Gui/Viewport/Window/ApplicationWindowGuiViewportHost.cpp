@@ -13,7 +13,7 @@ ego::application::ApplicationWindowGuiViewportHost::~ApplicationWindowGuiViewpor
     release();
 }
 
-bool ego::application::ApplicationWindowGuiViewportHost::init(const ApplicationWindowPointer& _window, gui::GuiViewportRole _role)
+bool ego::application::ApplicationWindowGuiViewportHost::init(const ApplicationWindowPointer& _window, gui::ViewportRole _role)
 {
     EGO_CHECK_INITIALIZATION(!m_window);
     EGO_CHECK_INITIALIZATION(!m_graphicPresenter);
@@ -39,13 +39,13 @@ void ego::application::ApplicationWindowGuiViewportHost::release()
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiEventSource);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicPresenter);
 
-    if (m_window && m_role == gui::GuiViewportRole::Secondary)
+    if (m_window && m_role == gui::ViewportRole::Secondary)
     {
         m_window->release();
     }
 
     m_window = nullptr;
-    m_size = gui::GuiSizeZero;
+    m_size = gui::SizeZero;
     m_presenterSize = DefaultWindowSize;
 }
 
@@ -63,7 +63,7 @@ void ego::application::ApplicationWindowGuiViewportHost::update()
     }
 
     const WindowSize& windowSize = m_window->getSize();
-    m_size = gui::GuiSize(static_cast<float>(windowSize.m_x), static_cast<float>(windowSize.m_y));
+    m_size = gui::Size(static_cast<float>(windowSize.m_x), static_cast<float>(windowSize.m_y));
 }
 
 void ego::application::ApplicationWindowGuiViewportHost::beginClosing()
@@ -92,26 +92,31 @@ ego::engine::EngineViewportPrepareResult ego::application::ApplicationWindowGuiV
     }
 
     const bool presenterSizeChanged = windowSize.m_x != m_presenterSize.m_x || windowSize.m_y != m_presenterSize.m_y;
-    if (!presenterSizeChanged)
+    return presenterSizeChanged ? engine::EngineViewportPrepareResult::TargetResizeRequired : engine::EngineViewportPrepareResult::Ready;
+}
+
+bool ego::application::ApplicationWindowGuiViewportHost::resizeRenderTarget()
+{
+    if (m_state != State::Active || !m_window || !m_window->isStable() || !m_graphicPresenter)
     {
-        return engine::EngineViewportPrepareResult::Ready;
+        return false;
     }
 
-    if (!m_graphicPresenter)
+    const WindowSize& windowSize = m_window->getSize();
+    if (windowSize.m_x == 0 || windowSize.m_y == 0)
     {
-        m_state = State::Failed;
-        return engine::EngineViewportPrepareResult::Failed;
+        return false;
     }
 
     const gpu::Texture2DSize targetSize(windowSize.m_x, windowSize.m_y);
     if (!m_graphicPresenter->resize(targetSize))
     {
         m_state = State::Failed;
-        return engine::EngineViewportPrepareResult::Failed;
+        return false;
     }
 
     m_presenterSize = windowSize;
-    return engine::EngineViewportPrepareResult::Ready;
+    return true;
 }
 
 ego::GraphicPresenterPointer ego::application::ApplicationWindowGuiViewportHost::getGraphicPresenterPointer() const
@@ -119,21 +124,30 @@ ego::GraphicPresenterPointer ego::application::ApplicationWindowGuiViewportHost:
     return m_graphicPresenter;
 }
 
-bool ego::application::ApplicationWindowGuiViewportHost::isCloseRequested() const
+ego::gui::ViewportUpdateStatus ego::application::ApplicationWindowGuiViewportHost::getUpdateStatus() const
 {
-    return m_state != State::Active;
+    switch (m_state)
+    {
+    case State::Active:
+        return gui::ViewportUpdateStatus::Alive;
+    case State::Closing:
+        return gui::ViewportUpdateStatus::CloseRequested;
+    case State::Failed:
+    default:
+        return gui::ViewportUpdateStatus::Lost;
+    }
 }
 
-const ego::gui::GuiSize& ego::application::ApplicationWindowGuiViewportHost::getSize() const
+const ego::gui::Size& ego::application::ApplicationWindowGuiViewportHost::getSize() const
 {
     return m_size;
 }
 
-void ego::application::ApplicationWindowGuiViewportHost::drainEvents(gui::GuiViewportEventCollection& _events)
+void ego::application::ApplicationWindowGuiViewportHost::drainInput(gui::InputEventCollection& _input)
 {
     if (m_guiEventSource)
     {
-        m_guiEventSource->drainEvents(_events);
+        m_guiEventSource->drainInput(_input);
     }
 }
 

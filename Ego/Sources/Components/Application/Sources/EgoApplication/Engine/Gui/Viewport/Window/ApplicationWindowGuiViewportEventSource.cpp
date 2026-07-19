@@ -14,40 +14,35 @@
 
 namespace
 {
-    ego::gui::GuiKey ToGuiKey(ego::WindowKeyboardKey _key)
+    constexpr uint8_t LeftShiftModifierMask = 1u << 0;
+    constexpr uint8_t RightShiftModifierMask = 1u << 1;
+    constexpr uint8_t LeftControlModifierMask = 1u << 2;
+    constexpr uint8_t RightControlModifierMask = 1u << 3;
+    constexpr uint8_t LeftAltModifierMask = 1u << 4;
+    constexpr uint8_t RightAltModifierMask = 1u << 5;
+
+    constexpr uint8_t ShiftModifierMask = LeftShiftModifierMask | RightShiftModifierMask;
+    constexpr uint8_t ControlModifierMask = LeftControlModifierMask | RightControlModifierMask;
+    constexpr uint8_t AltModifierMask = LeftAltModifierMask | RightAltModifierMask;
+
+    uint8_t GetKeyboardModifierMask(ego::KeyboardInputKey _key)
     {
         switch (_key)
         {
-        case 0x08:
-            return ego::gui::GuiKey::Backspace;
-        case 0x09:
-            return ego::gui::GuiKey::Tab;
-        case 0x0D:
-            return ego::gui::GuiKey::Enter;
-        case 0x10:
-        case 0xA0:
-        case 0xA1:
-            return ego::gui::GuiKey::Shift;
-        case 0x11:
-        case 0xA2:
-        case 0xA3:
-            return ego::gui::GuiKey::Control;
-        case 0x1B:
-            return ego::gui::GuiKey::Escape;
-        case 0x23:
-            return ego::gui::GuiKey::End;
-        case 0x24:
-            return ego::gui::GuiKey::Home;
-        case 0x25:
-            return ego::gui::GuiKey::Left;
-        case 0x27:
-            return ego::gui::GuiKey::Right;
-        case 0x2E:
-            return ego::gui::GuiKey::Delete;
-        case 0x41:
-            return ego::gui::GuiKey::A;
+        case ego::KeyboardInputKey::LeftShift:
+            return LeftShiftModifierMask;
+        case ego::KeyboardInputKey::RightShift:
+            return RightShiftModifierMask;
+        case ego::KeyboardInputKey::LeftControl:
+            return LeftControlModifierMask;
+        case ego::KeyboardInputKey::RightControl:
+            return RightControlModifierMask;
+        case ego::KeyboardInputKey::LeftAlt:
+            return LeftAltModifierMask;
+        case ego::KeyboardInputKey::RightAlt:
+            return RightAltModifierMask;
         default:
-            return ego::gui::GuiKey::Undefined;
+            return 0;
         }
     }
 
@@ -56,11 +51,9 @@ namespace
         return static_cast<ego::InputDeviceKey>(_key);
     }
 
-    ego::gui::GuiPosition GetMousePosition(const ego::InputDevice& _device)
+    ego::gui::Position GetMousePosition(const ego::InputDevice& _device)
     {
-        return ego::gui::GuiPosition(
-            _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)),
-            _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)));
+        return ego::gui::Position(_device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)), _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)));
     }
 
     bool HasMousePositionChanged(const ego::InputDevice& _device)
@@ -69,27 +62,10 @@ namespace
                _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)) != _device.getPreviousValue(ToInputDeviceKey(ego::MouseInputKey::AxisY));
     }
 
-    bool TryGetGuiMouseButton(ego::InputDeviceKey _key, ego::gui::GuiMouseButton& _mouseButton)
+    uint8_t GetMouseButtonMask(ego::MouseInputKey _key)
     {
-        if (_key >= ego::MouseInputKeyCount)
-        {
-            return false;
-        }
-
-        switch (static_cast<ego::MouseInputKey>(_key))
-        {
-        case ego::MouseInputKey::ButtonLeft:
-            _mouseButton = ego::gui::GuiMouseButton::Left;
-            return true;
-        case ego::MouseInputKey::ButtonRight:
-            _mouseButton = ego::gui::GuiMouseButton::Right;
-            return true;
-        case ego::MouseInputKey::ButtonMiddle:
-            _mouseButton = ego::gui::GuiMouseButton::Middle;
-            return true;
-        default:
-            return false;
-        }
+        const uint32_t buttonIndex = static_cast<uint32_t>(_key) - static_cast<uint32_t>(ego::MouseInputKey::ButtonLeft);
+        return static_cast<uint8_t>(1u << buttonIndex);
     }
 
     void RemoveEventCallback(const ego::EventControllerPointer& _controller, ego::EventCallbackID& _callbackID)
@@ -136,8 +112,10 @@ void ego::application::ApplicationWindowGuiViewportEventSource::release()
 {
     unregisterEventCallbacks();
 
-    m_events.clear();
-    m_pressedMouseButtonCount = 0;
+    m_input.clear();
+    m_modifiers = gui::InputModifiers();
+    m_pressedKeyboardModifiers = 0;
+    m_pressedMouseButtons = 0;
     m_isWindowActive = false;
     m_isPointerInsideWindow = false;
 
@@ -145,10 +123,10 @@ void ego::application::ApplicationWindowGuiViewportEventSource::release()
     m_window = nullptr;
 }
 
-void ego::application::ApplicationWindowGuiViewportEventSource::drainEvents(gui::GuiViewportEventCollection& _events)
+void ego::application::ApplicationWindowGuiViewportEventSource::drainInput(gui::InputEventCollection& _input)
 {
-    _events.insert(_events.end(), std::make_move_iterator(m_events.begin()), std::make_move_iterator(m_events.end()));
-    m_events.clear();
+    _input.insert(_input.end(), std::make_move_iterator(m_input.begin()), std::make_move_iterator(m_input.end()));
+    m_input.clear();
 }
 
 bool ego::application::ApplicationWindowGuiViewportEventSource::registerEventCallbacks()
@@ -195,14 +173,14 @@ bool ego::application::ApplicationWindowGuiViewportEventSource::registerEventCal
     m_callbackIDs.m_mouseButtonPressed = m_eventController->addEventCallback<InputButtonPressedEvent>(
         [this](const InputButtonPressedEvent& _event)
         {
-            handleMouseButtonEvent(_event, gui::GuiInputEventType::MouseButtonDown);
+            handleMouseButtonEvent(_event, InputButtonAction::Pressed);
         });
     EGO_CHECK_RETURN_FALSE(m_callbackIDs.m_mouseButtonPressed != InvalidEventCallbackID);
 
     m_callbackIDs.m_mouseButtonReleased = m_eventController->addEventCallback<InputButtonReleasedEvent>(
         [this](const InputButtonReleasedEvent& _event)
         {
-            handleMouseButtonEvent(_event, gui::GuiInputEventType::MouseButtonUp);
+            handleMouseButtonEvent(_event, InputButtonAction::Released);
         });
     return m_callbackIDs.m_mouseButtonReleased != InvalidEventCallbackID;
 }
@@ -231,26 +209,28 @@ void ego::application::ApplicationWindowGuiViewportEventSource::handleWindowActi
         return;
     }
 
-    m_pressedMouseButtonCount = 0;
+    m_pressedMouseButtons = 0;
+    m_modifiers = gui::InputModifiers();
+    m_pressedKeyboardModifiers = 0;
     m_isPointerInsideWindow = false;
 
-    gui::GuiInputEvent event;
-    event.m_type = gui::GuiInputEventType::FocusLost;
-    m_events.push_back(event);
+    m_input.push_back(new gui::ViewportDeactivatedEvent());
 }
 
 void ego::application::ApplicationWindowGuiViewportEventSource::handleWindowKeyboardInputEvent(const ApplicationWindowKeyboardInputEvent& _event)
 {
-    const gui::GuiKey key = ToGuiKey(_event.m_inputData.m_key);
-    if (key == gui::GuiKey::Undefined)
+    updateModifiers(_event.m_inputData);
+
+    if (_event.m_inputData.m_key == KeyboardInputKey::Undefined)
     {
         return;
     }
 
-    gui::GuiInputEvent event;
-    event.m_type = _event.m_inputData.m_action == WindowKeyboardInputAction::Pressed ? gui::GuiInputEventType::KeyDown : gui::GuiInputEventType::KeyUp;
-    event.m_key = key;
-    m_events.push_back(event);
+    gui::KeyEvent event;
+    event.m_key = _event.m_inputData.m_key;
+    event.m_action = _event.m_inputData.m_action;
+    event.m_modifiers = m_modifiers;
+    m_input.push_back(new gui::KeyEvent(event));
 }
 
 void ego::application::ApplicationWindowGuiViewportEventSource::handleWindowTextInputEvent(const ApplicationWindowTextInputEvent& _event)
@@ -260,10 +240,10 @@ void ego::application::ApplicationWindowGuiViewportEventSource::handleWindowText
         return;
     }
 
-    gui::GuiInputEvent event;
-    event.m_type = gui::GuiInputEventType::TextInput;
-    event.m_textCodepoint = _event.m_inputData.m_codepoint;
-    m_events.push_back(event);
+    gui::TextInputEvent event;
+    event.m_codepoint = _event.m_inputData.m_codepoint;
+    event.m_modifiers = m_modifiers;
+    m_input.push_back(new gui::TextInputEvent(event));
 }
 
 void ego::application::ApplicationWindowGuiViewportEventSource::handleMouseChangedEvent(const InputDeviceChangedEvent& _event)
@@ -273,10 +253,9 @@ void ego::application::ApplicationWindowGuiViewportEventSource::handleMouseChang
         return;
     }
 
-    gui::GuiInputEvent event;
-    event.m_type = gui::GuiInputEventType::MouseMove;
+    gui::PointerMoveEvent event;
     event.m_position = GetMousePosition(*_event.m_device);
-    enqueuePointerEvent(std::move(event));
+    enqueuePointerInput(std::move(event));
 }
 
 void ego::application::ApplicationWindowGuiViewportEventSource::handleMouseWheelEvent(const InputKeyChangedEvent& _event)
@@ -286,44 +265,93 @@ void ego::application::ApplicationWindowGuiViewportEventSource::handleMouseWheel
         return;
     }
 
-    gui::GuiInputEvent event;
-    event.m_type = gui::GuiInputEventType::MouseWheel;
+    gui::MouseWheelEvent event;
     event.m_position = GetMousePosition(*_event.m_device);
     event.m_wheelDelta = _event.m_value - _event.m_previousValue;
-    enqueuePointerEvent(std::move(event));
+    enqueuePointerInput(std::move(event));
 }
 
-void ego::application::ApplicationWindowGuiViewportEventSource::handleMouseButtonEvent(const InputKeyEvent& _event, gui::GuiInputEventType _type)
+void ego::application::ApplicationWindowGuiViewportEventSource::handleMouseButtonEvent(const InputKeyEvent& _event, InputButtonAction _action)
 {
     if (_event.m_deviceType != MouseInputDevice::GetMetaInfoID() || !_event.m_device)
     {
         return;
     }
 
-    gui::GuiMouseButton mouseButton;
-    if (!TryGetGuiMouseButton(_event.m_key, mouseButton))
+    if (_event.m_key < ToInputDeviceKey(MouseInputKey::ButtonLeft) || _event.m_key > ToInputDeviceKey(MouseInputKey::ButtonEight))
     {
         return;
     }
 
-    gui::GuiInputEvent event;
-    event.m_type = _type;
+    const MouseInputKey key = static_cast<MouseInputKey>(_event.m_key);
+    gui::MouseButtonEvent event;
     event.m_position = GetMousePosition(*_event.m_device);
-    event.m_mouseButton = mouseButton;
+    event.m_key = key;
+    event.m_action = _action;
 
-    const bool eventEnqueued = enqueuePointerEvent(std::move(event));
-    if (_type == gui::GuiInputEventType::MouseButtonDown && eventEnqueued)
+    const uint8_t mouseButtonMask = GetMouseButtonMask(key);
+    const bool inputEnqueued = enqueuePointerInput(std::move(event));
+    if (_action == InputButtonAction::Pressed && inputEnqueued)
     {
-        ++m_pressedMouseButtonCount;
+        m_pressedMouseButtons |= mouseButtonMask;
     }
-    else if (_type == gui::GuiInputEventType::MouseButtonUp && eventEnqueued && m_pressedMouseButtonCount > 0)
+    else if (_action == InputButtonAction::Released)
     {
-        --m_pressedMouseButtonCount;
+        m_pressedMouseButtons &= static_cast<uint8_t>(~mouseButtonMask);
     }
 }
 
-bool ego::application::ApplicationWindowGuiViewportEventSource::enqueuePointerEvent(gui::GuiInputEvent _event)
+bool ego::application::ApplicationWindowGuiViewportEventSource::enqueuePointerInput(gui::PointerMoveEvent _event)
 {
+    bool emitPointerExit = false;
+    if (!preparePointerInput(_event.m_position, emitPointerExit))
+    {
+        if (!emitPointerExit)
+        {
+            return false;
+        }
+
+        gui::PointerExitEvent pointerExitEvent;
+        pointerExitEvent.m_position = _event.m_position;
+        pointerExitEvent.m_modifiers = m_modifiers;
+        m_input.push_back(new gui::PointerExitEvent(pointerExitEvent));
+        return true;
+    }
+
+    _event.m_modifiers = m_modifiers;
+    m_input.push_back(new gui::PointerMoveEvent(std::move(_event)));
+    return true;
+}
+
+bool ego::application::ApplicationWindowGuiViewportEventSource::enqueuePointerInput(gui::MouseButtonEvent _event)
+{
+    bool emitPointerExit = false;
+    if (!preparePointerInput(_event.m_position, emitPointerExit))
+    {
+        return false;
+    }
+
+    _event.m_modifiers = m_modifiers;
+    m_input.push_back(new gui::MouseButtonEvent(std::move(_event)));
+    return true;
+}
+
+bool ego::application::ApplicationWindowGuiViewportEventSource::enqueuePointerInput(gui::MouseWheelEvent _event)
+{
+    bool emitPointerExit = false;
+    if (!preparePointerInput(_event.m_position, emitPointerExit))
+    {
+        return false;
+    }
+
+    _event.m_modifiers = m_modifiers;
+    m_input.push_back(new gui::MouseWheelEvent(std::move(_event)));
+    return true;
+}
+
+bool ego::application::ApplicationWindowGuiViewportEventSource::preparePointerInput(gui::Position& _position, bool& _emitPointerExit)
+{
+    _emitPointerExit = false;
     if (!m_isWindowActive)
     {
         m_isPointerInsideWindow = false;
@@ -331,41 +359,58 @@ bool ego::application::ApplicationWindowGuiViewportEventSource::enqueuePointerEv
     }
 
     bool isPointerInsideWindow = false;
-    if (!convertPointerPosition(_event, isPointerInsideWindow))
+    if (!convertPointerPosition(_position, isPointerInsideWindow))
     {
         return false;
     }
 
-    const bool pointerLeftWindow = m_isPointerInsideWindow && !isPointerInsideWindow;
-    const bool hasPointerCapture = m_pressedMouseButtonCount > 0;
+    const bool pointerExitedWindow = m_isPointerInsideWindow && !isPointerInsideWindow;
+    const bool hasPressedMouseButton = m_pressedMouseButtons != 0;
     m_isPointerInsideWindow = isPointerInsideWindow;
-
-    if (!isPointerInsideWindow && !hasPointerCapture)
+    if (isPointerInsideWindow || hasPressedMouseButton)
     {
-        if (!pointerLeftWindow || _event.m_type != gui::GuiInputEventType::MouseMove)
-        {
-            return false;
-        }
-
-        _event.m_type = gui::GuiInputEventType::PointerLeave;
+        return true;
     }
 
-    m_events.push_back(std::move(_event));
-    return true;
+    _emitPointerExit = pointerExitedWindow;
+    return false;
 }
 
-bool ego::application::ApplicationWindowGuiViewportEventSource::convertPointerPosition(gui::GuiInputEvent& _event, bool& _isInsideWindow) const
+void ego::application::ApplicationWindowGuiViewportEventSource::updateModifiers(const WindowKeyboardInputData& _inputData)
+{
+    const uint8_t modifierMask = GetKeyboardModifierMask(_inputData.m_key);
+    if (modifierMask == 0)
+    {
+        return;
+    }
+
+    const bool isPressed = _inputData.m_action == InputButtonAction::Pressed;
+    if (isPressed)
+    {
+        m_pressedKeyboardModifiers |= modifierMask;
+    }
+    else
+    {
+        m_pressedKeyboardModifiers &= static_cast<uint8_t>(~modifierMask);
+    }
+
+    m_modifiers.m_shift = (m_pressedKeyboardModifiers & ShiftModifierMask) != 0;
+    m_modifiers.m_control = (m_pressedKeyboardModifiers & ControlModifierMask) != 0;
+    m_modifiers.m_alt = (m_pressedKeyboardModifiers & AltModifierMask) != 0;
+}
+
+bool ego::application::ApplicationWindowGuiViewportEventSource::convertPointerPosition(gui::Position& _position, bool& _isInsideWindow) const
 {
     EGO_CHECK_RETURN_FALSE(m_window);
 
-    const WindowPoint screenPoint(static_cast<int32_t>(_event.m_position.m_x), static_cast<int32_t>(_event.m_position.m_y));
+    const WindowPoint screenPoint(static_cast<int32_t>(_position.m_x), static_cast<int32_t>(_position.m_y));
     WindowPoint clientPoint;
     EGO_CHECK_RETURN_FALSE(m_window->screenToClient(screenPoint, clientPoint));
 
-    _event.m_position = gui::GuiPosition(static_cast<float>(clientPoint.m_x), static_cast<float>(clientPoint.m_y));
+    _position = gui::Position(static_cast<float>(clientPoint.m_x), static_cast<float>(clientPoint.m_y));
 
     const WindowSize& clientSize = m_window->getSize();
-    _isInsideWindow = clientPoint.m_x >= 0 && clientPoint.m_y >= 0 && clientPoint.m_x < static_cast<int32_t>(clientSize.m_x) &&
-                      clientPoint.m_y < static_cast<int32_t>(clientSize.m_y);
+    _isInsideWindow =
+        clientPoint.m_x >= 0 && clientPoint.m_y >= 0 && clientPoint.m_x < static_cast<int32_t>(clientSize.m_x) && clientPoint.m_y < static_cast<int32_t>(clientSize.m_y);
     return true;
 }

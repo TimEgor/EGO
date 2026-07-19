@@ -16,8 +16,9 @@
 #include "EgoGraphicHardware/GraphicObjects/Shader.h"
 #include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
-#include "EgoGui/Rendering/GuiDrawData.h"
-#include "EgoGui/Viewport/GuiViewportTypes.h"
+#include "EgoGui/Rendering/DrawData.h"
+#include "EgoGui/Rendering/Image.h"
+#include "EgoGui/Viewport/ViewportTypes.h"
 
 namespace ego
 {
@@ -26,19 +27,12 @@ namespace ego
 
 namespace ego::gui
 {
-    struct GuiRenderTextureBinding final
-    {
-        GuiTextureID m_id = InvalidGuiTextureID;
-        gpu::Texture2DReference m_texture = nullptr;
-    };
-
     struct GuiRenderPacket final
     {
-        using TextureBindingCollection = std::vector<GuiRenderTextureBinding>;
-
-        GuiViewportID m_viewportID = InvalidGuiViewportID;
-        GuiDrawData m_drawData;
-        TextureBindingCollection m_textureBindings;
+        ViewportID m_viewportID = InvalidViewportID;
+        uint32_t m_frameIndex = 0;
+        DrawData m_drawData;
+        ImageBindingCollection m_imageBindings;
     };
 
     struct GuiRenderTarget final
@@ -64,28 +58,40 @@ namespace ego::gui
         bool init(GraphicDevice& _graphicDevice, const InitData& _initData);
         void release();
         void clearResources();
-        void removeViewport(GuiViewportID _viewportID);
+        void removeViewport(ViewportID _viewportID);
 
-        // The caller must finish GPU reads before replacing or removing resources for the same viewport.
+        // The caller must finish GPU reads before replacing or removing resources for the same viewport and frame index.
         bool prepare(GraphicDevice& _graphicDevice, GuiRenderPacket _packet);
 
         // Records a complete rendering scope and leaves the target in RenderTarget state. Submission and final transitions belong to the caller.
-        bool record(GraphicDevice& _graphicDevice, const gpu::GraphicCommandListReference& _commandList, const GuiRenderTarget& _target, GuiViewportID _viewportID);
+        bool record(
+            GraphicDevice& _graphicDevice,
+            const gpu::GraphicCommandListReference& _commandList,
+            const GuiRenderTarget& _target,
+            ViewportID _viewportID,
+            uint32_t _frameIndex);
 
         bool isInitialized() const;
 
     private:
-        struct PreparedTextureBinding final
+        struct PreparedImageBinding final
         {
-            GuiTextureID m_id = InvalidGuiTextureID;
+            ImageID m_id = InvalidImageID;
+            gpu::Texture2DReference m_texture = nullptr;
+            gpu::TextureViewReference m_textureView = nullptr;
+        };
+
+        struct ImageResources final
+        {
+            ImagePointer m_image = nullptr;
             gpu::Texture2DReference m_texture = nullptr;
             gpu::TextureViewReference m_textureView = nullptr;
         };
 
         struct ViewportResources final
         {
-            GuiDrawData m_drawData;
-            std::vector<PreparedTextureBinding> m_textureBindings;
+            DrawData m_drawData;
+            std::vector<PreparedImageBinding> m_imageBindings;
             gpu::BufferReference m_vertexBuffer = nullptr;
             gpu::BufferReference m_indexBuffer = nullptr;
             uint32_t m_vertexBufferSize = 0;
@@ -103,29 +109,33 @@ namespace ego::gui
         bool initBindingLayout(GraphicDevice& _graphicDevice);
         gpu::GraphicPipelineReference getOrCreatePipeline(GraphicDevice& _graphicDevice, gpu::GraphicResourceFormat _targetFormat, uint32_t _sampleCount);
 
-        bool prepareTextureBindings(GraphicDevice& _graphicDevice, const GuiRenderPacket::TextureBindingCollection& _textureBindings, ViewportResources& _resources);
+        bool prepareImageBindings(GraphicDevice& _graphicDevice, const ImageBindingCollection& _imageBindings, ViewportResources& _resources);
+        bool getOrCreateImageResources(GraphicDevice& _graphicDevice, const ImagePointer& _image, gpu::Texture2DReference& _texture, gpu::TextureViewReference& _textureView);
+        bool createImageResources(GraphicDevice& _graphicDevice, const ImagePointer& _image, ImageResources& _resources);
         bool prepareBuffers(GraphicDevice& _graphicDevice, ViewportResources& _resources);
         bool prepareVertexBuffer(GraphicDevice& _graphicDevice, ViewportResources& _resources);
         bool prepareIndexBuffer(GraphicDevice& _graphicDevice, ViewportResources& _resources);
 
-        void transitionTextureBindings(const gpu::GraphicCommandListReference& _commandList, const ViewportResources& _resources) const;
+        void transitionImageBindings(const gpu::GraphicCommandListReference& _commandList, const ViewportResources& _resources) const;
         void setupTargetViewport(const gpu::GraphicCommandListReference& _commandList, const gpu::Texture2DSize& _targetSize) const;
         bool renderDrawData(
             const gpu::GraphicCommandListReference& _commandList,
             const gpu::GraphicPipelineReference& _pipeline,
             const gpu::Texture2DSize& _targetSize,
             const ViewportResources& _resources) const;
-        uint32_t findTextureBindlessIndex(const ViewportResources& _resources, GuiTextureID _textureID) const;
+        uint32_t findImageBindlessIndex(const ViewportResources& _resources, ImageID _imageID) const;
 
         static gpu::InputLayoutDesc CreateGuiInputLayout();
 
-        using ViewportResourceMap = std::unordered_map<GuiViewportID, ViewportResources>;
+        using FrameResourceMap = std::unordered_map<uint32_t, ViewportResources>;
+        using ViewportResourceMap = std::unordered_map<ViewportID, FrameResourceMap>;
 
         gpu::VertexShaderReference m_vertexShader = nullptr;
         gpu::PixelShaderReference m_pixelShader = nullptr;
         gpu::SamplerReference m_defaultSampler = nullptr;
         gpu::BindingLayoutReference m_bindingLayout = nullptr;
         std::vector<PipelineEntry> m_pipelines;
+        std::vector<ImageResources> m_imageResources;
         ViewportResourceMap m_viewportResources;
         bool m_isInitialized = false;
     };

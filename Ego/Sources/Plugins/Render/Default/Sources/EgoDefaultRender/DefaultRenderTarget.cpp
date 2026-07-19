@@ -9,14 +9,14 @@ bool ego::render::DefaultRenderTarget::prepare(GraphicDevice& _graphicDevice, co
         return false;
     }
 
-    m_resolution = _resolution;
-
     const gpu::Texture2DDesc* currentDesc = m_texture ? &m_texture->getDesc() : nullptr;
-    if (currentDesc && currentDesc->m_size.m_x == _resolution.m_x && currentDesc->m_size.m_y == _resolution.m_y && currentDesc->m_format == _format && m_renderTargetView &&
-        m_unorderedAccessView)
+    const bool usesMatchingTarget = currentDesc && currentDesc->m_size.m_x == _resolution.m_x && currentDesc->m_size.m_y == _resolution.m_y && currentDesc->m_format == _format;
+    if (usesMatchingTarget && m_renderTargetView && m_unorderedAccessView)
     {
         return true;
     }
+
+    m_resolution = _resolution;
 
     gpu::Texture2DDesc textureDesc;
     textureDesc.m_usage =
@@ -34,7 +34,7 @@ bool ego::render::DefaultRenderTarget::prepare(GraphicDevice& _graphicDevice, co
     gpu::TextureViewDesc renderTargetViewDesc;
     renderTargetViewDesc.m_type = gpu::GraphicResourceViewType::RenderTarget;
     renderTargetViewDesc.m_dimension = gpu::TextureViewDimension::D2;
-    renderTargetViewDesc.m_format = textureDesc.m_format;
+    renderTargetViewDesc.m_format = _format;
 
     m_renderTargetView = _graphicDevice.createTextureView(m_texture.getObject(), renderTargetViewDesc);
     EGO_CHECK_RETURN_FALSE(m_renderTargetView);
@@ -42,7 +42,7 @@ bool ego::render::DefaultRenderTarget::prepare(GraphicDevice& _graphicDevice, co
     gpu::TextureViewDesc unorderedAccessViewDesc;
     unorderedAccessViewDesc.m_type = gpu::GraphicResourceViewType::UnorderedAccess;
     unorderedAccessViewDesc.m_dimension = gpu::TextureViewDimension::D2;
-    unorderedAccessViewDesc.m_format = textureDesc.m_format;
+    unorderedAccessViewDesc.m_format = _format;
 
     m_unorderedAccessView = _graphicDevice.createTextureView(m_texture.getObject(), unorderedAccessViewDesc);
 

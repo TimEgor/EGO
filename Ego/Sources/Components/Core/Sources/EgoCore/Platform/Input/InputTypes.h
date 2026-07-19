@@ -19,6 +19,12 @@ namespace ego
         Position
     };
 
+    enum class InputButtonAction
+    {
+        Pressed,
+        Released
+    };
+
     inline constexpr InputDeviceKeyValue MinInputDeviceKeyValue = 0.0f;
     inline constexpr InputDeviceKeyValue MaxInputDeviceFixedKeyValue = 1.0f;
 } // namespace ego

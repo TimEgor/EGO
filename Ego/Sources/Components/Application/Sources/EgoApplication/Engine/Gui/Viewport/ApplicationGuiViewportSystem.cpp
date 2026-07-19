@@ -55,9 +55,9 @@ void ego::application::ApplicationGuiViewportSystem::release()
     m_application = nullptr;
 }
 
-bool ego::application::ApplicationGuiViewportSystem::createViewport(const gui::GuiViewportCreateRequest& _request)
+bool ego::application::ApplicationGuiViewportSystem::createViewport(const gui::ViewportCreateRequest& _request)
 {
-    EGO_CHECK_RETURN_FALSE(_request.m_id != gui::InvalidGuiViewportID);
+    EGO_CHECK_RETURN_FALSE(_request.m_id != gui::InvalidViewportID);
     EGO_CHECK_RETURN_FALSE(m_application && m_primaryWindow);
 
     if (m_viewports.contains(_request.m_id))
@@ -68,7 +68,7 @@ bool ego::application::ApplicationGuiViewportSystem::createViewport(const gui::G
     ApplicationWindowGuiViewportHostPointer host = new ApplicationWindowGuiViewportHost();
     EGO_CHECK_RETURN_FALSE(host);
 
-    const bool isSecondary = _request.m_role == gui::GuiViewportRole::Secondary;
+    const bool isSecondary = _request.m_role == gui::ViewportRole::Secondary;
     const ApplicationWindowPointer window = isSecondary ? m_application->createWindow(CreateSecondaryWindowDesc(_request)) : m_primaryWindow;
     if (!window || !window->isValid())
     {
@@ -94,9 +94,9 @@ bool ego::application::ApplicationGuiViewportSystem::createViewport(const gui::G
     return true;
 }
 
-void ego::application::ApplicationGuiViewportSystem::destroyViewport(gui::GuiViewportID _viewportID)
+void ego::application::ApplicationGuiViewportSystem::destroyViewport(gui::ViewportID _viewportID)
 {
-    if (_viewportID == gui::InvalidGuiViewportID)
+    if (_viewportID == gui::InvalidViewportID)
     {
         return;
     }
@@ -115,25 +115,25 @@ void ego::application::ApplicationGuiViewportSystem::destroyViewport(gui::GuiVie
     m_viewports.erase(viewportIt);
 }
 
-bool ego::application::ApplicationGuiViewportSystem::updateViewport(gui::GuiViewportID _viewportID, gui::GuiViewportUpdate& _update)
+ego::gui::ViewportUpdate ego::application::ApplicationGuiViewportSystem::pollViewport(gui::ViewportID _viewportID)
 {
-    _update = gui::GuiViewportUpdate();
+    gui::ViewportUpdate update;
 
     const ApplicationWindowGuiViewportHostPointer host = findViewport(_viewportID);
     if (!host)
     {
-        return false;
+        return update;
     }
 
     host->update();
-    _update.m_size = host->getSize();
-    _update.m_closeRequested = host->isCloseRequested();
-    host->drainEvents(_update.m_events);
+    update.m_size = host->getSize();
+    update.m_status = host->getUpdateStatus();
+    host->drainInput(update.m_input);
 
-    return true;
+    return update;
 }
 
-ego::engine::EngineViewportHostPointer ego::application::ApplicationGuiViewportSystem::findViewportHost(gui::GuiViewportID _viewportID) const
+ego::engine::EngineViewportHostPointer ego::application::ApplicationGuiViewportSystem::findViewportHost(gui::ViewportID _viewportID) const
 {
     const ApplicationWindowGuiViewportHostPointer host = findViewport(_viewportID);
     if (!host)
@@ -141,16 +141,16 @@ ego::engine::EngineViewportHostPointer ego::application::ApplicationGuiViewportS
         return nullptr;
     }
 
-    return !host->isCloseRequested() ? host : nullptr;
+    return host->getUpdateStatus() == gui::ViewportUpdateStatus::Alive ? host : nullptr;
 }
 
-ego::application::ApplicationWindowGuiViewportHostPointer ego::application::ApplicationGuiViewportSystem::findViewport(gui::GuiViewportID _viewportID) const
+ego::application::ApplicationWindowGuiViewportHostPointer ego::application::ApplicationGuiViewportSystem::findViewport(gui::ViewportID _viewportID) const
 {
     const ViewportMap::const_iterator viewportIt = m_viewports.find(_viewportID);
     return viewportIt != m_viewports.end() ? viewportIt->second : nullptr;
 }
 
-ego::WindowDesc ego::application::ApplicationGuiViewportSystem::CreateSecondaryWindowDesc(const gui::GuiViewportCreateRequest& _request)
+ego::WindowDesc ego::application::ApplicationGuiViewportSystem::CreateSecondaryWindowDesc(const gui::ViewportCreateRequest& _request)
 {
     constexpr WindowSize defaultViewportSize(500, 500);
 

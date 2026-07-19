@@ -81,7 +81,7 @@ namespace ego
 
         NormalizedColorRGBA& operator=(const NormalizedColorRGB& _color)
         {
-            m_values = _color.m_values;
+            m_values = FloatVector4(_color.m_values, 1.0f);
             return *this;
         }
 
@@ -91,6 +91,11 @@ namespace ego
             return *this;
         }
     };
+
+    static_assert(sizeof(NormalizedColorRGBA) == sizeof(FloatVector4));
+    static_assert(alignof(NormalizedColorRGBA) == alignof(FloatVector4));
+
+    inline constexpr NormalizedColorRGBA NormalizedColorTransparent = NormalizedColorRGBA(0.0f, 0.0f, 0.0f, 0.0f);
 
     inline constexpr auto NormalizedColorWhite = NormalizedColorRGB(1.0f, 1.0f, 1.0f);
     inline constexpr auto NormalizedColorGray = NormalizedColorRGB(0.5f, 0.5f, 0.5f);

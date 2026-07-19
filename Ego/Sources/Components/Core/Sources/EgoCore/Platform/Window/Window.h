@@ -3,6 +3,8 @@
 #include <cstdint>
 
 #include "EgoCore/Math/Vector.h"
+#include "EgoCore/Platform/Input/InputTypes.h"
+#include "EgoCore/Platform/Input/KeyboardInputDevice.h"
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
@@ -36,22 +38,13 @@ namespace ego
 
     inline constexpr WindowArea DefaultWindowArea = WindowArea(0, 0, 0, 0);
 
-    using WindowKeyboardKey = uint32_t;
     using WindowTextCodepoint = uint32_t;
-
-    enum class WindowKeyboardInputAction
-    {
-        Pressed,
-        Released
-    };
 
     struct WindowKeyboardInputData final
     {
-        WindowKeyboardKey m_key = 0;
-        uint32_t m_scanCode = 0;
+        KeyboardInputKey m_key = KeyboardInputKey::Undefined;
         bool m_isRepeat = false;
-        bool m_isExtended = false;
-        WindowKeyboardInputAction m_action = WindowKeyboardInputAction::Pressed;
+        InputButtonAction m_action = InputButtonAction::Pressed;
     };
 
     struct WindowTextInputData final

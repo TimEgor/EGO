@@ -1,8 +1,9 @@
 #pragma once
 
-#include <atomic>
 #include <cstdint>
+#include <memory>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "EgoCore/Clock.h"
@@ -15,13 +16,13 @@
 #include "EgoJob/JobGraph.h"
 
 #include "EgoGui/GuiController.h"
-
-#include "EgoGuiRender/GuiRenderPlugin.h"
+#include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/Frame.h"
+#include "EgoGui/Theme/Theme.h"
 
 #include "EgoPlugin/Catalog/PluginCatalog.h"
 
 #include "Graphic/Render/Render.h"
-#include "Gui/Rendering/EngineGuiRenderCoordinator.h"
 #include "Gui/Viewport/EngineGuiViewportBackend.h"
 #include "Level/LevelController.h"
 #include "Project/Project.h"
@@ -51,6 +52,14 @@ namespace ego::render
     EGO_POINTER(RenderPlugin);
 } // namespace ego::render
 
+namespace ego::gui
+{
+    class GuiRender;
+    class GuiRenderPlugin;
+
+    EGO_POINTER(GuiRenderPlugin);
+} // namespace ego::gui
+
 namespace ego::engine
 {
     using EngineSessionID = uint32_t;
@@ -58,6 +67,7 @@ namespace ego::engine
 
     class EngineLogic;
     class EngineLogicPlugin;
+    class EngineViewportPresentation;
 
     EGO_POINTER(EngineLogic);
     EGO_POINTER(EngineLogicPlugin);
@@ -65,16 +75,30 @@ namespace ego::engine
     class EngineSession final : public NonCopyable, public EnableSharedFromThis<EngineSession>
     {
     public:
+        struct PresentationOptions final
+        {
+            gui::ViewportDesc m_primaryViewportDesc;
+            EngineGuiViewportBackendPointer m_viewportBackend = nullptr;
+        };
+
+        struct GuiOptions final
+        {
+            FileName m_renderPluginModuleName;
+            gui::FontAtlasDesc m_fontAtlasDesc;
+            gui::Theme m_theme;
+        };
+
         struct InitData final
         {
             ProjectPointer m_project = nullptr;
             FileName m_renderPluginModuleName;
-            FileName m_guiRenderPluginModuleName;
-            gui::GuiViewportDesc m_primaryGuiViewportDesc;
-            EngineGuiViewportBackendPointer m_guiViewportBackend = nullptr;
+            PresentationOptions m_presentation;
+            GuiOptions m_gui;
+            bool m_enablePresentation = false;
+            bool m_enableGui = false;
         };
 
-        EngineSession() = default;
+        EngineSession();
         ~EngineSession() override;
 
         bool init(const JobControllerPointer& _jobController, EngineSessionID _id, const InitData& _initData);
@@ -90,7 +114,6 @@ namespace ego::engine
         void setRenderCameraEntity(ecs::Entity _cameraEntity);
         void clearRenderCameraEntity();
 
-        gui::GuiController& getGuiController();
         gui::GuiControllerPointer getGuiControllerPointer() const;
 
         InputControllerPointer getInputControllerPointer() const;
@@ -116,11 +139,12 @@ namespace ego::engine
         FileName resolvePluginModuleName(PluginType _pluginType, std::string_view _pluginName) const;
 
         bool initInputController();
-        bool loadDefaultGuiFont(gui::GuiFontAtlasDesc& _fontAtlasDesc) const;
-        bool initGuiController(const InitData& _initData);
+        bool initGuiController(const PresentationOptions& _presentationOptions, const GuiOptions& _guiOptions, bool _enableGui);
         bool initRender(const InitData& _initData);
-        bool initGuiRenderCoordinator(const InitData& _initData);
-        void releaseGuiRenderCoordinator();
+        bool initPresentation(const PresentationOptions& _presentationOptions, const GuiOptions& _guiOptions, bool _enableGui);
+        void releasePresentation();
+        EngineViewportPrepareResult prepareViewportPresentation(gui::ViewportFrame&& _viewportFrame, const gui::Frame::ResourceCollection& _resources);
+        void removeUnusedViewportPresentations(const gui::ViewportIDCollection& _viewportIDs);
         bool initFrameLogic();
         void cleanResources();
 
@@ -140,6 +164,7 @@ namespace ego::engine
 
         using ProjectAssetFileSystemCollection = std::vector<FileSystemPointer>;
         using ProjectPluginCollection = std::vector<PluginPointer>;
+        using ViewportPresentationMap = std::unordered_map<gui::ViewportID, std::unique_ptr<EngineViewportPresentation>>;
 
         ProjectAssetFileSystemCollection m_projectAssetFileSystems;
         ProjectPluginCollection m_projectPlugins;
@@ -157,8 +182,11 @@ namespace ego::engine
         render::RenderPluginPointer m_renderPlugin = nullptr;
         render::RenderPointer m_render = nullptr;
         gui::GuiRenderPluginPointer m_guiRenderPlugin = nullptr;
-        EngineGuiRenderCoordinator m_guiRenderCoordinator;
-        EngineGuiViewportBackendPointer m_guiViewportBackend = nullptr;
+        SharedPointer<gui::GuiRender> m_guiRender = nullptr;
+        EngineGuiViewportBackendPointer m_viewportBackend = nullptr;
+        ViewportPresentationMap m_viewportPresentations;
+        gui::ViewportIDCollection m_preparedViewportIDs;
+        gui::ViewportID m_primaryViewportID = gui::InvalidViewportID;
 
         InputControllerPointer m_inputController = nullptr;
         gui::GuiControllerPointer m_guiController = nullptr;
@@ -170,7 +198,9 @@ namespace ego::engine
         ecs::Entity m_renderCameraEntity;
 
         float m_deltaTime = 0.0f;
-        std::atomic<bool> m_frameSucceeded = true;
+        bool m_isRenderFramePrepared = false;
+        bool m_hasRenderedScene = false;
+        bool m_isGuiEnabled = false;
     };
 
     EGO_POINTER(EngineSession);

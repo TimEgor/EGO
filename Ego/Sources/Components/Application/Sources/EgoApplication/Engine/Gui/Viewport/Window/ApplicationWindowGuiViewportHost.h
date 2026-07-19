@@ -21,17 +21,18 @@ namespace ego::application
         ApplicationWindowGuiViewportHost() = default;
         ~ApplicationWindowGuiViewportHost() override;
 
-        bool init(const ApplicationWindowPointer& _window, gui::GuiViewportRole _role);
+        bool init(const ApplicationWindowPointer& _window, gui::ViewportRole _role);
         void release();
 
         void update();
         void beginClosing();
 
-        bool isCloseRequested() const;
-        const gui::GuiSize& getSize() const;
-        void drainEvents(gui::GuiViewportEventCollection& _events);
+        gui::ViewportUpdateStatus getUpdateStatus() const;
+        const gui::Size& getSize() const;
+        void drainInput(gui::InputEventCollection& _input);
 
         engine::EngineViewportPrepareResult prepareForRender() override;
+        bool resizeRenderTarget() override;
         GraphicPresenterPointer getGraphicPresenterPointer() const override;
 
     private:
@@ -46,9 +47,9 @@ namespace ego::application
         bool initGuiEventSource();
 
         ApplicationWindowPointer m_window = nullptr;
-        gui::GuiViewportRole m_role = gui::GuiViewportRole::Primary;
+        gui::ViewportRole m_role = gui::ViewportRole::Primary;
         State m_state = State::Closing;
-        gui::GuiSize m_size = gui::GuiSizeZero;
+        gui::Size m_size = gui::SizeZero;
 
         WindowGraphicPresenterPointer m_graphicPresenter = nullptr;
         WindowSize m_presenterSize = DefaultWindowSize;

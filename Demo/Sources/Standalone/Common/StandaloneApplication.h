@@ -50,6 +50,7 @@ namespace ego::demo::standalone
 
         void parseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options) const;
         bool fillEngineSessionInitData(const CommandLineOptions& _options, engine::EngineSession::InitData& _sessionInitData);
+        bool loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const;
         bool loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const;
         static WindowDesc CreateMainWindowDesc();
         FileName selectProjectFile() const;

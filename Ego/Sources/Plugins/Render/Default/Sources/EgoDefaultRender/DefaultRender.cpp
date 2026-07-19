@@ -1,6 +1,5 @@
 #include "DefaultRender.h"
 
-#include <algorithm>
 #include <vector>
 
 #include "EgoCore/Assert/Assert.h"
@@ -71,6 +70,7 @@ bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
         return false;
     }
 
+    wait();
     m_isPrepared = false;
 
     GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
@@ -147,10 +147,9 @@ void ego::render::DefaultRender::wait()
     m_frameExecutor.wait();
 }
 
-bool ego::render::DefaultRender::copyResultToTarget(const gpu::Texture2DReference& _target)
+ego::gpu::Texture2DReference ego::render::DefaultRender::getResultTexture() const
 {
-    wait();
-    return copyRenderTarget(_target);
+    return m_renderTarget.getTexture().getObject();
 }
 
 void ego::render::DefaultRender::setResolution(const gpu::Texture2DSize& _resolution)
@@ -228,56 +227,4 @@ void ego::render::DefaultRender::handlePrepareFailure()
     m_scene.clear();
     m_passGraph.clearResources();
     m_pipelineStateCache.releaseUnused();
-}
-
-bool ego::render::DefaultRender::copyRenderTarget(const gpu::Texture2DReference& _target)
-{
-    const RenderGraphicCommandList& presentCommandList = m_frameExecutor.getPresentCommandList();
-    if (!m_frameExecutor.isValid() || !presentCommandList)
-    {
-        EGO_ASSERT_FAIL();
-        return false;
-    }
-
-    const RenderTexture2D& renderTargetTexture = m_renderTarget.getTexture();
-    if (!renderTargetTexture)
-    {
-        return false;
-    }
-
-    const RenderTexture2D presenterTargetTexture = _target;
-    if (!presenterTargetTexture)
-    {
-        return false;
-    }
-
-    const gpu::Texture2DDesc& renderTargetDesc = renderTargetTexture->getDesc();
-    const gpu::Texture2DDesc& presenterTargetDesc = presenterTargetTexture->getDesc();
-    if (renderTargetDesc.m_format != presenterTargetDesc.m_format)
-    {
-        return false;
-    }
-
-    const uint32_t copyWidth = (std::min)(renderTargetDesc.m_size.m_x, presenterTargetDesc.m_size.m_x);
-    const uint32_t copyHeight = (std::min)(renderTargetDesc.m_size.m_y, presenterTargetDesc.m_size.m_y);
-    if (copyWidth == 0 || copyHeight == 0)
-    {
-        return false;
-    }
-
-    gpu::TextureCopyRegionDesc copyRegion;
-    copyRegion.m_extent = UInt32Vector3(copyWidth, copyHeight, 1);
-
-    presentCommandList->begin();
-    m_renderTarget.transition(presentCommandList, gpu::GraphicResourceState::CopySrc);
-
-    presentCommandList->resourceBarrier(presenterTargetTexture.getObject(), gpu::GraphicResourceState::CopyDst);
-    presentCommandList->copyTexture(renderTargetTexture.getObject(), presenterTargetTexture.getObject(), copyRegion);
-    presentCommandList->resourceBarrier(presenterTargetTexture.getObject(), gpu::GraphicResourceState::Present);
-
-    m_renderTarget.transition(presentCommandList, gpu::GraphicResourceState::Common);
-    presentCommandList->end();
-
-    m_frameExecutor.submitCommandList(presentCommandList);
-    return true;
 }

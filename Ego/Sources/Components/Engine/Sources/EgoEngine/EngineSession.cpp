@@ -1,5 +1,6 @@
 #include "EngineSession.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "EgoCore/Assert/Assert.h"
@@ -27,15 +28,16 @@
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
+#include "EgoGuiRender/GuiRender.h"
+#include "EgoGuiRender/GuiRenderPlugin.h"
+
+#include "Graphic/Presentation/EngineViewportPresentation.h"
 #include "Graphic/Render/RenderPlugin.h"
 #include "Level/LevelController.h"
 #include "Project/EngineLogic.h"
 #include "Project/EngineLogicPlugin.h"
 
-namespace
-{
-    constexpr const char* EngineGuiFontPath = "C:/Windows/Fonts/segoeui.ttf";
-} // namespace
+ego::engine::EngineSession::EngineSession() = default;
 
 ego::engine::EngineSession::~EngineSession()
 {
@@ -46,13 +48,14 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 {
     EGO_CHECK_RETURN_FALSE(_jobController);
     EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
-    EGO_CHECK_RETURN_FALSE(_initData.m_guiViewportBackend);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_enableGui || _initData.m_enablePresentation);
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(!m_engineLogic);
     EGO_CHECK_RETURN_FALSE(m_id == InvalidEngineSessionID);
 
     m_jobController = _jobController;
     m_id = _id;
+    m_isGuiEnabled = _initData.m_enableGui;
     m_currentFrameTime = Clock::GetCurrentTimePoint();
     m_prevFrameStartTime = m_currentFrameTime;
 
@@ -62,10 +65,16 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
     EGO_CHECK_INITIALIZATION(initInputController());
-    EGO_CHECK_INITIALIZATION(initGuiController(_initData));
+    if (_initData.m_enablePresentation)
+    {
+        EGO_CHECK_INITIALIZATION(initGuiController(_initData.m_presentation, _initData.m_gui, _initData.m_enableGui));
+    }
 
     EGO_CHECK_INITIALIZATION(initRender(_initData));
-    EGO_CHECK_INITIALIZATION(initGuiRenderCoordinator(_initData));
+    if (_initData.m_enablePresentation)
+    {
+        EGO_CHECK_INITIALIZATION(initPresentation(_initData.m_presentation, _initData.m_gui, _initData.m_enableGui));
+    }
 
     EGO_CHECK_INITIALIZATION(initFrameLogic());
     EGO_CHECK_INITIALIZATION(initEngineLogic());
@@ -80,12 +89,15 @@ void ego::engine::EngineSession::release()
 
     m_frameLogic.release();
 
-    releaseGuiRenderCoordinator();
+    releasePresentation();
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_render);
     m_renderPlugin = nullptr;
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiController);
+    if (m_guiController)
+    {
+        m_guiController->release();
+        m_guiController = nullptr;
+    }
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
-    m_guiViewportBackend = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
     releaseProject();
@@ -96,7 +108,9 @@ void ego::engine::EngineSession::release()
     m_currentFrameTime = ClockTimePoint();
     m_prevFrameStartTime = ClockTimePoint();
     m_deltaTime = 0.0f;
-    m_frameSucceeded.store(true);
+    m_isRenderFramePrepared = false;
+    m_hasRenderedScene = false;
+    m_isGuiEnabled = false;
 }
 
 bool ego::engine::EngineSession::initProject(const ProjectPointer& _project)
@@ -335,10 +349,9 @@ bool ego::engine::EngineSession::tick()
     m_jobController->addJobGraph(frameLogicJobGraph);
     m_jobController->waitAndExecute(frameLogicJobGraph);
 
-    const bool frameSucceeded = m_frameSucceeded.load();
     endFrame();
 
-    return frameSucceeded;
+    return true;
 }
 
 ego::engine::EngineSessionID ego::engine::EngineSession::getID() const
@@ -368,15 +381,9 @@ void ego::engine::EngineSession::clearRenderCameraEntity()
     m_renderCameraEntity = ecs::Entity();
 }
 
-ego::gui::GuiController& ego::engine::EngineSession::getGuiController()
-{
-    EGO_ASSERT(m_guiController);
-    return *m_guiController;
-}
-
 ego::gui::GuiControllerPointer ego::engine::EngineSession::getGuiControllerPointer() const
 {
-    return m_guiController;
+    return m_isGuiEnabled ? m_guiController : nullptr;
 }
 
 ego::InputControllerPointer ego::engine::EngineSession::getInputControllerPointer() const
@@ -397,29 +404,19 @@ bool ego::engine::EngineSession::initInputController()
     return true;
 }
 
-bool ego::engine::EngineSession::loadDefaultGuiFont(gui::GuiFontAtlasDesc& _fontAtlasDesc) const
-{
-    const PlatformPointer platform = GetPlatformPointer();
-    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
-    EGO_CHECK_RETURN_FALSE(fileSystem && fileSystem->readFile(EngineGuiFontPath, _fontAtlasDesc.m_fontData));
-
-    _fontAtlasDesc.m_pixelHeight = 16.0f;
-    _fontAtlasDesc.m_width = 512;
-    _fontAtlasDesc.m_height = 512;
-    _fontAtlasDesc.m_firstCharacter = ' ';
-    _fontAtlasDesc.m_characterCount = 95;
-    return true;
-}
-
-bool ego::engine::EngineSession::initGuiController(const InitData& _initData)
+bool ego::engine::EngineSession::initGuiController(const PresentationOptions& _presentationOptions, const GuiOptions& _guiOptions, bool _enableGui)
 {
     m_guiController = new gui::GuiController();
     EGO_CHECK_RETURN_FALSE(m_guiController);
 
     gui::GuiController::InitData guiInitData;
-    guiInitData.m_primaryViewportDesc = _initData.m_primaryGuiViewportDesc;
-    guiInitData.m_viewportBackend = _initData.m_guiViewportBackend;
-    EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiInitData.m_fontAtlasDesc));
+    guiInitData.m_primaryViewportDesc = _presentationOptions.m_primaryViewportDesc;
+    guiInitData.m_viewportBackend = _presentationOptions.m_viewportBackend;
+    if (_enableGui)
+    {
+        guiInitData.m_fontAtlasDesc = _guiOptions.m_fontAtlasDesc;
+        guiInitData.m_theme = _guiOptions.m_theme;
+    }
     EGO_CHECK_RETURN_FALSE(m_guiController->init(guiInitData));
 
     return true;
@@ -446,29 +443,125 @@ bool ego::engine::EngineSession::initRender(const InitData& _initData)
     return true;
 }
 
-bool ego::engine::EngineSession::initGuiRenderCoordinator(const InitData& _initData)
+bool ego::engine::EngineSession::initPresentation(const PresentationOptions& _presentationOptions, const GuiOptions& _guiOptions, bool _enableGui)
 {
-    m_guiViewportBackend = _initData.m_guiViewportBackend;
-    EGO_CHECK_RETURN_FALSE(m_guiViewportBackend);
+    EGO_CHECK_RETURN_FALSE(!m_viewportBackend);
+    EGO_CHECK_RETURN_FALSE(!m_guiRender);
+    EGO_CHECK_RETURN_FALSE(m_viewportPresentations.empty());
 
-    const PluginControllerPointer pluginController = getPluginControllerPointer();
-    EGO_CHECK_RETURN_FALSE(pluginController);
+    m_viewportBackend = _presentationOptions.m_viewportBackend;
+    EGO_CHECK_RETURN_FALSE(m_viewportBackend);
 
-    const FileName moduleName = _initData.m_guiRenderPluginModuleName ? _initData.m_guiRenderPluginModuleName : resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
-    EGO_CHECK_RETURN_FALSE(moduleName);
+    if (_enableGui)
+    {
+        const PluginControllerPointer pluginController = getPluginControllerPointer();
+        EGO_CHECK_RETURN_FALSE(pluginController);
 
-    m_guiRenderPlugin = pluginController->loadPlugin<gui::GuiRenderPlugin>(moduleName);
-    EGO_CHECK_RETURN_FALSE(m_guiRenderPlugin);
+        const FileName moduleName = _guiOptions.m_renderPluginModuleName ? _guiOptions.m_renderPluginModuleName : resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
+        EGO_CHECK_RETURN_FALSE(moduleName);
 
-    const gui::GuiRenderPointer guiRender = m_guiRenderPlugin->createGuiRender(gpu::GetGraphicDevice());
-    EGO_CHECK_RETURN_FALSE(guiRender);
-    return m_guiRenderCoordinator.init(m_guiViewportBackend, guiRender);
+        m_guiRenderPlugin = pluginController->loadPlugin<gui::GuiRenderPlugin>(moduleName);
+        EGO_CHECK_RETURN_FALSE(m_guiRenderPlugin);
+
+        m_guiRender = m_guiRenderPlugin->createGuiRender(gpu::GetGraphicDevice());
+        EGO_CHECK_RETURN_FALSE(m_guiRender);
+    }
+
+    return true;
 }
 
-void ego::engine::EngineSession::releaseGuiRenderCoordinator()
+void ego::engine::EngineSession::releasePresentation()
 {
-    m_guiRenderCoordinator.release();
+    m_preparedViewportIDs.clear();
+    m_viewportPresentations.clear();
+    if (m_guiRender)
+    {
+        m_guiRender->release();
+        m_guiRender = nullptr;
+    }
+
     m_guiRenderPlugin = nullptr;
+    m_viewportBackend = nullptr;
+    m_primaryViewportID = gui::InvalidViewportID;
+}
+
+ego::engine::EngineViewportPrepareResult ego::engine::EngineSession::prepareViewportPresentation(
+    gui::ViewportFrame&& _viewportFrame,
+    const gui::Frame::ResourceCollection& _resources)
+{
+    const gui::ViewportID viewportID = _viewportFrame.m_viewportID;
+    const EngineViewportHostPointer host = m_viewportBackend ? m_viewportBackend->findViewportHost(viewportID) : nullptr;
+    if (!host)
+    {
+        return EngineViewportPrepareResult::Unavailable;
+    }
+
+    ViewportPresentationMap::iterator presentationIt = m_viewportPresentations.find(viewportID);
+    if (presentationIt != m_viewportPresentations.end() && !presentationIt->second->matchesHost(host))
+    {
+        presentationIt->second->wait();
+        if (m_guiRender)
+        {
+            m_guiRender->removeViewport(viewportID);
+        }
+
+        presentationIt = m_viewportPresentations.erase(presentationIt);
+    }
+
+    if (presentationIt == m_viewportPresentations.end())
+    {
+        std::unique_ptr<EngineViewportPresentation> presentation = std::make_unique<EngineViewportPresentation>();
+        if (!presentation || !presentation->init(host))
+        {
+            return EngineViewportPrepareResult::Failed;
+        }
+
+        presentationIt = m_viewportPresentations.emplace(viewportID, std::move(presentation)).first;
+    }
+
+    EngineViewportPresentation& presentation = *presentationIt->second;
+    EngineViewportPrepareResult prepareResult = presentation.prepare();
+    if (prepareResult == EngineViewportPrepareResult::TargetResizeRequired)
+    {
+        prepareResult = presentation.resizeTarget() ? EngineViewportPrepareResult::Ready : EngineViewportPrepareResult::Failed;
+    }
+
+    if (prepareResult != EngineViewportPrepareResult::Ready || !m_guiRender)
+    {
+        return prepareResult;
+    }
+
+    gui::GuiRenderPacket packet;
+    packet.m_viewportID = viewportID;
+    packet.m_frameIndex = presentation.getFrameIndex();
+    packet.m_drawData = std::move(_viewportFrame.m_drawData);
+    packet.m_imageBindings = _resources;
+    return m_guiRender->prepare(gpu::GetGraphicDevice(), std::move(packet)) ? EngineViewportPrepareResult::Ready : EngineViewportPrepareResult::Failed;
+}
+
+void ego::engine::EngineSession::removeUnusedViewportPresentations(const gui::ViewportIDCollection& _viewportIDs)
+{
+    for (ViewportPresentationMap::iterator presentationIt = m_viewportPresentations.begin(); presentationIt != m_viewportPresentations.end();)
+    {
+        const gui::ViewportID viewportID = presentationIt->first;
+        if (std::find(_viewportIDs.begin(), _viewportIDs.end(), viewportID) != _viewportIDs.end())
+        {
+            ++presentationIt;
+            continue;
+        }
+
+        if (m_guiRender)
+        {
+            if (presentationIt->second)
+            {
+                presentationIt->second->wait();
+            }
+
+            m_guiRender->removeViewport(viewportID);
+        }
+
+        presentationIt = m_viewportPresentations.erase(presentationIt);
+    }
 }
 
 bool ego::engine::EngineSession::initFrameLogic()
@@ -567,7 +660,6 @@ void ego::engine::EngineSession::updateEngineLogic()
 
 void ego::engine::EngineSession::beginFrame()
 {
-    m_frameSucceeded.store(true);
     m_currentFrameTime = Clock::GetCurrentTimePoint();
     m_deltaTime = Clock::CalcTimePointDelta<float>(m_currentFrameTime, m_prevFrameStartTime);
 }
@@ -584,84 +676,110 @@ float ego::engine::EngineSession::getDeltaTime() const
 
 void ego::engine::EngineSession::cleanResources()
 {
-    m_guiRenderCoordinator.clearResources();
+    for (const ViewportPresentationMap::value_type& presentationEntry : m_viewportPresentations)
+    {
+        if (presentationEntry.second)
+        {
+            presentationEntry.second->wait();
+        }
+    }
+
+    if (m_guiRender)
+    {
+        m_guiRender->clearResources();
+    }
 
     if (m_render)
     {
         m_render->clearResources();
     }
+
+    m_isRenderFramePrepared = false;
+    m_hasRenderedScene = false;
 }
 
 void ego::engine::EngineSession::renderFrame()
 {
-    if (m_render)
+    m_hasRenderedScene = m_isRenderFramePrepared;
+    if (m_render && m_isRenderFramePrepared)
     {
         m_render->render();
     }
+
+    m_isRenderFramePrepared = false;
 }
 
 void ego::engine::EngineSession::presentFrame()
 {
-    if (!m_render)
+    for (const gui::ViewportID viewportID : m_preparedViewportIDs)
     {
-        return;
+        const ViewportPresentationMap::iterator presentationIt = m_viewportPresentations.find(viewportID);
+        if (presentationIt == m_viewportPresentations.end() || !presentationIt->second)
+        {
+            continue;
+        }
+
+        EngineViewportPresentation& presentation = *presentationIt->second;
+        const gpu::Texture2DReference sceneTexture = viewportID == m_primaryViewportID && m_hasRenderedScene && m_render ? m_render->getResultTexture() : nullptr;
+        const bool presentResult = presentation.present(m_guiRender, viewportID, sceneTexture);
+        EGO_ASSERT(presentResult);
     }
 
-    if (m_guiRenderCoordinator.isInitialized())
-    {
-        const bool presentResult = m_guiRenderCoordinator.renderAndPresent(*m_render);
-        EGO_ASSERT(presentResult);
-        if (!presentResult)
-        {
-            m_frameSucceeded.store(false);
-        }
-        return;
-    }
+    m_hasRenderedScene = false;
 }
 
 void ego::engine::EngineSession::prepareRenderFrame()
 {
-    if (!m_guiController)
-    {
-        return;
-    }
+    m_preparedViewportIDs.clear();
+    m_primaryViewportID = gui::InvalidViewportID;
 
-    gui::GuiFrame guiFrame = m_guiController->buildFrame();
-    const gui::GuiViewportID primaryViewportID = guiFrame.m_primaryViewportID;
-
-    if (m_guiRenderCoordinator.isInitialized())
+    if (m_guiController)
     {
-        const bool prepareResult = m_guiRenderCoordinator.prepare(std::move(guiFrame));
-        EGO_ASSERT(prepareResult);
-        if (!prepareResult)
+        gui::Frame guiFrame = m_guiController->buildFrame();
+        m_primaryViewportID = guiFrame.m_primaryViewportID;
+
+        gui::ViewportIDCollection viewportIDs;
+        viewportIDs.reserve(guiFrame.m_viewports.size());
+        for (const gui::ViewportFrame& viewportFrame : guiFrame.m_viewports)
         {
-            m_frameSucceeded.store(false);
+            viewportIDs.push_back(viewportFrame.m_viewportID);
+        }
+        removeUnusedViewportPresentations(viewportIDs);
+
+        for (gui::ViewportFrame& viewportFrame : guiFrame.m_viewports)
+        {
+            const gui::ViewportID viewportID = viewportFrame.m_viewportID;
+            const EngineViewportPrepareResult prepareResult = prepareViewportPresentation(std::move(viewportFrame), guiFrame.m_resources);
+            if (prepareResult == EngineViewportPrepareResult::Ready)
+            {
+                m_preparedViewportIDs.push_back(viewportID);
+            }
+            else if (prepareResult == EngineViewportPrepareResult::Failed && viewportID == m_primaryViewportID)
+            {
+                EGO_ASSERT_FAIL_MESSAGE("Failed to prepare the primary viewport for presentation.");
+            }
         }
     }
 
     if (m_render && m_levelController)
     {
         const LevelPointer activeLevel = m_levelController->getActiveLevel();
-        const EngineViewportHostPointer primaryHost = m_guiViewportBackend->findViewportHost(primaryViewportID);
-        const GraphicPresenterPointer graphicPresenter = primaryHost ? primaryHost->getGraphicPresenterPointer() : nullptr;
-        if (graphicPresenter)
+        const ViewportPresentationMap::const_iterator primaryPresentationIt = m_viewportPresentations.find(m_primaryViewportID);
+        if (primaryPresentationIt != m_viewportPresentations.end() && primaryPresentationIt->second)
         {
-            const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
-            if (targetTexture)
+            const gpu::Texture2DReference renderTarget = primaryPresentationIt->second->getTargetTexture();
+            if (renderTarget)
             {
-                m_render->setResolution(targetTexture->getDesc().m_size);
+                m_render->setResolution(renderTarget->getDesc().m_size);
             }
         }
 
+        m_isRenderFramePrepared = false;
         if (activeLevel && m_renderCameraEntity)
         {
             const render::RenderPrepareContext prepareContext{*activeLevel, m_renderCameraEntity, getDeltaTime()};
-            const bool prepareResult = m_render->prepare(prepareContext);
-            EGO_ASSERT(prepareResult);
-            if (!prepareResult)
-            {
-                m_frameSucceeded.store(false);
-            }
+            m_isRenderFramePrepared = m_render->prepare(prepareContext);
+            EGO_ASSERT(m_isRenderFramePrepared);
         }
     }
 }

@@ -62,11 +62,12 @@ void ego::gui::GuiRender::release()
 void ego::gui::GuiRender::clearResources()
 {
     m_viewportResources.clear();
+    m_imageResources.clear();
 }
 
-void ego::gui::GuiRender::removeViewport(GuiViewportID _viewportID)
+void ego::gui::GuiRender::removeViewport(ViewportID _viewportID)
 {
-    if (_viewportID != InvalidGuiViewportID)
+    if (_viewportID != InvalidViewportID)
     {
         m_viewportResources.erase(_viewportID);
     }
@@ -75,21 +76,26 @@ void ego::gui::GuiRender::removeViewport(GuiViewportID _viewportID)
 bool ego::gui::GuiRender::prepare(GraphicDevice& _graphicDevice, GuiRenderPacket _packet)
 {
     EGO_CHECK_RETURN_FALSE(m_isInitialized);
-    EGO_CHECK_RETURN_FALSE(_packet.m_viewportID != InvalidGuiViewportID);
+    EGO_CHECK_RETURN_FALSE(_packet.m_viewportID != InvalidViewportID);
 
     if (!_packet.m_drawData.isEmpty())
     {
         EGO_CHECK_RETURN_FALSE(_packet.m_drawData.m_viewportSize.m_x > 0.0f && _packet.m_drawData.m_viewportSize.m_y > 0.0f);
     }
 
-    ViewportResources& resources = m_viewportResources[_packet.m_viewportID];
-    EGO_CHECK_RETURN_FALSE(prepareTextureBindings(_graphicDevice, _packet.m_textureBindings, resources));
+    ViewportResources& resources = m_viewportResources[_packet.m_viewportID][_packet.m_frameIndex];
+    EGO_CHECK_RETURN_FALSE(prepareImageBindings(_graphicDevice, _packet.m_imageBindings, resources));
 
     resources.m_drawData = std::move(_packet.m_drawData);
     return prepareBuffers(_graphicDevice, resources);
 }
 
-bool ego::gui::GuiRender::record(GraphicDevice& _graphicDevice, const gpu::GraphicCommandListReference& _commandList, const GuiRenderTarget& _target, GuiViewportID _viewportID)
+bool ego::gui::GuiRender::record(
+    GraphicDevice& _graphicDevice,
+    const gpu::GraphicCommandListReference& _commandList,
+    const GuiRenderTarget& _target,
+    ViewportID _viewportID,
+    uint32_t _frameIndex)
 {
     EGO_CHECK_RETURN_FALSE(m_isInitialized);
     EGO_CHECK_RETURN_FALSE(_commandList);
@@ -100,7 +106,11 @@ bool ego::gui::GuiRender::record(GraphicDevice& _graphicDevice, const gpu::Graph
     const ViewportResourceMap::const_iterator resourcesIt = m_viewportResources.find(_viewportID);
     EGO_CHECK_RETURN_FALSE(resourcesIt != m_viewportResources.end());
 
-    const ViewportResources& resources = resourcesIt->second;
+    const FrameResourceMap& frameResources = resourcesIt->second;
+    const FrameResourceMap::const_iterator frameResourcesIt = frameResources.find(_frameIndex);
+    EGO_CHECK_RETURN_FALSE(frameResourcesIt != frameResources.end());
+
+    const ViewportResources& resources = frameResourcesIt->second;
     if (resources.m_drawData.isEmpty() && _target.m_loadOperation == gpu::AttachmentLoadOperation::Load)
     {
         return true;
@@ -117,7 +127,7 @@ bool ego::gui::GuiRender::record(GraphicDevice& _graphicDevice, const gpu::Graph
         pipeline = getOrCreatePipeline(_graphicDevice, targetFormat, targetDesc.m_samples.m_count);
         EGO_CHECK_RETURN_FALSE(pipeline);
 
-        transitionTextureBindings(_commandList, resources);
+        transitionImageBindings(_commandList, resources);
     }
 
     if (_target.m_texture->getState() != gpu::GraphicResourceState::RenderTarget)
@@ -225,52 +235,100 @@ ego::gpu::GraphicPipelineReference ego::gui::GuiRender::getOrCreatePipeline(Grap
     return pipeline;
 }
 
-bool ego::gui::GuiRender::prepareTextureBindings(GraphicDevice& _graphicDevice, const GuiRenderPacket::TextureBindingCollection& _textureBindings, ViewportResources& _resources)
+bool ego::gui::GuiRender::prepareImageBindings(GraphicDevice& _graphicDevice, const ImageBindingCollection& _imageBindings, ViewportResources& _resources)
 {
-    std::vector<PreparedTextureBinding> preparedBindings;
-    preparedBindings.reserve(_textureBindings.size());
+    std::vector<PreparedImageBinding> preparedBindings;
+    preparedBindings.reserve(_imageBindings.size());
 
-    for (const GuiRenderTextureBinding& textureBinding : _textureBindings)
+    for (const ImageBinding& imageBinding : _imageBindings)
     {
-        EGO_CHECK_RETURN_FALSE(textureBinding.m_id != InvalidGuiTextureID && textureBinding.m_texture);
+        EGO_CHECK_RETURN_FALSE(imageBinding.m_id != InvalidImageID && imageBinding.m_image);
+        EGO_CHECK_RETURN_FALSE(imageBinding.m_image->getID() == imageBinding.m_id);
 
-        for (const PreparedTextureBinding& preparedBinding : preparedBindings)
+        for (const PreparedImageBinding& preparedBinding : preparedBindings)
         {
-            EGO_CHECK_RETURN_FALSE(preparedBinding.m_id != textureBinding.m_id);
+            EGO_CHECK_RETURN_FALSE(preparedBinding.m_id != imageBinding.m_id);
         }
 
+        gpu::Texture2DReference texture = nullptr;
         gpu::TextureViewReference textureView = nullptr;
-        for (const PreparedTextureBinding& currentBinding : _resources.m_textureBindings)
-        {
-            if (currentBinding.m_id == textureBinding.m_id && currentBinding.m_texture == textureBinding.m_texture)
-            {
-                textureView = currentBinding.m_textureView;
-                break;
-            }
-        }
+        EGO_CHECK_RETURN_FALSE(getOrCreateImageResources(_graphicDevice, imageBinding.m_image, texture, textureView));
 
-        if (!textureView)
-        {
-            const gpu::Texture2DDesc& textureDesc = textureBinding.m_texture->getDesc();
-
-            gpu::TextureViewDesc textureViewDesc;
-            textureViewDesc.m_type = gpu::GraphicResourceViewType::ShaderResource;
-            textureViewDesc.m_dimension = gpu::TextureViewDimension::D2;
-            textureViewDesc.m_format = textureDesc.m_format;
-
-            textureView = _graphicDevice.createTextureView(textureBinding.m_texture, textureViewDesc);
-        }
-
-        EGO_CHECK_RETURN_FALSE(textureView && textureView->getBindlessIndex() != gpu::InvalidBindlessIndex);
-
-        PreparedTextureBinding preparedBinding;
-        preparedBinding.m_id = textureBinding.m_id;
-        preparedBinding.m_texture = textureBinding.m_texture;
+        PreparedImageBinding preparedBinding;
+        preparedBinding.m_id = imageBinding.m_id;
+        preparedBinding.m_texture = texture;
         preparedBinding.m_textureView = textureView;
         preparedBindings.push_back(preparedBinding);
     }
 
-    _resources.m_textureBindings = std::move(preparedBindings);
+    _resources.m_imageBindings = std::move(preparedBindings);
+    return true;
+}
+
+bool ego::gui::GuiRender::getOrCreateImageResources(
+    GraphicDevice& _graphicDevice,
+    const ImagePointer& _image,
+    gpu::Texture2DReference& _texture,
+    gpu::TextureViewReference& _textureView)
+{
+    for (const ImageResources& imageResources : m_imageResources)
+    {
+        if (imageResources.m_image.get() == _image.get())
+        {
+            _texture = imageResources.m_texture;
+            _textureView = imageResources.m_textureView;
+            return static_cast<bool>(_texture && _textureView);
+        }
+    }
+
+    ImageResources imageResources;
+    EGO_CHECK_RETURN_FALSE(createImageResources(_graphicDevice, _image, imageResources));
+
+    _texture = imageResources.m_texture;
+    _textureView = imageResources.m_textureView;
+    m_imageResources.push_back(std::move(imageResources));
+    return true;
+}
+
+bool ego::gui::GuiRender::createImageResources(GraphicDevice& _graphicDevice, const ImagePointer& _image, ImageResources& _resources)
+{
+    EGO_CHECK_RETURN_FALSE(_image);
+    EGO_CHECK_RETURN_FALSE(_image->getFormat() == ImageFormat::R8);
+    EGO_CHECK_RETURN_FALSE(_image->getWidth() > 0 && _image->getHeight() > 0);
+
+    const Image::PixelCollection& pixels = _image->getPixels();
+    const size_t expectedPixelCount = static_cast<size_t>(_image->getWidth()) * static_cast<size_t>(_image->getHeight());
+    EGO_CHECK_RETURN_FALSE(pixels.size() == expectedPixelCount && pixels.size() <= static_cast<size_t>((std::numeric_limits<uint32_t>::max)()));
+
+    gpu::Texture2DDesc textureDesc;
+    textureDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(gpu::GraphicResourceUsageTransferDst | gpu::GraphicResourceUsageShaderResource);
+    textureDesc.m_size = gpu::Texture2DSize(_image->getWidth(), _image->getHeight());
+    textureDesc.m_arrayLayers = 1;
+    textureDesc.m_mipLevels = 1;
+    textureDesc.m_samples.m_count = 1;
+    textureDesc.m_format = gpu::GraphicResourceFormat::R8UNorm;
+
+    const uint32_t pixelDataSize = static_cast<uint32_t>(pixels.size());
+    const gpu::InitialGraphicResourceData initialData(pixels.data(), pixelDataSize, _image->getWidth(), pixelDataSize);
+
+    gpu::GpuOperationOptions uploadOptions;
+    uploadOptions.m_completionMode = gpu::GpuCompletionMode::WaitForCompletion;
+
+    const gpu::GpuTexture2DTicket textureTicket = _graphicDevice.createAndUploadTexture2D(textureDesc, initialData, uploadOptions);
+    EGO_CHECK_RETURN_FALSE(textureTicket.m_resource);
+    textureTicket.waitReady();
+
+    gpu::TextureViewDesc textureViewDesc;
+    textureViewDesc.m_type = gpu::GraphicResourceViewType::ShaderResource;
+    textureViewDesc.m_dimension = gpu::TextureViewDimension::D2;
+    textureViewDesc.m_format = textureDesc.m_format;
+
+    const gpu::TextureViewReference textureView = _graphicDevice.createTextureView(textureTicket.m_resource, textureViewDesc);
+    EGO_CHECK_RETURN_FALSE(textureView && textureView->getBindlessIndex() != gpu::InvalidBindlessIndex);
+
+    _resources.m_image = _image;
+    _resources.m_texture = textureTicket.m_resource;
+    _resources.m_textureView = textureView;
     return true;
 }
 
@@ -282,7 +340,7 @@ bool ego::gui::GuiRender::prepareBuffers(GraphicDevice& _graphicDevice, Viewport
 
 bool ego::gui::GuiRender::prepareVertexBuffer(GraphicDevice& _graphicDevice, ViewportResources& _resources)
 {
-    const size_t vertexDataSize = _resources.m_drawData.m_vertices.size() * sizeof(GuiVertex);
+    const size_t vertexDataSize = _resources.m_drawData.m_vertices.size() * sizeof(Vertex);
     EGO_CHECK_RETURN_FALSE(vertexDataSize <= (std::numeric_limits<uint32_t>::max)());
     if (vertexDataSize == 0)
     {
@@ -294,7 +352,7 @@ bool ego::gui::GuiRender::prepareVertexBuffer(GraphicDevice& _graphicDevice, Vie
     {
         gpu::BufferDesc bufferDesc;
         bufferDesc.m_size = requiredBufferSize;
-        bufferDesc.m_stride = sizeof(GuiVertex);
+        bufferDesc.m_stride = sizeof(Vertex);
         bufferDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageVertexBuffer);
         bufferDesc.m_access = static_cast<gpu::CommonGraphicResourceAccess>(gpu::GraphicResourceAccessCpuWrite | gpu::GraphicResourceAccessGpuRead);
 
@@ -340,13 +398,13 @@ bool ego::gui::GuiRender::prepareIndexBuffer(GraphicDevice& _graphicDevice, View
     return true;
 }
 
-void ego::gui::GuiRender::transitionTextureBindings(const gpu::GraphicCommandListReference& _commandList, const ViewportResources& _resources) const
+void ego::gui::GuiRender::transitionImageBindings(const gpu::GraphicCommandListReference& _commandList, const ViewportResources& _resources) const
 {
-    for (const PreparedTextureBinding& textureBinding : _resources.m_textureBindings)
+    for (const PreparedImageBinding& imageBinding : _resources.m_imageBindings)
     {
-        if (textureBinding.m_texture && textureBinding.m_texture->getState() != gpu::GraphicResourceState::ShaderRead)
+        if (imageBinding.m_texture && imageBinding.m_texture->getState() != gpu::GraphicResourceState::ShaderRead)
         {
-            _commandList->resourceBarrier(textureBinding.m_texture, gpu::GraphicResourceState::ShaderRead);
+            _commandList->resourceBarrier(imageBinding.m_texture, gpu::GraphicResourceState::ShaderRead);
         }
     }
 }
@@ -369,17 +427,17 @@ bool ego::gui::GuiRender::renderDrawData(
 {
     EGO_CHECK_RETURN_FALSE(_pipeline && _resources.m_vertexBuffer && _resources.m_indexBuffer);
 
-    const GuiSize& viewportSize = _resources.m_drawData.m_viewportSize;
+    const Size& viewportSize = _resources.m_drawData.m_viewportSize;
     EGO_CHECK_RETURN_FALSE(viewportSize.m_x > 0.0f && viewportSize.m_y > 0.0f);
 
     const float framebufferScaleX = static_cast<float>(_targetSize.m_x) / viewportSize.m_x;
     const float framebufferScaleY = static_cast<float>(_targetSize.m_y) / viewportSize.m_y;
 
     _commandList->setPipeline(_pipeline);
-    _commandList->setVertexBuffer(0, _resources.m_vertexBuffer, sizeof(GuiVertex), 0);
+    _commandList->setVertexBuffer(0, _resources.m_vertexBuffer, sizeof(Vertex), 0);
     _commandList->setIndexBuffer(_resources.m_indexBuffer, gpu::GraphicResourceFormat::R32UInt, 0);
 
-    for (const GuiDrawCommand& command : _resources.m_drawData.m_commands)
+    for (const DrawCommand& command : _resources.m_drawData.m_commands)
     {
         gpu::ScissorRectDesc scissorRect;
         scissorRect.m_left = static_cast<int32_t>((std::max)(0.0f, command.m_clipRect.getLeft() * framebufferScaleX));
@@ -396,7 +454,7 @@ bool ego::gui::GuiRender::renderDrawData(
         GuiRootConstants guiConstants;
         guiConstants.m_viewportSize = viewportSize;
 
-        const uint32_t textureIndex = findTextureBindlessIndex(_resources, command.m_textureId);
+        const uint32_t textureIndex = findImageBindlessIndex(_resources, command.m_imageID);
         if (textureIndex != gpu::InvalidBindlessIndex && m_defaultSampler)
         {
             guiConstants.m_textureIndex = textureIndex;
@@ -410,18 +468,18 @@ bool ego::gui::GuiRender::renderDrawData(
     return true;
 }
 
-uint32_t ego::gui::GuiRender::findTextureBindlessIndex(const ViewportResources& _resources, GuiTextureID _textureID) const
+uint32_t ego::gui::GuiRender::findImageBindlessIndex(const ViewportResources& _resources, ImageID _imageID) const
 {
-    if (_textureID == InvalidGuiTextureID)
+    if (_imageID == InvalidImageID)
     {
         return gpu::InvalidBindlessIndex;
     }
 
-    for (const PreparedTextureBinding& textureBinding : _resources.m_textureBindings)
+    for (const PreparedImageBinding& imageBinding : _resources.m_imageBindings)
     {
-        if (textureBinding.m_id == _textureID)
+        if (imageBinding.m_id == _imageID)
         {
-            return textureBinding.m_textureView ? textureBinding.m_textureView->getBindlessIndex() : gpu::InvalidBindlessIndex;
+            return imageBinding.m_textureView ? imageBinding.m_textureView->getBindlessIndex() : gpu::InvalidBindlessIndex;
         }
     }
 
@@ -434,7 +492,7 @@ ego::gpu::InputLayoutDesc ego::gui::GuiRender::CreateGuiInputLayout()
 
     gpu::InputLayoutBindingDesc bindingDesc;
     bindingDesc.m_slot = 0;
-    bindingDesc.m_stride = sizeof(GuiVertex);
+    bindingDesc.m_stride = sizeof(Vertex);
     bindingDesc.m_type = gpu::InputLayoutBindingType::VertexBinding;
     inputLayout.m_bindings.push_back(bindingDesc);
 
@@ -442,7 +500,7 @@ ego::gpu::InputLayoutDesc ego::gui::GuiRender::CreateGuiInputLayout()
     positionDesc.m_semanticName = "POSITION";
     positionDesc.m_location = 0;
     positionDesc.m_slot = 0;
-    positionDesc.m_offset = offsetof(GuiVertex, m_position);
+    positionDesc.m_offset = offsetof(Vertex, m_position);
     positionDesc.m_componentsCount = 2;
     positionDesc.m_type = gpu::InputLayoutElementType::Float32;
     inputLayout.m_elements.push_back(positionDesc);
@@ -451,7 +509,7 @@ ego::gpu::InputLayoutDesc ego::gui::GuiRender::CreateGuiInputLayout()
     uvDesc.m_semanticName = "TEXCOORD";
     uvDesc.m_location = 1;
     uvDesc.m_slot = 0;
-    uvDesc.m_offset = offsetof(GuiVertex, m_uv);
+    uvDesc.m_offset = offsetof(Vertex, m_uv);
     uvDesc.m_componentsCount = 2;
     uvDesc.m_type = gpu::InputLayoutElementType::Float32;
     inputLayout.m_elements.push_back(uvDesc);
@@ -460,7 +518,7 @@ ego::gpu::InputLayoutDesc ego::gui::GuiRender::CreateGuiInputLayout()
     colorDesc.m_semanticName = "COLOR";
     colorDesc.m_location = 2;
     colorDesc.m_slot = 0;
-    colorDesc.m_offset = offsetof(GuiVertex, m_color);
+    colorDesc.m_offset = offsetof(Vertex, m_color);
     colorDesc.m_componentsCount = 4;
     colorDesc.m_type = gpu::InputLayoutElementType::Float32;
     inputLayout.m_elements.push_back(colorDesc);

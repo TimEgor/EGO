@@ -16,17 +16,14 @@ namespace ego::render
         bool init(GraphicDevice& _graphicDevice, const gpu::CommandQueueReference& _commandQueue);
         void release();
         void wait();
-        void submitCommandList(const RenderGraphicCommandList& _commandList);
         void submitCommandLists(const std::vector<RenderGraphicCommandList>& _commandLists);
 
         bool isValid() const;
-        const RenderGraphicCommandList& getPresentCommandList() const;
 
     private:
         void signalFrameFence();
 
         RenderCommandQueue m_commandQueue = nullptr;
-        RenderGraphicCommandList m_presentCommandList = nullptr;
         RenderFence m_frameFence = nullptr;
         gpu::Fence::FenceValue m_frameFenceValue = 0;
     };

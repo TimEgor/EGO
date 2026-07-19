@@ -1,12 +1,18 @@
 #include "StandaloneApplication.h"
 
-#include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/Parsers/ArgParser/Parser.h"
+#include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
+#include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Project/ProjectReader.h"
+
+namespace
+{
+    constexpr const char* DefaultGuiFontPath = "C:/Windows/Fonts/segoeui.ttf";
+} // namespace
 
 ego::demo::standalone::StandaloneApplication::~StandaloneApplication()
 {
@@ -94,7 +100,15 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
 
     engine::EngineSession::InitData sessionInitData;
     EGO_CHECK_RETURN_FALSE(fillEngineSessionInitData(_options, sessionInitData));
-    sessionInitData.m_guiViewportBackend = m_guiViewportSystem;
+
+    sessionInitData.m_enablePresentation = true;
+    engine::EngineSession::PresentationOptions& presentationOptions = sessionInitData.m_presentation;
+    presentationOptions.m_viewportBackend = m_guiViewportSystem;
+
+    sessionInitData.m_enableGui = true;
+    engine::EngineSession::GuiOptions& guiOptions = sessionInitData.m_gui;
+    guiOptions.m_renderPluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
+    EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiOptions.m_fontAtlasDesc));
 
     m_engine = new engine::Engine();
     EGO_CHECK_RETURN_FALSE(m_engine);
@@ -130,7 +144,8 @@ bool ego::demo::standalone::StandaloneApplication::runMainLoop()
     while (!m_application->isExitRequested())
     {
         m_application->processWindowEvents();
-        if (m_application->isExitRequested())
+        const application::ApplicationWindowPointer mainWindow = m_mainWindow.lock();
+        if (m_application->isExitRequested() || !mainWindow || !mainWindow->isValid())
         {
             break;
         }
@@ -166,8 +181,14 @@ bool ego::demo::standalone::StandaloneApplication::fillEngineSessionInitData(con
 
     EGO_CHECK_RETURN_FALSE(loadProject(projectFileName, _sessionInitData.m_project));
     _sessionInitData.m_renderPluginModuleName = FileName(_options.m_renderPluginModuleName);
-    _sessionInitData.m_guiRenderPluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
     return true;
+}
+
+bool ego::demo::standalone::StandaloneApplication::loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const
+{
+    const PlatformPointer platform = GetPlatformPointer();
+    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
+    return fileSystem && fileSystem->readFile(DefaultGuiFontPath, _fontAtlasDesc.m_fontData);
 }
 
 bool ego::demo::standalone::StandaloneApplication::loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const

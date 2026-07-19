@@ -11,9 +11,236 @@ namespace
     constexpr LPARAM KeyRepeatMask = static_cast<LPARAM>(1) << 30;
     constexpr LPARAM KeyExtendedMask = static_cast<LPARAM>(1) << 24;
 
-    uint32_t GetKeyScanCode(LPARAM _lParam)
+    ego::KeyboardInputKey OffsetKeyboardInputKey(ego::KeyboardInputKey _firstKey, WPARAM _offset)
     {
-        return static_cast<uint32_t>((_lParam >> KeyScanCodeOffset) & 0xff);
+        return static_cast<ego::KeyboardInputKey>(static_cast<ego::InputDeviceKey>(_firstKey) + static_cast<ego::InputDeviceKey>(_offset));
+    }
+
+    bool IsExtendedKeyboardKey(LPARAM _lParam)
+    {
+        return (_lParam & KeyExtendedMask) != 0;
+    }
+
+    WPARAM ResolveKeyboardModifierKey(WPARAM _key, LPARAM _lParam)
+    {
+        switch (_key)
+        {
+        case VK_SHIFT:
+        {
+            const UINT scanCode = static_cast<UINT>(_lParam >> KeyScanCodeOffset) & 0xff;
+            const UINT virtualKey = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
+            return virtualKey == VK_RSHIFT ? VK_RSHIFT : VK_LSHIFT;
+        }
+        case VK_CONTROL:
+            return IsExtendedKeyboardKey(_lParam) ? VK_RCONTROL : VK_LCONTROL;
+        case VK_MENU:
+            return IsExtendedKeyboardKey(_lParam) ? VK_RMENU : VK_LMENU;
+        default:
+            return _key;
+        }
+    }
+
+    ego::KeyboardInputKey ToKeyboardInputKey(WPARAM _key, LPARAM _lParam)
+    {
+        if (_key >= '0' && _key <= '9')
+        {
+            return OffsetKeyboardInputKey(ego::KeyboardInputKey::Number0, _key - '0');
+        }
+
+        if (_key >= 'A' && _key <= 'Z')
+        {
+            return OffsetKeyboardInputKey(ego::KeyboardInputKey::A, _key - 'A');
+        }
+
+        if (_key >= VK_F1 && _key <= VK_F24)
+        {
+            return OffsetKeyboardInputKey(ego::KeyboardInputKey::F1, _key - VK_F1);
+        }
+
+        if (_key >= VK_NUMPAD0 && _key <= VK_NUMPAD9)
+        {
+            return OffsetKeyboardInputKey(ego::KeyboardInputKey::Numpad0, _key - VK_NUMPAD0);
+        }
+
+        if (_key == VK_RETURN)
+        {
+            return IsExtendedKeyboardKey(_lParam) ? ego::KeyboardInputKey::NumpadEnter : ego::KeyboardInputKey::Enter;
+        }
+
+        _key = ResolveKeyboardModifierKey(_key, _lParam);
+        switch (_key)
+        {
+        case VK_CANCEL:
+            return ego::KeyboardInputKey::Cancel;
+        case VK_BACK:
+            return ego::KeyboardInputKey::Backspace;
+        case VK_TAB:
+            return ego::KeyboardInputKey::Tab;
+        case VK_CLEAR:
+            return ego::KeyboardInputKey::Clear;
+        case VK_PAUSE:
+            return ego::KeyboardInputKey::Pause;
+        case VK_ESCAPE:
+            return ego::KeyboardInputKey::Escape;
+        case VK_SPACE:
+            return ego::KeyboardInputKey::Space;
+        case VK_PRIOR:
+            return ego::KeyboardInputKey::PageUp;
+        case VK_NEXT:
+            return ego::KeyboardInputKey::PageDown;
+        case VK_END:
+            return ego::KeyboardInputKey::End;
+        case VK_HOME:
+            return ego::KeyboardInputKey::Home;
+        case VK_LEFT:
+            return ego::KeyboardInputKey::Left;
+        case VK_UP:
+            return ego::KeyboardInputKey::Up;
+        case VK_RIGHT:
+            return ego::KeyboardInputKey::Right;
+        case VK_DOWN:
+            return ego::KeyboardInputKey::Down;
+        case VK_SELECT:
+            return ego::KeyboardInputKey::Select;
+        case VK_PRINT:
+            return ego::KeyboardInputKey::Print;
+        case VK_EXECUTE:
+            return ego::KeyboardInputKey::Execute;
+        case VK_SNAPSHOT:
+            return ego::KeyboardInputKey::PrintScreen;
+        case VK_INSERT:
+            return ego::KeyboardInputKey::Insert;
+        case VK_DELETE:
+            return ego::KeyboardInputKey::Delete;
+        case VK_HELP:
+            return ego::KeyboardInputKey::Help;
+        case VK_OEM_1:
+            return ego::KeyboardInputKey::Semicolon;
+        case VK_OEM_PLUS:
+            return ego::KeyboardInputKey::Equal;
+        case VK_OEM_COMMA:
+            return ego::KeyboardInputKey::Comma;
+        case VK_OEM_MINUS:
+            return ego::KeyboardInputKey::Minus;
+        case VK_OEM_PERIOD:
+            return ego::KeyboardInputKey::Period;
+        case VK_OEM_2:
+            return ego::KeyboardInputKey::Slash;
+        case VK_OEM_3:
+            return ego::KeyboardInputKey::GraveAccent;
+        case VK_OEM_4:
+            return ego::KeyboardInputKey::LeftBracket;
+        case VK_OEM_5:
+            return ego::KeyboardInputKey::Backslash;
+        case VK_OEM_6:
+            return ego::KeyboardInputKey::RightBracket;
+        case VK_OEM_7:
+            return ego::KeyboardInputKey::Apostrophe;
+        case VK_OEM_102:
+            return ego::KeyboardInputKey::InternationalBackslash;
+        case VK_CAPITAL:
+            return ego::KeyboardInputKey::CapsLock;
+        case VK_SCROLL:
+            return ego::KeyboardInputKey::ScrollLock;
+        case VK_NUMLOCK:
+            return ego::KeyboardInputKey::NumLock;
+        case VK_LSHIFT:
+            return ego::KeyboardInputKey::LeftShift;
+        case VK_RSHIFT:
+            return ego::KeyboardInputKey::RightShift;
+        case VK_LCONTROL:
+            return ego::KeyboardInputKey::LeftControl;
+        case VK_RCONTROL:
+            return ego::KeyboardInputKey::RightControl;
+        case VK_LMENU:
+            return ego::KeyboardInputKey::LeftAlt;
+        case VK_RMENU:
+            return ego::KeyboardInputKey::RightAlt;
+        case VK_LWIN:
+            return ego::KeyboardInputKey::LeftSystem;
+        case VK_RWIN:
+            return ego::KeyboardInputKey::RightSystem;
+        case VK_APPS:
+            return ego::KeyboardInputKey::Menu;
+        case VK_SLEEP:
+            return ego::KeyboardInputKey::Sleep;
+        case VK_MULTIPLY:
+            return ego::KeyboardInputKey::NumpadMultiply;
+        case VK_ADD:
+            return ego::KeyboardInputKey::NumpadAdd;
+        case VK_SEPARATOR:
+            return ego::KeyboardInputKey::NumpadSeparator;
+        case VK_SUBTRACT:
+            return ego::KeyboardInputKey::NumpadSubtract;
+        case VK_DECIMAL:
+            return ego::KeyboardInputKey::NumpadDecimal;
+        case VK_DIVIDE:
+            return ego::KeyboardInputKey::NumpadDivide;
+        case VK_OEM_NEC_EQUAL:
+            return ego::KeyboardInputKey::NumpadEqual;
+        case VK_BROWSER_BACK:
+            return ego::KeyboardInputKey::BrowserBack;
+        case VK_BROWSER_FORWARD:
+            return ego::KeyboardInputKey::BrowserForward;
+        case VK_BROWSER_REFRESH:
+            return ego::KeyboardInputKey::BrowserRefresh;
+        case VK_BROWSER_STOP:
+            return ego::KeyboardInputKey::BrowserStop;
+        case VK_BROWSER_SEARCH:
+            return ego::KeyboardInputKey::BrowserSearch;
+        case VK_BROWSER_FAVORITES:
+            return ego::KeyboardInputKey::BrowserFavorites;
+        case VK_BROWSER_HOME:
+            return ego::KeyboardInputKey::BrowserHome;
+        case VK_VOLUME_MUTE:
+            return ego::KeyboardInputKey::VolumeMute;
+        case VK_VOLUME_DOWN:
+            return ego::KeyboardInputKey::VolumeDown;
+        case VK_VOLUME_UP:
+            return ego::KeyboardInputKey::VolumeUp;
+        case VK_MEDIA_NEXT_TRACK:
+            return ego::KeyboardInputKey::MediaNextTrack;
+        case VK_MEDIA_PREV_TRACK:
+            return ego::KeyboardInputKey::MediaPreviousTrack;
+        case VK_MEDIA_STOP:
+            return ego::KeyboardInputKey::MediaStop;
+        case VK_MEDIA_PLAY_PAUSE:
+            return ego::KeyboardInputKey::MediaPlayPause;
+        case VK_LAUNCH_MAIL:
+            return ego::KeyboardInputKey::LaunchMail;
+        case VK_LAUNCH_MEDIA_SELECT:
+            return ego::KeyboardInputKey::MediaSelect;
+        case VK_LAUNCH_APP1:
+            return ego::KeyboardInputKey::LaunchApplication1;
+        case VK_LAUNCH_APP2:
+            return ego::KeyboardInputKey::LaunchApplication2;
+        case VK_KANA:
+            return ego::KeyboardInputKey::KanaHangul;
+        case VK_IME_ON:
+            return ego::KeyboardInputKey::ImeOn;
+        case VK_JUNJA:
+            return ego::KeyboardInputKey::Junja;
+        case VK_FINAL:
+            return ego::KeyboardInputKey::Final;
+        case VK_HANJA:
+            return ego::KeyboardInputKey::HanjaKanji;
+        case VK_IME_OFF:
+            return ego::KeyboardInputKey::ImeOff;
+        case VK_CONVERT:
+            return ego::KeyboardInputKey::Convert;
+        case VK_NONCONVERT:
+            return ego::KeyboardInputKey::NonConvert;
+        case VK_ACCEPT:
+            return ego::KeyboardInputKey::Accept;
+        case VK_MODECHANGE:
+            return ego::KeyboardInputKey::ModeChange;
+        case VK_PROCESSKEY:
+            return ego::KeyboardInputKey::Process;
+        case VK_PACKET:
+            return ego::KeyboardInputKey::Packet;
+        default:
+            return ego::KeyboardInputKey::Undefined;
+        }
     }
 } // namespace
 
@@ -249,14 +476,14 @@ bool ego::win32::Win32Window::processWindowMessage(UINT _msg, WPARAM _wParam, LP
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
     {
-        onWindowKeyboardInput(WindowKeyboardInputAction::Pressed, _wParam, _lParam);
+        onWindowKeyboardInput(InputButtonAction::Pressed, _wParam, _lParam);
         break;
     }
 
     case WM_KEYUP:
     case WM_SYSKEYUP:
     {
-        onWindowKeyboardInput(WindowKeyboardInputAction::Released, _wParam, _lParam);
+        onWindowKeyboardInput(InputButtonAction::Released, _wParam, _lParam);
         break;
     }
 
@@ -314,13 +541,11 @@ void ego::win32::Win32Window::onWindowActivate(bool _isActive)
     m_windowSystem.onWindowActivate(sharedFromThis(), _isActive);
 }
 
-void ego::win32::Win32Window::onWindowKeyboardInput(WindowKeyboardInputAction _action, WPARAM _wParam, LPARAM _lParam)
+void ego::win32::Win32Window::onWindowKeyboardInput(InputButtonAction _action, WPARAM _wParam, LPARAM _lParam)
 {
     WindowKeyboardInputData inputData;
-    inputData.m_key = static_cast<WindowKeyboardKey>(_wParam);
-    inputData.m_scanCode = GetKeyScanCode(_lParam);
-    inputData.m_isRepeat = _action == WindowKeyboardInputAction::Pressed && (_lParam & KeyRepeatMask) != 0;
-    inputData.m_isExtended = (_lParam & KeyExtendedMask) != 0;
+    inputData.m_key = ToKeyboardInputKey(_wParam, _lParam);
+    inputData.m_isRepeat = _action == InputButtonAction::Pressed && (_lParam & KeyRepeatMask) != 0;
     inputData.m_action = _action;
 
     m_windowSystem.onWindowKeyboardInput(sharedFromThis(), inputData);

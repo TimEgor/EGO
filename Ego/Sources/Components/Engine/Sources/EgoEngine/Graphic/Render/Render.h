@@ -42,7 +42,7 @@ namespace ego::render
         virtual bool prepare(const RenderPrepareContext& _context) = 0;
         virtual void render() = 0;
         virtual void wait() = 0;
-        virtual bool copyResultToTarget(const gpu::Texture2DReference& _target) = 0;
+        virtual gpu::Texture2DReference getResultTexture() const = 0;
 
         virtual void setResolution(const gpu::Texture2DSize& _resolution) = 0;
         virtual const gpu::Texture2DSize& getResolution() const = 0;

@@ -1,64 +1,84 @@
 #pragma once
 
+#include <cstdint>
 #include <unordered_map>
 
+#include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/RTTI/RTTI.h"
 
-#include "EgoGui/Input/GuiInput.h"
-#include "EgoGui/Rendering/GuiFrame.h"
-#include "EgoGui/Rendering/GuiFontAtlas.h"
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Rendering/Frame.h"
+#include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Theme/Theme.h"
 
-#include "EgoGui/Viewport/GuiViewport.h"
-#include "EgoGui/Viewport/GuiViewportBackend.h"
+#include "EgoGui/Viewport/Viewport.h"
+#include "EgoGui/Viewport/ViewportBackend.h"
 
 namespace ego::gui
 {
-    class GuiController final
+    class GuiController final : public NonCopyable
     {
     public:
         struct InitData final
         {
-            GuiFontAtlasDesc m_fontAtlasDesc;
-            GuiViewportDesc m_primaryViewportDesc;
-            GuiViewportBackendPointer m_viewportBackend = nullptr;
+            FontAtlasDesc m_fontAtlasDesc;
+            Theme m_theme = Theme::GetDefault();
+            ViewportDesc m_primaryViewportDesc;
+            ViewportBackendPointer m_viewportBackend = nullptr;
         };
 
-        GuiController() = default;
-        ~GuiController();
+        GuiController();
+        ~GuiController() override;
 
         bool init(const InitData& _initData);
         void release();
 
-        GuiViewportID createViewport(const GuiViewportDesc& _desc);
-        bool destroyViewport(GuiViewportID _viewportID);
-
-        GuiViewportPointer findViewport(GuiViewportID _viewportID) const;
-
-        GuiViewportPointer getPrimaryViewport() const;
-
         void update();
-        GuiFrame buildFrame();
+        Frame buildFrame();
 
-        GuiEventResult processEvent(GuiViewportID _viewportID, const GuiInputEvent& _event);
         bool isInitialized() const;
 
-        EGO_RTTI_VIRTUAL_BASE(GuiController);
+        ViewportPointer createViewport(const ViewportDesc& _desc);
+        bool destroyViewport(const ViewportPointer& _viewport);
+
+        ViewportPointer getPrimaryViewport() const;
+
+        void setTheme(const Theme& _theme);
+        ThemePointer getTheme() const;
 
     private:
-        static constexpr GuiViewportID FirstViewportID = 1;
+        class VisualOperationScope final : public NonCopyable
+        {
+        public:
+            explicit VisualOperationScope(GuiController& _controller);
+            ~VisualOperationScope() override;
 
-        using ViewportMap = std::unordered_map<GuiViewportID, GuiViewportPointer>;
+            const ThemePointer& getTheme() const;
 
-        GuiViewportID createViewport(GuiViewportRole _role, const GuiViewportDesc& _desc);
-        GuiViewportID createViewport(const GuiViewportCreateRequest& _request);
-        GuiViewportID prepareNewViewportID();
+        private:
+            GuiController& m_controller;
+            ThemePointer m_theme;
+        };
+
+        static constexpr ViewportID FirstViewportID = 1;
+
+        using ViewportMap = std::unordered_map<ViewportID, ViewportPointer>;
+
+        ViewportPointer createViewport(ViewportRole _role, const ViewportDesc& _desc);
+        ViewportPointer createViewport(const ViewportCreateRequest& _request);
+        ViewportPointer findViewport(ViewportID _viewportID) const;
+        ViewportID prepareNewViewportID();
+        bool canStartVisualOperation() const;
+        bool ensureViewportMutationAllowed() const;
+        void applyTheme(ThemePointer _theme);
 
         ViewportMap m_viewports;
-        GuiViewportID m_primaryViewportID = InvalidGuiViewportID;
-        GuiViewportID m_nextViewportID = FirstViewportID;
-        GuiViewportBackendPointer m_viewportBackend = nullptr;
-        GuiFontAtlasPointer m_fontAtlas = nullptr;
+        ViewportID m_primaryViewportID = InvalidViewportID;
+        ViewportID m_nextViewportID = FirstViewportID;
+        ViewportBackendPointer m_viewportBackend = nullptr;
+        FontAtlasPointer m_fontAtlas = nullptr;
+        ThemePointer m_theme = nullptr;
+        uint32_t m_visualOperationDepth = 0;
         bool m_isInitialized = false;
     };
 
