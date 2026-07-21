@@ -5,7 +5,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "EgoEngine/Graphic/Render/MaterialRenderPassInfo.h"
+#include "EgoEngine/Graphic/SceneRender/MaterialRenderPassInfo.h"
 
 namespace ego::render
 {

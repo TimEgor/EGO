@@ -7,7 +7,11 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
+
 #include "EgoEngine/Project/ProjectReader.h"
+
+#include "EgoApplication/Window/WindowGraphicPresenter.h"
 
 namespace
 {
@@ -93,22 +97,34 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
     m_mainWindow = mainWindow;
 
+    const gpu::GraphicHardwareSubsystemPointer graphicHardwareSubsystem = gpu::GetGraphicHardwareSubsystemPointer();
+    const GraphicDevicePointer graphicDevice = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicDevicePointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(graphicDevice);
+
+    application::WindowGraphicPresenterPointer mainWindowGraphicPresenter = new application::WindowGraphicPresenter();
+    EGO_CHECK_RETURN_FALSE(mainWindowGraphicPresenter);
+
+    gpu::SwapChainDesc swapChainDesc;
+    swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
+    swapChainDesc.m_bufferCount = 2;
+    EGO_CHECK_RETURN_FALSE(mainWindowGraphicPresenter->init(*graphicDevice, *mainWindow, swapChainDesc, graphicHardwareSubsystem->getGraphicCommandQueue()));
+
     m_guiViewportSystem = new application::ApplicationGuiViewportSystem();
     EGO_CHECK_RETURN_FALSE(m_guiViewportSystem);
 
-    EGO_CHECK_RETURN_FALSE(m_guiViewportSystem->init(m_application, mainWindow));
+    EGO_CHECK_RETURN_FALSE(m_guiViewportSystem->init(m_application, mainWindow, mainWindowGraphicPresenter));
 
     engine::EngineSession::InitData sessionInitData;
     EGO_CHECK_RETURN_FALSE(fillEngineSessionInitData(_options, sessionInitData));
 
     sessionInitData.m_enablePresentation = true;
-    engine::EngineSession::PresentationOptions& presentationOptions = sessionInitData.m_presentation;
-    presentationOptions.m_viewportBackend = m_guiViewportSystem;
-
     sessionInitData.m_enableGui = true;
     engine::EngineSession::GuiOptions& guiOptions = sessionInitData.m_gui;
-    guiOptions.m_renderPluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
+    guiOptions.m_viewportBackend = m_guiViewportSystem;
     EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiOptions.m_fontAtlasDesc));
+
+    engine::EngineSession::GuiRenderOptions& guiRenderOptions = sessionInitData.m_guiRender;
+    guiRenderOptions.m_pluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
 
     m_engine = new engine::Engine();
     EGO_CHECK_RETURN_FALSE(m_engine);
@@ -180,7 +196,7 @@ bool ego::demo::standalone::StandaloneApplication::fillEngineSessionInitData(con
     }
 
     EGO_CHECK_RETURN_FALSE(loadProject(projectFileName, _sessionInitData.m_project));
-    _sessionInitData.m_renderPluginModuleName = FileName(_options.m_renderPluginModuleName);
+    _sessionInitData.m_sceneRender.m_pluginModuleName = FileName(_options.m_renderPluginModuleName);
     return true;
 }
 

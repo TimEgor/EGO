@@ -47,14 +47,14 @@ void ego::gui::PaintContext::popClipRect()
     }
 }
 
-void ego::gui::PaintContext::drawBox(const Rect& _rect, const NormalizedColorRGBA& _color, ImageID _imageID)
+void ego::gui::PaintContext::drawBox(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
 {
-    appendQuad(_rect, _color, _imageID);
+    appendQuad(_rect, _color, _textureIndex);
 }
 
-void ego::gui::PaintContext::drawCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, ImageID _imageID)
+void ego::gui::PaintContext::drawCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
 {
-    appendCircle(_center, _radius, _color, _imageID);
+    appendCircle(_center, _radius, _color, _textureIndex);
 }
 
 void ego::gui::PaintContext::drawTriangle(
@@ -62,9 +62,9 @@ void ego::gui::PaintContext::drawTriangle(
     const Position& _secondPosition,
     const Position& _thirdPosition,
     const NormalizedColorRGBA& _color,
-    ImageID _imageID)
+    uint32_t _textureIndex)
 {
-    appendTriangle(_firstPosition, _secondPosition, _thirdPosition, _color, _imageID);
+    appendTriangle(_firstPosition, _secondPosition, _thirdPosition, _color, _textureIndex);
 }
 
 void ego::gui::PaintContext::drawText(std::string_view _text, const Rect& _rect, const NormalizedColorRGBA& _color)
@@ -78,6 +78,7 @@ void ego::gui::PaintContext::drawText(std::string_view _text, const Rect& _rect,
     float cursorY = _rect.m_position.m_y;
     const float lineHeight = m_fontAtlas->getLineHeight();
     const float baseline = m_fontAtlas->getBaseline();
+    const uint32_t textureIndex = m_fontAtlas->getTextureView()->getBindlessIndex();
 
     pushClipRect(_rect);
     size_t byteOffset = 0;
@@ -105,7 +106,7 @@ void ego::gui::PaintContext::drawText(std::string_view _text, const Rect& _rect,
         if (glyph->m_size.m_x > 0.0f && glyph->m_size.m_y > 0.0f)
         {
             const Rect glyphRect(cursorX + glyph->m_offset.m_x, cursorY + baseline + glyph->m_offset.m_y, glyph->m_size.m_x, glyph->m_size.m_y);
-            appendQuad(glyphRect, glyph->m_uvRect, _color, m_fontAtlas->getImageID());
+            appendQuad(glyphRect, glyph->m_uvRect, _color, textureIndex);
         }
 
         cursorX += glyph->m_advance;
@@ -129,12 +130,12 @@ const ego::gui::Theme& ego::gui::PaintContext::getTheme() const
     return *m_theme;
 }
 
-void ego::gui::PaintContext::appendQuad(const Rect& _rect, const NormalizedColorRGBA& _color, ImageID _imageID)
+void ego::gui::PaintContext::appendQuad(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
 {
-    appendQuad(_rect, Rect(0.0f, 0.0f, 1.0f, 1.0f), _color, _imageID);
+    appendQuad(_rect, Rect(0.0f, 0.0f, 1.0f, 1.0f), _color, _textureIndex);
 }
 
-void ego::gui::PaintContext::appendQuad(const Rect& _rect, const Rect& _uvRect, const NormalizedColorRGBA& _color, ImageID _imageID)
+void ego::gui::PaintContext::appendQuad(const Rect& _rect, const Rect& _uvRect, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
 {
     if (_rect.m_size.m_x <= 0.0f || _rect.m_size.m_y <= 0.0f)
     {
@@ -156,10 +157,10 @@ void ego::gui::PaintContext::appendQuad(const Rect& _rect, const Rect& _uvRect, 
     m_drawData.m_indices.push_back(firstVertex + 2);
     m_drawData.m_indices.push_back(firstVertex + 3);
 
-    appendDrawCommand(firstIndex, 6, _imageID);
+    appendDrawCommand(firstIndex, 6, _textureIndex);
 }
 
-void ego::gui::PaintContext::appendCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, ImageID _imageID)
+void ego::gui::PaintContext::appendCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
 {
     if (_radius <= 0.0f)
     {
@@ -188,7 +189,7 @@ void ego::gui::PaintContext::appendCircle(const Position& _center, float _radius
         m_drawData.m_indices.push_back(firstVertex + 1 + nextSegmentIndex);
     }
 
-    appendDrawCommand(firstIndex, CircleSegmentCount * 3, _imageID);
+    appendDrawCommand(firstIndex, CircleSegmentCount * 3, _textureIndex);
 }
 
 void ego::gui::PaintContext::appendTriangle(
@@ -196,7 +197,7 @@ void ego::gui::PaintContext::appendTriangle(
     const Position& _secondPosition,
     const Position& _thirdPosition,
     const NormalizedColorRGBA& _color,
-    ImageID _imageID)
+    uint32_t _textureIndex)
 {
     const uint32_t firstVertex = static_cast<uint32_t>(m_drawData.m_vertices.size());
     const uint32_t firstIndex = static_cast<uint32_t>(m_drawData.m_indices.size());
@@ -209,10 +210,10 @@ void ego::gui::PaintContext::appendTriangle(
     m_drawData.m_indices.push_back(firstVertex + 1);
     m_drawData.m_indices.push_back(firstVertex + 2);
 
-    appendDrawCommand(firstIndex, 3, _imageID);
+    appendDrawCommand(firstIndex, 3, _textureIndex);
 }
 
-void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _indexCount, ImageID _imageID)
+void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _indexCount, uint32_t _textureIndex)
 {
     const Rect& clipRect = getCurrentClipRect();
     if (!m_drawData.m_commands.empty())
@@ -221,7 +222,7 @@ void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _i
         const Rect& previousClipRect = previousCommand.m_clipRect;
         const bool hasSameClip = previousClipRect.m_position.m_x == clipRect.m_position.m_x && previousClipRect.m_position.m_y == clipRect.m_position.m_y &&
                                  previousClipRect.m_size.m_x == clipRect.m_size.m_x && previousClipRect.m_size.m_y == clipRect.m_size.m_y;
-        if (previousCommand.m_imageID == _imageID && hasSameClip && previousCommand.m_firstIndex + previousCommand.m_indexCount == _firstIndex)
+        if (previousCommand.m_textureIndex == _textureIndex && hasSameClip && previousCommand.m_firstIndex + previousCommand.m_indexCount == _firstIndex)
         {
             previousCommand.m_indexCount += _indexCount;
             return;
@@ -230,7 +231,7 @@ void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _i
 
     DrawCommand command;
     command.m_clipRect = clipRect;
-    command.m_imageID = _imageID;
+    command.m_textureIndex = _textureIndex;
     command.m_firstIndex = _firstIndex;
     command.m_indexCount = _indexCount;
     command.m_vertexOffset = 0;

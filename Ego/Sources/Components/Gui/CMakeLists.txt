@@ -13,6 +13,8 @@ target_link_libraries(
     EgoGui
         PUBLIC
             Ego::Core
+            Ego::GraphicHardware
+            Ego::Plugin
         PRIVATE
             Ego::ThirdParty::Stb
 )

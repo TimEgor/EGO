@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "EgoEngine/Graphic/Render/Mesh.h"
+#include "EgoEngine/Graphic/SceneRender/Mesh.h"
 
 namespace ego
 {

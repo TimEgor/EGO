@@ -2,8 +2,8 @@
 
 #include "EgoCore/Math/ComputeVector3.h"
 
-#include "EgoEngine/Graphic/Render/Resources/MaterialResource.h"
-#include "EgoEngine/Graphic/Render/Resources/MeshResource.h"
+#include "EgoEngine/Graphic/SceneRender/Resources/MaterialResource.h"
+#include "EgoEngine/Graphic/SceneRender/Resources/MeshResource.h"
 #include "EgoEngine/Level/Level.h"
 #include "EgoEngine/Project/EngineLogic.h"
 

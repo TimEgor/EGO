@@ -1,5 +1,7 @@
 #include "DefaultRenderFrameExecutor.h"
 
+#include <utility>
+
 #include "EgoCore/UtilsMacros.h"
 
 bool ego::render::DefaultRenderFrameExecutor::init(GraphicDevice& _graphicDevice, const gpu::CommandQueueReference& _commandQueue)
@@ -15,6 +17,8 @@ bool ego::render::DefaultRenderFrameExecutor::init(GraphicDevice& _graphicDevice
 
 void ego::render::DefaultRenderFrameExecutor::release()
 {
+    wait();
+    m_frameResources.clear();
     m_frameFence = nullptr;
     m_frameFenceValue = 0;
     m_commandQueue = nullptr;
@@ -25,6 +29,7 @@ void ego::render::DefaultRenderFrameExecutor::wait()
     if (m_frameFence)
     {
         m_frameFence->waitValue(m_frameFenceValue);
+        m_frameResources.clear();
         return;
     }
 
@@ -32,9 +37,13 @@ void ego::render::DefaultRenderFrameExecutor::wait()
     {
         m_commandQueue->waitIdle();
     }
+
+    m_frameResources.clear();
 }
 
-void ego::render::DefaultRenderFrameExecutor::submitCommandLists(const std::vector<RenderGraphicCommandList>& _commandLists)
+void ego::render::DefaultRenderFrameExecutor::submitCommandLists(
+    const std::vector<RenderGraphicCommandList>& _commandLists,
+    std::vector<gpu::GraphicObjectReference>&& _frameResources)
 {
     if (!m_commandQueue || _commandLists.empty())
     {
@@ -58,6 +67,7 @@ void ego::render::DefaultRenderFrameExecutor::submitCommandLists(const std::vect
     }
 
     m_commandQueue->execute(commandLists);
+    m_frameResources = std::move(_frameResources);
     signalFrameFence();
 }
 

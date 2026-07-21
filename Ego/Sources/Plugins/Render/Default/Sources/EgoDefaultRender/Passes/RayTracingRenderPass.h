@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "EgoEngine/Graphic/Render/MaterialRenderPassInfo.h"
+#include "EgoEngine/Graphic/SceneRender/MaterialRenderPassInfo.h"
 
 #include "EgoDefaultRender/RayTracingGeometryCache.h"
 #include "EgoDefaultRender/RenderGraph/RenderPass.h"

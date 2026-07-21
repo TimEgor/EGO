@@ -7,13 +7,12 @@
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Reference/Pointer.h"
 
+#include "EgoGraphicHardware/GraphicObjects/Texture.h"
+
 #include "EgoGui/Core/Geometry.h"
-#include "EgoGui/Rendering/Image.h"
 
 namespace ego::gui
 {
-    inline constexpr ImageID DefaultFontImageID = 1;
-
     class FontAtlas;
     EGO_POINTER(FontAtlas);
 
@@ -48,12 +47,11 @@ namespace ego::gui
         const FontGlyph* getGlyph(uint32_t _codepoint) const;
         Size measureText(std::string_view _text) const;
 
-        const ImagePointer& getImage() const;
+        const gpu::TextureViewReference& getTextureView() const;
         uint32_t getWidth() const;
         uint32_t getHeight() const;
         float getLineHeight() const;
         float getBaseline() const;
-        ImageID getImageID() const;
         bool isInitialized() const;
 
     private:
@@ -63,7 +61,7 @@ namespace ego::gui
         uint32_t m_height = 0;
         float m_lineHeight = 0.0f;
         float m_baseline = 0.0f;
-        ImagePointer m_image = nullptr;
+        gpu::TextureViewReference m_textureView = nullptr;
         std::vector<FontGlyph> m_glyphs;
         bool m_isInitialized = false;
     };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/Graphic/Render/MaterialTemplate.h"
+#include "EgoEngine/Graphic/SceneRender/MaterialTemplate.h"
 
 namespace ego::render
 {

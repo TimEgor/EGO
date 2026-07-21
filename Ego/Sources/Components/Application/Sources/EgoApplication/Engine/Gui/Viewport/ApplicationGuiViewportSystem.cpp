@@ -2,10 +2,14 @@
 
 #include <cstdint>
 #include <limits>
+#include <utility>
 
 #include "EgoCore/UtilsMacros.h"
 
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
+
 #include "EgoApplication/Application.h"
+#include "EgoApplication/Window/WindowGraphicPresenter.h"
 
 #include "Window/ApplicationWindowGuiViewportHost.h"
 
@@ -29,14 +33,19 @@ ego::application::ApplicationGuiViewportSystem::~ApplicationGuiViewportSystem()
     release();
 }
 
-bool ego::application::ApplicationGuiViewportSystem::init(const ApplicationPointer& _application, const ApplicationWindowPointer& _primaryWindow)
+bool ego::application::ApplicationGuiViewportSystem::init(
+    const ApplicationPointer& _application,
+    const ApplicationWindowPointer& _primaryWindow,
+    const GraphicPresenterPointer& _primaryGraphicPresenter)
 {
-    EGO_CHECK_INITIALIZATION(!m_application && !m_primaryWindow && m_viewports.empty());
+    EGO_CHECK_INITIALIZATION(!m_application && !m_primaryWindow && !m_primaryGraphicPresenter && m_viewports.empty());
     EGO_CHECK_INITIALIZATION(_application);
     EGO_CHECK_INITIALIZATION(_primaryWindow && _primaryWindow->isValid());
+    EGO_CHECK_INITIALIZATION(_primaryGraphicPresenter);
 
     m_application = _application;
     m_primaryWindow = _primaryWindow;
+    m_primaryGraphicPresenter = _primaryGraphicPresenter;
     return true;
 }
 
@@ -44,13 +53,14 @@ void ego::application::ApplicationGuiViewportSystem::release()
 {
     for (ViewportMap::value_type& viewportEntry : m_viewports)
     {
-        if (viewportEntry.second)
+        if (viewportEntry.second.m_guiHost)
         {
-            viewportEntry.second->beginClosing();
+            viewportEntry.second.m_guiHost->beginClosing();
         }
     }
 
     m_viewports.clear();
+    m_primaryGraphicPresenter = nullptr;
     m_primaryWindow = nullptr;
     m_application = nullptr;
 }
@@ -65,9 +75,6 @@ bool ego::application::ApplicationGuiViewportSystem::createViewport(const gui::V
         return false;
     }
 
-    ApplicationWindowGuiViewportHostPointer host = new ApplicationWindowGuiViewportHost();
-    EGO_CHECK_RETURN_FALSE(host);
-
     const bool isSecondary = _request.m_role == gui::ViewportRole::Secondary;
     const ApplicationWindowPointer window = isSecondary ? m_application->createWindow(CreateSecondaryWindowDesc(_request)) : m_primaryWindow;
     if (!window || !window->isValid())
@@ -79,12 +86,48 @@ bool ego::application::ApplicationGuiViewportSystem::createViewport(const gui::V
         return false;
     }
 
-    if (!host->init(window, _request.m_role))
+    GraphicPresenterPointer graphicPresenter = m_primaryGraphicPresenter;
+    if (isSecondary)
+    {
+        const gpu::GraphicHardwareSubsystemPointer graphicHardwareSubsystem = gpu::GetGraphicHardwareSubsystemPointer();
+        const GraphicDevicePointer graphicDevice = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicDevicePointer() : nullptr;
+        if (!graphicDevice)
+        {
+            window->release();
+            return false;
+        }
+
+        WindowGraphicPresenterPointer windowGraphicPresenter = new WindowGraphicPresenter();
+        if (!windowGraphicPresenter)
+        {
+            window->release();
+            return false;
+        }
+
+        gpu::SwapChainDesc swapChainDesc;
+        swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
+        swapChainDesc.m_bufferCount = 2;
+        if (!windowGraphicPresenter->init(*graphicDevice, *window, swapChainDesc, graphicHardwareSubsystem->getGraphicCommandQueue()))
+        {
+            window->release();
+            return false;
+        }
+
+        graphicPresenter = windowGraphicPresenter;
+    }
+
+    ApplicationWindowGuiViewportHostPointer viewportHost = new ApplicationWindowGuiViewportHost();
+    EGO_CHECK_RETURN_FALSE(viewportHost);
+
+    if (!viewportHost->init(window))
     {
         return false;
     }
 
-    m_viewports.emplace(_request.m_id, host);
+    ViewportEntry entry;
+    entry.m_guiHost = viewportHost;
+    entry.m_graphicPresenter = graphicPresenter;
+    m_viewports.emplace(_request.m_id, std::move(entry));
 
     if (isSecondary)
     {
@@ -107,9 +150,9 @@ void ego::application::ApplicationGuiViewportSystem::destroyViewport(gui::Viewpo
         return;
     }
 
-    if (viewportIt->second)
+    if (viewportIt->second.m_guiHost)
     {
-        viewportIt->second->beginClosing();
+        viewportIt->second.m_guiHost->beginClosing();
     }
 
     m_viewports.erase(viewportIt);
@@ -128,26 +171,27 @@ ego::gui::ViewportUpdate ego::application::ApplicationGuiViewportSystem::pollVie
     host->update();
     update.m_size = host->getSize();
     update.m_status = host->getUpdateStatus();
+    const GraphicPresenterPointer graphicPresenter = findGraphicPresenter(_viewportID);
+    update.m_graphicPresenter = graphicPresenter;
+    if (update.m_status == gui::ViewportUpdateStatus::Alive && !graphicPresenter)
+    {
+        update.m_status = gui::ViewportUpdateStatus::Lost;
+    }
     host->drainInput(update.m_input);
 
     return update;
 }
 
-ego::engine::EngineViewportHostPointer ego::application::ApplicationGuiViewportSystem::findViewportHost(gui::ViewportID _viewportID) const
-{
-    const ApplicationWindowGuiViewportHostPointer host = findViewport(_viewportID);
-    if (!host)
-    {
-        return nullptr;
-    }
-
-    return host->getUpdateStatus() == gui::ViewportUpdateStatus::Alive ? host : nullptr;
-}
-
 ego::application::ApplicationWindowGuiViewportHostPointer ego::application::ApplicationGuiViewportSystem::findViewport(gui::ViewportID _viewportID) const
 {
     const ViewportMap::const_iterator viewportIt = m_viewports.find(_viewportID);
-    return viewportIt != m_viewports.end() ? viewportIt->second : nullptr;
+    return viewportIt != m_viewports.end() ? viewportIt->second.m_guiHost : nullptr;
+}
+
+ego::GraphicPresenterPointer ego::application::ApplicationGuiViewportSystem::findGraphicPresenter(gui::ViewportID _viewportID) const
+{
+    const ViewportMap::const_iterator viewportIt = m_viewports.find(_viewportID);
+    return viewportIt != m_viewports.end() ? viewportIt->second.m_graphicPresenter : nullptr;
 }
 
 ego::WindowDesc ego::application::ApplicationGuiViewportSystem::CreateSecondaryWindowDesc(const gui::ViewportCreateRequest& _request)

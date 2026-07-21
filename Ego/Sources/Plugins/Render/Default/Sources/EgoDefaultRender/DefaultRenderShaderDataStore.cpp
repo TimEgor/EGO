@@ -6,7 +6,7 @@
 #include "EgoCore/Memory/Utils.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
+#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
 #include "EgoEngine/Level/Level.h"
 
 #include "DefaultRenderConstants.h"

@@ -11,7 +11,7 @@ namespace ego::gui::default_gui_render
         DefaultGuiRenderFileSystems() = default;
         ~DefaultGuiRenderFileSystems();
 
-        bool loadAssetsRootPath(const FileName& _pluginModulePath, FileName& _assetsRootPath);
+        bool loadAssetsRootPath(FileName& _assetsRootPath);
         bool initAssetsFileSystem(const FileName& _assetsRootPath);
         void release();
 

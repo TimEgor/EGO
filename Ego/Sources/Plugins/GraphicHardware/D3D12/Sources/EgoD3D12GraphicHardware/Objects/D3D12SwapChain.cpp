@@ -101,7 +101,7 @@ bool ego::gpu::d3d12::D3D12SwapChain::createTargetTextures(const Texture2DSize& 
     const SwapChainDesc& desc = getDesc();
 
     Texture2DDesc textureDesc;
-    textureDesc.m_usage = static_cast<GraphicResourceUsage>(TextureUsageRenderTarget);
+    textureDesc.m_usage = static_cast<GraphicResourceUsage>(TextureUsageRenderTarget | GraphicResourceUsageTransferDst);
     textureDesc.m_size = _size;
     textureDesc.m_arrayLayers = 1;
     textureDesc.m_mipLevels = 1;

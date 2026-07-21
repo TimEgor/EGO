@@ -12,7 +12,7 @@ target_link_libraries(
     EgoDefaultGuiRender
         PUBLIC
             Ego::Core
-            Ego::GuiRender
+            Ego::Gui
             Ego::Resource
 )
 

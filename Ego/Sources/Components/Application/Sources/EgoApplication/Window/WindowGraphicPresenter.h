@@ -1,11 +1,10 @@
 #pragma once
 
 #include "EgoGraphicHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/PresentationSurface.h"
 #include "EgoGraphicHardware/GraphicObjects/CommandQueue.h"
 #include "EgoGraphicHardware/GraphicObjects/SwapChain.h"
-#include "EgoGraphicHardware/PresentationSurface.h"
-
-#include "EgoEngine/Graphic/Presenter/GraphicPresenter.h"
+#include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
 
 namespace ego::application
 {

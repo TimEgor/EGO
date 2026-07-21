@@ -5,8 +5,9 @@
 
 #include "EgoCore/Math/Color.h"
 
+#include "EgoGraphicHardware/GraphicObjects/GraphicObject.h"
+
 #include "EgoGui/Core/Geometry.h"
-#include "EgoGui/Rendering/Image.h"
 
 namespace ego::gui
 {
@@ -20,7 +21,7 @@ namespace ego::gui
     struct DrawCommand final
     {
         Rect m_clipRect;
-        ImageID m_imageID = InvalidImageID;
+        uint32_t m_textureIndex = gpu::InvalidBindlessIndex;
         uint32_t m_firstIndex = 0;
         uint32_t m_indexCount = 0;
         int32_t m_vertexOffset = 0;

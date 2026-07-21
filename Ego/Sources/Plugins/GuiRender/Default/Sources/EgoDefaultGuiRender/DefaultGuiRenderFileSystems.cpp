@@ -8,6 +8,8 @@
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
+#include "EgoPlugin/PluginModule.h"
+
 #include "EgoResource/GeneralResources/XmlResource.h"
 #include "EgoResource/ResourceController.h"
 #include "EgoResource/ResourceSubsystem.h"
@@ -33,9 +35,10 @@ ego::gui::default_gui_render::DefaultGuiRenderFileSystems::~DefaultGuiRenderFile
     release();
 }
 
-bool ego::gui::default_gui_render::DefaultGuiRenderFileSystems::loadAssetsRootPath(const FileName& _pluginModulePath, FileName& _assetsRootPath)
+bool ego::gui::default_gui_render::DefaultGuiRenderFileSystems::loadAssetsRootPath(FileName& _assetsRootPath)
 {
-    const FileName pluginDirectoryPath = file_name_utils::GetFileDirPath(_pluginModulePath);
+    const PluginModuleInfo& moduleInfo = GetPluginModuleState().getInfo();
+    const FileName pluginDirectoryPath = file_name_utils::GetFileDirPath(moduleInfo.m_modulePath);
     EGO_CHECK_RETURN_FALSE(pluginDirectoryPath);
 
     RootedFileSystemPointer configFileSystem = CreateFileSystem(pluginDirectoryPath);

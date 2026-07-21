@@ -2,8 +2,8 @@
 
 #include "EgoGraphicHardware/GraphicDevice.h"
 
-#include "EgoEngine/Graphic/Render/DebugDrawData.h"
-#include "EgoEngine/Graphic/Render/RenderObject.h"
+#include "EgoEngine/Graphic/SceneRender/DebugDrawData.h"
+#include "EgoEngine/Graphic/SceneRender/RenderObject.h"
 
 #include "DebugRenderElementData.h"
 

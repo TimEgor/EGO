@@ -7,8 +7,8 @@
 
 #include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
-#include "EgoEngine/Graphic/Render/DebugDrawData.h"
-#include "EgoEngine/Graphic/Render/RenderObject.h"
+#include "EgoEngine/Graphic/SceneRender/DebugDrawData.h"
+#include "EgoEngine/Graphic/SceneRender/RenderObject.h"
 
 namespace ego
 {
@@ -20,12 +20,11 @@ namespace ego::render
     using RenderType = rtti::TypeMetaInfoID;
     inline constexpr RenderType InvalidRenderType = rtti::InvalidTypeMetaInfoID;
 
-    inline constexpr auto DefaultRenderResolution = gpu::Texture2DSize(500, 500);
-
     struct RenderPrepareContext final
     {
         Level& m_level;
         ecs::Entity m_cameraEntity;
+        gpu::Texture2DSize m_targetSize = UInt32Vector2Zero;
         float m_deltaTime = 0.0f;
     };
 
@@ -40,12 +39,8 @@ namespace ego::render
         virtual void clearResources() = 0;
 
         virtual bool prepare(const RenderPrepareContext& _context) = 0;
-        virtual void render() = 0;
+        virtual void render(const gpu::TextureViewReference& _targetView) = 0;
         virtual void wait() = 0;
-        virtual gpu::Texture2DReference getResultTexture() const = 0;
-
-        virtual void setResolution(const gpu::Texture2DSize& _resolution) = 0;
-        virtual const gpu::Texture2DSize& getResolution() const = 0;
 
         virtual void drawPoint(const DebugDrawPointData& _point) = 0;
         void drawPoint(const FloatVector3& _position, const FloatVector4& _color);

@@ -5,7 +5,7 @@
 
 #include "EgoCore/Math/Transform.h"
 
-#include "EgoEngine/Graphic/Render/RenderObject.h"
+#include "EgoEngine/Graphic/SceneRender/RenderObject.h"
 
 namespace ego
 {

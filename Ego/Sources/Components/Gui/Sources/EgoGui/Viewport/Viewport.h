@@ -4,6 +4,8 @@
 #include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 
+#include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
+
 #include "EgoGui/Input/Input.h"
 
 #include "SurfaceRoot.h"
@@ -36,6 +38,7 @@ namespace ego::gui
         ViewportID getID() const;
         ViewportRole getRole() const;
         const Size& getSize() const;
+        GraphicPresenterPointer getGraphicPresenterPointer() const;
         void setSize(const Size& _size);
 
         bool add(const WidgetPointer& _widget);
@@ -56,6 +59,7 @@ namespace ego::gui
         ViewportID m_id = InvalidViewportID;
         ViewportRole m_role = ViewportRole::Secondary;
         Size m_size = SizeZero;
+        GraphicPresenterPointer m_graphicPresenter = nullptr;
         SurfaceRootPointer m_root = nullptr;
         ego::SharedPointer<InputRouter> m_inputRouter = nullptr;
     };

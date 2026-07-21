@@ -18,7 +18,6 @@ namespace ego::render
     struct RenderPassPrepareContext final
     {
         GraphicDevice& m_graphicDevice;
-        DefaultRenderTarget& m_renderTarget;
         DefaultRenderScene& m_scene;
         DefaultRenderShaderDataStore& m_shaderData;
         const DefaultRenderSettings& m_settings;

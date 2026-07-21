@@ -19,6 +19,4 @@ target_link_libraries(
             Ego::Job
             Ego::Plugin
             Ego::Resource
-        PRIVATE
-            Ego::GuiRender
 )

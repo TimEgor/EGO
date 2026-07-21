@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
+#include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 
 namespace ego
 {

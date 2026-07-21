@@ -19,30 +19,30 @@ namespace ego::gui
         void pushClipRect(const Rect& _clipRect);
         void popClipRect();
 
-        void drawBox(const Rect& _rect, const NormalizedColorRGBA& _color, ImageID _imageID = InvalidImageID);
-        void drawCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, ImageID _imageID = InvalidImageID);
+        void drawBox(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex = gpu::InvalidBindlessIndex);
+        void drawCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex = gpu::InvalidBindlessIndex);
         void drawTriangle(
             const Position& _firstPosition,
             const Position& _secondPosition,
             const Position& _thirdPosition,
             const NormalizedColorRGBA& _color,
-            ImageID _imageID = InvalidImageID);
+            uint32_t _textureIndex = gpu::InvalidBindlessIndex);
         void drawText(std::string_view _text, const Rect& _rect, const NormalizedColorRGBA& _color);
 
         const Rect& getCurrentClipRect() const;
         const Theme& getTheme() const;
 
     private:
-        void appendQuad(const Rect& _rect, const NormalizedColorRGBA& _color, ImageID _imageID);
-        void appendQuad(const Rect& _rect, const Rect& _uvRect, const NormalizedColorRGBA& _color, ImageID _imageID);
-        void appendCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, ImageID _imageID);
+        void appendQuad(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex);
+        void appendQuad(const Rect& _rect, const Rect& _uvRect, const NormalizedColorRGBA& _color, uint32_t _textureIndex);
+        void appendCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex);
         void appendTriangle(
             const Position& _firstPosition,
             const Position& _secondPosition,
             const Position& _thirdPosition,
             const NormalizedColorRGBA& _color,
-            ImageID _imageID);
-        void appendDrawCommand(uint32_t _firstIndex, uint32_t _indexCount, ImageID _imageID);
+            uint32_t _textureIndex);
+        void appendDrawCommand(uint32_t _firstIndex, uint32_t _indexCount, uint32_t _textureIndex);
 
         DrawData& m_drawData;
         FontAtlasPointer m_fontAtlas = nullptr;

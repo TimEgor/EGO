@@ -1461,7 +1461,7 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
     targetTextures.reserve(_swapChainDesc.m_bufferCount);
 
     Texture2DDesc textureDesc;
-    textureDesc.m_usage = static_cast<GraphicResourceUsage>(TextureUsageRenderTarget);
+    textureDesc.m_usage = static_cast<GraphicResourceUsage>(TextureUsageRenderTarget | GraphicResourceUsageTransferDst);
     textureDesc.m_size = Texture2DSize(width, height);
     textureDesc.m_arrayLayers = 1;
     textureDesc.m_mipLevels = 1;

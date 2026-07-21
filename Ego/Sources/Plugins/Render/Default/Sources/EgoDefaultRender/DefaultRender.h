@@ -2,7 +2,7 @@
 
 #include "EgoCore/Math/Vector.h"
 
-#include "EgoEngine/Graphic/Render/Render.h"
+#include "EgoEngine/Graphic/SceneRender/Render.h"
 
 #include "DefaultRenderFileSystems.h"
 #include "DefaultRenderFrameExecutor.h"
@@ -29,12 +29,8 @@ namespace ego::render
         void clearResources() override;
 
         bool prepare(const RenderPrepareContext& _context) override;
-        void render() override;
+        void render(const gpu::TextureViewReference& _targetView) override;
         void wait() override;
-        gpu::Texture2DReference getResultTexture() const override;
-
-        void setResolution(const gpu::Texture2DSize& _resolution) override;
-        const gpu::Texture2DSize& getResolution() const override;
 
         using Render::drawPoint;
         void drawPoint(const DebugDrawPointData& _point) override;
@@ -53,6 +49,8 @@ namespace ego::render
     private:
         bool initPassGraph(GraphicDevice& _graphicDevice);
         void releasePassGraph();
+        gpu::Texture2DReference resolvePresentationTargetTexture(const gpu::TextureViewReference& _targetView) const;
+        void copyResultToTarget(const RenderGraphicCommandList& _commandList, const gpu::Texture2DReference& _targetTexture);
         void handlePrepareFailure();
 
         DefaultRenderFileSystems m_fileSystems;
@@ -65,7 +63,6 @@ namespace ego::render
         ClearRenderPass m_clearPass;
         RayTracingRenderPass m_rayTracingPass;
         DebugRenderPass m_debugPass;
-        gpu::Texture2DSize m_pendingResolution = DefaultRenderResolution;
         DefaultRenderSettings m_settings;
         bool m_isInitialized = false;
         bool m_isPrepared = false;

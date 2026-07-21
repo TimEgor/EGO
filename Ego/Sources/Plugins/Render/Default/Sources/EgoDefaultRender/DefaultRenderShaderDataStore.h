@@ -8,7 +8,7 @@
 
 #include "EgoGraphicHardware/GraphicDevice.h"
 
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
+#include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 
 #include "DefaultRenderScene.h"
 

@@ -4,7 +4,7 @@ BasedOnStyle: Microsoft
 Standard: c++20
 LineEnding: CRLF
 
-ColumnLimit: 180
+ColumnLimit: 160
 MaxEmptyLinesToKeep: 1
 
 AccessModifierOffset: -4

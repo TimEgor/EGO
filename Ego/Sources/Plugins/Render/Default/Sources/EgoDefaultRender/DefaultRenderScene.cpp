@@ -1,6 +1,6 @@
 #include "DefaultRenderScene.h"
 
-#include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
+#include "EgoEngine/Graphic/SceneRender/Component/MeshRenderComponent.h"
 #include "EgoEngine/Level/Level.h"
 
 void ego::render::DefaultRenderScene::collect(Level& _level)

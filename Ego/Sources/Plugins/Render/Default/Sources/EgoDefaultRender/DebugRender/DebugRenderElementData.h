@@ -5,7 +5,7 @@
 
 #include "EgoCore/Math/Vector.h"
 
-#include "EgoEngine/Graphic/Render/MaterialRenderPassInfo.h"
+#include "EgoEngine/Graphic/SceneRender/MaterialRenderPassInfo.h"
 
 #include "DebugElementBufferPool.h"
 

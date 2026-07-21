@@ -6,8 +6,8 @@
 #include "EgoResource/ResourceController.h"
 
 #include "EgoEngine/EngineSession.h"
-#include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
-#include "EgoEngine/Graphic/Render/Component/MeshRenderComponent.h"
+#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
+#include "EgoEngine/Graphic/SceneRender/Component/MeshRenderComponent.h"
 
 namespace
 {

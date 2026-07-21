@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <unordered_map>
 
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
+#include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 
 namespace ego
 {

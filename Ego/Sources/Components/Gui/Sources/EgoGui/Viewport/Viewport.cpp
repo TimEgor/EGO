@@ -73,6 +73,11 @@ const ego::gui::Size& ego::gui::Viewport::getSize() const
     return m_size;
 }
 
+ego::GraphicPresenterPointer ego::gui::Viewport::getGraphicPresenterPointer() const
+{
+    return m_graphicPresenter;
+}
+
 void ego::gui::Viewport::setSize(const Size& _size)
 {
     if (m_size.m_x == _size.m_x && m_size.m_y == _size.m_y)
@@ -121,6 +126,7 @@ ego::gui::WidgetPointer ego::gui::Viewport::getFocusedWidget() const
 
 void ego::gui::Viewport::update(const LayoutContext& _layoutContext, const ViewportUpdate& _update)
 {
+    m_graphicPresenter = _update.m_graphicPresenter;
     setSize(_update.m_size);
 
     if (!stabilizeLayout(_layoutContext))

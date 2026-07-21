@@ -11,6 +11,7 @@ target_link_libraries(
     EgoGuiDemo
         PRIVATE
             Ego::Core
+            Ego::ECS
             Ego::Engine
             Ego::Gui
             Ego::Plugin

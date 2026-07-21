@@ -4,6 +4,8 @@
 
 #include "EgoCore/Reference/Pointer.h"
 
+#include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
+
 #include "EgoGui/Input/Input.h"
 
 #include "ViewportTypes.h"
@@ -24,6 +26,7 @@ namespace ego::gui
         ViewportUpdateStatus m_status = ViewportUpdateStatus::Lost;
         Size m_size = SizeZero;
         InputEventCollection m_input;
+        GraphicPresenterPointer m_graphicPresenter = nullptr;
     };
 
     class ViewportBackend

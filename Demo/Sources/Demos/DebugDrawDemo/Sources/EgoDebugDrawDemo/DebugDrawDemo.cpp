@@ -5,8 +5,8 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/EngineSession.h"
-#include "EgoEngine/Graphic/Render/Component/CameraComponent.h"
-#include "EgoEngine/Graphic/Render/Render.h"
+#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
+#include "EgoEngine/Graphic/SceneRender/Render.h"
 
 namespace
 {

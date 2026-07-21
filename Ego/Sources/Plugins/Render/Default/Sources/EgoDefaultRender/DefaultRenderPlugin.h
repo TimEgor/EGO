@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoEngine/Graphic/Render/RenderPlugin.h"
+#include "EgoEngine/Graphic/SceneRender/RenderPlugin.h"
 
 namespace ego::render::default_render
 {

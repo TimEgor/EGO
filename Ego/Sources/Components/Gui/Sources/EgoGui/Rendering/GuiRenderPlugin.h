@@ -14,7 +14,7 @@ namespace ego::gui
         {
         }
 
-        virtual GuiRenderPointer createGuiRender(GraphicDevice& _graphicDevice) = 0;
+        virtual GuiRenderPointer createGuiRender() = 0;
 
         EGO_PLUGIN(GuiRenderPlugin, Plugin);
     };

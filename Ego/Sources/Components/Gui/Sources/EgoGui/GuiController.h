@@ -7,8 +7,8 @@
 #include "EgoCore/Reference/Pointer.h"
 
 #include "EgoGui/Input/Input.h"
-#include "EgoGui/Rendering/Frame.h"
 #include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/GuiRenderData.h"
 #include "EgoGui/Theme/Theme.h"
 
 #include "EgoGui/Viewport/Viewport.h"
@@ -23,7 +23,6 @@ namespace ego::gui
         {
             FontAtlasDesc m_fontAtlasDesc;
             Theme m_theme = Theme::GetDefault();
-            ViewportDesc m_primaryViewportDesc;
             ViewportBackendPointer m_viewportBackend = nullptr;
         };
 
@@ -34,7 +33,7 @@ namespace ego::gui
         void release();
 
         void update();
-        Frame buildFrame();
+        GuiRenderData buildFrame();
 
         bool isInitialized() const;
 

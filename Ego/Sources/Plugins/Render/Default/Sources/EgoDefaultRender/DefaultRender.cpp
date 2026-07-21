@@ -1,5 +1,6 @@
 #include "DefaultRender.h"
 
+#include <utility>
 #include <vector>
 
 #include "EgoCore/Assert/Assert.h"
@@ -73,8 +74,14 @@ bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
     wait();
     m_isPrepared = false;
 
+    if (_context.m_targetSize.m_x == 0 || _context.m_targetSize.m_y == 0)
+    {
+        handlePrepareFailure();
+        return false;
+    }
+
     GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
-    if (!m_renderTarget.prepare(graphicDevice, m_pendingResolution, DefaultRenderTargetFormat))
+    if (!m_renderTarget.prepare(graphicDevice, _context.m_targetSize, DefaultRenderTargetFormat))
     {
         handlePrepareFailure();
         return false;
@@ -82,13 +89,13 @@ bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
 
     m_scene.collect(_context.m_level);
 
-    if (!m_shaderData.prepare(graphicDevice, _context.m_level, _context.m_cameraEntity, m_scene, m_renderTarget.getResolution()))
+    if (!m_shaderData.prepare(graphicDevice, _context.m_level, _context.m_cameraEntity, m_scene, _context.m_targetSize))
     {
         handlePrepareFailure();
         return false;
     }
 
-    RenderPassPrepareContext passContext{graphicDevice, m_renderTarget, m_scene, m_shaderData, m_settings, _context.m_deltaTime};
+    RenderPassPrepareContext passContext{graphicDevice, m_scene, m_shaderData, m_settings, _context.m_deltaTime};
     if (!m_passGraph.prepare(passContext))
     {
         handlePrepareFailure();
@@ -99,7 +106,7 @@ bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
     return true;
 }
 
-void ego::render::DefaultRender::render()
+void ego::render::DefaultRender::render(const gpu::TextureViewReference& _targetView)
 {
     if (!m_isInitialized)
     {
@@ -112,8 +119,16 @@ void ego::render::DefaultRender::render()
         return;
     }
 
+    const gpu::Texture2DReference targetTexture = resolvePresentationTargetTexture(_targetView);
+    if (!targetTexture)
+    {
+        EGO_ASSERT_FAIL();
+        m_isPrepared = false;
+        return;
+    }
+
     const std::vector<RenderGraphicCommandList>& commandLists = m_passGraph.getCommandLists();
-    if (!m_frameExecutor.isValid() || commandLists.empty() || !m_renderTarget.isReady())
+    if (!m_frameExecutor.isValid() || commandLists.empty())
     {
         EGO_ASSERT_FAIL();
         m_passGraph.clearResources();
@@ -125,9 +140,9 @@ void ego::render::DefaultRender::render()
     RenderPassExecuteContext passContext{graphicDevice, m_pipelineStateCache, commandLists.front(), m_renderTarget, m_scene, m_shaderData, m_settings};
     const bool passExecutionResult = m_passGraph.execute(
         passContext,
-        [this](const RenderGraphicCommandList& _commandList)
+        [this, &targetTexture](const RenderGraphicCommandList& _commandList)
         {
-            m_renderTarget.transition(_commandList, gpu::GraphicResourceState::CopySrc);
+            copyResultToTarget(_commandList, targetTexture);
         });
     if (!passExecutionResult)
     {
@@ -138,34 +153,19 @@ void ego::render::DefaultRender::render()
         return;
     }
 
-    m_frameExecutor.submitCommandLists(commandLists);
+    std::vector<gpu::GraphicObjectReference> frameResources;
+    frameResources.reserve(4);
+    frameResources.push_back(m_renderTarget.getTexture().getObject());
+    frameResources.push_back(m_renderTarget.getRenderTargetView().getObject());
+    frameResources.push_back(m_renderTarget.getUnorderedAccessView().getObject());
+    frameResources.push_back(_targetView);
+    m_frameExecutor.submitCommandLists(commandLists, std::move(frameResources));
     m_isPrepared = false;
 }
 
 void ego::render::DefaultRender::wait()
 {
     m_frameExecutor.wait();
-}
-
-ego::gpu::Texture2DReference ego::render::DefaultRender::getResultTexture() const
-{
-    return m_renderTarget.getTexture().getObject();
-}
-
-void ego::render::DefaultRender::setResolution(const gpu::Texture2DSize& _resolution)
-{
-    if (_resolution.m_x == 0 || _resolution.m_y == 0)
-    {
-        EGO_ASSERT_FAIL();
-        return;
-    }
-
-    m_pendingResolution = _resolution;
-}
-
-const ego::gpu::Texture2DSize& ego::render::DefaultRender::getResolution() const
-{
-    return m_pendingResolution;
 }
 
 void ego::render::DefaultRender::drawPoint(const DebugDrawPointData& _point)
@@ -220,6 +220,47 @@ void ego::render::DefaultRender::releasePassGraph()
 {
     m_passGraph.release();
     m_passGraph.clear();
+}
+
+ego::gpu::Texture2DReference ego::render::DefaultRender::resolvePresentationTargetTexture(const gpu::TextureViewReference& _targetView) const
+{
+    if (!m_renderTarget.isReady() || !_targetView || _targetView->getViewType() != gpu::GraphicResourceViewType::RenderTarget ||
+        _targetView->getDesc().m_dimension != gpu::TextureViewDimension::D2)
+    {
+        return nullptr;
+    }
+
+    const gpu::GraphicResourceReference& targetResource = _targetView->getResource();
+    if (!targetResource || !rtti::IsObjectBasedOn<gpu::Texture2D>(*targetResource))
+    {
+        return nullptr;
+    }
+
+    const gpu::Texture2DReference targetTexture = targetResource.getObjectCast<gpu::Texture2D>();
+    const gpu::Texture2DDesc& resultDesc = m_renderTarget.getTexture()->getDesc();
+    const gpu::Texture2DDesc& targetDesc = targetTexture->getDesc();
+    const gpu::GraphicResourceFormat targetViewFormat = _targetView->getDesc().m_format;
+    if (targetDesc.m_size.m_x != resultDesc.m_size.m_x || targetDesc.m_size.m_y != resultDesc.m_size.m_y || targetDesc.m_format != resultDesc.m_format ||
+        (targetViewFormat != gpu::GraphicResourceFormat::Undefined && targetViewFormat != targetDesc.m_format) || !(targetDesc.m_usage & gpu::TextureUsageRenderTarget) ||
+        !(targetDesc.m_usage & gpu::GraphicResourceUsageTransferDst))
+    {
+        return nullptr;
+    }
+
+    return targetTexture;
+}
+
+void ego::render::DefaultRender::copyResultToTarget(const RenderGraphicCommandList& _commandList, const gpu::Texture2DReference& _targetTexture)
+{
+    EGO_ASSERT(_commandList && m_renderTarget.isReady() && _targetTexture);
+
+    m_renderTarget.transition(_commandList, gpu::GraphicResourceState::CopySrc);
+    _commandList->resourceBarrier(_targetTexture, gpu::GraphicResourceState::CopyDst);
+
+    const gpu::Texture2DSize& resultSize = m_renderTarget.getResolution();
+    gpu::TextureCopyRegionDesc copyRegion;
+    copyRegion.m_extent = UInt32Vector3(resultSize.m_x, resultSize.m_y, 1);
+    _commandList->copyTexture(m_renderTarget.getTexture().getObject(), _targetTexture, copyRegion);
 }
 
 void ego::render::DefaultRender::handlePrepareFailure()

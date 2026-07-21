@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoGuiRender/GuiRenderPlugin.h"
+#include "EgoGui/Rendering/GuiRenderPlugin.h"
 
 namespace ego::gui::default_gui_render
 {
@@ -9,7 +9,7 @@ namespace ego::gui::default_gui_render
     public:
         DefaultGuiRenderPlugin(const PluginModulePointer& _module, PluginType _pluginType);
 
-        GuiRenderPointer createGuiRender(GraphicDevice& _graphicDevice) override;
+        GuiRenderPointer createGuiRender() override;
 
         EGO_PLUGIN(DefaultGuiRenderPlugin, GuiRenderPlugin);
     };

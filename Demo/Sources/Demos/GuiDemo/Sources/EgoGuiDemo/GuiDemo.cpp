@@ -6,14 +6,36 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/EngineSession.h"
+#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
+#include "EgoEngine/Graphic/SceneRender/Render.h"
+
+namespace
+{
+    constexpr auto TriangleColor = ego::FloatVector4(0.1f, 0.8f, 1.0f, 1.0f);
+    constexpr auto TriangleTop = ego::FloatVector3(0.0f, 0.6f, 0.0f);
+    constexpr auto TriangleBottomLeft = ego::FloatVector3(-0.6f, -0.5f, 0.0f);
+    constexpr auto TriangleBottomRight = ego::FloatVector3(0.6f, -0.5f, 0.0f);
+} // namespace
 
 bool ego::demo::GuiDemo::init(const InitData& _initData)
 {
     EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(!m_level);
     EGO_CHECK_INITIALIZATION(m_viewport.isExpired());
 
-    const engine::EngineSessionPointer engineSession = _initData.m_engineSession.lock();
+    m_engineSession = _initData.m_engineSession;
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     EGO_CHECK_INITIALIZATION(engineSession);
+
+    m_level = engineSession->getLevelController().createLevel();
+    EGO_CHECK_INITIALIZATION(m_level);
+    EGO_CHECK_INITIALIZATION(engineSession->getLevelController().setActiveLevel(m_level->getID()));
+
+    m_cameraEntity = m_level->createNode();
+    EGO_CHECK_INITIALIZATION(m_cameraEntity);
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(m_cameraEntity));
+    engineSession->setRenderCameraEntity(m_cameraEntity);
 
     const gui::GuiControllerPointer guiController = engineSession->getGuiControllerPointer();
     EGO_CHECK_INITIALIZATION(guiController);
@@ -28,6 +50,20 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
     return true;
 }
 
+void ego::demo::GuiDemo::update(float)
+{
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    if (!engineSession || !m_level)
+    {
+        return;
+    }
+
+    render::Render& render = engineSession->getRender();
+    render.drawLine(TriangleTop, TriangleBottomLeft, TriangleColor);
+    render.drawLine(TriangleBottomLeft, TriangleBottomRight, TriangleColor);
+    render.drawLine(TriangleBottomRight, TriangleTop, TriangleColor);
+}
+
 void ego::demo::GuiDemo::release()
 {
     const gui::ViewportPointer viewport = m_viewport.lock();
@@ -38,6 +74,22 @@ void ego::demo::GuiDemo::release()
 
     m_window = nullptr;
     m_viewport.reset();
+
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    if (engineSession && m_level)
+    {
+        const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
+        if (activeLevel && activeLevel->getID() == m_level->getID())
+        {
+            engineSession->getLevelController().clearActiveLevel();
+        }
+
+        engineSession->clearRenderCameraEntity();
+    }
+
+    m_level = nullptr;
+    m_cameraEntity = ecs::Entity();
+    m_engineSession.reset();
 }
 
 ego::gui::WindowPointer ego::demo::GuiDemo::createWindow() const

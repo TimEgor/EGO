@@ -56,7 +56,7 @@ bool ego::gui::GuiController::init(const InitData& _initData)
 
     m_isInitialized = true;
 
-    const ViewportPointer primaryViewport = createViewport(ViewportRole::Primary, initData.m_primaryViewportDesc);
+    const ViewportPointer primaryViewport = createViewport(ViewportRole::Primary, ViewportDesc());
     if (!primaryViewport)
     {
         release();
@@ -267,9 +267,9 @@ void ego::gui::GuiController::update()
     }
 }
 
-ego::gui::Frame ego::gui::GuiController::buildFrame()
+ego::gui::GuiRenderData ego::gui::GuiController::buildFrame()
 {
-    Frame frame;
+    GuiRenderData frame;
     if (!m_isInitialized || !canStartVisualOperation())
     {
         return frame;
@@ -281,24 +281,20 @@ ego::gui::Frame ego::gui::GuiController::buildFrame()
 
     if (fontAtlas && fontAtlas->isInitialized())
     {
-        const ImagePointer& fontImage = fontAtlas->getImage();
-        if (fontImage)
+        const gpu::TextureViewReference& fontTextureView = fontAtlas->getTextureView();
+        if (fontTextureView)
         {
-            ImageBinding fontImageBinding;
-            fontImageBinding.m_id = fontImage->getID();
-            fontImageBinding.m_image = fontImage;
-            frame.m_resources.push_back(fontImageBinding);
+            frame.m_resourceTextureViews.push_back(fontTextureView);
         }
     }
-    frame.m_viewports.reserve(m_viewports.size());
 
+    frame.m_viewports.reserve(m_viewports.size());
     for (const ViewportMap::value_type& viewportEntry : m_viewports)
     {
-        const ViewportID viewportID = viewportEntry.first;
         const ViewportPointer& viewport = viewportEntry.second;
 
-        ViewportFrame viewportFrame;
-        viewportFrame.m_viewportID = viewportID;
+        ViewportRenderData viewportFrame;
+        viewportFrame.m_graphicPresenter = viewport->getGraphicPresenterPointer();
 
         const Size viewportSize = viewport->getSize();
         if (viewportSize.m_x > 0.0f && viewportSize.m_y > 0.0f)
@@ -317,7 +313,6 @@ ego::gui::Frame ego::gui::GuiController::buildFrame()
         frame.m_viewports.push_back(std::move(viewportFrame));
     }
 
-    frame.m_primaryViewportID = m_primaryViewportID;
     return frame;
 }
 

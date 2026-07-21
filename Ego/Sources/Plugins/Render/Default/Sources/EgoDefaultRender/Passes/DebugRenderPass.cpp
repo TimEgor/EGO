@@ -13,7 +13,7 @@
 
 #include "EgoGraphicHardware/Resources/ShaderResource.h"
 
-#include "EgoEngine/Graphic/Render/RenderResourceObject.h"
+#include "EgoEngine/Graphic/SceneRender/RenderResourceObject.h"
 
 #include "EgoDefaultRender/DefaultRenderBindingLayout.h"
 

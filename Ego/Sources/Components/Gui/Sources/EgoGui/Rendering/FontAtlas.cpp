@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <limits>
-#include <utility>
 
 #include "EgoCore/UtilsMacros.h"
+
+#include "EgoGraphicHardware/GraphicDevice.h"
+#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 #include "EgoGui/Core/TextEncoding.h"
 
@@ -88,8 +90,29 @@ bool ego::gui::FontAtlas::init(const FontAtlasDesc& _desc)
         glyph.m_advance = packedGlyph.xadvance;
     }
 
-    m_image = Image::Create(DefaultFontImageID, m_width, m_height, ImageFormat::R8, std::move(pixels));
-    EGO_CHECK_RETURN_CALL_FALSE(m_image, release());
+    EGO_CHECK_RETURN_CALL_FALSE(pixels.size() <= static_cast<size_t>((std::numeric_limits<uint32_t>::max)()), release());
+
+    gpu::Texture2DDesc textureDesc;
+    textureDesc.m_usage = static_cast<gpu::GraphicResourceUsage>(gpu::GraphicResourceUsageTransferDst | gpu::GraphicResourceUsageShaderResource);
+    textureDesc.m_size = gpu::Texture2DSize(m_width, m_height);
+    textureDesc.m_format = gpu::GraphicResourceFormat::R8UNorm;
+
+    const uint32_t pixelDataSize = static_cast<uint32_t>(pixels.size());
+    const gpu::InitialGraphicResourceData initialData(pixels.data(), pixelDataSize, m_width, pixelDataSize);
+    const gpu::GpuOperationOptions uploadOptions{gpu::GpuCompletionMode::WaitForCompletion};
+
+    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
+    const gpu::GpuTexture2DTicket textureTicket = graphicDevice.createAndUploadTexture2D(textureDesc, initialData, uploadOptions);
+    EGO_CHECK_RETURN_CALL_FALSE(textureTicket.m_resource, release());
+    textureTicket.waitReady();
+
+    gpu::TextureViewDesc textureViewDesc;
+    textureViewDesc.m_type = gpu::GraphicResourceViewType::ShaderResource;
+    textureViewDesc.m_dimension = gpu::TextureViewDimension::D2;
+    textureViewDesc.m_format = textureDesc.m_format;
+
+    m_textureView = graphicDevice.createTextureView(textureTicket.m_resource, textureViewDesc);
+    EGO_CHECK_RETURN_CALL_FALSE(m_textureView && m_textureView->getBindlessIndex() != gpu::InvalidBindlessIndex, release());
 
     m_isInitialized = true;
     return true;
@@ -97,7 +120,7 @@ bool ego::gui::FontAtlas::init(const FontAtlasDesc& _desc)
 
 void ego::gui::FontAtlas::release()
 {
-    m_image = nullptr;
+    m_textureView = nullptr;
     m_glyphs.clear();
     m_firstCodepoint = ' ';
     m_characterCount = 0;
@@ -158,9 +181,9 @@ ego::gui::Size ego::gui::FontAtlas::measureText(std::string_view _text) const
     return Size(maxLineWidth, height);
 }
 
-const ego::gui::ImagePointer& ego::gui::FontAtlas::getImage() const
+const ego::gpu::TextureViewReference& ego::gui::FontAtlas::getTextureView() const
 {
-    return m_image;
+    return m_textureView;
 }
 
 uint32_t ego::gui::FontAtlas::getWidth() const
@@ -183,12 +206,7 @@ float ego::gui::FontAtlas::getBaseline() const
     return m_baseline;
 }
 
-ego::gui::ImageID ego::gui::FontAtlas::getImageID() const
-{
-    return m_isInitialized && m_image ? m_image->getID() : InvalidImageID;
-}
-
 bool ego::gui::FontAtlas::isInitialized() const
 {
-    return m_isInitialized && m_image;
+    return m_isInitialized && m_textureView;
 }

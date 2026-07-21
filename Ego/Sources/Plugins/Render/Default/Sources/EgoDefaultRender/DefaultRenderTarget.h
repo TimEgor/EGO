@@ -2,8 +2,8 @@
 
 #include "EgoGraphicHardware/GraphicDevice.h"
 
-#include "EgoEngine/Graphic/Render/Render.h"
-#include "EgoEngine/Graphic/Render/RenderGpuObject.h"
+#include "EgoEngine/Graphic/SceneRender/Render.h"
+#include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 
 namespace ego::render
 {
@@ -26,6 +26,5 @@ namespace ego::render
         RenderTexture2D m_texture = nullptr;
         RenderTextureView m_renderTargetView = nullptr;
         RenderTextureView m_unorderedAccessView = nullptr;
-        gpu::Texture2DSize m_resolution = DefaultRenderResolution;
     };
 } // namespace ego::render
