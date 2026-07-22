@@ -9,8 +9,8 @@
 #include "EgoEngine/Project/Project.h"
 
 #include "EgoApplication/Application.h"
-#include "EgoApplication/Engine/Gui/Viewport/ApplicationGuiViewportSystem.h"
-#include "EgoApplication/Window/ApplicationWindow.h"
+#include "EgoApplication/Engine/Gui/ApplicationGuiViewportProvider.h"
+#include "EgoApplication/Presentation/PresenterProvider.h"
 
 namespace ego::demo::standalone
 {
@@ -52,7 +52,7 @@ namespace ego::demo::standalone
         bool fillEngineSessionInitData(const CommandLineOptions& _options, engine::EngineSession::InitData& _sessionInitData);
         bool loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const;
         bool loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const;
-        static WindowDesc CreateMainWindowDesc();
+        static application::PresentationDesc CreateMainPresentationDesc();
         FileName selectProjectFile() const;
 
         application::ApplicationPointer m_application = nullptr;
@@ -60,7 +60,7 @@ namespace ego::demo::standalone
         engine::EnginePointer m_engine = nullptr;
         engine::EngineSessionPointer m_engineSession = nullptr;
 
-        application::ApplicationWindowWeakPointer m_mainWindow;
-        application::ApplicationGuiViewportSystemPointer m_guiViewportSystem = nullptr;
+        PresentationSurfacePointer m_mainPresentationSurface = nullptr;
+        application::ApplicationGuiViewportProviderPointer m_guiViewportProvider = nullptr;
     };
 } // namespace ego::demo::standalone

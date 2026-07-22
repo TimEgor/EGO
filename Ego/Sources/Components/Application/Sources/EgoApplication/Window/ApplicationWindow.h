@@ -11,11 +11,11 @@
 
 namespace ego::application
 {
-    class ApplicationWindowController;
+    class ApplicationWindowPresentationProvider;
 
     class ApplicationWindow final : public PresentationSurface, public NonCopyable
     {
-        friend class ApplicationWindowController;
+        friend class ApplicationWindowPresentationProvider;
 
     public:
         ApplicationWindow() = default;
@@ -25,19 +25,21 @@ namespace ego::application
 
         bool isValid() const;
 
-        void show();
-        void hide();
-        bool isShown() const;
+        void show() override;
+        void hide() override;
+        bool isShown() const override;
 
         void* getNativeHandle() const override;
         bool isStable() const;
-        bool screenToClient(const WindowPoint& _screenPoint, WindowPoint& _clientPoint) const;
+        bool screenToLocal(const PresentationSurfacePoint& _screenPoint, PresentationSurfacePoint& _localPoint) const override;
 
         const WindowSize& getWindowSize() const;
         const WindowSize& getSize() const override;
         const WindowArea& getCutoutsArea() const;
 
-        InstancedEventID getSizeEventID() const;
+        InstancedEventID getDestroyingEventID() const;
+        InstancedEventID getActivationEventID() const;
+        InstancedEventID getSizeChangedEventID() const;
         InstancedEventID getKeyboardInputEventID() const;
         InstancedEventID getTextInputEventID() const;
 
@@ -53,7 +55,9 @@ namespace ego::application
 
         WindowPointer m_nativeWindow = nullptr;
         EventControllerPointer m_eventController = nullptr;
-        InstancedEventID m_sizeEventID = InvalidInstancedEventID;
+        InstancedEventID m_destroyingEventID = InvalidInstancedEventID;
+        InstancedEventID m_activationEventID = InvalidInstancedEventID;
+        InstancedEventID m_sizeChangedEventID = InvalidInstancedEventID;
         InstancedEventID m_keyboardInputEventID = InvalidInstancedEventID;
         InstancedEventID m_textInputEventID = InvalidInstancedEventID;
     };

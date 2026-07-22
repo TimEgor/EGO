@@ -52,6 +52,21 @@ void ego::gui::PaintContext::drawBox(const Rect& _rect, const NormalizedColorRGB
     appendQuad(_rect, _color, _textureIndex);
 }
 
+void ego::gui::PaintContext::drawBorder(const Rect& _rect, float _thickness, const NormalizedColorRGBA& _color)
+{
+    const float maximumThickness = (std::max)(0.0f, (std::min)(_rect.m_size.m_x, _rect.m_size.m_y) * 0.5f);
+    const float thickness = (std::clamp)(_thickness, 0.0f, maximumThickness);
+    if (thickness <= 0.0f)
+    {
+        return;
+    }
+
+    drawBox(Rect(_rect.getLeft(), _rect.getTop(), _rect.m_size.m_x, thickness), _color);
+    drawBox(Rect(_rect.getLeft(), _rect.getBottom() - thickness, _rect.m_size.m_x, thickness), _color);
+    drawBox(Rect(_rect.getLeft(), _rect.getTop() + thickness, thickness, _rect.m_size.m_y - thickness * 2.0f), _color);
+    drawBox(Rect(_rect.getRight() - thickness, _rect.getTop() + thickness, thickness, _rect.m_size.m_y - thickness * 2.0f), _color);
+}
+
 void ego::gui::PaintContext::drawCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
 {
     appendCircle(_center, _radius, _color, _textureIndex);
@@ -219,10 +234,8 @@ void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _i
     if (!m_drawData.m_commands.empty())
     {
         DrawCommand& previousCommand = m_drawData.m_commands.back();
-        const Rect& previousClipRect = previousCommand.m_clipRect;
-        const bool hasSameClip = previousClipRect.m_position.m_x == clipRect.m_position.m_x && previousClipRect.m_position.m_y == clipRect.m_position.m_y &&
-                                 previousClipRect.m_size.m_x == clipRect.m_size.m_x && previousClipRect.m_size.m_y == clipRect.m_size.m_y;
-        if (previousCommand.m_textureIndex == _textureIndex && hasSameClip && previousCommand.m_firstIndex + previousCommand.m_indexCount == _firstIndex)
+        if (previousCommand.m_textureIndex == _textureIndex && previousCommand.m_clipRect == clipRect &&
+            previousCommand.m_firstIndex + previousCommand.m_indexCount == _firstIndex)
         {
             previousCommand.m_indexCount += _indexCount;
             return;

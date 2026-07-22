@@ -4,11 +4,21 @@
 #include "EgoCore/Platform/Window/Window.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "ApplicationWindowEvents.h"
+#include "EgoApplication/Presentation/PresentationSurfaceEvents.h"
 
-ego::InstancedEventID ego::application::ApplicationWindow::getSizeEventID() const
+ego::InstancedEventID ego::application::ApplicationWindow::getDestroyingEventID() const
 {
-    return m_sizeEventID;
+    return m_destroyingEventID;
+}
+
+ego::InstancedEventID ego::application::ApplicationWindow::getActivationEventID() const
+{
+    return m_activationEventID;
+}
+
+ego::InstancedEventID ego::application::ApplicationWindow::getSizeChangedEventID() const
+{
+    return m_sizeChangedEventID;
 }
 
 ego::InstancedEventID ego::application::ApplicationWindow::getKeyboardInputEventID() const
@@ -87,9 +97,9 @@ bool ego::application::ApplicationWindow::isStable() const
     return m_nativeWindow && m_nativeWindow->isStable();
 }
 
-bool ego::application::ApplicationWindow::screenToClient(const WindowPoint& _screenPoint, WindowPoint& _clientPoint) const
+bool ego::application::ApplicationWindow::screenToLocal(const PresentationSurfacePoint& _screenPoint, PresentationSurfacePoint& _localPoint) const
 {
-    return m_nativeWindow && m_nativeWindow->screenToClient(_screenPoint, _clientPoint);
+    return m_nativeWindow && m_nativeWindow->screenToClient(_screenPoint, _localPoint);
 }
 
 const ego::WindowSize& ego::application::ApplicationWindow::getWindowSize() const
@@ -116,13 +126,19 @@ bool ego::application::ApplicationWindow::initInstancedEvents()
 {
     EGO_CHECK_RETURN_FALSE(m_eventController);
 
-    m_sizeEventID = m_eventController->registerInstancedEvent<ApplicationWindowSizeChangedEvent>();
-    EGO_CHECK_RETURN_FALSE(m_sizeEventID != InvalidInstancedEventID);
+    m_destroyingEventID = m_eventController->registerInstancedEvent<PresentationSurfaceDestroyingEvent>();
+    EGO_CHECK_RETURN_FALSE(m_destroyingEventID != InvalidInstancedEventID);
 
-    m_keyboardInputEventID = m_eventController->registerInstancedEvent<ApplicationWindowKeyboardInputEvent>();
+    m_activationEventID = m_eventController->registerInstancedEvent<PresentationSurfaceActivationEvent>();
+    EGO_CHECK_RETURN_FALSE(m_activationEventID != InvalidInstancedEventID);
+
+    m_sizeChangedEventID = m_eventController->registerInstancedEvent<PresentationSurfaceSizeChangedEvent>();
+    EGO_CHECK_RETURN_FALSE(m_sizeChangedEventID != InvalidInstancedEventID);
+
+    m_keyboardInputEventID = m_eventController->registerInstancedEvent<PresentationSurfaceKeyboardInputEvent>();
     EGO_CHECK_RETURN_FALSE(m_keyboardInputEventID != InvalidInstancedEventID);
 
-    m_textInputEventID = m_eventController->registerInstancedEvent<ApplicationWindowTextInputEvent>();
+    m_textInputEventID = m_eventController->registerInstancedEvent<PresentationSurfaceTextInputEvent>();
     EGO_CHECK_RETURN_FALSE(m_textInputEventID != InvalidInstancedEventID);
 
     return true;
@@ -142,13 +158,25 @@ void ego::application::ApplicationWindow::releaseInstancedEvents()
             m_eventController->unregisterInstancedEvent(m_keyboardInputEventID);
         }
 
-        if (m_sizeEventID != InvalidInstancedEventID)
+        if (m_sizeChangedEventID != InvalidInstancedEventID)
         {
-            m_eventController->unregisterInstancedEvent(m_sizeEventID);
+            m_eventController->unregisterInstancedEvent(m_sizeChangedEventID);
+        }
+
+        if (m_activationEventID != InvalidInstancedEventID)
+        {
+            m_eventController->unregisterInstancedEvent(m_activationEventID);
+        }
+
+        if (m_destroyingEventID != InvalidInstancedEventID)
+        {
+            m_eventController->unregisterInstancedEvent(m_destroyingEventID);
         }
     }
 
     m_textInputEventID = InvalidInstancedEventID;
     m_keyboardInputEventID = InvalidInstancedEventID;
-    m_sizeEventID = InvalidInstancedEventID;
+    m_sizeChangedEventID = InvalidInstancedEventID;
+    m_activationEventID = InvalidInstancedEventID;
+    m_destroyingEventID = InvalidInstancedEventID;
 }

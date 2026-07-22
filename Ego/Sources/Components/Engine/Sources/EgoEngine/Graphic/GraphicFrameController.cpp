@@ -48,12 +48,16 @@ void ego::engine::GraphicFrameController::clearResources()
     m_guiRenderController.clearResources();
     m_sceneRenderController.clearResources();
     m_framePresenterController.clearResources();
-    m_preparedGuiTargets.clear();
+    m_preparedGuiPresenters.clear();
     m_sceneGraphicPresenter = nullptr;
 }
 
 void ego::engine::GraphicFrameController::prepareFrame(gui::GuiRenderData&& _guiRenderData, const SceneRenderData& _sceneRenderData)
 {
+    m_sceneRenderController.wait();
+    m_guiRenderController.clearResources();
+    m_preparedGuiPresenters.clear();
+
     m_sceneGraphicPresenter = _sceneRenderData.m_graphicPresenter;
 
     std::vector<GraphicPresenterPointer> graphicPresenters;
@@ -108,7 +112,6 @@ ego::render::Render& ego::engine::GraphicFrameController::getRender()
 
 void ego::engine::GraphicFrameController::prepareGuiFrame(gui::GuiRenderData&& _guiRenderData)
 {
-    m_preparedGuiTargets.clear();
     if (!m_guiRenderController.isInitialized())
     {
         return;
@@ -117,7 +120,7 @@ void ego::engine::GraphicFrameController::prepareGuiFrame(gui::GuiRenderData&& _
     gui::GuiRenderData filteredRenderData;
     filteredRenderData.m_resourceTextureViews = std::move(_guiRenderData.m_resourceTextureViews);
     filteredRenderData.m_viewports.reserve(_guiRenderData.m_viewports.size());
-    m_preparedGuiTargets.reserve(_guiRenderData.m_viewports.size());
+    m_preparedGuiPresenters.reserve(_guiRenderData.m_viewports.size());
     for (gui::ViewportRenderData& viewportRenderData : _guiRenderData.m_viewports)
     {
         const GraphicPresenterPointer graphicPresenter = viewportRenderData.m_graphicPresenter;
@@ -129,14 +132,14 @@ void ego::engine::GraphicFrameController::prepareGuiFrame(gui::GuiRenderData&& _
         }
 
         filteredRenderData.m_viewports.push_back(std::move(viewportRenderData));
-        m_preparedGuiTargets.push_back(targetTexture);
+        m_preparedGuiPresenters.push_back(graphicPresenter);
     }
 
     const bool prepareResult = m_guiRenderController.prepare(std::move(filteredRenderData));
     EGO_ASSERT(prepareResult);
     if (!prepareResult)
     {
-        m_preparedGuiTargets.clear();
+        m_preparedGuiPresenters.clear();
     }
 }
 
@@ -173,6 +176,13 @@ void ego::engine::GraphicFrameController::renderGuiFrame()
         return;
     }
 
-    const bool renderResult = m_guiRenderController.renderFrame(m_preparedGuiTargets);
+    GuiRenderController::FrameRenderTargetCollection targetTextures;
+    targetTextures.reserve(m_preparedGuiPresenters.size());
+    for (const GraphicPresenterPointer& graphicPresenter : m_preparedGuiPresenters)
+    {
+        targetTextures.push_back(m_framePresenterController.getTargetTexture(graphicPresenter));
+    }
+
+    const bool renderResult = m_guiRenderController.renderFrame(targetTextures);
     EGO_ASSERT(renderResult);
 }

@@ -53,7 +53,7 @@ namespace ego::engine
         {
             gui::FontAtlasDesc m_fontAtlasDesc;
             gui::Theme m_theme;
-            gui::ViewportBackendPointer m_viewportBackend = nullptr;
+            gui::ViewportProviderPointer m_viewportProvider = nullptr;
         };
 
         struct SceneRenderOptions final

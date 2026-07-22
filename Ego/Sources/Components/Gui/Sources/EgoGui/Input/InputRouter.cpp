@@ -1,5 +1,6 @@
 #include "InputRouter.h"
 
+#include <algorithm>
 #include <cstddef>
 
 #include "EgoCore/Assert/Assert.h"
@@ -28,7 +29,7 @@ ego::gui::InputRouter::ProcessingScope::~ProcessingScope()
 {
     if (m_isActive)
     {
-        m_router->m_isProcessing = false;
+        m_router->endProcessing();
     }
 }
 
@@ -85,7 +86,7 @@ void ego::gui::InputRouter::onPointerMove(const PointerMoveEvent& _event)
 
     for (const WidgetPointer& responder : eventPath)
     {
-        if (applyReply(responder, responder->onPointerMove(_event)))
+        if (applyReply(responder, Widget::WidgetAccessor::HandleInput(*responder, _event)))
         {
             break;
         }
@@ -127,15 +128,17 @@ void ego::gui::InputRouter::onMouseButton(const MouseButtonEvent& _event)
 
     updateHover(hoverPath);
 
+    InputReply handledReply = InputReply::Unhandled;
     for (const WidgetPointer& responder : eventPath)
     {
-        const InputReply reply = responder->onMouseButton(_event);
+        const InputReply reply = Widget::WidgetAccessor::HandleInput(*responder, _event);
         if (!applyReply(responder, reply))
         {
             continue;
         }
 
-        if (_event.m_action == InputButtonAction::Pressed && isPointerInsideViewport && reply == InputReply::FocusAndCapture)
+        handledReply = reply;
+        if (_event.m_action == InputButtonAction::Pressed && isPointerInsideViewport && (reply == InputReply::Capture || reply == InputReply::FocusAndCapture))
         {
             capturePointer(responder, _event.m_key);
         }
@@ -145,7 +148,7 @@ void ego::gui::InputRouter::onMouseButton(const MouseButtonEvent& _event)
     if (_event.m_action == InputButtonAction::Pressed)
     {
         const WidgetPointer focusedWidget = getFocusedWidget();
-        if (isPointerInsideViewport && focusedWidget && !ContainsWidget(eventPath, focusedWidget))
+        if (isPointerInsideViewport && handledReply != InputReply::Capture && focusedWidget && !ContainsWidget(eventPath, focusedWidget))
         {
             setFocusedWidget(nullptr);
         }
@@ -169,7 +172,7 @@ void ego::gui::InputRouter::onMouseWheel(const MouseWheelEvent& _event)
 
     for (const WidgetPointer& responder : hoverPath)
     {
-        if (applyReply(responder, responder->onMouseWheel(_event)))
+        if (applyReply(responder, Widget::WidgetAccessor::HandleInput(*responder, _event)))
         {
             break;
         }
@@ -181,7 +184,7 @@ void ego::gui::InputRouter::onKey(const KeyEvent& _event)
     const WidgetPath path = buildPath(getFocusedWidget());
     for (const WidgetPointer& responder : path)
     {
-        if (applyReply(responder, responder->onKey(_event)))
+        if (applyReply(responder, Widget::WidgetAccessor::HandleInput(*responder, _event)))
         {
             break;
         }
@@ -193,7 +196,7 @@ void ego::gui::InputRouter::onTextInput(const TextInputEvent& _event)
     const WidgetPath path = buildPath(getFocusedWidget());
     for (const WidgetPointer& responder : path)
     {
-        if (applyReply(responder, responder->onTextInput(_event)))
+        if (applyReply(responder, Widget::WidgetAccessor::HandleInput(*responder, _event)))
         {
             break;
         }
@@ -231,17 +234,25 @@ void ego::gui::InputRouter::refreshAfterLayout()
 
     if (focusLostWidget)
     {
-        focusLostWidget->onFocusChanged(FocusChange::Lost);
+        Widget::WidgetAccessor::NotifyFocusChanged(*focusLostWidget, FocusChange::Lost);
     }
 
     if (captureLostWidget)
     {
-        captureLostWidget->onPointerCaptureLost(m_pointerState.m_position);
+        Widget::WidgetAccessor::NotifyPointerCaptureLost(*captureLostWidget, m_pointerState.m_position);
     }
 }
 
 void ego::gui::InputRouter::clear()
 {
+    if (m_isProcessing)
+    {
+        m_isClearRequested = true;
+        m_isPointerCaptureCancellationGlobal = false;
+        m_pointerCaptureCancellationTargets.clear();
+        return;
+    }
+
     const ProcessingScope processingScope(*this);
     if (!processingScope)
     {
@@ -249,6 +260,50 @@ void ego::gui::InputRouter::clear()
     }
 
     clearState();
+}
+
+void ego::gui::InputRouter::cancelPointerCapture(const WidgetPointer& _widget)
+{
+    if (m_isProcessing)
+    {
+        if (!_widget)
+        {
+            m_isPointerCaptureCancellationGlobal = true;
+            m_pointerCaptureCancellationTargets.clear();
+        }
+        else if (!m_isPointerCaptureCancellationGlobal)
+        {
+            const std::vector<WidgetPointer>::const_iterator targetIt = std::find_if(
+                m_pointerCaptureCancellationTargets.begin(),
+                m_pointerCaptureCancellationTargets.end(),
+                [&_widget](const WidgetPointer& _target)
+                {
+                    return _target.get() == _widget.get();
+                });
+            if (targetIt == m_pointerCaptureCancellationTargets.end())
+            {
+                m_pointerCaptureCancellationTargets.push_back(_widget);
+            }
+        }
+        return;
+    }
+
+    const ProcessingScope processingScope(*this);
+    if (!processingScope)
+    {
+        return;
+    }
+
+    const WidgetPointer captureWidget = m_pointerState.m_captureWidget.lock();
+    WidgetPointer currentWidget = captureWidget;
+    while (_widget && currentWidget && currentWidget.get() != _widget.get())
+    {
+        currentWidget = currentWidget->getParent();
+    }
+    if (!_widget || currentWidget)
+    {
+        clearPointerCapture();
+    }
 }
 
 void ego::gui::InputRouter::clearState()
@@ -259,7 +314,7 @@ void ego::gui::InputRouter::clearState()
     m_focusedWidget.reset();
     if (focusedWidget)
     {
-        focusedWidget->onFocusChanged(FocusChange::Lost);
+        Widget::WidgetAccessor::NotifyFocusChanged(*focusedWidget, FocusChange::Lost);
     }
 
     clearPointerCapture();
@@ -349,6 +404,37 @@ bool ego::gui::InputRouter::applyReply(const WidgetPointer& _responder, InputRep
     return true;
 }
 
+void ego::gui::InputRouter::endProcessing()
+{
+    EGO_ASSERT(m_isProcessing);
+
+    const bool isClearRequested = m_isClearRequested;
+    const bool isPointerCaptureCancellationGlobal = m_isPointerCaptureCancellationGlobal;
+    std::vector<WidgetPointer> pointerCaptureCancellationTargets;
+    pointerCaptureCancellationTargets.swap(m_pointerCaptureCancellationTargets);
+
+    m_isClearRequested = false;
+    m_isPointerCaptureCancellationGlobal = false;
+    m_isProcessing = false;
+
+    if (isClearRequested)
+    {
+        clear();
+        return;
+    }
+
+    if (isPointerCaptureCancellationGlobal)
+    {
+        cancelPointerCapture();
+        return;
+    }
+
+    for (const WidgetPointer& cancellationTarget : pointerCaptureCancellationTargets)
+    {
+        cancelPointerCapture(cancellationTarget);
+    }
+}
+
 void ego::gui::InputRouter::setFocusedWidget(const WidgetPointer& _widget)
 {
     const WidgetPointer targetWidget = m_root->isInputTarget(_widget) ? _widget : nullptr;
@@ -361,13 +447,13 @@ void ego::gui::InputRouter::setFocusedWidget(const WidgetPointer& _widget)
     m_focusedWidget.reset();
     if (focusedWidget)
     {
-        focusedWidget->onFocusChanged(FocusChange::Lost);
+        Widget::WidgetAccessor::NotifyFocusChanged(*focusedWidget, FocusChange::Lost);
     }
 
     if (m_root->isInputTarget(targetWidget))
     {
         m_focusedWidget = targetWidget;
-        targetWidget->onFocusChanged(FocusChange::Gained);
+        Widget::WidgetAccessor::NotifyFocusChanged(*targetWidget, FocusChange::Gained);
     }
 }
 
@@ -404,7 +490,7 @@ void ego::gui::InputRouter::clearPointerCapture()
     m_pointerState.m_captureButtons = 0;
     if (captureWidget)
     {
-        captureWidget->onPointerCaptureLost(m_pointerState.m_position);
+        Widget::WidgetAccessor::NotifyPointerCaptureLost(*captureWidget, m_pointerState.m_position);
     }
 }
 
@@ -440,12 +526,12 @@ void ego::gui::InputRouter::updateHover(const WidgetPath& _path)
         const WidgetPointer& widget = previousPath[widgetIndex];
         if (widget)
         {
-            widget->onPointerLeave(pointerState.m_position, pointerState.m_modifiers);
+            Widget::WidgetAccessor::NotifyPointerLeave(*widget, pointerState.m_position, pointerState.m_modifiers);
         }
     }
 
     for (size_t widgetIndex = enterCount; widgetIndex > 0; --widgetIndex)
     {
-        _path[widgetIndex - 1]->onPointerEnter(pointerState.m_position, pointerState.m_modifiers);
+        Widget::WidgetAccessor::NotifyPointerEnter(*_path[widgetIndex - 1], pointerState.m_position, pointerState.m_modifiers);
     }
 }

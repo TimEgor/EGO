@@ -12,6 +12,7 @@ namespace ego
 
         virtual void release() = 0;
 
+        virtual bool prepare() = 0;
         virtual gpu::Texture2DReference getTargetTexture() = 0;
 
         virtual void present() = 0;

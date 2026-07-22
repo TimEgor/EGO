@@ -31,7 +31,8 @@ namespace ego::gui
         ScrollChangedHandler m_onChanged;
     };
 
-    class ScrollView final : public Container
+    class ScrollView final
+        : public Container
     {
     public:
         ~ScrollView() override;
@@ -89,10 +90,13 @@ namespace ego::gui
             VerticalThumb
         };
 
-        static bool AreRectsEqual(const Rect& _first, const Rect& _second);
-
         Rect createScrollThumbRect(const Rect& _trackRect, float _viewportExtent, float _contentExtent, float _offset, float _range, Axis _axis) const;
-        void resolveScrollBarVisibility(const Size& _outerSize, const Size& _contentSize, float _scrollBarThickness, bool& _isHorizontalVisible, bool& _isVerticalVisible) const;
+        void resolveScrollBarVisibility(
+            const Size& _outerSize,
+            const Size& _contentSize,
+            float _scrollBarThickness,
+            bool& _isHorizontalVisible,
+            bool& _isVerticalVisible) const;
 
         ScrollPart findScrollPart(const Position& _position) const;
         void beginScrollInteraction(ScrollPart _part, const Position& _position);

@@ -1,29 +1,37 @@
 #pragma once
 
+#include <vector>
+
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
 
+#include "EgoGui/Docking/DockingTypes.h"
 #include "EgoGui/Input/Input.h"
+#include "EgoGui/Widgets/Window.h"
 
-#include "SurfaceRoot.h"
 #include "ViewportTypes.h"
 
 namespace ego::gui
 {
-    class GuiController;
     class InputRouter;
+    class SurfaceRoot;
+    class WindowHost;
     struct ViewportUpdate;
 
-    class Viewport final : public NonCopyable
+    EGO_POINTER(SurfaceRoot);
+    EGO_POINTER(WindowHost);
+
+    class Viewport final
+        : public NonCopyable
     {
     public:
-        class ViewportAccessor final : public NonInstanceable
+        class ViewportAccessor final
+            : public NonInstanceable
         {
-            friend class GuiController;
-
+        public:
             static ego::SharedPointer<Viewport> Create(ViewportID _id, ViewportRole _role, const Size& _size);
             static void Update(Viewport& _viewport, const LayoutContext& _layoutContext, const ViewportUpdate& _update);
             static void ClearInteraction(Viewport& _viewport);
@@ -31,7 +39,7 @@ namespace ego::gui
             static void EmitDrawCommands(Viewport& _viewport, const LayoutContext& _layoutContext, PaintContext& _paintContext);
         };
 
-        using WidgetCollection = SurfaceRoot::WidgetCollection;
+        using WidgetCollection = std::vector<WidgetPointer>;
 
         ~Viewport() override;
 
@@ -39,17 +47,25 @@ namespace ego::gui
         ViewportRole getRole() const;
         const Size& getSize() const;
         GraphicPresenterPointer getGraphicPresenterPointer() const;
-        void setSize(const Size& _size);
 
         bool add(const WidgetPointer& _widget);
+        bool addWindow(const WindowPointer& _window, const WindowPlacement& _placement = WindowPlacement());
         WidgetPointer remove(const WidgetPointer& _widget);
         void clear();
         const WidgetCollection& getWidgets() const;
         WidgetPointer getFocusedWidget() const;
 
+        bool setDockingEnabled(bool _isEnabled);
+        bool isDockingEnabled() const;
+        DockingSpaceID getDefaultDockingSpaceID() const;
+        DockingSpaceID getWindowDockingSpaceID(const WindowPointer& _window) const;
+        bool moveWindow(const WindowPointer& _window, const WindowPlacement& _placement);
+
     private:
         Viewport(ViewportID _id, ViewportRole _role, const Size& _size);
 
+        WindowHostPointer getWindowHost() const;
+        void setSize(const Size& _size);
         void update(const LayoutContext& _layoutContext, const ViewportUpdate& _update);
         void clearInteraction();
         void invalidateLayout();

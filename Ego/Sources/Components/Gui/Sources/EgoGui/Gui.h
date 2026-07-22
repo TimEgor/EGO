@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EgoGui/Core/Geometry.h"
+#include "EgoGui/Docking/DockingTypes.h"
 #include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Theme/Theme.h"
 #include "EgoGui/Viewport/Viewport.h"
@@ -18,3 +19,5 @@
 #include "EgoGui/Widgets/TextInput.h"
 #include "EgoGui/Widgets/Widget.h"
 #include "EgoGui/Widgets/Window.h"
+
+#include "EgoGui/GuiController.h"

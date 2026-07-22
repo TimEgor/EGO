@@ -1,5 +1,7 @@
 #include "FramePresenterController.h"
 
+#include <utility>
+
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
@@ -47,9 +49,22 @@ void ego::engine::FramePresenterController::prepareFrame(const std::vector<Graph
 
     for (const GraphicPresenterPointer& graphicPresenter : _graphicPresenters)
     {
-        if (graphicPresenter)
+        if (!graphicPresenter)
         {
-            m_graphicPresenters.insert(graphicPresenter);
+            continue;
+        }
+
+        const std::pair<GraphicPresenterCollection::iterator, bool> insertResult = m_graphicPresenters.insert(graphicPresenter);
+        if (!insertResult.second)
+        {
+            continue;
+        }
+
+        const bool prepareResult = graphicPresenter->prepare();
+        EGO_ASSERT_MESSAGE(prepareResult, "Failed to prepare a graphic presenter.");
+        if (!prepareResult)
+        {
+            m_graphicPresenters.erase(insertResult.first);
         }
     }
 

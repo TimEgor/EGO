@@ -28,6 +28,8 @@
 - Avoid `auto` for simple or obvious types; use it only for complex composite types, such as collection iterators, or when the language/API requires it.
 - Structure functions and classes into clear logical blocks. Prefer separating independent steps, responsibilities, and declaration groups instead of keeping large uninterrupted blocks of code.
 - Formatting: keep at most one consecutive blank line in code and declarations.
+- Formatting: after a scope's closing brace, always insert a blank line before a following statement; omit it only when the next line closes the parent scope.
+- Formatting: always insert a blank line before `return` when its containing scope has more than two lines.
 - Formatting: preprocessor directives use normal indentation; keep empty blocks compact.
 - Formatting: simple `case` statements and embedded statements use line breaks instead of staying on one line.
 - Formatting: in multiline declarations and calls, wrap after the opening parenthesis and before the closing parenthesis; wrap parameters, arguments, and braced init lists with `chop if long` behavior.

@@ -23,6 +23,7 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
     EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(!m_level);
     EGO_CHECK_INITIALIZATION(m_viewport.isExpired());
+    EGO_CHECK_INITIALIZATION(m_windows.empty());
 
     m_engineSession = _initData.m_engineSession;
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
@@ -42,11 +43,27 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
 
     const gui::ViewportPointer primaryViewport = guiController->getPrimaryViewport();
     EGO_CHECK_INITIALIZATION(primaryViewport);
-
-    m_window = createWindow();
-    EGO_CHECK_INITIALIZATION(m_window);
-    EGO_CHECK_INITIALIZATION(primaryViewport->add(m_window));
+    m_wasDockingEnabled = primaryViewport->isDockingEnabled();
+    EGO_CHECK_INITIALIZATION(primaryViewport->setDockingEnabled(true));
     m_viewport = primaryViewport;
+
+    const gui::WindowPointer demoWindow = createWindow();
+    const gui::WindowPointer sceneWindow =
+        createToolWindow("Scene", gui::Rect(440.0f, 15.0f, 280.0f, 180.0f), "Drag this window over the docked area and choose a docking target.");
+    const gui::WindowPointer inspectorWindow = createToolWindow(
+        "Inspector",
+        gui::Rect(440.0f, 210.0f, 280.0f, 220.0f),
+        "Drop into the center to create a tab, or onto a side target to split the space.");
+    EGO_CHECK_INITIALIZATION(demoWindow && sceneWindow && inspectorWindow);
+
+    const gui::DockingSpaceID defaultSpaceID = primaryViewport->getDefaultDockingSpaceID();
+    EGO_CHECK_INITIALIZATION(defaultSpaceID != gui::InvalidDockingSpaceID);
+
+    m_windows = {demoWindow, sceneWindow, inspectorWindow};
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(demoWindow, {.m_spaceID = defaultSpaceID}));
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(sceneWindow));
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(inspectorWindow));
+
     return true;
 }
 
@@ -67,13 +84,21 @@ void ego::demo::GuiDemo::update(float)
 void ego::demo::GuiDemo::release()
 {
     const gui::ViewportPointer viewport = m_viewport.lock();
-    if (viewport && m_window)
+    if (viewport)
     {
-        viewport->remove(m_window);
+        for (const gui::WindowPointer& window : m_windows)
+        {
+            viewport->remove(window);
+        }
+        if (!m_wasDockingEnabled)
+        {
+            viewport->setDockingEnabled(false);
+        }
     }
 
-    m_window = nullptr;
+    m_windows.clear();
     m_viewport.reset();
+    m_wasDockingEnabled = false;
 
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     if (engineSession && m_level)
@@ -189,12 +214,13 @@ ego::gui::WindowPointer ego::demo::GuiDemo::createWindow() const
 
     const gui::WindowSizeChangedHandler updateResolution = [resolution](const gui::Size& _size)
     {
-        resolution->setText("Window resolution: " + std::to_string(static_cast<uint32_t>(_size.m_x)) + " x " + std::to_string(static_cast<uint32_t>(_size.m_y)));
+        resolution->setText(
+            "Window resolution: " + std::to_string(static_cast<uint32_t>(_size.m_x)) + " x " + std::to_string(static_cast<uint32_t>(_size.m_y)));
     };
 
     EGO_CHECK_RETURN_NULL(
-        resolution && textInputState && textInputCommitState && checkBoxState && radioGroupState && buttonState && scrollState && textInput && checkBox && radioGroup && button &&
-        buttonRow && labeledTextInput && panel && scrollView);
+        resolution && textInputState && textInputCommitState && checkBoxState && radioGroupState && buttonState && scrollState && textInput && checkBox &&
+        radioGroup && button && buttonRow && labeledTextInput && panel && scrollView);
 
     const gui::WindowPointer window = gui::Window::Create(
         {
@@ -207,4 +233,17 @@ ego::gui::WindowPointer ego::demo::GuiDemo::createWindow() const
 
     updateResolution(window->getSize());
     return window;
+}
+
+ego::gui::WindowPointer ego::demo::GuiDemo::createToolWindow(const std::string& _title, const gui::Rect& _bounds, const std::string& _description) const
+{
+    const gui::TextPointer description = gui::Text::Create(_description);
+    EGO_CHECK_RETURN_NULL(description);
+
+    return gui::Window::Create(
+        {
+            .m_title = _title,
+            .m_bounds = _bounds,
+            .m_content = description,
+        });
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "EgoECS/Entity.h"
 
 #include "EgoGui/Gui.h"
@@ -18,12 +21,14 @@ namespace ego::demo
 
     private:
         gui::WindowPointer createWindow() const;
+        gui::WindowPointer createToolWindow(const std::string& _title, const gui::Rect& _bounds, const std::string& _description) const;
 
         engine::EngineSessionWeakPointer m_engineSession;
         LevelPointer m_level = nullptr;
         ecs::Entity m_cameraEntity;
         gui::ViewportWeakPointer m_viewport;
-        gui::WindowPointer m_window = nullptr;
+        std::vector<gui::WindowPointer> m_windows;
+        bool m_wasDockingEnabled = false;
     };
 
     EGO_POINTER(GuiDemo);

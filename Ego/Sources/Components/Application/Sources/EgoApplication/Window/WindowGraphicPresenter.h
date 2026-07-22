@@ -21,6 +21,7 @@ namespace ego::application
             const gpu::CommandQueueReference& _presentationQueue);
         void release() override;
 
+        bool prepare() override;
         gpu::Texture2DReference getTargetTexture() override;
 
         bool resize(const gpu::Texture2DSize& _size);
@@ -28,6 +29,7 @@ namespace ego::application
 
     private:
         gpu::SwapChainReference m_swapChain;
+        gpu::Texture2DSize m_pendingSize = UInt32Vector2Zero;
     };
 
     EGO_POINTER(WindowGraphicPresenter);

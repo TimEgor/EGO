@@ -18,9 +18,10 @@
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
+#include "ApplicationSubsystem.h"
 #include "Profile/ApplicationProfiler.h"
-#include "Window/ApplicationWindowController.h"
 #include "Window/ApplicationWindowEvents.h"
+#include "Window/ApplicationWindowPresentationProvider.h"
 
 ego::application::Application::Application() = default;
 
@@ -53,16 +54,16 @@ void ego::application::Application::release()
     m_isExitRequested = false;
 }
 
-ego::application::ApplicationWindowPointer ego::application::Application::createWindow(const WindowDesc& _desc)
+const ego::application::PresenterProviderPointer& ego::application::Application::getPresenterProviderPointer() const
 {
-    return m_windowController ? m_windowController->createApplicationWindow(_desc) : nullptr;
+    return m_presenterProvider;
 }
 
 void ego::application::Application::processWindowEvents()
 {
-    if (m_windowController)
+    if (m_presenterProvider)
     {
-        m_windowController->processWindowEvents();
+        m_presenterProvider->processEvents();
     }
 }
 
@@ -89,6 +90,11 @@ bool ego::application::Application::isExitRequested() const
 bool ego::application::Application::initSubsystems(const InitData& _initData)
 {
     EGO_CHECK_RETURN_FALSE(initSubsystemRegistry());
+
+    m_applicationSubsystem = new ApplicationSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem->init(sharedFromThis()));
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_applicationSubsystem));
 
     m_diagnosticSubsystem = new DiagnosticSubsystem();
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem);
@@ -167,6 +173,9 @@ void ego::application::Application::releaseSubsystems()
 
     releaseSubsystem(m_diagnosticSubsystem);
     m_diagnosticSubsystem = nullptr;
+
+    releaseSubsystem(m_applicationSubsystem);
+    m_applicationSubsystem = nullptr;
 
     releaseSubsystemRegistry();
 }
@@ -286,24 +295,23 @@ bool ego::application::Application::registerGraphicResourceProvider()
 
 bool ego::application::Application::initWindowing()
 {
-    EGO_CHECK_RETURN_FALSE(!m_windowController);
+    EGO_CHECK_RETURN_FALSE(!m_presenterProvider);
     EGO_CHECK_RETURN_FALSE(m_applicationQuitRequestedEventCallbackID == InvalidEventCallbackID);
 
-    const PlatformPointer platform = GetPlatformPointer();
     const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
     const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
-    EGO_CHECK_RETURN_FALSE(platform);
     EGO_CHECK_RETURN_FALSE(eventController);
 
-    m_windowController = new ApplicationWindowController();
-    EGO_CHECK_RETURN_FALSE(m_windowController);
-    EGO_CHECK_RETURN_FALSE(m_windowController->init(platform, eventController));
+    ApplicationWindowPresentationProvider::InitData presentationInitData;
+    presentationInitData.m_swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
+    presentationInitData.m_swapChainDesc.m_bufferCount = 2;
 
-    m_applicationQuitRequestedEventCallbackID = eventController->addEventCallback<ApplicationQuitRequestedEvent>(
-        [this](const ApplicationQuitRequestedEvent&)
-        {
-            requestExit();
-        });
+    ApplicationWindowPresentationProviderPointer presenterProvider = new ApplicationWindowPresentationProvider();
+    EGO_CHECK_RETURN_FALSE(presenterProvider);
+    EGO_CHECK_RETURN_FALSE(presenterProvider->init(presentationInitData));
+    m_presenterProvider = presenterProvider;
+
+    m_applicationQuitRequestedEventCallbackID = eventController->addEventCallback<ApplicationQuitRequestedEvent>(*this, &Application::handleQuitRequested);
 
     return m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID;
 }
@@ -322,5 +330,10 @@ void ego::application::Application::releaseWindowing()
         m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_windowController);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_presenterProvider);
+}
+
+void ego::application::Application::handleQuitRequested(const ApplicationQuitRequestedEvent&)
+{
+    requestExit();
 }

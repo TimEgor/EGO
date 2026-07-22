@@ -12,7 +12,10 @@ namespace ego::gui
 {
     class SurfaceRoot;
 
-    class InputRouter final : public NonCopyable, public ego::EnableSharedFromThis<InputRouter>, private InputConsumer
+    class InputRouter final
+        : public NonCopyable,
+          public ego::EnableSharedFromThis<InputRouter>,
+          private InputConsumer
     {
     public:
         ~InputRouter() override;
@@ -22,12 +25,14 @@ namespace ego::gui
         void process(const InputEvent& _event);
 
         void refreshAfterLayout();
+        void cancelPointerCapture(const WidgetPointer& _widget = nullptr);
         void clear();
 
         WidgetPointer getFocusedWidget() const;
 
     private:
-        class ProcessingScope final : public NonCopyable
+        class ProcessingScope final
+            : public NonCopyable
         {
         public:
             explicit ProcessingScope(InputRouter& _router);
@@ -69,6 +74,7 @@ namespace ego::gui
         WidgetPath buildPath(const WidgetPointer& _target) const;
         WidgetPointer takeInvalidTarget(WidgetWeakPointer& _target);
         bool applyReply(const WidgetPointer& _responder, InputReply _reply);
+        void endProcessing();
         void clearState();
 
         void setFocusedWidget(const WidgetPointer& _widget);
@@ -81,5 +87,8 @@ namespace ego::gui
         WidgetWeakPointer m_focusedWidget;
         PointerState m_pointerState;
         bool m_isProcessing = false;
+        bool m_isPointerCaptureCancellationGlobal = false;
+        std::vector<WidgetPointer> m_pointerCaptureCancellationTargets;
+        bool m_isClearRequested = false;
     };
 } // namespace ego::gui

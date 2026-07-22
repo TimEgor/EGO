@@ -24,6 +24,7 @@ namespace ego::gui
     {
         Unhandled,
         Handled,
+        Capture,
         Focus,
         FocusAndCapture,
         ClearFocus
@@ -40,7 +41,8 @@ namespace ego::gui
         virtual void sendTo(InputConsumer& _consumer) const = 0;
     };
 
-    struct PointerMoveEvent final : public InputEvent
+    struct PointerMoveEvent final
+        : public InputEvent
     {
         Position m_position = PositionZero;
         InputModifiers m_modifiers;
@@ -48,7 +50,8 @@ namespace ego::gui
         void sendTo(InputConsumer& _consumer) const override;
     };
 
-    struct PointerExitEvent final : public InputEvent
+    struct PointerExitEvent final
+        : public InputEvent
     {
         Position m_position = PositionZero;
         InputModifiers m_modifiers;
@@ -56,7 +59,8 @@ namespace ego::gui
         void sendTo(InputConsumer& _consumer) const override;
     };
 
-    struct MouseButtonEvent final : public InputEvent
+    struct MouseButtonEvent final
+        : public InputEvent
     {
         Position m_position = PositionZero;
         MouseInputKey m_key = MouseInputKey::ButtonLeft;
@@ -66,7 +70,8 @@ namespace ego::gui
         void sendTo(InputConsumer& _consumer) const override;
     };
 
-    struct MouseWheelEvent final : public InputEvent
+    struct MouseWheelEvent final
+        : public InputEvent
     {
         Position m_position = PositionZero;
         float m_wheelDelta = 0.0f;
@@ -75,7 +80,8 @@ namespace ego::gui
         void sendTo(InputConsumer& _consumer) const override;
     };
 
-    struct KeyEvent final : public InputEvent
+    struct KeyEvent final
+        : public InputEvent
     {
         KeyboardInputKey m_key = KeyboardInputKey::Undefined;
         InputButtonAction m_action = InputButtonAction::Pressed;
@@ -84,7 +90,8 @@ namespace ego::gui
         void sendTo(InputConsumer& _consumer) const override;
     };
 
-    struct TextInputEvent final : public InputEvent
+    struct TextInputEvent final
+        : public InputEvent
     {
         uint32_t m_codepoint = 0;
         InputModifiers m_modifiers;
@@ -98,7 +105,8 @@ namespace ego::gui
         Lost
     };
 
-    struct ViewportDeactivatedEvent final : public InputEvent
+    struct ViewportDeactivatedEvent final
+        : public InputEvent
     {
         void sendTo(InputConsumer& _consumer) const override;
     };

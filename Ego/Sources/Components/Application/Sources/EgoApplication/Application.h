@@ -34,15 +34,19 @@ namespace ego::gpu
 
 namespace ego::application
 {
-    class ApplicationWindow;
-    class ApplicationWindowController;
+    class Application;
+    class ApplicationSubsystem;
     class ApplicationProfiler;
+    class PresenterProvider;
+    struct ApplicationQuitRequestedEvent;
 
-    EGO_POINTER(ApplicationWindow);
-    EGO_POINTER(ApplicationWindowController);
+    EGO_POINTER(Application);
+    EGO_WEAK_POINTER(Application);
+    EGO_POINTER(ApplicationSubsystem);
     EGO_POINTER(ApplicationProfiler);
+    EGO_POINTER(PresenterProvider);
 
-    class Application final : public NonCopyable
+    class Application final : public NonCopyable, public EnableSharedFromThis<Application>
     {
     public:
         struct InitData final
@@ -61,7 +65,7 @@ namespace ego::application
         bool init(const InitData& _initData);
         void release();
 
-        ApplicationWindowPointer createWindow(const WindowDesc& _desc);
+        const PresenterProviderPointer& getPresenterProviderPointer() const;
 
         void processWindowEvents();
         void updateInputDevices();
@@ -85,8 +89,10 @@ namespace ego::application
 
         bool initWindowing();
         void releaseWindowing();
+        void handleQuitRequested(const ApplicationQuitRequestedEvent& _event);
 
         subsystem::SubsystemRegistryPointer m_subsystemRegistry = nullptr;
+        ApplicationSubsystemPointer m_applicationSubsystem = nullptr;
         DiagnosticSubsystemPointer m_diagnosticSubsystem = nullptr;
         PlatformSubsystemPointer m_platformSubsystem = nullptr;
         PluginSubsystemPointer m_pluginSubsystem = nullptr;
@@ -97,11 +103,9 @@ namespace ego::application
 
         ApplicationProfilerPointer m_applicationProfiler = nullptr;
 
-        ApplicationWindowControllerPointer m_windowController = nullptr;
+        PresenterProviderPointer m_presenterProvider = nullptr;
         EventCallbackID m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
 
         bool m_isExitRequested = false;
     };
-
-    EGO_POINTER(Application);
 } // namespace ego::application

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "EgoCore/Assert/Assert.h"
@@ -107,33 +109,42 @@ namespace ego
 
         void removeEventCallback(EventCallbackID _dispatcherID);
 
-        template <typename TEvent>
-        EventCallbackID addEventCallback(const std::function<void(const TEvent&)>& _callback)
+        template <typename TEvent, typename TCallback>
+            requires std::derived_from<TEvent, Event> && std::copy_constructible<std::decay_t<TCallback>> &&
+                     std::invocable<std::decay_t<TCallback>&, const TEvent&>
+        EventCallbackID addEventCallback(TCallback&& _callback)
         {
-            return addEventCallback<TEvent, TEvent>(_callback);
-        }
-
-        template <typename TEvent, typename TReceivingEvent>
-        EventCallbackID addEventCallback(const std::function<void(const TReceivingEvent&)>& _callback)
-        {
-            static_assert(std::is_base_of_v<TReceivingEvent, TEvent>);
+            using Callback = std::decay_t<TCallback>;
 
             return addEventCallback(
                 EGO_EVENT_TYPE(TEvent),
-                [callback = _callback](const Event& _event)
+                [callback = Callback(std::forward<TCallback>(_callback))](const Event& _event) mutable
                 {
-                    callback(static_cast<const TEvent&>(_event));
+                    std::invoke(callback, static_cast<const TEvent&>(_event));
+                });
+        }
+
+        template <typename TEvent, typename TReceiver, typename TMethod>
+            requires std::derived_from<TEvent, Event> && std::is_member_function_pointer_v<TMethod> &&
+                     std::invocable<TMethod, TReceiver&, const TEvent&>
+        EventCallbackID addEventCallback(TReceiver& _receiver, TMethod _method)
+        {
+            return addEventCallback(
+                EGO_EVENT_TYPE(TEvent),
+                [receiver = std::ref(_receiver), method = _method](const Event& _event)
+                {
+                    std::invoke(method, receiver.get(), static_cast<const TEvent&>(_event));
                 });
         }
 
         template <typename TEvent>
-        bool emitEvent(const TEvent& _event) const
+        bool emitEvent(const TEvent& _event)
         {
             return emitEvent<TEvent, TEvent>(_event);
         }
 
         template <typename TEvent, typename TSendingEvent>
-        bool emitEvent(const TSendingEvent& _event) const
+        bool emitEvent(const TSendingEvent& _event)
         {
             static_assert(std::is_base_of_v<TEvent, TSendingEvent>);
             return emitEvent(EGO_EVENT_TYPE(TEvent), _event);
@@ -148,22 +159,40 @@ namespace ego
 
         bool unregisterInstancedEvent(InstancedEventID _eventID);
 
-        template <typename TEvent>
-        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, const std::function<void(const TEvent&)>& _callback)
+        template <typename TEvent, typename TCallback>
+            requires std::derived_from<TEvent, Event> && std::copy_constructible<std::decay_t<TCallback>> &&
+                     std::invocable<std::decay_t<TCallback>&, const TEvent&>
+        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, TCallback&& _callback)
+        {
+            using Callback = std::decay_t<TCallback>;
+
+            return addInstanceEventCallback(
+                _eventID,
+                [callback = Callback(std::forward<TCallback>(_callback))](const Event& _event) mutable
+                {
+                    EGO_ASSERT((rtti::IsObjectBasedOn(_event, EGO_EVENT_TYPE(TEvent))));
+                    std::invoke(callback, static_cast<const TEvent&>(_event));
+                });
+        }
+
+        template <typename TEvent, typename TReceiver, typename TMethod>
+            requires std::derived_from<TEvent, Event> && std::is_member_function_pointer_v<TMethod> &&
+                     std::invocable<TMethod, TReceiver&, const TEvent&>
+        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, TReceiver& _receiver, TMethod _method)
         {
             return addInstanceEventCallback(
                 _eventID,
-                [callback = _callback](const Event& _event)
+                [receiver = std::ref(_receiver), method = _method](const Event& _event)
                 {
                     EGO_ASSERT((rtti::IsObjectBasedOn(_event, EGO_EVENT_TYPE(TEvent))));
-                    callback(static_cast<const TEvent&>(_event));
+                    std::invoke(method, receiver.get(), static_cast<const TEvent&>(_event));
                 });
         }
 
         void removeInstancedEventDispatcher(InstancedEventCallbackID _dispatcherID);
 
         template <typename TEvent>
-        bool emitInstancedEvent(InstancedEventID _eventID, const TEvent& _event) const
+        bool emitInstancedEvent(InstancedEventID _eventID, const TEvent& _event)
         {
             EGO_ASSERT(rtti::IsObjectBasedOn<TEvent>(_eventID.m_type));
             return emitEvent(_eventID, _event);
@@ -174,7 +203,8 @@ namespace ego
         {
             EventCallback m_callback;
             EventType m_eventType = InvalidEventType;
-            uint32_t m_orderIndex = -1;
+            EventCallbackID m_callbackID = InvalidEventCallbackID;
+            uint32_t m_orderIndex = static_cast<uint32_t>(-1);
         };
 
         using CallbackPool = ObjectPool<EventCallbackData, ObjectPoolHandle32>;
@@ -195,17 +225,55 @@ namespace ego
         using InstancedCallbackPoolElementInfo = InstancedCallbackPool::NewElementInfo;
         using InstancedCallbackOrdersCollection = std::unordered_map<InstancedEventID, InstancedEventCallbackID>;
 
+        enum class PendingOperationType
+        {
+            RegisterEvent,
+            UnregisterEvent,
+            AddEventCallback,
+            RemoveEventCallback,
+            RegisterInstancedEvent,
+            UnregisterInstancedEvent,
+            AddInstancedEventCallback,
+            RemoveInstancedEventCallback
+        };
+
+        struct PendingOperation final
+        {
+            PendingOperationType m_type = PendingOperationType::RegisterEvent;
+            EventType m_eventType = InvalidEventType;
+            EventCallbackID m_eventCallbackID = InvalidEventCallbackID;
+            InstancedEventID m_instancedEventID = InvalidInstancedEventID;
+            InstancedEventCallbackID m_instancedEventCallbackID = InvalidInstancedEventCallbackID;
+        };
+
+        using PendingOperationCollection = std::vector<PendingOperation>;
+
         bool registerEvent(EventType _type);
         bool unregisterEvent(EventType _type);
+        bool registerEventImmediate(EventType _type);
+        bool unregisterEventImmediate(EventType _type);
+        bool isEventRegisteredIncludingPending(EventType _type) const;
 
-        EventCallbackID addEventCallback(EventType _type, const EventCallback& _callback);
-        bool emitEvent(EventType _type, const Event& _event) const;
+        EventCallbackID addEventCallback(EventType _type, EventCallback _callback);
+        bool addEventCallbackImmediate(EventCallbackID _callbackID);
+        void removeEventCallbackImmediate(EventCallbackID _callbackID);
+        bool emitEvent(EventType _type, const Event& _event);
 
         InstancedEventID registerInstancedEvent(EventType _type);
+        bool registerInstancedEventImmediate(InstancedEventID _eventID);
+        bool unregisterInstancedEventImmediate(InstancedEventID _eventID);
+        bool isInstancedEventRegisteredIncludingPending(InstancedEventID _eventID) const;
 
-        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, const InstancedEventCallback& _callback);
+        InstancedEventCallbackID addInstanceEventCallback(InstancedEventID _eventID, InstancedEventCallback _callback);
+        bool addInstanceEventCallbackImmediate(InstancedEventCallbackID _callbackID);
+        void removeInstancedEventCallbackImmediate(InstancedEventCallbackID _callbackID);
 
-        bool emitEvent(InstancedEventID _eventID, const Event& _event) const;
+        bool emitEvent(InstancedEventID _eventID, const Event& _event);
+
+        bool isDispatching() const;
+        void beginDispatch();
+        void endDispatch();
+        void applyPendingOperations();
 
         CallbackPool m_callbacks;
         CallbackOrdersCollection m_callbackOrders;
@@ -213,6 +281,9 @@ namespace ego
         InstancedEventPool m_instancedEvents;
         InstancedCallbackPool m_instancedCallbacks;
         InstancedCallbackOrdersCollection m_instancedCallbackOrders;
+
+        PendingOperationCollection m_pendingOperations;
+        uint32_t m_dispatchDepth = 0;
     };
 
     EGO_POINTER(EventController);

@@ -34,8 +34,7 @@ namespace ego::gui
 
     struct ButtonStyle final
     {
-        InteractionColors m_background = {
-            NormalizedColorRGBA(0.16f, 0.18f, 0.20f, 1.0f),
+        InteractionColors m_background = {NormalizedColorRGBA(0.16f, 0.18f, 0.20f, 1.0f),
             NormalizedColorRGBA(0.20f, 0.23f, 0.26f, 1.0f),
             NormalizedColorRGBA(0.10f, 0.12f, 0.14f, 1.0f)};
         Margin m_padding = Margin(10.0f, 6.0f);
@@ -58,8 +57,7 @@ namespace ego::gui
     struct SelectionStyle final
     {
         NormalizedColorRGBA m_accent = NormalizedColorRGBA(0.20f, 0.55f, 0.95f, 1.0f);
-        InteractionColors m_indicator = {
-            NormalizedColorRGBA(0.12f, 0.13f, 0.15f, 1.0f),
+        InteractionColors m_indicator = {NormalizedColorRGBA(0.12f, 0.13f, 0.15f, 1.0f),
             NormalizedColorRGBA(0.18f, 0.21f, 0.24f, 1.0f),
             NormalizedColorRGBA(0.08f, 0.10f, 0.12f, 1.0f)};
         float m_indicatorSize = 14.0f;
@@ -75,8 +73,7 @@ namespace ego::gui
     struct ScrollStyle final
     {
         NormalizedColorRGBA m_track = NormalizedColorRGBA(0.08f, 0.09f, 0.10f, 1.0f);
-        InteractionColors m_thumb = {
-            NormalizedColorRGBA(0.28f, 0.31f, 0.35f, 1.0f),
+        InteractionColors m_thumb = {NormalizedColorRGBA(0.28f, 0.31f, 0.35f, 1.0f),
             NormalizedColorRGBA(0.38f, 0.42f, 0.48f, 1.0f),
             NormalizedColorRGBA(0.48f, 0.54f, 0.62f, 1.0f)};
         float m_thickness = 12.0f;
@@ -87,12 +84,10 @@ namespace ego::gui
     struct WindowStyle final
     {
         NormalizedColorRGBA m_surface = NormalizedColorRGBA(0.075f, 0.080f, 0.090f, 1.0f);
-        InteractionColors m_title = {
-            NormalizedColorRGBA(0.13f, 0.14f, 0.16f, 1.0f),
+        InteractionColors m_title = {NormalizedColorRGBA(0.13f, 0.14f, 0.16f, 1.0f),
             NormalizedColorRGBA(0.17f, 0.19f, 0.22f, 1.0f),
             NormalizedColorRGBA(0.20f, 0.23f, 0.27f, 1.0f)};
-        InteractionColors m_resizeGrip = {
-            NormalizedColorRGBA(0.32f, 0.35f, 0.40f, 1.0f),
+        InteractionColors m_resizeGrip = {NormalizedColorRGBA(0.32f, 0.35f, 0.40f, 1.0f),
             NormalizedColorRGBA(0.45f, 0.50f, 0.58f, 1.0f),
             NormalizedColorRGBA(0.58f, 0.65f, 0.76f, 1.0f)};
         NormalizedColorRGBA m_border = NormalizedColorRGBA(0.30f, 0.32f, 0.36f, 1.0f);
@@ -101,6 +96,31 @@ namespace ego::gui
         float m_resizeGripSize = 16.0f;
         float m_borderThickness = 1.0f;
         Size m_minimumSize = Size(120.0f, 80.0f);
+    };
+
+    struct DockingStyle final
+    {
+        InteractionColors m_target = {NormalizedColorRGBA(0.14f, 0.40f, 0.68f, 0.72f),
+            NormalizedColorRGBA(0.20f, 0.55f, 0.95f, 0.92f),
+            NormalizedColorRGBA(0.16f, 0.47f, 0.82f, 1.0f)};
+        NormalizedColorRGBA m_targetBorder = NormalizedColorRGBA(0.42f, 0.70f, 1.0f, 0.95f);
+        NormalizedColorRGBA m_previewFill = NormalizedColorRGBA(0.16f, 0.47f, 0.82f, 0.32f);
+        NormalizedColorRGBA m_background = NormalizedColorRGBA(0.055f, 0.060f, 0.070f, 1.0f);
+        NormalizedColorRGBA m_spaceBorder = NormalizedColorRGBA(0.25f, 0.28f, 0.32f, 1.0f);
+        InteractionColors m_separator = {NormalizedColorRGBA(0.20f, 0.22f, 0.25f, 1.0f),
+            NormalizedColorRGBA(0.28f, 0.48f, 0.68f, 1.0f),
+            NormalizedColorRGBA(0.20f, 0.55f, 0.95f, 1.0f)};
+        InteractionColors m_tab = {NormalizedColorRGBA(0.11f, 0.12f, 0.14f, 1.0f),
+            NormalizedColorRGBA(0.17f, 0.19f, 0.22f, 1.0f),
+            NormalizedColorRGBA(0.20f, 0.23f, 0.27f, 1.0f)};
+        NormalizedColorRGBA m_tabActive = NormalizedColorRGBA(0.16f, 0.18f, 0.21f, 1.0f);
+        float m_targetSize = 48.0f;
+        float m_targetSpacing = 8.0f;
+        float m_separatorThickness = 6.0f;
+        float m_tabHeight = 28.0f;
+        Margin m_tabPadding = Margin(10.0f, 6.0f);
+        float m_dragThreshold = 6.0f;
+        Size m_minimumSpaceSize = Size(120.0f, 80.0f);
     };
 
     struct Theme final
@@ -112,6 +132,7 @@ namespace ego::gui
         SelectionStyle m_selection;
         ScrollStyle m_scroll;
         WindowStyle m_window;
+        DockingStyle m_docking;
 
         static const Theme& GetDefault();
     };

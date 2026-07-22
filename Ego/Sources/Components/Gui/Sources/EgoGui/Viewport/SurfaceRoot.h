@@ -3,20 +3,32 @@
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Patterns/NonInstanceable.h"
 
 #include "EgoGui/Widgets/Container.h"
 
 namespace ego::gui
 {
     class SurfaceRoot;
+    class WindowHost;
 
     EGO_POINTER(SurfaceRoot);
     EGO_WEAK_POINTER(SurfaceRoot);
+    EGO_POINTER(WindowHost);
 
-    class SurfaceRoot final : public Container
+    class SurfaceRoot final
+        : public Container
     {
     public:
-        class TraversalScope final : public NonCopyable
+        class SurfaceRootAccessor final
+            : public NonInstanceable
+        {
+        public:
+            static WindowHostPointer GetWindowHost(const SurfaceRoot& _root);
+        };
+
+        class TraversalScope final
+            : public NonCopyable
         {
         public:
             explicit TraversalScope(SurfaceRoot& _root);
@@ -55,14 +67,14 @@ namespace ego::gui
     private:
         SurfaceRoot() = default;
 
+        WindowHostPointer getWindowHost() const;
         void beginTraversal();
         void endTraversal();
 
         size_t getChildCount() const override;
         const WidgetPointer& getChild(size_t _index) const override;
 
-        WidgetCollection m_widgets;
-        SurfaceRootWeakPointer m_self;
+        WidgetPointer m_windowHost = nullptr;
         size_t m_traversalDepth = 0;
         bool m_layoutInvalidated = true;
     };

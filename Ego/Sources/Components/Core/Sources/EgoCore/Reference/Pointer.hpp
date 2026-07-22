@@ -307,9 +307,14 @@ void ego::SharedPointer<T>::releaseSharedCount()
 template <typename T>
 void ego::SharedPointer<T>::initializeEnableSharedFromThis(T* _object)
 {
-    if constexpr (std::is_base_of_v<EnableSharedFromThis<T>, T>)
+    if constexpr (requires { typename T::EnableSharedFromThisType; })
     {
-        _object->acceptOwner(m_controlBlock, _object);
+        using TEnabled = typename T::EnableSharedFromThisType;
+        if constexpr (std::is_convertible_v<T*, TEnabled*> && std::is_convertible_v<T*, EnableSharedFromThis<TEnabled>*>)
+        {
+            EnableSharedFromThis<TEnabled>* enabledObject = static_cast<EnableSharedFromThis<TEnabled>*>(_object);
+            enabledObject->acceptOwner(m_controlBlock, static_cast<TEnabled*>(_object));
+        }
     }
 }
 

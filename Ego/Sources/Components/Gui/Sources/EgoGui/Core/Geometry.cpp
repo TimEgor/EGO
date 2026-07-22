@@ -1,5 +1,15 @@
 #include "Geometry.h"
 
+bool ego::gui::AreEqual(const FloatVector2& _first, const FloatVector2& _second)
+{
+    return _first.m_x == _second.m_x && _first.m_y == _second.m_y;
+}
+
+bool ego::gui::Rect::operator==(const Rect& _rect) const
+{
+    return AreEqual(m_position, _rect.m_position) && AreEqual(m_size, _rect.m_size);
+}
+
 float ego::gui::Rect::getLeft() const
 {
     return m_position.m_x;

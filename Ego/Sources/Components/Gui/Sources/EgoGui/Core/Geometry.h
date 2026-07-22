@@ -10,6 +10,8 @@ namespace ego::gui
     inline constexpr Size SizeZero = FloatVector2Zero;
     inline constexpr Position PositionZero = FloatVector2Zero;
 
+    bool AreEqual(const FloatVector2& _first, const FloatVector2& _second);
+
     struct Rect final
     {
         Position m_position = PositionZero;
@@ -34,5 +36,7 @@ namespace ego::gui
         float getRight() const;
         float getBottom() const;
         bool contains(const Position& _position) const;
+
+        bool operator==(const Rect& _rect) const;
     };
 } // namespace ego::gui

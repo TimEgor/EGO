@@ -29,15 +29,15 @@ namespace ego::gui
         GraphicPresenterPointer m_graphicPresenter = nullptr;
     };
 
-    class ViewportBackend
+    class ViewportProvider
     {
     public:
-        virtual ~ViewportBackend() = default;
+        virtual ~ViewportProvider() = default;
 
         virtual bool createViewport(const ViewportCreateRequest& _request) = 0;
         virtual void destroyViewport(ViewportID _viewportID) = 0;
         virtual ViewportUpdate pollViewport(ViewportID _viewportID) = 0;
     };
 
-    EGO_POINTER(ViewportBackend);
+    EGO_POINTER(ViewportProvider);
 } // namespace ego::gui

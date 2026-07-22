@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
@@ -13,7 +14,6 @@
 
 namespace ego::gui
 {
-    class InputRouter;
     class SurfaceRoot;
     class Widget;
 
@@ -27,9 +27,27 @@ namespace ego::gui
         Collapsed
     };
 
-    class Widget : public NonCopyable
+    class Widget
+        : public NonCopyable,
+          public ego::EnableSharedFromThis<Widget>
     {
     public:
+        class WidgetAccessor final
+            : public NonInstanceable
+        {
+        public:
+            static InputReply HandleInput(Widget& _widget, const PointerMoveEvent& _event);
+            static InputReply HandleInput(Widget& _widget, const MouseButtonEvent& _event);
+            static InputReply HandleInput(Widget& _widget, const MouseWheelEvent& _event);
+            static InputReply HandleInput(Widget& _widget, const KeyEvent& _event);
+            static InputReply HandleInput(Widget& _widget, const TextInputEvent& _event);
+
+            static void NotifyPointerEnter(Widget& _widget, const Position& _position, const InputModifiers& _modifiers);
+            static void NotifyPointerLeave(Widget& _widget, const Position& _position, const InputModifiers& _modifiers);
+            static void NotifyPointerCaptureLost(Widget& _widget, const Position& _position);
+            static void NotifyFocusChanged(Widget& _widget, FocusChange _change);
+        };
+
         Widget();
         virtual ~Widget() = default;
 
@@ -81,14 +99,11 @@ namespace ego::gui
         virtual bool clipsChildren() const;
         virtual Rect getChildrenClipRect() const;
 
-        void bindSurfaceRoot(const WidgetPointer& _self, const WidgetPointer& _parent, const ego::WeakPointer<SurfaceRoot>& _surfaceRoot);
+        void bindSurfaceRoot(const ego::WeakPointer<SurfaceRoot>& _surfaceRoot);
 
     private:
-        friend class InputRouter;
-
-        class AttachmentIdentity;
-
-        ego::SharedPointer<AttachmentIdentity> m_attachmentIdentity = nullptr;
+        WidgetWeakPointer m_parent;
+        ego::WeakPointer<SurfaceRoot> m_surfaceRoot;
         Visibility m_visibility = Visibility::Visible;
         Size m_preferredSize = SizeZero;
         Rect m_layoutBounds;

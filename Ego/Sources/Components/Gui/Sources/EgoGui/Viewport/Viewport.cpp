@@ -4,9 +4,11 @@
 
 #include "EgoCore/Assert/Assert.h"
 
+#include "EgoGui/Docking/WindowHost.h"
 #include "EgoGui/Input/InputRouter.h"
 
-#include "ViewportBackend.h"
+#include "SurfaceRoot.h"
+#include "ViewportProvider.h"
 
 namespace
 {
@@ -55,6 +57,7 @@ ego::gui::Viewport::~Viewport()
     if (m_root)
     {
         m_root->clearWidgets();
+        m_root = nullptr;
     }
 }
 
@@ -78,9 +81,14 @@ ego::GraphicPresenterPointer ego::gui::Viewport::getGraphicPresenterPointer() co
     return m_graphicPresenter;
 }
 
+ego::gui::WindowHostPointer ego::gui::Viewport::getWindowHost() const
+{
+    return m_root ? SurfaceRoot::SurfaceRootAccessor::GetWindowHost(*m_root) : nullptr;
+}
+
 void ego::gui::Viewport::setSize(const Size& _size)
 {
-    if (m_size.m_x == _size.m_x && m_size.m_y == _size.m_y)
+    if (AreEqual(m_size, _size))
     {
         return;
     }
@@ -94,14 +102,36 @@ bool ego::gui::Viewport::add(const WidgetPointer& _widget)
     return m_root && m_root->addWidget(_widget);
 }
 
-ego::gui::WidgetPointer ego::gui::Viewport::remove(const WidgetPointer& _widget)
+bool ego::gui::Viewport::addWindow(const WindowPointer& _window, const WindowPlacement& _placement)
 {
-    if (!m_root)
+    if (!add(_window))
     {
-        return nullptr;
+        return false;
     }
 
-    const WidgetPointer removedWidget = m_root->removeWidget(_widget);
+    if (_placement.m_spaceID == InvalidDockingSpaceID || moveWindow(_window, _placement))
+    {
+        return true;
+    }
+
+    remove(_window);
+    return false;
+}
+
+ego::gui::WidgetPointer ego::gui::Viewport::remove(const WidgetPointer& _widget)
+{
+    const WindowHostPointer windowHost = getWindowHost();
+    const bool wasHostInteractionActive = windowHost && WindowHost::WindowHostAccessor::IsInteractionActive(*windowHost);
+    const WidgetPointer removedWidget = m_root ? m_root->removeWidget(_widget) : nullptr;
+    if (removedWidget && m_inputRouter)
+    {
+        m_inputRouter->cancelPointerCapture(removedWidget);
+        if (wasHostInteractionActive)
+        {
+            m_inputRouter->cancelPointerCapture(windowHost);
+        }
+    }
+
     return removedWidget;
 }
 
@@ -110,6 +140,10 @@ void ego::gui::Viewport::clear()
     if (m_root)
     {
         m_root->clearWidgets();
+    }
+    if (m_inputRouter)
+    {
+        m_inputRouter->cancelPointerCapture();
     }
 }
 
@@ -122,6 +156,67 @@ const ego::gui::Viewport::WidgetCollection& ego::gui::Viewport::getWidgets() con
 ego::gui::WidgetPointer ego::gui::Viewport::getFocusedWidget() const
 {
     return m_inputRouter ? m_inputRouter->getFocusedWidget() : nullptr;
+}
+
+bool ego::gui::Viewport::setDockingEnabled(bool _isEnabled)
+{
+    const WindowHostPointer windowHost = getWindowHost();
+    if (!windowHost)
+    {
+        return false;
+    }
+
+    const bool dockingStateChanged = windowHost->isDockingEnabled() != _isEnabled;
+    if (!windowHost->setDockingEnabled(_isEnabled))
+    {
+        return false;
+    }
+
+    if (dockingStateChanged && m_inputRouter)
+    {
+        m_inputRouter->cancelPointerCapture(windowHost);
+    }
+    return true;
+}
+
+bool ego::gui::Viewport::isDockingEnabled() const
+{
+    const WindowHostPointer windowHost = getWindowHost();
+    return windowHost && windowHost->isDockingEnabled();
+}
+
+ego::gui::DockingSpaceID ego::gui::Viewport::getDefaultDockingSpaceID() const
+{
+    const WindowHostPointer windowHost = getWindowHost();
+    return windowHost ? windowHost->getDefaultSpaceID() : InvalidDockingSpaceID;
+}
+
+ego::gui::DockingSpaceID ego::gui::Viewport::getWindowDockingSpaceID(const WindowPointer& _window) const
+{
+    const WindowHostPointer windowHost = getWindowHost();
+    return windowHost ? windowHost->getWindowSpaceID(_window) : InvalidDockingSpaceID;
+}
+
+bool ego::gui::Viewport::moveWindow(const WindowPointer& _window, const WindowPlacement& _placement)
+{
+    const WindowHostPointer windowHost = getWindowHost();
+    if (!windowHost)
+    {
+        return false;
+    }
+
+    const bool wasInteractionAffected = windowHost->isInteractionAffectedByPlacement(_window, _placement);
+    if (!windowHost->placeWindow(_window, _placement))
+    {
+        return false;
+    }
+
+    if (m_inputRouter)
+    {
+        const WidgetPointer cancellationTarget = wasInteractionAffected ? ego::StaticPointerCast<Widget>(windowHost) : ego::StaticPointerCast<Widget>(_window);
+        m_inputRouter->cancelPointerCapture(cancellationTarget);
+    }
+    return true;
 }
 
 void ego::gui::Viewport::update(const LayoutContext& _layoutContext, const ViewportUpdate& _update)
@@ -149,12 +244,16 @@ void ego::gui::Viewport::update(const LayoutContext& _layoutContext, const Viewp
 
 void ego::gui::Viewport::clearInteraction()
 {
-    if (!m_inputRouter)
+    const WindowHostPointer windowHost = getWindowHost();
+    if (windowHost)
     {
-        return;
+        windowHost->clearInteraction();
     }
 
-    m_inputRouter->clear();
+    if (m_inputRouter)
+    {
+        m_inputRouter->clear();
+    }
 }
 
 void ego::gui::Viewport::invalidateLayout()
@@ -172,19 +271,41 @@ bool ego::gui::Viewport::stabilizeLayout(const LayoutContext& _layoutContext)
         return false;
     }
 
+    const WindowHostPointer windowHost = getWindowHost();
     size_t layoutPassCount = 0;
-    while (m_root->updateLayoutIfNeeded(_layoutContext, m_size))
+    while (true)
     {
-        m_inputRouter->refreshAfterLayout();
-        ++layoutPassCount;
-        if (layoutPassCount >= MaximumLayoutPassCount && m_root->isLayoutInvalidated())
+        while (m_root->isLayoutInvalidated())
+        {
+            const bool wasHostInteractionActive = windowHost && WindowHost::WindowHostAccessor::IsInteractionActive(*windowHost);
+            if (!m_root->updateLayoutIfNeeded(_layoutContext, m_size))
+            {
+                break;
+            }
+
+            m_inputRouter->refreshAfterLayout();
+            if (wasHostInteractionActive && !WindowHost::WindowHostAccessor::IsInteractionActive(*windowHost))
+            {
+                m_inputRouter->cancelPointerCapture(windowHost);
+            }
+            ++layoutPassCount;
+            if (layoutPassCount >= MaximumLayoutPassCount && m_root->isLayoutInvalidated())
+            {
+                EGO_ASSERT_FAIL_MESSAGE("Layout did not stabilize.");
+                return false;
+            }
+        }
+
+        if (!windowHost || !windowHost->flushWindowNotifications() || !m_root->isLayoutInvalidated())
+        {
+            return true;
+        }
+        if (layoutPassCount >= MaximumLayoutPassCount)
         {
             EGO_ASSERT_FAIL_MESSAGE("Layout did not stabilize.");
             return false;
         }
     }
-
-    return true;
 }
 
 void ego::gui::Viewport::emitDrawCommands(const LayoutContext& _layoutContext, PaintContext& _paintContext)

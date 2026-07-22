@@ -37,7 +37,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     EGO_CHECK_RETURN_FALSE(_jobController);
     EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
     EGO_CHECK_RETURN_FALSE(!_initData.m_enableGui || _initData.m_enablePresentation);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_enablePresentation || _initData.m_gui.m_viewportBackend);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_enablePresentation || _initData.m_gui.m_viewportProvider);
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(!m_engineLogic);
     EGO_CHECK_RETURN_FALSE(m_id == InvalidEngineSessionID);
@@ -191,7 +191,7 @@ bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions
     EGO_CHECK_RETURN_FALSE(m_guiController);
 
     gui::GuiController::InitData guiInitData;
-    guiInitData.m_viewportBackend = _guiOptions.m_viewportBackend;
+    guiInitData.m_viewportProvider = _guiOptions.m_viewportProvider;
     if (_enableGui)
     {
         guiInitData.m_fontAtlasDesc = _guiOptions.m_fontAtlasDesc;
@@ -214,8 +214,9 @@ bool ego::engine::EngineSession::initGraphicFrameController(const InitData& _ini
 
         if (_initData.m_enableSceneRender)
         {
-            const FileName moduleName = _initData.m_sceneRender.m_pluginModuleName ? _initData.m_sceneRender.m_pluginModuleName :
-                                                                                     m_projectRuntime.resolvePluginModuleName(render::RenderPlugin::GetPluginType());
+            const FileName moduleName = _initData.m_sceneRender.m_pluginModuleName ?
+                                            _initData.m_sceneRender.m_pluginModuleName :
+                                            m_projectRuntime.resolvePluginModuleName(render::RenderPlugin::GetPluginType());
             EGO_CHECK_RETURN_FALSE(moduleName);
 
             graphicInitData.m_sceneRenderPlugin = pluginController->loadPlugin<render::RenderPlugin>(moduleName);
@@ -223,8 +224,9 @@ bool ego::engine::EngineSession::initGraphicFrameController(const InitData& _ini
         }
         if (_initData.m_enableGui)
         {
-            const FileName moduleName = _initData.m_guiRender.m_pluginModuleName ? _initData.m_guiRender.m_pluginModuleName :
-                                                                                   m_projectRuntime.resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
+            const FileName moduleName = _initData.m_guiRender.m_pluginModuleName ?
+                                            _initData.m_guiRender.m_pluginModuleName :
+                                            m_projectRuntime.resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
             EGO_CHECK_RETURN_FALSE(moduleName);
 
             graphicInitData.m_guiRenderPlugin = pluginController->loadPlugin<gui::GuiRenderPlugin>(moduleName);

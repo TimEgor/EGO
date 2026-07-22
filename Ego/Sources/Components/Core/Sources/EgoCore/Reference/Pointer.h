@@ -184,6 +184,8 @@ namespace ego
         friend class SharedPointer;
 
     public:
+        using EnableSharedFromThisType = T;
+
         SharedPointer<T> sharedFromThis();
         WeakPointer<T> weakFromThis();
 

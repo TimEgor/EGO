@@ -60,7 +60,7 @@ namespace ego::engine
         GuiRenderController m_guiRenderController;
         FramePresenterController m_framePresenterController;
 
-        GuiRenderController::FrameRenderTargetCollection m_preparedGuiTargets;
+        std::vector<GraphicPresenterPointer> m_preparedGuiPresenters;
         GraphicPresenterPointer m_sceneGraphicPresenter = nullptr;
     };
 } // namespace ego::engine

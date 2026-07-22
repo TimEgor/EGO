@@ -7,19 +7,52 @@
 
 #include "EgoGui/Viewport/SurfaceRoot.h"
 
-class ego::gui::Widget::AttachmentIdentity final
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::HandleInput(Widget& _widget, const PointerMoveEvent& _event)
 {
-public:
-    ego::WeakPointer<AttachmentIdentity> m_parent;
-    ego::gui::WidgetWeakPointer m_self;
-    ego::gui::WidgetWeakPointer m_parentWidget;
-    ego::WeakPointer<ego::gui::SurfaceRoot> m_surfaceRoot;
-};
-
-ego::gui::Widget::Widget()
-    : m_attachmentIdentity(new AttachmentIdentity())
-{
+    return _widget.onPointerMove(_event);
 }
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::HandleInput(Widget& _widget, const MouseButtonEvent& _event)
+{
+    return _widget.onMouseButton(_event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::HandleInput(Widget& _widget, const MouseWheelEvent& _event)
+{
+    return _widget.onMouseWheel(_event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::HandleInput(Widget& _widget, const KeyEvent& _event)
+{
+    return _widget.onKey(_event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::HandleInput(Widget& _widget, const TextInputEvent& _event)
+{
+    return _widget.onTextInput(_event);
+}
+
+void ego::gui::Widget::WidgetAccessor::NotifyPointerEnter(Widget& _widget, const Position& _position, const InputModifiers& _modifiers)
+{
+    _widget.onPointerEnter(_position, _modifiers);
+}
+
+void ego::gui::Widget::WidgetAccessor::NotifyPointerLeave(Widget& _widget, const Position& _position, const InputModifiers& _modifiers)
+{
+    _widget.onPointerLeave(_position, _modifiers);
+}
+
+void ego::gui::Widget::WidgetAccessor::NotifyPointerCaptureLost(Widget& _widget, const Position& _position)
+{
+    _widget.onPointerCaptureLost(_position);
+}
+
+void ego::gui::Widget::WidgetAccessor::NotifyFocusChanged(Widget& _widget, FocusChange _change)
+{
+    _widget.onFocusChanged(_change);
+}
+
+ego::gui::Widget::Widget() = default;
 
 ego::gui::Size ego::gui::Widget::updatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints)
 {
@@ -50,7 +83,7 @@ void ego::gui::Widget::applyLayout(const LayoutContext& _context, const Rect& _b
 
 void ego::gui::Widget::emitDrawCommands(PaintContext& _context) const
 {
-    if (!isVisible())
+    if (!isVisible() || m_layoutBounds.m_size.m_x <= 0.0f || m_layoutBounds.m_size.m_y <= 0.0f)
     {
         return;
     }
@@ -83,28 +116,31 @@ void ego::gui::Widget::emitDrawCommands(PaintContext& _context) const
 
 bool ego::gui::Widget::attachChild(const WidgetPointer& _child)
 {
-    if (!canMutateTree() || !_child || !m_attachmentIdentity || !_child->m_attachmentIdentity || _child->m_attachmentIdentity->m_parent.lock())
+    if (!canMutateTree() || !_child || _child->m_parent.lock())
     {
         return false;
     }
 
-    ego::SharedPointer<AttachmentIdentity> ancestorIdentity = m_attachmentIdentity;
-    while (ancestorIdentity)
+    const WidgetPointer self = sharedFromThis();
+    if (!self)
     {
-        if (ancestorIdentity.get() == _child->m_attachmentIdentity.get())
+        EGO_ASSERT_FAIL_MESSAGE("Widget must have a shared owner before attaching children.");
+        return false;
+    }
+
+    WidgetPointer ancestor = self;
+    while (ancestor)
+    {
+        if (ancestor.get() == _child.get())
         {
             return false;
         }
 
-        ancestorIdentity = ancestorIdentity->m_parent.lock();
+        ancestor = ancestor->m_parent.lock();
     }
 
-    _child->m_attachmentIdentity->m_parent = m_attachmentIdentity;
-    const WidgetPointer self = m_attachmentIdentity->m_self.lock();
-    if (self)
-    {
-        _child->bindSurfaceRoot(_child, self, m_attachmentIdentity->m_surfaceRoot);
-    }
+    _child->m_parent = self;
+    _child->bindSurfaceRoot(m_surfaceRoot);
     return true;
 }
 
@@ -115,14 +151,14 @@ bool ego::gui::Widget::detachChild(const WidgetPointer& _child)
         return false;
     }
 
-    _child->m_attachmentIdentity->m_parent.reset();
-    _child->bindSurfaceRoot(_child, nullptr, ego::WeakPointer<SurfaceRoot>());
+    _child->m_parent.reset();
+    _child->bindSurfaceRoot(ego::WeakPointer<SurfaceRoot>());
     return true;
 }
 
 bool ego::gui::Widget::canMutateTree() const
 {
-    const ego::SharedPointer<SurfaceRoot> surfaceRoot = m_attachmentIdentity ? m_attachmentIdentity->m_surfaceRoot.lock() : nullptr;
+    const ego::SharedPointer<SurfaceRoot> surfaceRoot = m_surfaceRoot.lock();
     const bool canMutate = !surfaceRoot || surfaceRoot->canMutateTree();
     EGO_ASSERT(canMutate);
     return canMutate;
@@ -130,7 +166,7 @@ bool ego::gui::Widget::canMutateTree() const
 
 void ego::gui::Widget::invalidateLayout() const
 {
-    const ego::SharedPointer<SurfaceRoot> surfaceRoot = m_attachmentIdentity ? m_attachmentIdentity->m_surfaceRoot.lock() : nullptr;
+    const ego::SharedPointer<SurfaceRoot> surfaceRoot = m_surfaceRoot.lock();
     if (surfaceRoot)
     {
         surfaceRoot->invalidateLayout();
@@ -260,43 +296,31 @@ ego::gui::Rect ego::gui::Widget::resolveTopLevelBounds(const Rect& _surfaceBound
 
 bool ego::gui::Widget::isDirectChildOf(const Widget& _parent) const
 {
-    if (!m_attachmentIdentity || !_parent.m_attachmentIdentity)
-    {
-        return false;
-    }
-
-    const ego::SharedPointer<AttachmentIdentity> parentIdentity = m_attachmentIdentity->m_parent.lock();
-    return parentIdentity.get() == _parent.m_attachmentIdentity.get();
+    const WidgetPointer parent = m_parent.lock();
+    return parent.get() == &_parent;
 }
 
 ego::gui::WidgetPointer ego::gui::Widget::getParent() const
 {
-    return m_attachmentIdentity ? m_attachmentIdentity->m_parentWidget.lock() : nullptr;
+    return m_parent.lock();
 }
 
 bool ego::gui::Widget::isAttachedTo(const SurfaceRoot& _surfaceRoot) const
 {
-    const ego::SharedPointer<SurfaceRoot> surfaceRoot = m_attachmentIdentity ? m_attachmentIdentity->m_surfaceRoot.lock() : nullptr;
+    const ego::SharedPointer<SurfaceRoot> surfaceRoot = m_surfaceRoot.lock();
     return surfaceRoot.get() == &_surfaceRoot;
 }
 
-void ego::gui::Widget::bindSurfaceRoot(const WidgetPointer& _self, const WidgetPointer& _parent, const ego::WeakPointer<SurfaceRoot>& _surfaceRoot)
+void ego::gui::Widget::bindSurfaceRoot(const ego::WeakPointer<SurfaceRoot>& _surfaceRoot)
 {
-    if (!m_attachmentIdentity)
-    {
-        return;
-    }
-
-    m_attachmentIdentity->m_self = _self;
-    m_attachmentIdentity->m_parentWidget = _parent;
-    m_attachmentIdentity->m_surfaceRoot = _surfaceRoot;
+    m_surfaceRoot = _surfaceRoot;
     const size_t childCount = getChildCount();
     for (size_t childIndex = 0; childIndex < childCount; ++childIndex)
     {
         const WidgetPointer& child = getChild(childIndex);
         if (child && child->isDirectChildOf(*this))
         {
-            child->bindSurfaceRoot(child, _self, _surfaceRoot);
+            child->bindSurfaceRoot(_surfaceRoot);
         }
     }
 }

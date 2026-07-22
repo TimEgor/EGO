@@ -266,12 +266,12 @@ void ego::gui::ScrollView::updateGeometry(const LayoutContext& _context)
     m_scrollBarMinimumThumbSize = scrollBarMinimumThumbSize;
     m_wheelStep = (std::max)(0.0f, scroll.m_wheelStep);
     updateScrollLayout(getLayoutBounds());
-    const bool horizontalGeometryChanged = !AreRectsEqual(previousHorizontalTrackRect, m_horizontalTrackRect) ||
-                                           !AreRectsEqual(previousHorizontalThumbRect, m_horizontalThumbRect) || previousScrollRange.m_x != m_scrollRange.m_x;
-    const bool verticalGeometryChanged = !AreRectsEqual(previousVerticalTrackRect, m_verticalTrackRect) || !AreRectsEqual(previousVerticalThumbRect, m_verticalThumbRect) ||
-                                         previousScrollRange.m_y != m_scrollRange.m_y;
-    const bool activeThumbGeometryChanged =
-        (m_scrollInteraction == ScrollPart::HorizontalThumb && horizontalGeometryChanged) || (m_scrollInteraction == ScrollPart::VerticalThumb && verticalGeometryChanged);
+    const bool horizontalGeometryChanged = previousHorizontalTrackRect != m_horizontalTrackRect || previousHorizontalThumbRect != m_horizontalThumbRect ||
+                                           previousScrollRange.m_x != m_scrollRange.m_x;
+    const bool verticalGeometryChanged =
+        previousVerticalTrackRect != m_verticalTrackRect || previousVerticalThumbRect != m_verticalThumbRect || previousScrollRange.m_y != m_scrollRange.m_y;
+    const bool activeThumbGeometryChanged = (m_scrollInteraction == ScrollPart::HorizontalThumb && horizontalGeometryChanged) ||
+                                            (m_scrollInteraction == ScrollPart::VerticalThumb && verticalGeometryChanged);
     if (activeThumbGeometryChanged)
     {
         m_interactionStartPosition = m_interactionCurrentPosition;
@@ -281,7 +281,11 @@ void ego::gui::ScrollView::updateGeometry(const LayoutContext& _context)
     const WidgetPointer content = getContent();
     if (content)
     {
-        const Rect contentRect(m_viewportRect.m_position.m_x - m_scrollOffset.m_x, m_viewportRect.m_position.m_y - m_scrollOffset.m_y, m_contentSize.m_x, m_contentSize.m_y);
+        const Rect contentRect(
+            m_viewportRect.m_position.m_x - m_scrollOffset.m_x,
+            m_viewportRect.m_position.m_y - m_scrollOffset.m_y,
+            m_contentSize.m_x,
+            m_contentSize.m_y);
         content->applyLayout(_context, contentRect);
     }
 }
@@ -294,7 +298,8 @@ void ego::gui::ScrollView::drawOverlayLayer(PaintContext& _context) const
     {
         _context.drawBox(m_horizontalTrackRect, scroll.m_track);
 
-        const NormalizedColorRGBA& thumbColor = scroll.m_thumb.resolve(m_hoveredScrollPart == ScrollPart::HorizontalThumb, m_scrollInteraction == ScrollPart::HorizontalThumb);
+        const NormalizedColorRGBA& thumbColor =
+            scroll.m_thumb.resolve(m_hoveredScrollPart == ScrollPart::HorizontalThumb, m_scrollInteraction == ScrollPart::HorizontalThumb);
         _context.drawBox(m_horizontalThumbRect, thumbColor);
     }
 
@@ -302,7 +307,8 @@ void ego::gui::ScrollView::drawOverlayLayer(PaintContext& _context) const
     {
         _context.drawBox(m_verticalTrackRect, scroll.m_track);
 
-        const NormalizedColorRGBA& thumbColor = scroll.m_thumb.resolve(m_hoveredScrollPart == ScrollPart::VerticalThumb, m_scrollInteraction == ScrollPart::VerticalThumb);
+        const NormalizedColorRGBA& thumbColor =
+            scroll.m_thumb.resolve(m_hoveredScrollPart == ScrollPart::VerticalThumb, m_scrollInteraction == ScrollPart::VerticalThumb);
         _context.drawBox(m_verticalThumbRect, thumbColor);
     }
 
@@ -327,13 +333,13 @@ bool ego::gui::ScrollView::isChildHitTestVisible(const Position& _position) cons
     return m_viewportRect.contains(_position);
 }
 
-bool ego::gui::ScrollView::AreRectsEqual(const Rect& _first, const Rect& _second)
-{
-    return _first.m_position.m_x == _second.m_position.m_x && _first.m_position.m_y == _second.m_position.m_y && _first.m_size.m_x == _second.m_size.m_x &&
-           _first.m_size.m_y == _second.m_size.m_y;
-}
-
-ego::gui::Rect ego::gui::ScrollView::createScrollThumbRect(const Rect& _trackRect, float _viewportExtent, float _contentExtent, float _offset, float _range, Axis _axis) const
+ego::gui::Rect ego::gui::ScrollView::createScrollThumbRect(
+    const Rect& _trackRect,
+    float _viewportExtent,
+    float _contentExtent,
+    float _offset,
+    float _range,
+    Axis _axis) const
 {
     const float trackExtent = _axis == Axis::Horizontal ? _trackRect.m_size.m_x : _trackRect.m_size.m_y;
     if (trackExtent <= 0.0f)
@@ -515,21 +521,28 @@ void ego::gui::ScrollView::updateScrollLayout(const Rect& _rect)
     m_scrollRange = Size((std::max)(0.0f, m_contentSize.m_x - m_viewportRect.m_size.m_x), (std::max)(0.0f, m_contentSize.m_y - m_viewportRect.m_size.m_y));
     m_scrollOffset = Position((std::clamp)(m_scrollOffset.m_x, 0.0f, m_scrollRange.m_x), (std::clamp)(m_scrollOffset.m_y, 0.0f, m_scrollRange.m_y));
 
-    m_horizontalTrackRect =
-        m_isHorizontalScrollBarVisible ? Rect(m_viewportRect.m_position.m_x, m_viewportRect.getBottom(), m_viewportRect.m_size.m_x, m_scrollBarThickness) : Rect();
-    m_verticalTrackRect = m_isVerticalScrollBarVisible ? Rect(m_viewportRect.getRight(), m_viewportRect.m_position.m_y, m_scrollBarThickness, m_viewportRect.m_size.m_y) : Rect();
+    m_horizontalTrackRect = m_isHorizontalScrollBarVisible ?
+                                Rect(m_viewportRect.m_position.m_x, m_viewportRect.getBottom(), m_viewportRect.m_size.m_x, m_scrollBarThickness) :
+                                Rect();
+    m_verticalTrackRect =
+        m_isVerticalScrollBarVisible ? Rect(m_viewportRect.getRight(), m_viewportRect.m_position.m_y, m_scrollBarThickness, m_viewportRect.m_size.m_y) : Rect();
     updateScrollBarRects();
 }
 
 void ego::gui::ScrollView::updateScrollBarRects()
 {
-    m_horizontalThumbRect =
-        m_isHorizontalScrollBarVisible ?
-            createScrollThumbRect(m_horizontalTrackRect, m_viewportRect.m_size.m_x, m_contentSize.m_x, m_scrollOffset.m_x, m_scrollRange.m_x, Axis::Horizontal) :
+    m_horizontalThumbRect = m_isHorizontalScrollBarVisible ? createScrollThumbRect(
+                                                                 m_horizontalTrackRect,
+                                                                 m_viewportRect.m_size.m_x,
+                                                                 m_contentSize.m_x,
+                                                                 m_scrollOffset.m_x,
+                                                                 m_scrollRange.m_x,
+                                                                 Axis::Horizontal) :
+                                                             Rect();
+    m_verticalThumbRect =
+        m_isVerticalScrollBarVisible ?
+            createScrollThumbRect(m_verticalTrackRect, m_viewportRect.m_size.m_y, m_contentSize.m_y, m_scrollOffset.m_y, m_scrollRange.m_y, Axis::Vertical) :
             Rect();
-    m_verticalThumbRect = m_isVerticalScrollBarVisible ?
-                              createScrollThumbRect(m_verticalTrackRect, m_viewportRect.m_size.m_y, m_contentSize.m_y, m_scrollOffset.m_y, m_scrollRange.m_y, Axis::Vertical) :
-                              Rect();
 }
 
 void ego::gui::ScrollView::notifyScrollChanged()

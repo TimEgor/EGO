@@ -1,8 +1,13 @@
 #include "SurfaceRoot.h"
 
-#include <algorithm>
-
 #include "EgoCore/Assert/Assert.h"
+
+#include "EgoGui/Docking/WindowHost.h"
+
+ego::gui::WindowHostPointer ego::gui::SurfaceRoot::SurfaceRootAccessor::GetWindowHost(const SurfaceRoot& _root)
+{
+    return _root.getWindowHost();
+}
 
 ego::gui::SurfaceRoot::TraversalScope::TraversalScope(SurfaceRoot& _root)
     : m_root(_root)
@@ -18,124 +23,82 @@ ego::gui::SurfaceRoot::TraversalScope::~TraversalScope()
 ego::gui::SurfaceRoot::~SurfaceRoot()
 {
     clearWidgets();
+    if (m_windowHost)
+    {
+        detachChild(m_windowHost);
+        m_windowHost = nullptr;
+    }
 }
 
 ego::gui::SurfaceRootPointer ego::gui::SurfaceRoot::Create()
 {
     const SurfaceRootPointer surfaceRoot = new SurfaceRoot();
-    surfaceRoot->m_self = surfaceRoot;
-    surfaceRoot->bindSurfaceRoot(surfaceRoot, nullptr, surfaceRoot);
+    surfaceRoot->bindSurfaceRoot(surfaceRoot);
+
+    const WindowHostPointer windowHost = WindowHost::Create(surfaceRoot);
+    if (!windowHost || !surfaceRoot->attachChild(windowHost))
+    {
+        return nullptr;
+    }
+    surfaceRoot->m_windowHost = windowHost;
     return surfaceRoot;
 }
 
 bool ego::gui::SurfaceRoot::addWidget(const WidgetPointer& _widget)
 {
-    if (!canMutateTree() || !attachChild(_widget))
-    {
-        return false;
-    }
-
-    m_widgets.push_back(_widget);
-    notifyTreeChanged();
-    return true;
+    const WindowHostPointer windowHost = getWindowHost();
+    return windowHost && windowHost->addWidget(_widget);
 }
 
 ego::gui::WidgetPointer ego::gui::SurfaceRoot::removeWidget(const WidgetPointer& _widget)
 {
-    if (!canMutateTree())
-    {
-        return nullptr;
-    }
-
-    const WidgetCollection::iterator widgetIt = std::find_if(
-        m_widgets.begin(),
-        m_widgets.end(),
-        [&_widget](const WidgetPointer& _currentWidget)
-        {
-            return _currentWidget.get() == _widget.get();
-        });
-    if (widgetIt == m_widgets.end())
-    {
-        return nullptr;
-    }
-
-    const WidgetPointer widget = *widgetIt;
-    m_widgets.erase(widgetIt);
-    if (!detachChild(widget))
-    {
-        m_widgets.push_back(widget);
-        return nullptr;
-    }
-    notifyTreeChanged();
-    return widget;
+    const WindowHostPointer windowHost = getWindowHost();
+    return windowHost ? windowHost->removeWidget(_widget) : nullptr;
 }
 
 void ego::gui::SurfaceRoot::clearWidgets()
 {
-    if (!canMutateTree() || m_widgets.empty())
+    const WindowHostPointer windowHost = getWindowHost();
+    if (windowHost)
     {
-        return;
+        windowHost->clearWidgets();
     }
-
-    WidgetCollection widgets;
-    widgets.swap(m_widgets);
-    for (const WidgetPointer& widget : widgets)
-    {
-        detachChild(widget);
-    }
-    notifyTreeChanged();
 }
 
 void ego::gui::SurfaceRoot::bringWidgetToFront(const WidgetPointer& _widget)
 {
-    if (!canMutateTree())
+    const WindowHostPointer windowHost = getWindowHost();
+    if (windowHost)
     {
-        return;
+        windowHost->bringWidgetToFront(_widget);
     }
-
-    WidgetPointer topLevelWidget = _widget;
-    while (topLevelWidget && !topLevelWidget->isDirectChildOf(*this))
-    {
-        topLevelWidget = topLevelWidget->getParent();
-    }
-    if (!topLevelWidget || (!m_widgets.empty() && m_widgets.back().get() == topLevelWidget.get()))
-    {
-        return;
-    }
-
-    const WidgetCollection::iterator widgetIt = std::find_if(
-        m_widgets.begin(),
-        m_widgets.end(),
-        [&topLevelWidget](const WidgetPointer& _currentWidget)
-        {
-            return _currentWidget.get() == topLevelWidget.get();
-        });
-    if (widgetIt == m_widgets.end())
-    {
-        return;
-    }
-
-    const WidgetPointer widget = *widgetIt;
-    m_widgets.erase(widgetIt);
-    m_widgets.push_back(widget);
-
-    notifyTreeChanged();
 }
 
 const ego::gui::SurfaceRoot::WidgetCollection& ego::gui::SurfaceRoot::getWidgets() const
 {
-    return m_widgets;
+    static const WidgetCollection EmptyWidgets;
+    const WindowHostPointer windowHost = getWindowHost();
+    return windowHost ? windowHost->getWidgets() : EmptyWidgets;
+}
+
+ego::gui::WindowHostPointer ego::gui::SurfaceRoot::getWindowHost() const
+{
+    return m_windowHost ? ego::StaticPointerCast<WindowHost>(m_windowHost) : nullptr;
 }
 
 ego::gui::WidgetPointer ego::gui::SurfaceRoot::findWidgetAt(const Position& _position) const
 {
-    const SurfaceRootPointer surfaceRoot = m_self.lock();
-    if (!surfaceRoot || !isVisible() || !getLayoutBounds().contains(_position))
+    if (!isVisible() || !getLayoutBounds().contains(_position))
     {
         return nullptr;
     }
 
-    WidgetPointer currentWidget = surfaceRoot;
+    WidgetPointer currentWidget = m_windowHost;
+    if (!currentWidget || !currentWidget->isVisible() || !currentWidget->getLayoutBounds().contains(_position) || !currentWidget->isDirectChildOf(*this))
+    {
+        return nullptr;
+    }
+
     while (currentWidget->isChildHitTestVisible(_position))
     {
         WidgetPointer hitWidget = nullptr;
@@ -171,7 +134,8 @@ bool ego::gui::SurfaceRoot::isInputTarget(const WidgetPointer& _widget) const
     WidgetPointer currentWidget = _widget;
     while (currentWidget)
     {
-        if (!currentWidget->isVisible())
+        const Rect& bounds = currentWidget->getLayoutBounds();
+        if (!currentWidget->isVisible() || (currentWidget.get() != this && (bounds.m_size.m_x <= 0.0f || bounds.m_size.m_y <= 0.0f)))
         {
             return false;
         }
@@ -188,16 +152,9 @@ bool ego::gui::SurfaceRoot::isInputTarget(const WidgetPointer& _widget) const
 
 ego::gui::Size ego::gui::SurfaceRoot::calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints)
 {
-    const Rect surfaceBounds(PositionZero, _constraints.m_maximumSize);
-    for (const WidgetPointer& widget : m_widgets)
+    if (m_windowHost)
     {
-        if (!widget)
-        {
-            continue;
-        }
-
-        const Rect widgetBounds = widget->resolveTopLevelBounds(surfaceBounds);
-        widget->updatePreferredSize(_context, LayoutConstraints(widgetBounds.m_size));
+        m_windowHost->updatePreferredSize(_context, _constraints);
     }
 
     return _constraints.m_maximumSize;
@@ -205,15 +162,9 @@ ego::gui::Size ego::gui::SurfaceRoot::calculatePreferredSize(const LayoutContext
 
 void ego::gui::SurfaceRoot::updateGeometry(const LayoutContext& _context)
 {
-    const Rect& surfaceBounds = getLayoutBounds();
-    for (const WidgetPointer& widget : m_widgets)
+    if (m_windowHost)
     {
-        if (!widget)
-        {
-            continue;
-        }
-
-        widget->applyLayout(_context, widget->resolveTopLevelBounds(surfaceBounds));
+        m_windowHost->applyLayout(_context, getLayoutBounds());
     }
 }
 
@@ -264,10 +215,10 @@ void ego::gui::SurfaceRoot::endTraversal()
 
 size_t ego::gui::SurfaceRoot::getChildCount() const
 {
-    return m_widgets.size();
+    return m_windowHost ? 1 : 0;
 }
 
-const ego::gui::WidgetPointer& ego::gui::SurfaceRoot::getChild(size_t _index) const
+const ego::gui::WidgetPointer& ego::gui::SurfaceRoot::getChild(size_t) const
 {
-    return m_widgets[_index];
+    return m_windowHost;
 }

@@ -20,6 +20,7 @@ namespace ego::gui
         void popClipRect();
 
         void drawBox(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex = gpu::InvalidBindlessIndex);
+        void drawBorder(const Rect& _rect, float _thickness, const NormalizedColorRGBA& _color);
         void drawCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex = gpu::InvalidBindlessIndex);
         void drawTriangle(
             const Position& _firstPosition,

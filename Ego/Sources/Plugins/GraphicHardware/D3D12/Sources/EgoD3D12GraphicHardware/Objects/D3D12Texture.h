@@ -23,7 +23,11 @@ namespace ego::gpu::d3d12
     class D3D12TextureView final : public TextureView, public D3D12Descriptor
     {
     public:
-        D3D12TextureView(const TextureReference& _texture, const TextureViewDesc& _desc, D3D12DescriptorIndex _descriptorIndex, D3D12DescriptorAllocatorPointer& _allocator);
+        D3D12TextureView(
+            const TextureReference& _texture,
+            const TextureViewDesc& _desc,
+            D3D12DescriptorIndex _descriptorIndex,
+            D3D12DescriptorAllocatorPointer& _allocator);
         ~D3D12TextureView() override;
 
         void* getNativeHandle() const override;

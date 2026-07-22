@@ -241,8 +241,7 @@ ego::gpu::Texture2DReference ego::render::DefaultRender::resolvePresentationTarg
     const gpu::Texture2DDesc& targetDesc = targetTexture->getDesc();
     const gpu::GraphicResourceFormat targetViewFormat = _targetView->getDesc().m_format;
     if (targetDesc.m_size.m_x != resultDesc.m_size.m_x || targetDesc.m_size.m_y != resultDesc.m_size.m_y || targetDesc.m_format != resultDesc.m_format ||
-        (targetViewFormat != gpu::GraphicResourceFormat::Undefined && targetViewFormat != targetDesc.m_format) || !(targetDesc.m_usage & gpu::TextureUsageRenderTarget) ||
-        !(targetDesc.m_usage & gpu::GraphicResourceUsageTransferDst))
+        (targetViewFormat != gpu::GraphicResourceFormat::Undefined && targetViewFormat != targetDesc.m_format) || !(targetDesc.m_usage & gpu::TextureUsageRenderTarget))
     {
         return nullptr;
     }

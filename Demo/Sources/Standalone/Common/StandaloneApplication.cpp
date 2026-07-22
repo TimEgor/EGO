@@ -4,14 +4,13 @@
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
+#include "EgoCore/RTTI/RTTI.h"
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
-
 #include "EgoEngine/Project/ProjectReader.h"
 
-#include "EgoApplication/Window/WindowGraphicPresenter.h"
+#include "EgoApplication/Window/ApplicationWindow.h"
 
 namespace
 {
@@ -93,26 +92,21 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     EGO_CHECK_RETURN_FALSE(!m_engine);
     EGO_CHECK_RETURN_FALSE(!m_engineSession);
 
-    const application::ApplicationWindowPointer mainWindow = m_application->createWindow(CreateMainWindowDesc());
+    const application::PresenterProviderPointer presenterProvider = m_application->getPresenterProviderPointer();
+    EGO_CHECK_RETURN_FALSE(presenterProvider);
+
+    const application::Presentation mainPresentation = presenterProvider->createPresentation(CreateMainPresentationDesc());
+    EGO_CHECK_RETURN_FALSE(mainPresentation.m_surface && mainPresentation.m_graphicPresenter);
+    EGO_CHECK_RETURN_FALSE(rtti::IsObjectBasedOn<application::ApplicationWindow>(*mainPresentation.m_surface));
+
+    const application::ApplicationWindowPointer mainWindow = StaticPointerCast<application::ApplicationWindow>(mainPresentation.m_surface);
     EGO_CHECK_RETURN_FALSE(mainWindow && mainWindow->isValid());
-    m_mainWindow = mainWindow;
+    m_mainPresentationSurface = mainPresentation.m_surface;
 
-    const gpu::GraphicHardwareSubsystemPointer graphicHardwareSubsystem = gpu::GetGraphicHardwareSubsystemPointer();
-    const GraphicDevicePointer graphicDevice = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicDevicePointer() : nullptr;
-    EGO_CHECK_RETURN_FALSE(graphicDevice);
+    m_guiViewportProvider = new application::ApplicationGuiViewportProvider();
+    EGO_CHECK_RETURN_FALSE(m_guiViewportProvider);
 
-    application::WindowGraphicPresenterPointer mainWindowGraphicPresenter = new application::WindowGraphicPresenter();
-    EGO_CHECK_RETURN_FALSE(mainWindowGraphicPresenter);
-
-    gpu::SwapChainDesc swapChainDesc;
-    swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
-    swapChainDesc.m_bufferCount = 2;
-    EGO_CHECK_RETURN_FALSE(mainWindowGraphicPresenter->init(*graphicDevice, *mainWindow, swapChainDesc, graphicHardwareSubsystem->getGraphicCommandQueue()));
-
-    m_guiViewportSystem = new application::ApplicationGuiViewportSystem();
-    EGO_CHECK_RETURN_FALSE(m_guiViewportSystem);
-
-    EGO_CHECK_RETURN_FALSE(m_guiViewportSystem->init(m_application, mainWindow, mainWindowGraphicPresenter));
+    EGO_CHECK_RETURN_FALSE(m_guiViewportProvider->init(mainPresentation));
 
     engine::EngineSession::InitData sessionInitData;
     EGO_CHECK_RETURN_FALSE(fillEngineSessionInitData(_options, sessionInitData));
@@ -120,7 +114,7 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     sessionInitData.m_enablePresentation = true;
     sessionInitData.m_enableGui = true;
     engine::EngineSession::GuiOptions& guiOptions = sessionInitData.m_gui;
-    guiOptions.m_viewportBackend = m_guiViewportSystem;
+    guiOptions.m_viewportProvider = m_guiViewportProvider;
     EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiOptions.m_fontAtlasDesc));
 
     engine::EngineSession::GuiRenderOptions& guiRenderOptions = sessionInitData.m_guiRender;
@@ -147,8 +141,14 @@ void ego::demo::standalone::StandaloneApplication::releaseEngine()
     m_engineSession = nullptr;
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engine);
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiViewportSystem);
-    m_mainWindow.reset();
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiViewportProvider);
+
+    const application::PresenterProviderPointer presenterProvider = m_application ? m_application->getPresenterProviderPointer() : nullptr;
+    if (presenterProvider && m_mainPresentationSurface)
+    {
+        presenterProvider->destroyPresentation(m_mainPresentationSurface);
+    }
+    m_mainPresentationSurface = nullptr;
 }
 
 bool ego::demo::standalone::StandaloneApplication::runMainLoop()
@@ -160,7 +160,10 @@ bool ego::demo::standalone::StandaloneApplication::runMainLoop()
     while (!m_application->isExitRequested())
     {
         m_application->processWindowEvents();
-        const application::ApplicationWindowPointer mainWindow = m_mainWindow.lock();
+        const PresentationSurfacePointer mainSurface = m_mainPresentationSurface;
+        const application::ApplicationWindowPointer mainWindow = mainSurface && rtti::IsObjectBasedOn<application::ApplicationWindow>(*mainSurface) ?
+                                                                     StaticPointerCast<application::ApplicationWindow>(mainSurface) :
+                                                                     nullptr;
         if (m_application->isExitRequested() || !mainWindow || !mainWindow->isValid())
         {
             break;
@@ -187,7 +190,9 @@ void ego::demo::standalone::StandaloneApplication::parseCommandLine(int _argCoun
     argParser.parse(_argCount, _argValues);
 }
 
-bool ego::demo::standalone::StandaloneApplication::fillEngineSessionInitData(const CommandLineOptions& _options, engine::EngineSession::InitData& _sessionInitData)
+bool ego::demo::standalone::StandaloneApplication::fillEngineSessionInitData(
+    const CommandLineOptions& _options,
+    engine::EngineSession::InitData& _sessionInitData)
 {
     FileName projectFileName(_options.m_projectFilePath);
     if (!projectFileName)
@@ -222,14 +227,13 @@ bool ego::demo::standalone::StandaloneApplication::loadProject(const FileName& _
     return true;
 }
 
-ego::WindowDesc ego::demo::standalone::StandaloneApplication::CreateMainWindowDesc()
+ego::application::PresentationDesc ego::demo::standalone::StandaloneApplication::CreateMainPresentationDesc()
 {
-    WindowDesc windowDesc;
-    windowDesc.m_title = "EGO";
-    windowDesc.m_size = WindowSize(500, 500);
-    windowDesc.m_showOnInit = false;
+    application::PresentationDesc presentationDesc;
+    presentationDesc.m_name = "EGO";
+    presentationDesc.m_size = PresentationSurfaceSize(500, 500);
 
-    return windowDesc;
+    return presentationDesc;
 }
 
 ego::FileName ego::demo::standalone::StandaloneApplication::selectProjectFile() const
