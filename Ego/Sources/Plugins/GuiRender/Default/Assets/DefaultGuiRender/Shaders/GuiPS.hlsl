@@ -10,15 +10,23 @@ cbuffer GuiConstants : register(b0)
     float2 ViewportSize;
     uint TextureIndex;
     uint SamplerIndex;
+    uint TextureSamplingMode;
 };
 
-float4 PSMain(PSInput input) : SV_TARGET
+float4 PSMain(PSInput input)
+    : SV_TARGET
 {
     if (TextureIndex != 0xffffffff)
     {
-        Texture2D<float> fontTexture = ResourceDescriptorHeap[TextureIndex];
-        SamplerState fontSampler = SamplerDescriptorHeap[SamplerIndex];
-        return float4(input.Color.rgb, input.Color.a * fontTexture.Sample(fontSampler, input.UV));
+        Texture2D<float4> texture = ResourceDescriptorHeap[TextureIndex];
+        SamplerState textureSampler = SamplerDescriptorHeap[SamplerIndex];
+        const float4 textureColor = texture.Sample(textureSampler, input.UV);
+        if (TextureSamplingMode == 1)
+        {
+            return input.Color * textureColor;
+        }
+
+        return float4(input.Color.rgb, input.Color.a * textureColor.r);
     }
 
     return input.Color;

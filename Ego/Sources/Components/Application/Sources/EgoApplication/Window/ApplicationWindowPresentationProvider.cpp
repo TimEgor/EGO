@@ -71,6 +71,7 @@ ego::application::Presentation ego::application::ApplicationWindowPresentationPr
     const WindowGraphicPresenterPointer graphicPresenter = createSurfaceGraphicPresenter(window, sizeChangedCallbackID);
     if (!graphicPresenter)
     {
+        removeApplicationWindow(window);
         window->release();
         return presentation;
     }
@@ -111,8 +112,9 @@ bool ego::application::ApplicationWindowPresentationProvider::destroyPresentatio
 
     if (window)
     {
-        window->release();
+        emitPresentationSurfaceDestroying(window);
         removeApplicationWindow(window);
+        window->release();
     }
 
     return true;

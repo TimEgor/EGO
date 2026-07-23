@@ -11,6 +11,8 @@
 
 #include "EgoEvent/EventSubsystem.h"
 
+#include "EgoInput/InputController.h"
+
 #include "EgoPlugin/Catalog/PluginCatalogBuilder.h"
 #include "EgoPlugin/PluginSubsystem.h"
 
@@ -19,6 +21,7 @@
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 #include "ApplicationSubsystem.h"
+#include "Input/ApplicationInputKeyProvider.h"
 #include "Profile/ApplicationProfiler.h"
 #include "Window/ApplicationWindowEvents.h"
 #include "Window/ApplicationWindowPresentationProvider.h"
@@ -37,6 +40,7 @@ bool ego::application::Application::init(const InitData& _initData)
     m_isExitRequested = false;
 
     EGO_CHECK_INITIALIZATION(initSubsystems(_initData));
+    EGO_CHECK_INITIALIZATION(initInputController());
 
     if (_initData.m_enableWindowing)
     {
@@ -49,6 +53,7 @@ bool ego::application::Application::init(const InitData& _initData)
 void ego::application::Application::release()
 {
     releaseWindowing();
+    releaseInputController();
     releaseSubsystems();
 
     m_isExitRequested = false;
@@ -57,6 +62,11 @@ void ego::application::Application::release()
 const ego::application::PresenterProviderPointer& ego::application::Application::getPresenterProviderPointer() const
 {
     return m_presenterProvider;
+}
+
+ego::InputControllerPointer ego::application::Application::getInputControllerPointer() const
+{
+    return m_inputController;
 }
 
 void ego::application::Application::processWindowEvents()
@@ -69,11 +79,9 @@ void ego::application::Application::processWindowEvents()
 
 void ego::application::Application::updateInputDevices()
 {
-    const PlatformPointer platform = GetPlatformPointer();
-    EGO_ASSERT(platform);
-    if (platform)
+    if (m_inputController)
     {
-        platform->getInputDeviceController().update();
+        m_inputController->update();
     }
 }
 
@@ -178,6 +186,36 @@ void ego::application::Application::releaseSubsystems()
     m_applicationSubsystem = nullptr;
 
     releaseSubsystemRegistry();
+}
+
+bool ego::application::Application::initInputController()
+{
+    EGO_CHECK_RETURN_FALSE(!m_inputController && !m_platformInputKeyProvider);
+
+    m_inputController = new InputController();
+    EGO_CHECK_RETURN_FALSE(m_inputController && m_inputController->init());
+
+    const PlatformPointer platform = GetPlatformPointer();
+    EGO_CHECK_RETURN_FALSE(platform);
+
+    InputDeviceController& platformInputDeviceController = platform->getInputDeviceController();
+    EGO_CHECK_RETURN_FALSE(platformInputDeviceController.isInitialized());
+
+    m_platformInputKeyProvider = new ApplicationInputKeyProvider(platformInputDeviceController);
+    EGO_CHECK_RETURN_FALSE(m_platformInputKeyProvider);
+
+    return m_inputController->registerKeyProvider(m_platformInputKeyProvider);
+}
+
+void ego::application::Application::releaseInputController()
+{
+    if (m_inputController && m_platformInputKeyProvider)
+    {
+        m_inputController->unregisterKeyProvider(m_platformInputKeyProvider);
+    }
+
+    m_platformInputKeyProvider = nullptr;
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
 }
 
 bool ego::application::Application::initSubsystemRegistry()

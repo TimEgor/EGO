@@ -15,7 +15,6 @@ target_link_libraries(
             Ego::Event
             Ego::Gui
             Ego::GraphicHardware
-            Ego::Input
             Ego::Job
             Ego::Plugin
             Ego::Resource

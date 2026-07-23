@@ -11,6 +11,12 @@
 
 namespace ego::gui
 {
+    enum class TextureSamplingMode : uint32_t
+    {
+        Alpha,
+        Color
+    };
+
     struct Vertex final
     {
         Position m_position = PositionZero;
@@ -22,6 +28,7 @@ namespace ego::gui
     {
         Rect m_clipRect;
         uint32_t m_textureIndex = gpu::InvalidBindlessIndex;
+        TextureSamplingMode m_textureSamplingMode = TextureSamplingMode::Alpha;
         uint32_t m_firstIndex = 0;
         uint32_t m_indexCount = 0;
         int32_t m_vertexOffset = 0;

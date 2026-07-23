@@ -24,8 +24,14 @@ namespace
     }
 } // namespace
 
-ego::gui::PaintContext::PaintContext(DrawData& _drawData, const Rect& _viewportRect, const FontAtlasPointer& _fontAtlas, const ThemePointer& _theme)
+ego::gui::PaintContext::PaintContext(
+    DrawData& _drawData,
+    std::vector<gpu::TextureViewReference>& _resourceTextureViews,
+    const Rect& _viewportRect,
+    const FontAtlasPointer& _fontAtlas,
+    const ThemePointer& _theme)
     : m_drawData(_drawData),
+      m_resourceTextureViews(_resourceTextureViews),
       m_fontAtlas(_fontAtlas),
       m_theme(_theme)
 {
@@ -80,6 +86,29 @@ void ego::gui::PaintContext::drawTriangle(
     uint32_t _textureIndex)
 {
     appendTriangle(_firstPosition, _secondPosition, _thirdPosition, _color, _textureIndex);
+}
+
+void ego::gui::PaintContext::drawTexture(const Rect& _rect, const gpu::TextureViewReference& _textureView)
+{
+    if (!_textureView || _textureView->getViewType() != gpu::GraphicResourceViewType::ShaderResource ||
+        _textureView->getDesc().m_dimension != gpu::TextureViewDimension::D2 || _textureView->getBindlessIndex() == gpu::InvalidBindlessIndex)
+    {
+        return;
+    }
+
+    const std::vector<gpu::TextureViewReference>::const_iterator textureViewIt = std::find_if(
+        m_resourceTextureViews.cbegin(),
+        m_resourceTextureViews.cend(),
+        [&_textureView](const gpu::TextureViewReference& _resourceTextureView)
+        {
+            return _resourceTextureView.getObject() == _textureView.getObject();
+        });
+    if (textureViewIt == m_resourceTextureViews.cend())
+    {
+        m_resourceTextureViews.push_back(_textureView);
+    }
+
+    appendQuad(_rect, Rect(0.0f, 0.0f, 1.0f, 1.0f), NormalizedColorRGBA(NormalizedColorWhite), _textureView->getBindlessIndex(), TextureSamplingMode::Color);
 }
 
 void ego::gui::PaintContext::drawText(std::string_view _text, const Rect& _rect, const NormalizedColorRGBA& _color)
@@ -150,7 +179,12 @@ void ego::gui::PaintContext::appendQuad(const Rect& _rect, const NormalizedColor
     appendQuad(_rect, Rect(0.0f, 0.0f, 1.0f, 1.0f), _color, _textureIndex);
 }
 
-void ego::gui::PaintContext::appendQuad(const Rect& _rect, const Rect& _uvRect, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
+void ego::gui::PaintContext::appendQuad(
+    const Rect& _rect,
+    const Rect& _uvRect,
+    const NormalizedColorRGBA& _color,
+    uint32_t _textureIndex,
+    TextureSamplingMode _textureSamplingMode)
 {
     if (_rect.m_size.m_x <= 0.0f || _rect.m_size.m_y <= 0.0f)
     {
@@ -172,7 +206,7 @@ void ego::gui::PaintContext::appendQuad(const Rect& _rect, const Rect& _uvRect, 
     m_drawData.m_indices.push_back(firstVertex + 2);
     m_drawData.m_indices.push_back(firstVertex + 3);
 
-    appendDrawCommand(firstIndex, 6, _textureIndex);
+    appendDrawCommand(firstIndex, 6, _textureIndex, _textureSamplingMode);
 }
 
 void ego::gui::PaintContext::appendCircle(const Position& _center, float _radius, const NormalizedColorRGBA& _color, uint32_t _textureIndex)
@@ -228,14 +262,14 @@ void ego::gui::PaintContext::appendTriangle(
     appendDrawCommand(firstIndex, 3, _textureIndex);
 }
 
-void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _indexCount, uint32_t _textureIndex)
+void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _indexCount, uint32_t _textureIndex, TextureSamplingMode _textureSamplingMode)
 {
     const Rect& clipRect = getCurrentClipRect();
     if (!m_drawData.m_commands.empty())
     {
         DrawCommand& previousCommand = m_drawData.m_commands.back();
-        if (previousCommand.m_textureIndex == _textureIndex && previousCommand.m_clipRect == clipRect &&
-            previousCommand.m_firstIndex + previousCommand.m_indexCount == _firstIndex)
+        if (previousCommand.m_textureIndex == _textureIndex && previousCommand.m_textureSamplingMode == _textureSamplingMode &&
+            previousCommand.m_clipRect == clipRect && previousCommand.m_firstIndex + previousCommand.m_indexCount == _firstIndex)
         {
             previousCommand.m_indexCount += _indexCount;
             return;
@@ -245,6 +279,7 @@ void ego::gui::PaintContext::appendDrawCommand(uint32_t _firstIndex, uint32_t _i
     DrawCommand command;
     command.m_clipRect = clipRect;
     command.m_textureIndex = _textureIndex;
+    command.m_textureSamplingMode = _textureSamplingMode;
     command.m_firstIndex = _firstIndex;
     command.m_indexCount = _indexCount;
     command.m_vertexOffset = 0;

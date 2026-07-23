@@ -26,9 +26,10 @@ namespace
         ego::FloatVector2 m_viewportSize = ego::FloatVector2Zero;
         uint32_t m_textureIndex = ego::gpu::InvalidBindlessIndex;
         uint32_t m_samplerIndex = ego::gpu::InvalidBindlessIndex;
+        uint32_t m_textureSamplingMode = static_cast<uint32_t>(ego::gui::TextureSamplingMode::Alpha);
     };
 
-    static_assert(sizeof(GuiRootConstants) == sizeof(uint32_t) * 4);
+    static_assert(sizeof(GuiRootConstants) == sizeof(uint32_t) * 5);
 } // namespace
 
 ego::gui::default_gui_render::DefaultGuiRender::~DefaultGuiRender()
@@ -261,8 +262,10 @@ bool ego::gui::default_gui_render::DefaultGuiRender::prepareBuffers(ViewportReso
 
     const gpu::InitialGraphicResourceData vertexData(_resources.m_drawData.m_vertices.data(), static_cast<uint32_t>(vertexDataSize));
     const gpu::InitialGraphicResourceData indexData(_resources.m_drawData.m_indices.data(), static_cast<uint32_t>(indexDataSize));
-    EGO_CHECK_RETURN_FALSE(prepareBuffer(vertexData, sizeof(Vertex), static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageVertexBuffer), _resources.m_vertexBuffer));
-    EGO_CHECK_RETURN_FALSE(prepareBuffer(indexData, sizeof(uint32_t), static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageIndexBuffer), _resources.m_indexBuffer));
+    EGO_CHECK_RETURN_FALSE(
+        prepareBuffer(vertexData, sizeof(Vertex), static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageVertexBuffer), _resources.m_vertexBuffer));
+    EGO_CHECK_RETURN_FALSE(
+        prepareBuffer(indexData, sizeof(uint32_t), static_cast<gpu::GraphicResourceUsage>(gpu::GpuBufferUsageIndexBuffer), _resources.m_indexBuffer));
 
     return true;
 }
@@ -369,6 +372,7 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
         {
             guiConstants.m_textureIndex = command.m_textureIndex;
             guiConstants.m_samplerIndex = m_defaultSampler->getBindlessIndex();
+            guiConstants.m_textureSamplingMode = static_cast<uint32_t>(command.m_textureSamplingMode);
         }
 
         m_commandList->pushConstants(gpu::ShaderStageFlagAll, 0, sizeof(guiConstants), &guiConstants);
@@ -380,7 +384,8 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
 
 ego::gpu::Texture2DReference ego::gui::default_gui_render::DefaultGuiRender::resolveTargetTexture(const gpu::TextureViewReference& _targetView) const
 {
-    if (!_targetView || _targetView->getViewType() != gpu::GraphicResourceViewType::RenderTarget || _targetView->getDesc().m_dimension != gpu::TextureViewDimension::D2)
+    if (!_targetView || _targetView->getViewType() != gpu::GraphicResourceViewType::RenderTarget ||
+        _targetView->getDesc().m_dimension != gpu::TextureViewDimension::D2)
     {
         return nullptr;
     }

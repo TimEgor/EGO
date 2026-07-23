@@ -22,12 +22,10 @@
 
 namespace ego
 {
-    class InputController;
     class JobController;
     class PluginController;
     class ResourceController;
 
-    EGO_POINTER(InputController);
     EGO_POINTER(JobController);
     EGO_POINTER(PluginController);
     EGO_POINTER(ResourceController);
@@ -59,6 +57,7 @@ namespace ego::engine
         struct SceneRenderOptions final
         {
             FileName m_pluginModuleName;
+            GraphicPresenterPointer m_presenter = nullptr;
         };
 
         struct GuiRenderOptions final
@@ -95,13 +94,10 @@ namespace ego::engine
 
         gui::GuiControllerPointer getGuiControllerPointer() const;
 
-        InputControllerPointer getInputControllerPointer() const;
-
     private:
         PluginControllerPointer getPluginControllerPointer() const;
         ResourceControllerPointer getResourceControllerPointer() const;
 
-        bool initInputController();
         bool initGuiController(const GuiOptions& _guiOptions, bool _enableGui);
         bool initGraphicFrameController(const InitData& _initData);
         bool initFrameLogic();
@@ -128,7 +124,7 @@ namespace ego::engine
         FrameLogic m_frameLogic;
         GraphicFrameController m_graphicFrameController;
 
-        InputControllerPointer m_inputController = nullptr;
+        GraphicPresenterPointer m_scenePresenter = nullptr;
         gui::GuiControllerPointer m_guiController = nullptr;
 
         ClockTimePoint m_currentFrameTime;

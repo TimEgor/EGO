@@ -30,6 +30,16 @@ ego::gpu::Texture2DReference ego::application::WindowGraphicPresenter::getTarget
     return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DReference();
 }
 
+bool ego::application::WindowGraphicPresenter::shouldClearTarget() const
+{
+    return true;
+}
+
+ego::gpu::GraphicResourceState ego::application::WindowGraphicPresenter::getPresentationState() const
+{
+    return gpu::GraphicResourceState::Present;
+}
+
 bool ego::application::WindowGraphicPresenter::prepare()
 {
     if (!m_swapChain)

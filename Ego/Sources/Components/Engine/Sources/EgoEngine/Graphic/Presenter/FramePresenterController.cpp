@@ -78,7 +78,7 @@ void ego::engine::FramePresenterController::presentFrame()
         return;
     }
 
-    transitionPresentersToPresent();
+    transitionPresenterTargets();
 
     for (const GraphicPresenterPointer& graphicPresenter : m_graphicPresenters)
     {
@@ -142,6 +142,11 @@ void ego::engine::FramePresenterController::clearPresenters()
 
     for (const GraphicPresenterPointer& graphicPresenter : m_graphicPresenters)
     {
+        if (!graphicPresenter->shouldClearTarget())
+        {
+            continue;
+        }
+
         const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
         if (!targetTexture || targetTexture->getDesc().m_size.m_x == 0 || targetTexture->getDesc().m_size.m_y == 0)
         {
@@ -182,7 +187,7 @@ bool ego::engine::FramePresenterController::recordTargetClear(const gpu::Texture
     colorAttachment.m_view = targetView;
     colorAttachment.m_loadOperation = gpu::AttachmentLoadOperation::Clear;
     colorAttachment.m_storeOperation = gpu::AttachmentStoreOperation::Store;
-    colorAttachment.m_clearValue = FloatVector4Zero;
+    colorAttachment.m_clearValue = FloatVector4(0.0f, 0.0f, 0.0f, 1.0f);
 
     gpu::RenderingDesc renderingDesc;
     renderingDesc.m_colorAttachments.push_back(colorAttachment);
@@ -194,7 +199,7 @@ bool ego::engine::FramePresenterController::recordTargetClear(const gpu::Texture
     return true;
 }
 
-void ego::engine::FramePresenterController::transitionPresentersToPresent()
+void ego::engine::FramePresenterController::transitionPresenterTargets()
 {
     EGO_ASSERT(m_commandList && m_presentationQueue && m_fence);
 
@@ -206,9 +211,10 @@ void ego::engine::FramePresenterController::transitionPresentersToPresent()
     for (const GraphicPresenterPointer& graphicPresenter : m_graphicPresenters)
     {
         const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
-        if (targetTexture && targetTexture->getState() != gpu::GraphicResourceState::Present)
+        const gpu::GraphicResourceState presentationState = graphicPresenter->getPresentationState();
+        if (targetTexture && targetTexture->getState() != presentationState)
         {
-            m_commandList->resourceBarrier(targetTexture, gpu::GraphicResourceState::Present);
+            m_commandList->resourceBarrier(targetTexture, presentationState);
             hasRecordedTransition = true;
         }
     }

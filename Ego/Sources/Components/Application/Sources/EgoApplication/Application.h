@@ -14,12 +14,14 @@ namespace ego
 {
     class DiagnosticSubsystem;
     class EventSubsystem;
+    class InputController;
     class PlatformSubsystem;
     class PluginSubsystem;
     class ResourceSubsystem;
 
     EGO_POINTER(DiagnosticSubsystem);
     EGO_POINTER(EventSubsystem);
+    EGO_POINTER(InputController);
     EGO_POINTER(PlatformSubsystem);
     EGO_POINTER(PluginSubsystem);
     EGO_POINTER(ResourceSubsystem);
@@ -35,6 +37,7 @@ namespace ego::gpu
 namespace ego::application
 {
     class Application;
+    class ApplicationInputKeyProvider;
     class ApplicationSubsystem;
     class ApplicationProfiler;
     class PresenterProvider;
@@ -42,6 +45,7 @@ namespace ego::application
 
     EGO_POINTER(Application);
     EGO_WEAK_POINTER(Application);
+    EGO_POINTER(ApplicationInputKeyProvider);
     EGO_POINTER(ApplicationSubsystem);
     EGO_POINTER(ApplicationProfiler);
     EGO_POINTER(PresenterProvider);
@@ -66,6 +70,7 @@ namespace ego::application
         void release();
 
         const PresenterProviderPointer& getPresenterProviderPointer() const;
+        InputControllerPointer getInputControllerPointer() const;
 
         void processWindowEvents();
         void updateInputDevices();
@@ -76,6 +81,9 @@ namespace ego::application
     private:
         bool initSubsystems(const InitData& _initData);
         void releaseSubsystems();
+
+        bool initInputController();
+        void releaseInputController();
 
         bool initSubsystemRegistry();
         void releaseSubsystemRegistry();
@@ -102,6 +110,8 @@ namespace ego::application
         ResourceSubsystemPointer m_resourceSubsystem = nullptr;
 
         ApplicationProfilerPointer m_applicationProfiler = nullptr;
+        InputControllerPointer m_inputController = nullptr;
+        ApplicationInputKeyProviderPointer m_platformInputKeyProvider = nullptr;
 
         PresenterProviderPointer m_presenterProvider = nullptr;
         EventCallbackID m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;

@@ -1,9 +1,6 @@
 #include "InputController.h"
 
 #include "EgoCore/Assert/Assert.h"
-#include "EgoCore/Platform/Input/InputDeviceController.h"
-#include "EgoCore/Platform/Platform.h"
-#include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEvent/EventController.h"
@@ -86,12 +83,6 @@ void ego::InputController::update() const
 
     const EventControllerPointer eventController = getEventControllerPointer();
     EGO_CHECK_RETURN(eventController);
-
-    const InputDeviceController::DeviceCollection& devices = GetPlatform().getInputDeviceController().getDevices();
-    for (const InputDevicePointer& device : devices)
-    {
-        emitDeviceEvents(*eventController, device);
-    }
 
     for (const InputKeyProviderPointer& provider : m_keyProviders)
     {

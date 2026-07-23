@@ -112,6 +112,7 @@ bool ego::demo::standalone::StandaloneApplication::initEngine(const CommandLineO
     EGO_CHECK_RETURN_FALSE(fillEngineSessionInitData(_options, sessionInitData));
 
     sessionInitData.m_enablePresentation = true;
+    sessionInitData.m_sceneRender.m_presenter = mainPresentation.m_graphicPresenter;
     sessionInitData.m_enableGui = true;
     engine::EngineSession::GuiOptions& guiOptions = sessionInitData.m_gui;
     guiOptions.m_viewportProvider = m_guiViewportProvider;

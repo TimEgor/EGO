@@ -11,6 +11,7 @@
 #include "EgoGui/Widgets/CheckBox.h"
 #include "EgoGui/Widgets/Column.h"
 #include "EgoGui/Widgets/Composition.h"
+#include "EgoGui/Widgets/Image.h"
 #include "EgoGui/Widgets/VerticalPanel.h"
 #include "EgoGui/Widgets/RadioGroup.h"
 #include "EgoGui/Widgets/Row.h"

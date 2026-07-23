@@ -17,6 +17,7 @@ cbuffer GuiConstants : register(b0)
     float2 ViewportSize;
     uint TextureIndex;
     uint SamplerIndex;
+    uint TextureSamplingMode;
 };
 
 VSOutput VSMain(VSInput input)

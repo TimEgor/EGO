@@ -39,7 +39,7 @@ namespace ego::engine
         void releasePresentation();
         void clearPresenters();
         bool recordTargetClear(const gpu::Texture2DReference& _targetTexture);
-        void transitionPresentersToPresent();
+        void transitionPresenterTargets();
         void waitCommandList();
         void signalFence();
 

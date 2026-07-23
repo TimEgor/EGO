@@ -23,6 +23,8 @@ namespace ego::application
 
         bool prepare() override;
         gpu::Texture2DReference getTargetTexture() override;
+        bool shouldClearTarget() const override;
+        gpu::GraphicResourceState getPresentationState() const override;
 
         bool resize(const gpu::Texture2DSize& _size);
         void present() override;

@@ -16,8 +16,6 @@
 #include "EgoJob/JobController.h"
 #include "EgoJob/JobDescriptor.h"
 
-#include "EgoInput/InputController.h"
-
 #include "EgoGui/Rendering/GuiRenderPlugin.h"
 
 #include "Graphic/SceneRender/RenderPlugin.h"
@@ -36,13 +34,17 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 {
     EGO_CHECK_RETURN_FALSE(_jobController);
     EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_enableGui || _initData.m_enablePresentation);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_enablePresentation || _initData.m_gui.m_viewportProvider);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_enableGui || _initData.m_gui.m_viewportProvider);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_gui.m_viewportProvider || _initData.m_enablePresentation);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_enableSceneRender || _initData.m_sceneRender.m_presenter);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_sceneRender.m_presenter || _initData.m_enablePresentation);
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(!m_engineLogic);
+    EGO_CHECK_RETURN_FALSE(!m_scenePresenter);
     EGO_CHECK_RETURN_FALSE(m_id == InvalidEngineSessionID);
 
     m_jobController = _jobController;
+    m_scenePresenter = _initData.m_sceneRender.m_presenter;
     m_id = _id;
     m_isGuiEnabled = _initData.m_enableGui;
     m_currentFrameTime = Clock::GetCurrentTimePoint();
@@ -53,8 +55,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     m_levelController = new LevelController();
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
-    EGO_CHECK_INITIALIZATION(initInputController());
-    if (_initData.m_enablePresentation)
+    if (_initData.m_gui.m_viewportProvider)
     {
         EGO_CHECK_INITIALIZATION(initGuiController(_initData.m_gui, _initData.m_enableGui));
     }
@@ -78,11 +79,11 @@ void ego::engine::EngineSession::release()
         m_guiController->release();
         m_guiController = nullptr;
     }
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
     m_projectRuntime.release();
 
+    m_scenePresenter = nullptr;
     m_jobController = nullptr;
     m_id = InvalidEngineSessionID;
     m_renderCameraEntity = ecs::Entity();
@@ -107,13 +108,12 @@ ego::ResourceControllerPointer ego::engine::EngineSession::getResourceController
 bool ego::engine::EngineSession::tick()
 {
     EGO_CHECK_RETURN_FALSE(m_id != InvalidEngineSessionID);
-    EGO_CHECK_RETURN_FALSE(m_inputController && m_jobController);
+    EGO_CHECK_RETURN_FALSE(m_jobController);
 
     EGO_PROFILE_BLOCK_EVENT("Frame");
 
     beginFrame();
 
-    m_inputController->update();
     if (m_guiController)
     {
         m_guiController->update();
@@ -167,22 +167,9 @@ ego::gui::GuiControllerPointer ego::engine::EngineSession::getGuiControllerPoint
     return m_isGuiEnabled ? m_guiController : nullptr;
 }
 
-ego::InputControllerPointer ego::engine::EngineSession::getInputControllerPointer() const
-{
-    return m_inputController;
-}
-
 ego::JobGraphReference ego::engine::EngineSession::getFrameLogicJobGraph()
 {
     return m_frameLogic.createJobGraph();
-}
-
-bool ego::engine::EngineSession::initInputController()
-{
-    m_inputController = new InputController();
-    EGO_CHECK_RETURN_FALSE(m_inputController && m_inputController->init());
-
-    return true;
 }
 
 bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions, bool _enableGui)
@@ -352,10 +339,9 @@ void ego::engine::EngineSession::prepareGraphicFrame()
 {
     gui::GuiRenderData guiRenderData;
     GraphicFrameController::SceneRenderData sceneRenderData;
+    sceneRenderData.m_graphicPresenter = m_scenePresenter;
     if (m_guiController)
     {
-        const gui::ViewportPointer primaryViewport = m_guiController->getPrimaryViewport();
-        sceneRenderData.m_graphicPresenter = primaryViewport ? primaryViewport->getGraphicPresenterPointer() : nullptr;
         guiRenderData = m_guiController->buildFrame();
     }
 

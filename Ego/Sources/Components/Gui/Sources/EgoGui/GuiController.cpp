@@ -291,7 +291,7 @@ ego::gui::GuiRenderData ego::gui::GuiController::buildFrame()
             viewportFrame.m_drawData.m_viewportSize = viewportSize;
 
             const Rect viewportRect(0.0f, 0.0f, viewportSize.m_x, viewportSize.m_y);
-            PaintContext paintContext(viewportFrame.m_drawData, viewportRect, fontAtlas, theme);
+            PaintContext paintContext(viewportFrame.m_drawData, frame.m_resourceTextureViews, viewportRect, fontAtlas, theme);
             Viewport::ViewportAccessor::EmitDrawCommands(*viewport, layoutContext, paintContext);
         }
 
