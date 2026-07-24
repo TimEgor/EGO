@@ -1,17 +1,17 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 
 #include "EgoCore/Platform/Input/InputTypes.h"
 #include "EgoCore/Platform/Input/KeyboardInputDevice.h"
 #include "EgoCore/Platform/Input/MouseInputDevice.h"
-#include "EgoCore/Reference/Pointer.h"
 
 #include "EgoGui/Core/Geometry.h"
 
 namespace ego::gui
 {
-    class InputConsumer;
+    class WidgetUpdateContext;
 
     struct InputModifiers final
     {
@@ -30,16 +30,18 @@ namespace ego::gui
         ClearFocus
     };
 
-    class InputEvent;
-    EGO_POINTER(InputEvent);
-
     class InputEvent
     {
     public:
         virtual ~InputEvent();
 
-        virtual void sendTo(InputConsumer& _consumer) const = 0;
+    private:
+        friend class WidgetUpdateContext;
+
+        virtual void update(WidgetUpdateContext& _context) const = 0;
     };
+
+    using InputEventOwner = std::unique_ptr<InputEvent>;
 
     struct PointerMoveEvent final
         : public InputEvent
@@ -47,7 +49,8 @@ namespace ego::gui
         Position m_position = PositionZero;
         InputModifiers m_modifiers;
 
-        void sendTo(InputConsumer& _consumer) const override;
+    private:
+        void update(WidgetUpdateContext& _context) const override;
     };
 
     struct PointerExitEvent final
@@ -56,7 +59,8 @@ namespace ego::gui
         Position m_position = PositionZero;
         InputModifiers m_modifiers;
 
-        void sendTo(InputConsumer& _consumer) const override;
+    private:
+        void update(WidgetUpdateContext& _context) const override;
     };
 
     struct MouseButtonEvent final
@@ -67,7 +71,8 @@ namespace ego::gui
         InputButtonAction m_action = InputButtonAction::Pressed;
         InputModifiers m_modifiers;
 
-        void sendTo(InputConsumer& _consumer) const override;
+    private:
+        void update(WidgetUpdateContext& _context) const override;
     };
 
     struct MouseWheelEvent final
@@ -77,7 +82,8 @@ namespace ego::gui
         float m_wheelDelta = 0.0f;
         InputModifiers m_modifiers;
 
-        void sendTo(InputConsumer& _consumer) const override;
+    private:
+        void update(WidgetUpdateContext& _context) const override;
     };
 
     struct KeyEvent final
@@ -87,7 +93,8 @@ namespace ego::gui
         InputButtonAction m_action = InputButtonAction::Pressed;
         InputModifiers m_modifiers;
 
-        void sendTo(InputConsumer& _consumer) const override;
+    private:
+        void update(WidgetUpdateContext& _context) const override;
     };
 
     struct TextInputEvent final
@@ -96,32 +103,20 @@ namespace ego::gui
         uint32_t m_codepoint = 0;
         InputModifiers m_modifiers;
 
-        void sendTo(InputConsumer& _consumer) const override;
+    private:
+        void update(WidgetUpdateContext& _context) const override;
+    };
+
+    struct ViewportDeactivatedEvent final
+        : public InputEvent
+    {
+    private:
+        void update(WidgetUpdateContext& _context) const override;
     };
 
     enum class FocusChange
     {
         Gained,
         Lost
-    };
-
-    struct ViewportDeactivatedEvent final
-        : public InputEvent
-    {
-        void sendTo(InputConsumer& _consumer) const override;
-    };
-
-    class InputConsumer
-    {
-    public:
-        virtual ~InputConsumer();
-
-        virtual void onPointerMove(const PointerMoveEvent& _event) = 0;
-        virtual void onPointerExit(const PointerExitEvent& _event) = 0;
-        virtual void onMouseButton(const MouseButtonEvent& _event) = 0;
-        virtual void onMouseWheel(const MouseWheelEvent& _event) = 0;
-        virtual void onKey(const KeyEvent& _event) = 0;
-        virtual void onTextInput(const TextInputEvent& _event) = 0;
-        virtual void onViewportDeactivated(const ViewportDeactivatedEvent& _event) = 0;
     };
 } // namespace ego::gui

@@ -20,7 +20,7 @@ namespace ego::gui
 
     private:
         size_t getChildCount() const override = 0;
-        const WidgetPointer& getChild(size_t _index) const override = 0;
+        WidgetPointer getChild(size_t _index) const override = 0;
     };
 
 } // namespace ego::gui

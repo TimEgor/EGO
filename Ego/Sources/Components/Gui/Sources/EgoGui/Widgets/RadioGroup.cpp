@@ -130,16 +130,17 @@ void ego::gui::RadioGroup::applyUserSelection(OptionIndex _index)
     m_onSelectionChanged.invoke(m_selectedOptionIndex);
 }
 
-ego::gui::InputReply ego::gui::RadioGroup::onPointerMove(const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::RadioGroup::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
 {
     m_hoveredOptionIndex = findOptionAtPosition(_event.m_position);
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::RadioGroup::onMouseButton(const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::RadioGroup::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
 {
     const OptionIndex optionIndex = findOptionAtPosition(_event.m_position);
-    if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && isValidOptionIndex(optionIndex) && !isValidOptionIndex(m_pressedOptionIndex))
+    if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && isValidOptionIndex(optionIndex) &&
+        !isValidOptionIndex(m_pressedOptionIndex))
     {
         m_hoveredOptionIndex = optionIndex;
         m_pressedOptionIndex = optionIndex;
@@ -161,17 +162,17 @@ ego::gui::InputReply ego::gui::RadioGroup::onMouseButton(const MouseButtonEvent&
     return InputReply::Unhandled;
 }
 
-void ego::gui::RadioGroup::onPointerEnter(const Position& _position, const InputModifiers&)
+void ego::gui::RadioGroup::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
 {
     m_hoveredOptionIndex = findOptionAtPosition(_position);
 }
 
-void ego::gui::RadioGroup::onPointerLeave(const Position&, const InputModifiers&)
+void ego::gui::RadioGroup::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
 {
     m_hoveredOptionIndex = InvalidOptionIndex;
 }
 
-void ego::gui::RadioGroup::onPointerCaptureLost(const Position&)
+void ego::gui::RadioGroup::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
 {
     m_hoveredOptionIndex = InvalidOptionIndex;
     m_pressedOptionIndex = InvalidOptionIndex;

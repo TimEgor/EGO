@@ -93,7 +93,7 @@ bool ego::gui::TextInput::isFocused() const
     return m_isFocused;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onPointerMove(const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
 {
     const bool containsMouse = m_inputRect.contains(_event.m_position);
     m_isHovered = containsMouse;
@@ -105,7 +105,7 @@ ego::gui::InputReply ego::gui::TextInput::onPointerMove(const PointerMoveEvent& 
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onMouseButton(const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
 {
     const bool containsMouse = m_inputRect.contains(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && !m_isPressed)
@@ -136,14 +136,14 @@ ego::gui::InputReply ego::gui::TextInput::onMouseButton(const MouseButtonEvent& 
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onKey(const KeyEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onKey(WidgetUpdateContext&, const KeyEvent& _event)
 {
     if (_event.m_action == InputButtonAction::Pressed && m_isFocused)
     {
         if (_event.m_key == KeyboardInputKey::Enter || _event.m_key == KeyboardInputKey::NumpadEnter)
         {
-            notifyTextCommitted(TextCommitReason::Enter);
             m_suppressFocusLostCommit = true;
+            notifyTextCommitted(TextCommitReason::Enter);
             return InputReply::ClearFocus;
         }
 
@@ -155,8 +155,8 @@ ego::gui::InputReply ego::gui::TextInput::onKey(const KeyEvent& _event)
                 notifyTextChanged();
             }
 
-            notifyTextCommitted(TextCommitReason::Cancel);
             m_suppressFocusLostCommit = true;
+            notifyTextCommitted(TextCommitReason::Cancel);
             return InputReply::ClearFocus;
         }
 
@@ -177,7 +177,7 @@ ego::gui::InputReply ego::gui::TextInput::onKey(const KeyEvent& _event)
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onTextInput(const TextInputEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onTextInput(WidgetUpdateContext&, const TextInputEvent& _event)
 {
     if (m_isFocused)
     {
@@ -187,17 +187,17 @@ ego::gui::InputReply ego::gui::TextInput::onTextInput(const TextInputEvent& _eve
     return InputReply::Unhandled;
 }
 
-void ego::gui::TextInput::onPointerEnter(const Position& _position, const InputModifiers&)
+void ego::gui::TextInput::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
 {
     m_isHovered = m_inputRect.contains(_position);
 }
 
-void ego::gui::TextInput::onPointerLeave(const Position&, const InputModifiers&)
+void ego::gui::TextInput::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::TextInput::onPointerCaptureLost(const Position&)
+void ego::gui::TextInput::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
 {
     m_isPressed = false;
     m_isSelecting = false;
@@ -208,7 +208,7 @@ void ego::gui::TextInput::onPointerCaptureLost(const Position&)
     }
 }
 
-void ego::gui::TextInput::onFocusChanged(FocusChange _change)
+void ego::gui::TextInput::onFocusChanged(WidgetUpdateContext&, FocusChange _change)
 {
     if (_change == FocusChange::Gained)
     {
@@ -348,7 +348,8 @@ float ego::gui::TextInput::getEffectiveFieldBorderThickness() const
 
 bool ego::gui::TextInput::handleKeyDown(KeyboardInputKey _key, const InputModifiers& _modifiers)
 {
-    if (_key == KeyboardInputKey::LeftShift || _key == KeyboardInputKey::RightShift || _key == KeyboardInputKey::LeftControl || _key == KeyboardInputKey::RightControl)
+    if (_key == KeyboardInputKey::LeftShift || _key == KeyboardInputKey::RightShift || _key == KeyboardInputKey::LeftControl ||
+        _key == KeyboardInputKey::RightControl)
     {
         return true;
     }

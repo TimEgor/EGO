@@ -55,14 +55,9 @@ ego::gui::Box::Box(Orientation _orientation, bool _useContentPadding)
 {
 }
 
-ego::gui::Box::~Box()
-{
-    clearChildren();
-}
-
 bool ego::gui::Box::addChild(const WidgetPointer& _widget, const BoxSlot& _slot)
 {
-    if (!canMutateTree() || !attachChild(_widget))
+    if (!attachChild(_widget))
     {
         return false;
     }
@@ -74,7 +69,7 @@ bool ego::gui::Box::addChild(const WidgetPointer& _widget, const BoxSlot& _slot)
 
 ego::gui::WidgetPointer ego::gui::Box::removeChild(const WidgetPointer& _widget)
 {
-    if (!canMutateTree() || !_widget)
+    if (!_widget)
     {
         return nullptr;
     }
@@ -104,7 +99,7 @@ ego::gui::WidgetPointer ego::gui::Box::removeChild(const WidgetPointer& _widget)
 
 void ego::gui::Box::clearChildren()
 {
-    if (!canMutateTree() || m_children.empty())
+    if (m_children.empty())
     {
         return;
     }
@@ -155,7 +150,8 @@ ego::gui::Size ego::gui::Box::calculatePreferredSize(const LayoutContext& _conte
             desiredMainExtent += spacing;
         }
         desiredMainExtent += (isVertical ? childPreferredSize.m_y : childPreferredSize.m_x) + mainPadding;
-        desiredCrossExtent = (std::max)(desiredCrossExtent, containerCrossPadding + (isVertical ? childPreferredSize.m_x : childPreferredSize.m_y) + crossPadding);
+        desiredCrossExtent =
+            (std::max)(desiredCrossExtent, containerCrossPadding + (isVertical ? childPreferredSize.m_x : childPreferredSize.m_y) + crossPadding);
         ++visibleChildCount;
     }
 
@@ -174,8 +170,10 @@ void ego::gui::Box::updateGeometry(const LayoutContext& _context)
     const float containerTrailingCrossPadding = isVertical ? contentPadding.m_right : contentPadding.m_bottom;
     const float mainStart = (isVertical ? layoutBounds.m_position.m_y : layoutBounds.m_position.m_x) + containerLeadingMainPadding;
     const float crossStart = (isVertical ? layoutBounds.m_position.m_x : layoutBounds.m_position.m_y) + containerLeadingCrossPadding;
-    const float mainExtent = (std::max)(0.0f, (isVertical ? layoutBounds.m_size.m_y : layoutBounds.m_size.m_x) - containerLeadingMainPadding - containerTrailingMainPadding);
-    const float crossExtent = (std::max)(0.0f, (isVertical ? layoutBounds.m_size.m_x : layoutBounds.m_size.m_y) - containerLeadingCrossPadding - containerTrailingCrossPadding);
+    const float mainExtent =
+        (std::max)(0.0f, (isVertical ? layoutBounds.m_size.m_y : layoutBounds.m_size.m_x) - containerLeadingMainPadding - containerTrailingMainPadding);
+    const float crossExtent =
+        (std::max)(0.0f, (isVertical ? layoutBounds.m_size.m_x : layoutBounds.m_size.m_y) - containerLeadingCrossPadding - containerTrailingCrossPadding);
     const float spacing = (std::max)(0.0f, layout.m_spacing);
 
     float fixedMainExtent = 0.0f;
@@ -267,7 +265,7 @@ size_t ego::gui::Box::getChildCount() const
     return m_children.size();
 }
 
-const ego::gui::WidgetPointer& ego::gui::Box::getChild(size_t _index) const
+ego::gui::WidgetPointer ego::gui::Box::getChild(size_t _index) const
 {
     return m_children[_index].m_widget;
 }

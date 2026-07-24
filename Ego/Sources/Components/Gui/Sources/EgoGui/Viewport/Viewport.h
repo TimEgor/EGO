@@ -1,58 +1,46 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
 
 #include "EgoGui/Docking/DockingTypes.h"
-#include "EgoGui/Input/Input.h"
+#include "EgoGui/Input/WidgetUpdateContext.h"
 #include "EgoGui/Widgets/Window.h"
 
 #include "ViewportTypes.h"
 
 namespace ego::gui
 {
-    class InputRouter;
     class SurfaceRoot;
-    class WindowHost;
     struct ViewportUpdate;
 
     EGO_POINTER(SurfaceRoot);
-    EGO_POINTER(WindowHost);
 
     class Viewport final
         : public NonCopyable
     {
     public:
-        class ViewportAccessor final
-            : public NonInstanceable
-        {
-        public:
-            static ego::SharedPointer<Viewport> Create(ViewportID _id, ViewportRole _role, const Size& _size);
-            static void Update(Viewport& _viewport, const LayoutContext& _layoutContext, const ViewportUpdate& _update);
-            static void ClearInteraction(Viewport& _viewport);
-            static void InvalidateLayout(Viewport& _viewport);
-            static void EmitDrawCommands(Viewport& _viewport, const LayoutContext& _layoutContext, PaintContext& _paintContext);
-        };
-
-        using WidgetCollection = std::vector<WidgetPointer>;
+        using WindowCollection = std::vector<WindowPointer>;
 
         ~Viewport() override;
+
+        static ego::SharedPointer<Viewport> Create(ViewportID _id, ViewportRole _role, const Size& _size);
 
         ViewportID getID() const;
         ViewportRole getRole() const;
         const Size& getSize() const;
         GraphicPresenterPointer getGraphicPresenterPointer() const;
+        WidgetPointer getRootWidget() const;
 
-        bool add(const WidgetPointer& _widget);
         bool addWindow(const WindowPointer& _window, const WindowPlacement& _placement = WindowPlacement());
-        WidgetPointer remove(const WidgetPointer& _widget);
+        WindowPointer removeWindow(const WindowPointer& _window);
         void clear();
-        const WidgetCollection& getWidgets() const;
+        WindowCollection getWindows() const;
         WidgetPointer getFocusedWidget() const;
 
         bool setDockingEnabled(bool _isEnabled);
@@ -61,23 +49,26 @@ namespace ego::gui
         DockingSpaceID getWindowDockingSpaceID(const WindowPointer& _window) const;
         bool moveWindow(const WindowPointer& _window, const WindowPlacement& _placement);
 
-    private:
-        Viewport(ViewportID _id, ViewportRole _role, const Size& _size);
-
-        WindowHostPointer getWindowHost() const;
-        void setSize(const Size& _size);
         void update(const LayoutContext& _layoutContext, const ViewportUpdate& _update);
         void clearInteraction();
         void invalidateLayout();
-        bool stabilizeLayout(const LayoutContext& _layoutContext);
         void emitDrawCommands(const LayoutContext& _layoutContext, PaintContext& _paintContext);
+
+    private:
+        Viewport(ViewportID _id, ViewportRole _role, const Size& _size);
+
+        void setSize(const Size& _size);
+        bool stabilize(const LayoutContext& _layoutContext, WidgetUpdateContext& _updateContext);
+        WidgetUpdateContext createUpdateContext();
+
+        static constexpr size_t MaximumLayoutPassCount = 64;
 
         ViewportID m_id = InvalidViewportID;
         ViewportRole m_role = ViewportRole::Secondary;
         Size m_size = SizeZero;
         GraphicPresenterPointer m_graphicPresenter = nullptr;
         SurfaceRootPointer m_root = nullptr;
-        ego::SharedPointer<InputRouter> m_inputRouter = nullptr;
+        mutable WidgetUpdateState m_updateState;
     };
 
     EGO_POINTER(Viewport);

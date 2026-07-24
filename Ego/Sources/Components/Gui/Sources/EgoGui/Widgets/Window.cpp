@@ -3,34 +3,12 @@
 #include <algorithm>
 #include <utility>
 
+#include "EgoCore/RTTI/RTTI.h"
+
+#include "EgoGui/Docking/DockingOverlay.h"
+#include "EgoGui/Docking/DockingTab.h"
+#include "EgoGui/Input/WidgetUpdateContext.h"
 #include "EgoGui/Theme/Theme.h"
-
-ego::gui::WindowDragDelegate::~WindowDragDelegate() = default;
-
-void ego::gui::Window::WindowAccessor::BindDragDelegate(Window& _window, const WindowDragDelegateWeakPointer& _delegate)
-{
-    _window.bindDragDelegate(_delegate);
-}
-
-void ego::gui::Window::WindowAccessor::SetDockedBounds(Window& _window, const Rect& _bounds, bool _isVisible)
-{
-    _window.setDockedBounds(_bounds, _isVisible);
-}
-
-void ego::gui::Window::WindowAccessor::ClearDockedBounds(Window& _window)
-{
-    _window.clearDockedBounds();
-}
-
-const ego::gui::Rect& ego::gui::Window::WindowAccessor::GetFloatingBounds(const Window& _window)
-{
-    return _window.m_floatingBounds;
-}
-
-bool ego::gui::Window::WindowAccessor::FlushSizeChanged(Window& _window)
-{
-    return _window.flushSizeChanged();
-}
 
 ego::gui::Window::Window()
 {
@@ -52,12 +30,8 @@ ego::gui::WindowPointer ego::gui::Window::Create(WindowDesc _desc)
     {
         return nullptr;
     }
-    return window;
-}
 
-ego::gui::Window::~Window()
-{
-    setContent(nullptr);
+    return window;
 }
 
 void ego::gui::Window::setTitle(std::string _title)
@@ -83,7 +57,7 @@ void ego::gui::Window::setPosition(const Position& _position)
 
 const ego::gui::Position& ego::gui::Window::getPosition() const
 {
-    return isDocked() ? m_dockedBounds.m_position : m_floatingBounds.m_position;
+    return isDocked() ? getLayoutBounds().m_position : m_floatingBounds.m_position;
 }
 
 void ego::gui::Window::setSize(const Size& _size)
@@ -95,7 +69,7 @@ void ego::gui::Window::setSize(const Size& _size)
 
 const ego::gui::Size& ego::gui::Window::getSize() const
 {
-    return isDocked() ? m_dockedBounds.m_size : m_floatingBounds.m_size;
+    return isDocked() ? getLayoutBounds().m_size : m_floatingBounds.m_size;
 }
 
 void ego::gui::Window::onSizeChange(WindowSizeChangedHandler _handler)
@@ -129,11 +103,6 @@ bool ego::gui::Window::setContent(const WidgetPointer& _content)
         return true;
     }
 
-    if (!canMutateTree())
-    {
-        return false;
-    }
-
     if (_content && !attachChild(_content))
     {
         return false;
@@ -147,6 +116,7 @@ bool ego::gui::Window::setContent(const WidgetPointer& _content)
     }
 
     notifyTreeChanged();
+
     return true;
 }
 
@@ -163,35 +133,50 @@ void ego::gui::Window::setBounds(const Rect& _bounds)
 
 const ego::gui::Rect& ego::gui::Window::getBounds() const
 {
-    return isDocked() ? m_dockedBounds : m_floatingBounds;
+    return isDocked() ? getLayoutBounds() : m_floatingBounds;
 }
 
-ego::gui::InputReply ego::gui::Window::onPointerMove(const PointerMoveEvent& _event)
+const ego::gui::Rect& ego::gui::Window::getFloatingBounds() const
 {
-    const PointerRegion pointerRegion = hitTest(_event.m_position);
+    return m_floatingBounds;
+}
+
+bool ego::gui::Window::isDocked() const
+{
+    const WidgetPointer parent = getParent();
+
+    return parent && rtti::IsObjectBasedOn<DockingTab>(*parent);
+}
+
+ego::gui::InputReply ego::gui::Window::onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event)
+{
+    const PointerRegion pointerRegion = resolvePointerRegion(_event.m_position);
     if (m_interactionState != InteractionState::None)
     {
         m_isInteractionPaused = false;
-        updateInteraction(_event.m_position);
+        updateInteraction(_context, _event.m_position);
         updateHoveredRegion(_event.m_position);
+
         return InputReply::Handled;
     }
 
     m_hoveredRegion = pointerRegion;
+
     return pointerRegion == PointerRegion::ResizeGrip ? InputReply::Handled : InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Window::onMouseButton(const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::Window::onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event)
 {
-    const PointerRegion pointerRegion = hitTest(_event.m_position);
+    const PointerRegion pointerRegion = resolvePointerRegion(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed)
     {
         if (_event.m_key == MouseInputKey::ButtonLeft && m_interactionState == InteractionState::None &&
             (pointerRegion == PointerRegion::TitleBar || pointerRegion == PointerRegion::ResizeGrip))
         {
             const InteractionState interactionState = pointerRegion == PointerRegion::ResizeGrip ? InteractionState::Resizing : InteractionState::Dragging;
-            beginInteraction(interactionState, _event.m_position);
+            beginInteraction(_context, interactionState, _event.m_position);
             m_hoveredRegion = pointerRegion;
+
             return InputReply::FocusAndCapture;
         }
 
@@ -207,35 +192,36 @@ ego::gui::InputReply ego::gui::Window::onMouseButton(const MouseButtonEvent& _ev
     {
         if (!m_isInteractionPaused)
         {
-            updateInteraction(_event.m_position);
+            updateInteraction(_context, _event.m_position);
         }
 
-        endInteraction(_event.m_position);
+        endInteraction(_context, _event.m_position);
         updateHoveredRegion(_event.m_position);
+
         return InputReply::Handled;
     }
 
     return InputReply::Unhandled;
 }
 
-void ego::gui::Window::onPointerEnter(const Position& _position, const InputModifiers&)
+void ego::gui::Window::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
 {
-    m_hoveredRegion = hitTest(_position);
+    m_hoveredRegion = resolvePointerRegion(_position);
 }
 
-void ego::gui::Window::onPointerLeave(const Position&, const InputModifiers&)
+void ego::gui::Window::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
 {
     m_hoveredRegion = PointerRegion::None;
     pauseInteraction();
 }
 
-void ego::gui::Window::onPointerCaptureLost(const Position& _position)
+void ego::gui::Window::onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position)
 {
     m_hoveredRegion = PointerRegion::None;
-    cancelInteraction(_position);
+    cancelInteraction(_context, _position);
 }
 
-ego::gui::Window::PointerRegion ego::gui::Window::hitTest(const Position& _position) const
+ego::gui::Window::PointerRegion ego::gui::Window::resolvePointerRegion(const Position& _position) const
 {
     if (!getLayoutBounds().contains(_position))
     {
@@ -262,21 +248,21 @@ ego::gui::Window::PointerRegion ego::gui::Window::hitTest(const Position& _posit
 
 void ego::gui::Window::updateHoveredRegion(const Position& _position)
 {
-    m_hoveredRegion = hitTest(_position);
+    m_hoveredRegion = resolvePointerRegion(_position);
 }
 
 ego::gui::Size ego::gui::Window::calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints)
 {
     applyWindowStyle(_context.getTheme().m_window);
+
     const Size& maximumSize = _constraints.m_maximumSize;
     const Size effectiveMaximumSize =
         isDocked() ? maximumSize : Size((std::max)(maximumSize.m_x, m_floatingBounds.m_size.m_x), (std::max)(maximumSize.m_y, m_floatingBounds.m_size.m_y));
     const float titleBarHeight = isDocked() ? 0.0f : m_titleBarHeight;
     const Size contentMaximumSize(effectiveMaximumSize.m_x, (std::max)(0.0f, effectiveMaximumSize.m_y - titleBarHeight));
-    const WidgetPointer content = m_content;
-    if (content)
+    if (m_content)
     {
-        content->updatePreferredSize(_context, LayoutConstraints(contentMaximumSize));
+        m_content->updatePreferredSize(_context, LayoutConstraints(contentMaximumSize));
     }
 
     return effectiveMaximumSize;
@@ -286,10 +272,17 @@ void ego::gui::Window::updateGeometry(const LayoutContext& _context)
 {
     applyWindowStyle(_context.getTheme().m_window);
     updateWindowRects();
-    const WidgetPointer content = m_content;
-    if (content)
+    if (m_content)
     {
-        content->applyLayout(_context, m_contentRect);
+        m_content->applyLayout(_context, m_contentRect);
+    }
+}
+
+void ego::gui::Window::onLayoutCompleted()
+{
+    if (!AreEqual(m_reportedSize, getSize()))
+    {
+        notifySizeChanged();
     }
 }
 
@@ -297,10 +290,9 @@ void ego::gui::Window::drawBaseLayer(PaintContext& _context) const
 {
     const Theme& theme = _context.getTheme();
     const WindowStyle& window = theme.m_window;
-
     const Rect& layoutBounds = getLayoutBounds();
-    _context.drawBox(layoutBounds, window.m_surface);
 
+    _context.drawBox(layoutBounds, window.m_surface);
     if (isDocked())
     {
         return;
@@ -308,7 +300,6 @@ void ego::gui::Window::drawBaseLayer(PaintContext& _context) const
 
     const NormalizedColorRGBA& titleBarColor =
         window.m_title.resolve(m_hoveredRegion == PointerRegion::TitleBar, m_interactionState == InteractionState::Dragging);
-
     _context.drawBox(m_titleBarRect, titleBarColor);
 
     const float titleWidth = (std::max)(0.0f, m_titleBarRect.m_size.m_x);
@@ -334,7 +325,6 @@ void ego::gui::Window::drawOverlayLayer(PaintContext& _context) const
 
     const WindowStyle& window = _context.getTheme().m_window;
     const Rect& layoutBounds = getLayoutBounds();
-
     const NormalizedColorRGBA& resizeGripColor =
         window.m_resizeGrip.resolve(m_hoveredRegion == PointerRegion::ResizeGrip, m_interactionState == InteractionState::Resizing);
 
@@ -343,7 +333,6 @@ void ego::gui::Window::drawOverlayLayer(PaintContext& _context) const
         Position(m_resizeGripRect.getLeft(), m_resizeGripRect.getBottom()),
         Position(m_resizeGripRect.getRight(), m_resizeGripRect.getTop()),
         resizeGripColor);
-
     _context.drawBorder(layoutBounds, m_windowBorderThickness, window.m_border);
 }
 
@@ -367,36 +356,25 @@ size_t ego::gui::Window::getChildCount() const
     return m_content ? 1 : 0;
 }
 
-const ego::gui::WidgetPointer& ego::gui::Window::getChild(size_t) const
+ego::gui::WidgetPointer ego::gui::Window::getChild(size_t) const
 {
     return m_content;
 }
 
-ego::gui::Rect ego::gui::Window::resolveTopLevelBounds(const Rect&) const
-{
-    if (!isDocked())
-    {
-        return m_floatingBounds;
-    }
-
-    return m_isDockedVisible ? m_dockedBounds : Rect(m_dockedBounds.m_position, SizeZero);
-}
-
-void ego::gui::Window::beginInteraction(InteractionState _state, const Position& _position)
+void ego::gui::Window::beginInteraction(WidgetUpdateContext& _context, InteractionState _state, const Position& _position)
 {
     m_interactionState = _state;
     m_isInteractionPaused = false;
     m_interactionStartPosition = _position;
     m_interactionStartBounds = m_floatingBounds;
 
-    m_activeDragDelegate.reset();
     if (_state == InteractionState::Dragging)
     {
-        const WindowDragDelegatePointer delegate = m_dragDelegate.lock();
-        m_activeDragDelegate = delegate;
-        if (delegate)
+        const WindowPointer self = ego::StaticPointerCast<Window>(sharedFromThis());
+        const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
+        if (dockingOverlay)
         {
-            delegate->onWindowDragBegin(*this, _position);
+            dockingOverlay->beginFloatingDrag(_context, self, _position);
         }
     }
 }
@@ -406,16 +384,16 @@ void ego::gui::Window::pauseInteraction()
     m_isInteractionPaused = m_interactionState != InteractionState::None;
 }
 
-void ego::gui::Window::updateInteraction(const Position& _position)
+void ego::gui::Window::updateInteraction(WidgetUpdateContext& _context, const Position& _position)
 {
     const Position offset(_position.m_x - m_interactionStartPosition.m_x, _position.m_y - m_interactionStartPosition.m_y);
-
     if (m_interactionState == InteractionState::Dragging)
     {
-        const WindowDragDelegatePointer delegate = m_activeDragDelegate.lock();
-        if (delegate)
+        const WindowPointer self = ego::StaticPointerCast<Window>(sharedFromThis());
+        const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
+        if (dockingOverlay && dockingOverlay->isDraggingWindow(self))
         {
-            delegate->onWindowDragMove(*this, _position);
+            dockingOverlay->updateDrag(_context, self, _position);
         }
         else
         {
@@ -428,95 +406,52 @@ void ego::gui::Window::updateInteraction(const Position& _position)
     }
 }
 
-void ego::gui::Window::endInteraction(const Position& _position)
+void ego::gui::Window::endInteraction(WidgetUpdateContext& _context, const Position& _position)
 {
     const bool wasDragging = m_interactionState == InteractionState::Dragging;
-    const WindowDragDelegatePointer delegate = m_activeDragDelegate.lock();
-
     m_interactionState = InteractionState::None;
     m_isInteractionPaused = false;
-    m_activeDragDelegate.reset();
-
-    if (wasDragging && delegate)
+    if (wasDragging)
     {
-        delegate->onWindowDragEnd(*this, _position);
+        const WindowPointer self = ego::StaticPointerCast<Window>(sharedFromThis());
+        const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
+        if (dockingOverlay)
+        {
+            dockingOverlay->finishDrag(_context, self, _position);
+        }
     }
 }
 
-void ego::gui::Window::cancelInteraction(const Position& _position)
+void ego::gui::Window::cancelInteraction(WidgetUpdateContext& _context, const Position&)
 {
     const bool wasDragging = m_interactionState == InteractionState::Dragging;
     const bool wasResizing = m_interactionState == InteractionState::Resizing;
-    const WindowDragDelegatePointer delegate = m_activeDragDelegate.lock();
-
     m_interactionState = InteractionState::None;
     m_isInteractionPaused = false;
-    m_activeDragDelegate.reset();
-
-    if (wasDragging || wasResizing)
+    if (!wasDragging && !wasResizing)
     {
-        const Size currentSize = m_floatingBounds.m_size;
-        m_floatingBounds = m_interactionStartBounds;
-        m_userSize = m_interactionStartBounds.m_size;
-        m_hasUserSize = true;
-        invalidateLayout();
-        if (wasResizing && !AreEqual(currentSize, m_floatingBounds.m_size))
+        return;
+    }
+
+    const Size currentSize = m_floatingBounds.m_size;
+    m_floatingBounds = m_interactionStartBounds;
+    m_userSize = m_interactionStartBounds.m_size;
+    m_hasUserSize = true;
+    invalidateLayout();
+    if (wasResizing && !AreEqual(currentSize, m_floatingBounds.m_size))
+    {
+        notifySizeChanged();
+    }
+
+    if (wasDragging)
+    {
+        const WindowPointer self = ego::StaticPointerCast<Window>(sharedFromThis());
+        const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
+        if (dockingOverlay)
         {
-            notifySizeChanged();
+            dockingOverlay->cancelDrag(self);
         }
     }
-
-    if (wasDragging && delegate)
-    {
-        delegate->onWindowDragCancel(*this, _position);
-    }
-}
-
-void ego::gui::Window::bindDragDelegate(const WindowDragDelegateWeakPointer& _delegate)
-{
-    m_dragDelegate = _delegate;
-}
-
-void ego::gui::Window::setDockedBounds(const Rect& _bounds, bool _isVisible)
-{
-    const Size previousSize = getSize();
-    if (isDocked() && m_dockedBounds == _bounds && m_isDockedVisible == _isVisible)
-    {
-        return;
-    }
-
-    m_dockedBounds = _bounds;
-    m_presentation = Presentation::Docked;
-    m_isDockedVisible = _isVisible;
-    m_hoveredRegion = PointerRegion::None;
-    if (!AreEqual(previousSize, _bounds.m_size))
-    {
-        m_isSizeChangedPending = true;
-    }
-    invalidateLayout();
-}
-
-void ego::gui::Window::clearDockedBounds()
-{
-    if (!isDocked())
-    {
-        return;
-    }
-
-    const Size previousSize = getSize();
-    m_presentation = Presentation::Floating;
-    m_isDockedVisible = false;
-    m_hoveredRegion = PointerRegion::None;
-    if (!AreEqual(previousSize, m_floatingBounds.m_size))
-    {
-        m_isSizeChangedPending = true;
-    }
-    invalidateLayout();
-}
-
-bool ego::gui::Window::isDocked() const
-{
-    return m_presentation == Presentation::Docked;
 }
 
 void ego::gui::Window::applyWindowStyle(const WindowStyle& _style)
@@ -524,6 +459,7 @@ void ego::gui::Window::applyWindowStyle(const WindowStyle& _style)
     m_titleBarHeight = (std::max)(0.0f, _style.m_titleHeight);
     m_resizeGripSize = (std::max)(0.0f, _style.m_resizeGripSize);
     m_windowBorderThickness = (std::max)(0.0f, _style.m_borderThickness);
+
     const Size themeMinimumSize((std::max)(0.0f, _style.m_minimumSize.m_x), (std::max)(0.0f, _style.m_minimumSize.m_y));
     const bool themeMinimumSizeChanged = !AreEqual(m_themeMinimumSize, themeMinimumSize);
     m_themeMinimumSize = themeMinimumSize;
@@ -575,6 +511,7 @@ void ego::gui::Window::updateWindowRects()
         m_titleBarRect = Rect(layoutBounds.m_position, SizeZero);
         m_contentRect = layoutBounds;
         m_resizeGripRect = Rect(Position(layoutBounds.getRight(), layoutBounds.getBottom()), SizeZero);
+
         return;
     }
 
@@ -593,18 +530,7 @@ void ego::gui::Window::updateWindowRects()
 
 void ego::gui::Window::notifySizeChanged()
 {
-    m_isSizeChangedPending = false;
-    const Size size = getSize();
+    m_reportedSize = getSize();
+    const Size size = m_reportedSize;
     m_onSizeChanged.invoke(size);
-}
-
-bool ego::gui::Window::flushSizeChanged()
-{
-    if (!m_isSizeChangedPending)
-    {
-        return false;
-    }
-
-    notifySizeChanged();
-    return true;
 }

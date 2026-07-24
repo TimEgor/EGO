@@ -54,14 +54,14 @@ namespace ego::gui
         EGO_RTTI_VIRTUAL(TextInput, Widget);
 
     protected:
-        InputReply onPointerMove(const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(const MouseButtonEvent& _event) override;
-        InputReply onKey(const KeyEvent& _event) override;
-        InputReply onTextInput(const TextInputEvent& _event) override;
-        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(const Position& _position) override;
-        void onFocusChanged(FocusChange _change) override;
+        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
+        InputReply onKey(WidgetUpdateContext& _context, const KeyEvent& _event) override;
+        InputReply onTextInput(WidgetUpdateContext& _context, const TextInputEvent& _event) override;
+        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
+        void onFocusChanged(WidgetUpdateContext& _context, FocusChange _change) override;
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
         void drawBaseLayer(PaintContext& _context) const override;

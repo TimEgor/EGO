@@ -7,6 +7,12 @@ namespace ego::gui
     using DockingSpaceID = uint32_t;
     inline constexpr DockingSpaceID InvalidDockingSpaceID = 0;
 
+    enum class DockingAxis
+    {
+        Horizontal,
+        Vertical
+    };
+
     enum class DockingPlacement
     {
         Center,

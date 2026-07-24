@@ -88,7 +88,7 @@ void ego::demo::GuiDemo::release()
     {
         for (const gui::WindowPointer& window : m_windows)
         {
-            viewport->remove(window);
+            viewport->removeWindow(window);
         }
         if (!m_wasDockingEnabled)
         {

@@ -19,11 +19,6 @@ ego::gui::ScrollViewPointer ego::gui::ScrollView::Create()
     return new ScrollView();
 }
 
-ego::gui::ScrollView::~ScrollView()
-{
-    setContent(nullptr);
-}
-
 ego::gui::ScrollViewPointer ego::gui::ScrollView::Create(ScrollViewDesc _desc)
 {
     const ScrollViewPointer scrollBox = Create();
@@ -43,11 +38,6 @@ bool ego::gui::ScrollView::setContent(const WidgetPointer& _content)
     if (m_content.get() == _content.get())
     {
         return true;
-    }
-
-    if (!canMutateTree())
-    {
-        return false;
     }
 
     if (_content && !attachChild(_content))
@@ -81,7 +71,7 @@ size_t ego::gui::ScrollView::getChildCount() const
     return m_content ? 1 : 0;
 }
 
-const ego::gui::WidgetPointer& ego::gui::ScrollView::getChild(size_t) const
+ego::gui::WidgetPointer ego::gui::ScrollView::getChild(size_t) const
 {
     return m_content;
 }
@@ -158,7 +148,7 @@ void ego::gui::ScrollView::onChange(ScrollChangedHandler _handler)
     m_onScrollChanged.set(std::move(_handler));
 }
 
-ego::gui::InputReply ego::gui::ScrollView::onPointerMove(const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::ScrollView::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
 {
     if (m_scrollInteraction != ScrollPart::None)
     {
@@ -171,7 +161,7 @@ ego::gui::InputReply ego::gui::ScrollView::onPointerMove(const PointerMoveEvent&
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::ScrollView::onMouseButton(const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::ScrollView::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
 {
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft)
     {
@@ -195,7 +185,7 @@ ego::gui::InputReply ego::gui::ScrollView::onMouseButton(const MouseButtonEvent&
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::ScrollView::onMouseWheel(const MouseWheelEvent& _event)
+ego::gui::InputReply ego::gui::ScrollView::onMouseWheel(WidgetUpdateContext&, const MouseWheelEvent& _event)
 {
     if (getLayoutBounds().contains(_event.m_position) && applyMouseWheel(_event.m_wheelDelta))
     {
@@ -205,17 +195,17 @@ ego::gui::InputReply ego::gui::ScrollView::onMouseWheel(const MouseWheelEvent& _
     return InputReply::Unhandled;
 }
 
-void ego::gui::ScrollView::onPointerEnter(const Position& _position, const InputModifiers&)
+void ego::gui::ScrollView::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
 {
     m_hoveredScrollPart = findScrollPart(_position);
 }
 
-void ego::gui::ScrollView::onPointerLeave(const Position&, const InputModifiers&)
+void ego::gui::ScrollView::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
 {
     m_hoveredScrollPart = ScrollPart::None;
 }
 
-void ego::gui::ScrollView::onPointerCaptureLost(const Position&)
+void ego::gui::ScrollView::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
 {
     m_hoveredScrollPart = ScrollPart::None;
     endScrollInteraction();

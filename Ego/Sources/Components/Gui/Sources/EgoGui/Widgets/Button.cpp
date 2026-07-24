@@ -39,13 +39,13 @@ void ego::gui::Button::onClick(ClickedHandler _handler)
     m_onClicked.set(std::move(_handler));
 }
 
-ego::gui::InputReply ego::gui::Button::onPointerMove(const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::Button::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
 {
     m_isHovered = getLayoutBounds().contains(_event.m_position);
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Button::onMouseButton(const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::Button::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
 {
     const bool containsMouse = getLayoutBounds().contains(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && containsMouse && !m_isPressed)
@@ -70,17 +70,17 @@ ego::gui::InputReply ego::gui::Button::onMouseButton(const MouseButtonEvent& _ev
     return InputReply::Unhandled;
 }
 
-void ego::gui::Button::onPointerEnter(const Position& _position, const InputModifiers&)
+void ego::gui::Button::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
 {
     m_isHovered = getLayoutBounds().contains(_position);
 }
 
-void ego::gui::Button::onPointerLeave(const Position&, const InputModifiers&)
+void ego::gui::Button::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::Button::onPointerCaptureLost(const Position&)
+void ego::gui::Button::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
 {
     m_isHovered = false;
     m_isPressed = false;

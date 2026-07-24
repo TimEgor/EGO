@@ -23,7 +23,11 @@ namespace ego::gui
         static constexpr OptionIndex InvalidOptionIndex = static_cast<OptionIndex>(-1);
 
         static RadioGroupPointer Create();
-        static RadioGroupPointer Create(std::string _title, std::vector<std::string> _options, OptionIndex _selectedOptionIndex = 0, SelectionChangedHandler _onChanged = {});
+        static RadioGroupPointer Create(
+            std::string _title,
+            std::vector<std::string> _options,
+            OptionIndex _selectedOptionIndex = 0,
+            SelectionChangedHandler _onChanged = {});
 
         void setTitle(std::string _title);
         const std::string& getTitle() const;
@@ -42,11 +46,11 @@ namespace ego::gui
         EGO_RTTI_VIRTUAL(RadioGroup, Widget);
 
     protected:
-        InputReply onPointerMove(const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(const MouseButtonEvent& _event) override;
-        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(const Position& _position) override;
+        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
+        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
         void drawBaseLayer(PaintContext& _context) const override;

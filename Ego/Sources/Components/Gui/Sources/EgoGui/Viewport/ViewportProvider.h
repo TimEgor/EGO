@@ -12,7 +12,7 @@
 
 namespace ego::gui
 {
-    using InputEventCollection = std::vector<InputEventPointer>;
+    using InputEventCollection = std::vector<InputEventOwner>;
 
     enum class ViewportUpdateStatus
     {

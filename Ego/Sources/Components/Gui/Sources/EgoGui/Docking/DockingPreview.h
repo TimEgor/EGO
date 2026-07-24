@@ -29,7 +29,6 @@ namespace ego::gui
 
     struct DockingPreview final
     {
-        bool m_isVisible = false;
         bool m_isTargetHovered = false;
         bool m_isDropAllowed = false;
         DockingSpaceID m_targetSpaceID = InvalidDockingSpaceID;
@@ -50,11 +49,13 @@ namespace ego::gui
             const Rect& _rootBounds,
             const Size& _rootMinimumSize,
             bool _showRootTargets,
+            bool _allowHorizontalSpaceSplitAfterOriginRemoval,
+            bool _allowVerticalSpaceSplitAfterOriginRemoval,
             const DockingStyle& _style);
 
     private:
-        static DockingTargetLevel GetLevel(size_t _targetIndex);
-        static DockingPlacement GetPlacement(size_t _targetIndex);
+        static DockingPlacement GetSpacePlacement(size_t _targetIndex);
+        static DockingPlacement GetRootPlacement(size_t _targetIndex);
         static float CalculateTargetSize(const Rect& _bounds, const DockingStyle& _style);
         static bool IsPlacementAvailable(const Rect& _spaceBounds, DockingPlacement _placement, const DockingStyle& _style);
         static bool IsRootPlacementAvailable(const Rect& _rootBounds, const Size& _rootMinimumSize, DockingPlacement _placement, const DockingStyle& _style);

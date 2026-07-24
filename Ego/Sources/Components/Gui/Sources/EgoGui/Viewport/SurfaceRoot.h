@@ -2,61 +2,52 @@
 
 #include <vector>
 
-#include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Patterns/NonInstanceable.h"
-
+#include "EgoGui/Docking/DockingTypes.h"
 #include "EgoGui/Widgets/Container.h"
 
 namespace ego::gui
 {
+    class DockingArea;
+    class DockingOverlay;
     class SurfaceRoot;
-    class WindowHost;
+    class Window;
 
+    EGO_POINTER(DockingArea);
+    EGO_POINTER(DockingOverlay);
     EGO_POINTER(SurfaceRoot);
-    EGO_WEAK_POINTER(SurfaceRoot);
-    EGO_POINTER(WindowHost);
+    EGO_POINTER(Window);
 
     class SurfaceRoot final
         : public Container
     {
     public:
-        class SurfaceRootAccessor final
-            : public NonInstanceable
-        {
-        public:
-            static WindowHostPointer GetWindowHost(const SurfaceRoot& _root);
-        };
-
-        class TraversalScope final
-            : public NonCopyable
-        {
-        public:
-            explicit TraversalScope(SurfaceRoot& _root);
-            ~TraversalScope() override;
-
-        private:
-            SurfaceRoot& m_root;
-        };
-
-        using WidgetCollection = std::vector<WidgetPointer>;
+        using WindowCollection = std::vector<WindowPointer>;
 
         ~SurfaceRoot() override;
 
         static SurfaceRootPointer Create();
 
-        bool addWidget(const WidgetPointer& _widget);
-        WidgetPointer removeWidget(const WidgetPointer& _widget);
-        void clearWidgets();
-        void bringWidgetToFront(const WidgetPointer& _widget);
+        bool addWindow(const WindowPointer& _window);
+        WindowPointer removeWindow(const WindowPointer& _window);
+        void clearWindows();
+        WindowCollection getWindows() const;
 
-        const WidgetCollection& getWidgets() const;
-        WidgetPointer findWidgetAt(const Position& _position) const;
+        bool setDockingEnabled(bool _isEnabled);
+        bool isDockingEnabled() const;
+        DockingSpaceID getDefaultDockingSpaceID() const;
+        DockingSpaceID getWindowDockingSpaceID(const WindowPointer& _window) const;
+        bool dockWindow(const WindowPointer& _window, const WindowPlacement& _placement);
+        bool dockWindowToRoot(const WindowPointer& _window, DockingPlacement _placement, float _ratio);
+        bool makeWindowFloating(const WindowPointer& _window, const Rect& _bounds);
+
+        DockingAreaPointer getDockingArea() const;
+        DockingOverlayPointer getDockingOverlay() const;
+
+        void bringWidgetToFront(const WidgetPointer& _widget);
+        WidgetPointer findWidgetAt(const Position& _position);
         bool isInputTarget(const WidgetPointer& _widget) const;
 
-        void invalidateLayout();
-        bool isLayoutInvalidated() const;
         bool updateLayoutIfNeeded(const LayoutContext& _context, const Size& _size);
-        bool canMutateTree() const;
 
         EGO_RTTI_VIRTUAL(SurfaceRoot, Container);
 
@@ -67,15 +58,18 @@ namespace ego::gui
     private:
         SurfaceRoot() = default;
 
-        WindowHostPointer getWindowHost() const;
-        void beginTraversal();
-        void endTraversal();
+        bool initialize();
+        bool isHostedWindow(const WindowPointer& _window) const;
+        bool attachFloatingWindow(const WindowPointer& _window);
+        bool detachFloatingWindow(const WindowPointer& _window);
+        void moveFloatingWindowToFront(const WindowPointer& _window);
+        bool containsDirectChild(const Widget& _parent, const Widget& _child) const;
 
         size_t getChildCount() const override;
-        const WidgetPointer& getChild(size_t _index) const override;
+        WidgetPointer getChild(size_t _index) const override;
 
-        WidgetPointer m_windowHost = nullptr;
-        size_t m_traversalDepth = 0;
-        bool m_layoutInvalidated = true;
+        DockingAreaPointer m_dockingArea = nullptr;
+        WindowCollection m_floatingWindows;
+        DockingOverlayPointer m_dockingOverlay = nullptr;
     };
 } // namespace ego::gui

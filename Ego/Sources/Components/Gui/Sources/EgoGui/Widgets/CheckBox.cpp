@@ -67,13 +67,13 @@ void ego::gui::CheckBox::applyUserChecked(bool _isChecked)
     m_onCheckedChanged.invoke(m_isChecked);
 }
 
-ego::gui::InputReply ego::gui::CheckBox::onPointerMove(const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::CheckBox::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
 {
     m_isHovered = getLayoutBounds().contains(_event.m_position);
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::CheckBox::onMouseButton(const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::CheckBox::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
 {
     const bool containsMouse = getLayoutBounds().contains(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && containsMouse && !m_isPressed)
@@ -97,17 +97,17 @@ ego::gui::InputReply ego::gui::CheckBox::onMouseButton(const MouseButtonEvent& _
     return InputReply::Unhandled;
 }
 
-void ego::gui::CheckBox::onPointerEnter(const Position& _position, const InputModifiers&)
+void ego::gui::CheckBox::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
 {
     m_isHovered = getLayoutBounds().contains(_position);
 }
 
-void ego::gui::CheckBox::onPointerLeave(const Position&, const InputModifiers&)
+void ego::gui::CheckBox::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::CheckBox::onPointerCaptureLost(const Position&)
+void ego::gui::CheckBox::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
 {
     m_isHovered = false;
     m_isPressed = false;

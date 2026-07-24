@@ -409,7 +409,7 @@ void ego::editor::EditorApplication::releaseEditorUi()
     {
         for (const gui::WindowPointer& window : m_editorWindows)
         {
-            viewport->remove(window);
+            viewport->removeWindow(window);
         }
     }
 

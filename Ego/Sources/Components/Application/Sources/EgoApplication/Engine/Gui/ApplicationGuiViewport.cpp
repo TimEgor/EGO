@@ -1,6 +1,7 @@
 #include "ApplicationGuiViewport.h"
 
 #include <iterator>
+#include <memory>
 #include <utility>
 
 #include "EgoCore/Platform/Input/MouseInputDevice.h"
@@ -53,17 +54,13 @@ namespace
 
     ego::gui::Position GetMousePosition(const ego::InputDevice& _device)
     {
-        return ego::gui::Position(
-            _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)),
-            _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)));
+        return ego::gui::Position(_device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)), _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)));
     }
 
     bool HasMousePositionChanged(const ego::InputDevice& _device)
     {
-        return _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)) !=
-                   _device.getPreviousValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)) ||
-               _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)) !=
-                   _device.getPreviousValue(ToInputDeviceKey(ego::MouseInputKey::AxisY));
+        return _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)) != _device.getPreviousValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)) ||
+               _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)) != _device.getPreviousValue(ToInputDeviceKey(ego::MouseInputKey::AxisY));
     }
 
     uint8_t GetMouseButtonMask(ego::MouseInputKey _key)
@@ -81,9 +78,7 @@ namespace
         _callbackID = ego::InvalidEventCallbackID;
     }
 
-    void RemoveInstancedEventCallback(
-        const ego::EventControllerPointer& _controller,
-        ego::InstancedEventCallbackID& _callbackID)
+    void RemoveInstancedEventCallback(const ego::EventControllerPointer& _controller, ego::InstancedEventCallbackID& _callbackID)
     {
         if (_controller && _callbackID != ego::InvalidInstancedEventCallbackID)
         {
@@ -137,10 +132,7 @@ ego::gui::ViewportUpdate ego::application::ApplicationGuiViewport::poll(const Gr
         m_status = update.m_status;
     }
 
-    update.m_input.insert(
-        update.m_input.end(),
-        std::make_move_iterator(m_input.begin()),
-        std::make_move_iterator(m_input.end()));
+    update.m_input.insert(update.m_input.end(), std::make_move_iterator(m_input.begin()), std::make_move_iterator(m_input.end()));
     m_input.clear();
 
     return update;
@@ -167,57 +159,39 @@ bool ego::application::ApplicationGuiViewport::registerEventCallbacks(const Pres
         _eventIDs.m_destroying,
         *this,
         &ApplicationGuiViewport::handleSurfaceDestroyingEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_surfaceDestroying != InvalidInstancedEventCallbackID,
-        unregisterEventCallbacks());
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_surfaceDestroying != InvalidInstancedEventCallbackID, unregisterEventCallbacks());
 
     m_callbackIDs.m_surfaceActivation = eventController->addInstanceEventCallback<PresentationSurfaceActivationEvent>(
         _eventIDs.m_activation,
         *this,
         &ApplicationGuiViewport::handleSurfaceActivationEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_surfaceActivation != InvalidInstancedEventCallbackID,
-        unregisterEventCallbacks());
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_surfaceActivation != InvalidInstancedEventCallbackID, unregisterEventCallbacks());
 
     m_callbackIDs.m_surfaceKeyboardInput = eventController->addInstanceEventCallback<PresentationSurfaceKeyboardInputEvent>(
         _eventIDs.m_keyboardInput,
         *this,
         &ApplicationGuiViewport::handleSurfaceKeyboardInputEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_surfaceKeyboardInput != InvalidInstancedEventCallbackID,
-        unregisterEventCallbacks());
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_surfaceKeyboardInput != InvalidInstancedEventCallbackID, unregisterEventCallbacks());
 
     m_callbackIDs.m_surfaceTextInput = eventController->addInstanceEventCallback<PresentationSurfaceTextInputEvent>(
         _eventIDs.m_textInput,
         *this,
         &ApplicationGuiViewport::handleSurfaceTextInputEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_surfaceTextInput != InvalidInstancedEventCallbackID,
-        unregisterEventCallbacks());
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_surfaceTextInput != InvalidInstancedEventCallbackID, unregisterEventCallbacks());
 
-    m_callbackIDs.m_mouseChanged =
-        eventController->addEventCallback<InputDeviceChangedEvent>(*this, &ApplicationGuiViewport::handleMouseChangedEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_mouseChanged != InvalidEventCallbackID,
-        unregisterEventCallbacks());
+    m_callbackIDs.m_mouseChanged = eventController->addEventCallback<InputDeviceChangedEvent>(*this, &ApplicationGuiViewport::handleMouseChangedEvent);
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseChanged != InvalidEventCallbackID, unregisterEventCallbacks());
 
-    m_callbackIDs.m_mouseWheel =
-        eventController->addEventCallback<InputKeyChangedEvent>(*this, &ApplicationGuiViewport::handleMouseWheelEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_mouseWheel != InvalidEventCallbackID,
-        unregisterEventCallbacks());
+    m_callbackIDs.m_mouseWheel = eventController->addEventCallback<InputKeyChangedEvent>(*this, &ApplicationGuiViewport::handleMouseWheelEvent);
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseWheel != InvalidEventCallbackID, unregisterEventCallbacks());
 
     m_callbackIDs.m_mouseButtonPressed =
         eventController->addEventCallback<InputButtonPressedEvent>(*this, &ApplicationGuiViewport::handleMouseButtonPressedEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_mouseButtonPressed != InvalidEventCallbackID,
-        unregisterEventCallbacks());
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseButtonPressed != InvalidEventCallbackID, unregisterEventCallbacks());
 
     m_callbackIDs.m_mouseButtonReleased =
         eventController->addEventCallback<InputButtonReleasedEvent>(*this, &ApplicationGuiViewport::handleMouseButtonReleasedEvent);
-    EGO_CHECK_RETURN_CALL_FALSE(
-        m_callbackIDs.m_mouseButtonReleased != InvalidEventCallbackID,
-        unregisterEventCallbacks());
+    EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseButtonReleased != InvalidEventCallbackID, unregisterEventCallbacks());
 
     return true;
 }
@@ -255,7 +229,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceActivationEvent(cons
     }
 
     resetInput();
-    m_input.push_back(new gui::ViewportDeactivatedEvent());
+    m_input.push_back(std::make_unique<gui::ViewportDeactivatedEvent>());
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfaceKeyboardInputEvent(const PresentationSurfaceKeyboardInputEvent& _event)
@@ -272,7 +246,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceKeyboardInputEvent(c
     event.m_key = _event.m_key;
     event.m_action = _event.m_action;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(new gui::KeyEvent(event));
+    m_input.push_back(std::make_unique<gui::KeyEvent>(event));
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfaceTextInputEvent(const PresentationSurfaceTextInputEvent& _event)
@@ -283,7 +257,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceTextInputEvent(const
     gui::TextInputEvent event;
     event.m_codepoint = _event.m_codepoint;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(new gui::TextInputEvent(event));
+    m_input.push_back(std::make_unique<gui::TextInputEvent>(event));
 }
 
 void ego::application::ApplicationGuiViewport::handleMouseChangedEvent(const InputDeviceChangedEvent& _event)
@@ -408,12 +382,12 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::PointerM
         gui::PointerExitEvent pointerExitEvent;
         pointerExitEvent.m_position = _event.m_position;
         pointerExitEvent.m_modifiers = m_modifiers;
-        m_input.push_back(new gui::PointerExitEvent(pointerExitEvent));
+        m_input.push_back(std::make_unique<gui::PointerExitEvent>(pointerExitEvent));
         return true;
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(new gui::PointerMoveEvent(std::move(_event)));
+    m_input.push_back(std::make_unique<gui::PointerMoveEvent>(std::move(_event)));
     return true;
 }
 
@@ -426,7 +400,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::MouseBut
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(new gui::MouseButtonEvent(std::move(_event)));
+    m_input.push_back(std::make_unique<gui::MouseButtonEvent>(std::move(_event)));
     return true;
 }
 
@@ -439,7 +413,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::MouseWhe
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(new gui::MouseWheelEvent(std::move(_event)));
+    m_input.push_back(std::make_unique<gui::MouseWheelEvent>(std::move(_event)));
     return true;
 }
 

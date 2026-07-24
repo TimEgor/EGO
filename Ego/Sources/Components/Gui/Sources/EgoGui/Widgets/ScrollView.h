@@ -31,11 +31,10 @@ namespace ego::gui
         ScrollChangedHandler m_onChanged;
     };
 
-    class ScrollView final
-        : public Container
+    class ScrollView final : public Container
     {
     public:
-        ~ScrollView() override;
+        ~ScrollView() override = default;
 
         static ScrollViewPointer Create();
         static ScrollViewPointer Create(ScrollViewDesc _desc);
@@ -56,12 +55,12 @@ namespace ego::gui
         EGO_RTTI_VIRTUAL(ScrollView, Container);
 
     protected:
-        InputReply onPointerMove(const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(const MouseButtonEvent& _event) override;
-        InputReply onMouseWheel(const MouseWheelEvent& _event) override;
-        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(const Position& _position) override;
+        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
+        InputReply onMouseWheel(WidgetUpdateContext& _context, const MouseWheelEvent& _event) override;
+        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
         void drawOverlayLayer(PaintContext& _context) const override;
@@ -73,7 +72,7 @@ namespace ego::gui
         ScrollView();
 
         size_t getChildCount() const override;
-        const WidgetPointer& getChild(size_t _index) const override;
+        WidgetPointer getChild(size_t _index) const override;
 
         enum class Axis
         {

@@ -52,7 +52,7 @@ namespace ego::gui
     class Box : public Container
     {
     public:
-        ~Box() override;
+        ~Box() override = default;
 
         bool addChild(const WidgetPointer& _widget, const BoxSlot& _slot = BoxSlot());
         WidgetPointer removeChild(const WidgetPointer& _widget);
@@ -76,7 +76,7 @@ namespace ego::gui
         void updateGeometry(const LayoutContext& _context) override;
 
         size_t getChildCount() const override;
-        const WidgetPointer& getChild(size_t _index) const override;
+        WidgetPointer getChild(size_t _index) const override;
 
         ChildCollection m_children;
         Orientation m_orientation;

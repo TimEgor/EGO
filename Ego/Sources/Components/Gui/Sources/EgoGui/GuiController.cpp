@@ -87,7 +87,7 @@ void ego::gui::GuiController::release()
 
         if (viewportEntry.second)
         {
-            Viewport::ViewportAccessor::ClearInteraction(*viewportEntry.second);
+            viewportEntry.second->clearInteraction();
         }
     }
 }
@@ -125,7 +125,7 @@ ego::gui::ViewportPointer ego::gui::GuiController::createViewport(const Viewport
         return nullptr;
     }
 
-    ViewportPointer viewport = Viewport::ViewportAccessor::Create(request.m_id, request.m_role, request.m_desc.m_size);
+    ViewportPointer viewport = Viewport::Create(request.m_id, request.m_role, request.m_desc.m_size);
     if (!viewport)
     {
         viewportProvider->destroyViewport(request.m_id);
@@ -180,7 +180,7 @@ bool ego::gui::GuiController::destroyViewport(const ViewportPointer& _viewport)
         viewportProvider->destroyViewport(viewportID);
     }
 
-    Viewport::ViewportAccessor::ClearInteraction(*viewport);
+    viewport->clearInteraction();
 
     return true;
 }
@@ -233,7 +233,7 @@ void ego::gui::GuiController::update()
             {
             case ViewportUpdateStatus::Alive:
             {
-                Viewport::ViewportAccessor::Update(*viewport, layoutContext, viewportUpdate);
+                viewport->update(layoutContext, viewportUpdate);
 
                 break;
             }
@@ -292,7 +292,7 @@ ego::gui::GuiRenderData ego::gui::GuiController::buildFrame()
 
             const Rect viewportRect(0.0f, 0.0f, viewportSize.m_x, viewportSize.m_y);
             PaintContext paintContext(viewportFrame.m_drawData, frame.m_resourceTextureViews, viewportRect, fontAtlas, theme);
-            Viewport::ViewportAccessor::EmitDrawCommands(*viewport, layoutContext, paintContext);
+            viewport->emitDrawCommands(layoutContext, paintContext);
         }
 
         frame.m_viewports.push_back(std::move(viewportFrame));
@@ -331,7 +331,7 @@ void ego::gui::GuiController::applyTheme(ThemePointer _theme)
     {
         if (viewportEntry.second)
         {
-            Viewport::ViewportAccessor::InvalidateLayout(*viewportEntry.second);
+            viewportEntry.second->invalidateLayout();
         }
     }
 }

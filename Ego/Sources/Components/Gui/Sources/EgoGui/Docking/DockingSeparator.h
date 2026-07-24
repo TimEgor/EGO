@@ -1,31 +1,24 @@
 #pragma once
 
-#include <functional>
-#include <string>
-
-#include "EgoCore/Callback/StableCallback.h"
-
+#include "EgoGui/Docking/DockingTypes.h"
 #include "EgoGui/Widgets/Widget.h"
 
 namespace ego::gui
 {
-    class Button;
-    EGO_POINTER(Button);
+    class DockingSplit;
+    EGO_POINTER(DockingSplit);
 
-    using ClickedHandler = std::function<void()>;
+    class DockingSeparator;
+    EGO_POINTER(DockingSeparator);
 
-    class Button final : public Widget
+    class DockingSeparator final : public Widget
     {
     public:
-        static ButtonPointer Create();
-        static ButtonPointer Create(std::string _text, ClickedHandler _onClicked = {});
+        static DockingSeparatorPointer Create(DockingAxis _axis);
 
-        void setText(std::string _text);
-        const std::string& getText() const;
+        void clearInteraction();
 
-        void onClick(ClickedHandler _handler);
-
-        EGO_RTTI_VIRTUAL(Button, Widget);
+        EGO_RTTI_VIRTUAL(DockingSeparator, Widget);
 
     protected:
         InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
@@ -33,16 +26,19 @@ namespace ego::gui
         void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
         void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
         void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
+
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void drawBaseLayer(PaintContext& _context) const override;
 
     private:
-        Button() = default;
+        explicit DockingSeparator(DockingAxis _axis);
 
-        std::string m_text;
-        StableCallback<> m_onClicked;
+        DockingSplitPointer getSplit() const;
+
+        DockingAxis m_axis;
+        Size m_minimumSpaceSize = SizeZero;
+        float m_separatorThickness = 0.0f;
         bool m_isHovered = false;
         bool m_isPressed = false;
     };
-
 } // namespace ego::gui
