@@ -24,7 +24,11 @@ namespace ego::gui
     struct ViewportUpdate final
     {
         ViewportUpdateStatus m_status = ViewportUpdateStatus::Lost;
+        Position m_position = PositionZero;
         Size m_size = SizeZero;
+        // These flags report platform changes that do not acknowledge the latest provider request.
+        bool m_positionChanged = false;
+        bool m_sizeChanged = false;
         InputEventCollection m_input;
         GraphicPresenterPointer m_graphicPresenter = nullptr;
     };
@@ -37,6 +41,11 @@ namespace ego::gui
         virtual bool createViewport(const ViewportCreateRequest& _request) = 0;
         virtual void destroyViewport(ViewportID _viewportID) = 0;
         virtual ViewportUpdate pollViewport(ViewportID _viewportID) = 0;
+        virtual bool showViewport(ViewportID _viewportID, bool _activate) = 0;
+        virtual bool setViewportPosition(ViewportID _viewportID, Position& _position) = 0;
+        virtual bool setViewportSize(ViewportID _viewportID, Size& _size) = 0;
+        virtual bool setViewportInputPassthrough(ViewportID _viewportID, bool _isEnabled) = 0;
+        virtual ViewportID findViewportAtScreenPosition(const Position& _position) const = 0;
     };
 
     EGO_POINTER(ViewportProvider);

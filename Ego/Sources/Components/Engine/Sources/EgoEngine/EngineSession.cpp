@@ -18,6 +18,8 @@
 
 #include "EgoGui/Rendering/GuiRenderPlugin.h"
 
+#include "EgoApplication/Engine/Gui/ApplicationGuiViewportProvider.h"
+
 #include "Graphic/SceneRender/RenderPlugin.h"
 #include "Level/LevelController.h"
 #include "Project/EngineLogic.h"
@@ -34,19 +36,24 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 {
     EGO_CHECK_RETURN_FALSE(_jobController);
     EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_enableGui || _initData.m_gui.m_viewportProvider);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_gui.m_viewportProvider || _initData.m_enablePresentation);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_enableSceneRender || _initData.m_sceneRender.m_presenter);
-    EGO_CHECK_RETURN_FALSE(!_initData.m_sceneRender.m_presenter || _initData.m_enablePresentation);
+
+    const application::Presentation& mainPresentation = _initData.m_mainPresentation;
+    const bool hasMainSurface = static_cast<bool>(mainPresentation.m_surface);
+    const bool hasMainGraphicPresenter = static_cast<bool>(mainPresentation.m_graphicPresenter);
+    EGO_CHECK_RETURN_FALSE(!hasMainSurface || hasMainGraphicPresenter);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_gui.m_isEnabled || hasMainSurface);
+    EGO_CHECK_RETURN_FALSE(!_initData.m_sceneRender.m_isEnabled || hasMainGraphicPresenter);
+
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(!m_engineLogic);
     EGO_CHECK_RETURN_FALSE(!m_scenePresenter);
+    EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider);
     EGO_CHECK_RETURN_FALSE(m_id == InvalidEngineSessionID);
 
     m_jobController = _jobController;
-    m_scenePresenter = _initData.m_sceneRender.m_presenter;
+    m_scenePresenter = mainPresentation.m_graphicPresenter;
     m_id = _id;
-    m_isGuiEnabled = _initData.m_enableGui;
+    m_isGuiEnabled = _initData.m_gui.m_isEnabled;
     m_currentFrameTime = Clock::GetCurrentTimePoint();
     m_prevFrameStartTime = m_currentFrameTime;
 
@@ -55,9 +62,9 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     m_levelController = new LevelController();
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
-    if (_initData.m_gui.m_viewportProvider)
+    if (_initData.m_gui.m_isEnabled)
     {
-        EGO_CHECK_INITIALIZATION(initGuiController(_initData.m_gui, _initData.m_enableGui));
+        EGO_CHECK_INITIALIZATION(initGuiController(_initData.m_gui, mainPresentation));
     }
     EGO_CHECK_INITIALIZATION(initGraphicFrameController(_initData));
 
@@ -79,6 +86,8 @@ void ego::engine::EngineSession::release()
         m_guiController->release();
         m_guiController = nullptr;
     }
+
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiViewportProvider);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
 
     m_projectRuntime.release();
@@ -172,18 +181,20 @@ ego::JobGraphReference ego::engine::EngineSession::getFrameLogicJobGraph()
     return m_frameLogic.createJobGraph();
 }
 
-bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions, bool _enableGui)
+bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions, const application::Presentation& _mainPresentation)
 {
+    EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider && !m_guiController);
+
+    m_guiViewportProvider = new application::ApplicationGuiViewportProvider();
+    EGO_CHECK_RETURN_FALSE(m_guiViewportProvider && m_guiViewportProvider->init(_mainPresentation));
+
     m_guiController = new gui::GuiController();
     EGO_CHECK_RETURN_FALSE(m_guiController);
 
     gui::GuiController::InitData guiInitData;
-    guiInitData.m_viewportProvider = _guiOptions.m_viewportProvider;
-    if (_enableGui)
-    {
-        guiInitData.m_fontAtlasDesc = _guiOptions.m_fontAtlasDesc;
-        guiInitData.m_theme = _guiOptions.m_theme;
-    }
+    guiInitData.m_viewportProvider = m_guiViewportProvider;
+    guiInitData.m_fontAtlasDesc = _guiOptions.m_fontAtlasDesc;
+    guiInitData.m_theme = _guiOptions.m_theme;
     EGO_CHECK_RETURN_FALSE(m_guiController->init(guiInitData));
 
     return true;
@@ -192,14 +203,14 @@ bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions
 bool ego::engine::EngineSession::initGraphicFrameController(const InitData& _initData)
 {
     GraphicFrameController::InitData graphicInitData;
-    graphicInitData.m_enablePresentation = _initData.m_enablePresentation;
+    graphicInitData.m_enablePresentation = static_cast<bool>(_initData.m_mainPresentation.m_graphicPresenter);
 
-    if (_initData.m_enableSceneRender || _initData.m_enableGui)
+    if (_initData.m_sceneRender.m_isEnabled || _initData.m_gui.m_isEnabled)
     {
         const PluginControllerPointer pluginController = getPluginControllerPointer();
         EGO_CHECK_RETURN_FALSE(pluginController);
 
-        if (_initData.m_enableSceneRender)
+        if (_initData.m_sceneRender.m_isEnabled)
         {
             const FileName moduleName = _initData.m_sceneRender.m_pluginModuleName ?
                                             _initData.m_sceneRender.m_pluginModuleName :
@@ -209,11 +220,10 @@ bool ego::engine::EngineSession::initGraphicFrameController(const InitData& _ini
             graphicInitData.m_sceneRenderPlugin = pluginController->loadPlugin<render::RenderPlugin>(moduleName);
             EGO_CHECK_RETURN_FALSE(graphicInitData.m_sceneRenderPlugin);
         }
-        if (_initData.m_enableGui)
+        if (_initData.m_gui.m_isEnabled)
         {
-            const FileName moduleName = _initData.m_guiRender.m_pluginModuleName ?
-                                            _initData.m_guiRender.m_pluginModuleName :
-                                            m_projectRuntime.resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
+            const FileName moduleName = _initData.m_gui.m_pluginModuleName ? _initData.m_gui.m_pluginModuleName :
+                                                                             m_projectRuntime.resolvePluginModuleName(gui::GuiRenderPlugin::GetPluginType());
             EGO_CHECK_RETURN_FALSE(moduleName);
 
             graphicInitData.m_guiRenderPlugin = pluginController->loadPlugin<gui::GuiRenderPlugin>(moduleName);

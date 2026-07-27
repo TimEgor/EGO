@@ -86,7 +86,13 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createUploadBuffer(uint64_t _size, Mic
     resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
     return SUCCEEDED(
-        getD3D12Device()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_resource)));
+        getD3D12Device()->CreateCommittedResource(
+            &heapProperties,
+            D3D12_HEAP_FLAG_NONE,
+            &resourceDesc,
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(&_resource)));
 }
 
 ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createUploadD3D12Buffer(uint64_t _size)
@@ -258,7 +264,8 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
         hitGroupIdentifiers.push_back(hitGroupIdentifier);
     }
 
-    _shaderRecordSize = ego::Align(static_cast<uint64_t>(D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES), static_cast<uint64_t>(D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT));
+    _shaderRecordSize =
+        ego::Align(static_cast<uint64_t>(D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES), static_cast<uint64_t>(D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT));
     const uint64_t shaderTableSize = _shaderRecordSize * (2 + hitGroupIdentifiers.size());
     if (!createUploadBuffer(shaderTableSize, _shaderTable))
     {
@@ -542,7 +549,9 @@ ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2
         return Texture2DReference();
     }
 
-    EGO_ASSERT_MESSAGE(!(_desc.m_access & (GraphicResourceAccessCpuRead | GraphicResourceAccessCpuWrite)), "D3D12 textures are created in GPU-local memory by this backend");
+    EGO_ASSERT_MESSAGE(
+        !(_desc.m_access & (GraphicResourceAccessCpuRead | GraphicResourceAccessCpuWrite)),
+        "D3D12 textures are created in GPU-local memory by this backend");
 
     const DXGI_FORMAT format = ToDXGIFormat(_desc.m_format);
     if (format == DXGI_FORMAT_UNKNOWN)
@@ -587,7 +596,13 @@ ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2
 
     Microsoft::WRL::ComPtr<ID3D12Resource> resource;
     if (FAILED(
-            getD3D12Device()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, clearValuePtr, IID_PPV_ARGS(&resource))))
+            getD3D12Device()->CreateCommittedResource(
+                &heapProperties,
+                D3D12_HEAP_FLAG_NONE,
+                &resourceDesc,
+                D3D12_RESOURCE_STATE_COMMON,
+                clearValuePtr,
+                IID_PPV_ARGS(&resource))))
     {
         return Texture2DReference();
     }
@@ -853,10 +868,11 @@ ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
     inputs.NumDescs = static_cast<UINT>(instanceDescs.size());
     inputs.InstanceDescs = instanceBuffer->getD3D12Resource()->GetGPUVirtualAddress();
 
-    GpuInstanceAccelerationStructureTicket accelerationStructure = buildAccelerationStructure<InstanceAccelerationStructureReference, D3D12InstanceAccelerationStructure>(
-        inputs,
-        _options,
-        std::vector<GraphicObjectReference>{instanceBuffer});
+    GpuInstanceAccelerationStructureTicket accelerationStructure =
+        buildAccelerationStructure<InstanceAccelerationStructureReference, D3D12InstanceAccelerationStructure>(
+            inputs,
+            _options,
+            std::vector<GraphicObjectReference>{instanceBuffer});
 
     return accelerationStructure;
 }
@@ -873,7 +889,8 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     const bool hasValidPixelShader = !_desc.m_pixelShader || _desc.m_pixelShader->getShaderType() == ShaderStage::Pixel;
 
     D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
-    D3D12VertexShader* vertexShader = _desc.m_vertexShader && hasValidVertexShader ? static_cast<D3D12VertexShader*>(_desc.m_vertexShader.getObject()) : nullptr;
+    D3D12VertexShader* vertexShader =
+        _desc.m_vertexShader && hasValidVertexShader ? static_cast<D3D12VertexShader*>(_desc.m_vertexShader.getObject()) : nullptr;
     D3D12PixelShader* pixelShader = _desc.m_pixelShader && hasValidPixelShader ? static_cast<D3D12PixelShader*>(_desc.m_pixelShader.getObject()) : nullptr;
 
     EGO_ASSERT_MESSAGE(!_desc.m_bindingLayout || layout, "BindingLayout must be created by D3D12 device");
@@ -882,7 +899,8 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     EGO_ASSERT_MESSAGE(hasValidVertexShader, "Graphic pipeline vertex shader has invalid shader stage");
     EGO_ASSERT_MESSAGE(hasValidPixelShader, "Graphic pipeline pixel shader has invalid shader stage");
 
-    if ((_desc.m_bindingLayout && !layout) || (_desc.m_vertexShader && !vertexShader) || (_desc.m_pixelShader && !pixelShader) || !hasValidVertexShader || !hasValidPixelShader)
+    if ((_desc.m_bindingLayout && !layout) || (_desc.m_vertexShader && !vertexShader) || (_desc.m_pixelShader && !pixelShader) || !hasValidVertexShader ||
+        !hasValidPixelShader)
     {
         return GraphicPipelineReference();
     }
@@ -905,8 +923,8 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
         {
             if (binding.m_slot == element.m_slot)
             {
-                inputElement.InputSlotClass =
-                    binding.m_type == InputLayoutBindingType::InstanceBinding ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA : D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                inputElement.InputSlotClass = binding.m_type == InputLayoutBindingType::InstanceBinding ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA :
+                                                                                                          D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
                 inputElement.InstanceDataStepRate = binding.m_type == InputLayoutBindingType::InstanceBinding ? binding.m_instanceStepRate : 0;
                 break;
             }
@@ -968,7 +986,8 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
 
     const bool hasDepth = _desc.m_depthFormat != GraphicResourceFormat::Undefined;
     psoDesc.DepthStencilState.DepthEnable = hasDepth && _desc.m_depthStencilStateDesc.m_depthTestEnable;
-    psoDesc.DepthStencilState.DepthWriteMask = hasDepth && _desc.m_depthStencilStateDesc.m_depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    psoDesc.DepthStencilState.DepthWriteMask =
+        hasDepth && _desc.m_depthStencilStateDesc.m_depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     psoDesc.DepthStencilState.DepthFunc = ToD3D12ComparisonFunc(_desc.m_depthStencilStateDesc.m_depthCompareOperation);
     psoDesc.DepthStencilState.StencilEnable = hasDepth && _desc.m_depthStencilStateDesc.m_stencilEnable;
     psoDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
@@ -1012,7 +1031,8 @@ ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createCo
     const bool hasValidComputeShader = !_desc.m_computeShader || _desc.m_computeShader->getShaderType() == ShaderStage::Compute;
 
     D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
-    D3D12ComputeShader* computeShader = _desc.m_computeShader && hasValidComputeShader ? static_cast<D3D12ComputeShader*>(_desc.m_computeShader.getObject()) : nullptr;
+    D3D12ComputeShader* computeShader =
+        _desc.m_computeShader && hasValidComputeShader ? static_cast<D3D12ComputeShader*>(_desc.m_computeShader.getObject()) : nullptr;
 
     EGO_ASSERT_MESSAGE(!_desc.m_bindingLayout || layout, "BindingLayout must be created by D3D12 device");
     EGO_ASSERT_MESSAGE(!_desc.m_computeShader || computeShader, "Compute shader must be created by D3D12 device");
@@ -1047,7 +1067,8 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
     }
 
     D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
-    D3D12RayGenerationShader* rayGenerationShader = _desc.m_rayGenerationShader ? static_cast<D3D12RayGenerationShader*>(_desc.m_rayGenerationShader.getObject()) : nullptr;
+    D3D12RayGenerationShader* rayGenerationShader =
+        _desc.m_rayGenerationShader ? static_cast<D3D12RayGenerationShader*>(_desc.m_rayGenerationShader.getObject()) : nullptr;
     D3D12MissShader* missShader = _desc.m_missShader ? static_cast<D3D12MissShader*>(_desc.m_missShader.getObject()) : nullptr;
 
     struct HitGroupShaders final
@@ -1064,9 +1085,11 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
     {
         HitGroupShaders shaders;
         shaders.m_type = hitGroupDesc.m_type;
-        shaders.m_closestHitShader = hitGroupDesc.m_closestHitShader ? static_cast<D3D12ClosestHitShader*>(hitGroupDesc.m_closestHitShader.getObject()) : nullptr;
+        shaders.m_closestHitShader =
+            hitGroupDesc.m_closestHitShader ? static_cast<D3D12ClosestHitShader*>(hitGroupDesc.m_closestHitShader.getObject()) : nullptr;
         shaders.m_anyHitShader = hitGroupDesc.m_anyHitShader ? static_cast<D3D12AnyHitShader*>(hitGroupDesc.m_anyHitShader.getObject()) : nullptr;
-        shaders.m_intersectionShader = hitGroupDesc.m_intersectionShader ? static_cast<D3D12IntersectionShader*>(hitGroupDesc.m_intersectionShader.getObject()) : nullptr;
+        shaders.m_intersectionShader =
+            hitGroupDesc.m_intersectionShader ? static_cast<D3D12IntersectionShader*>(hitGroupDesc.m_intersectionShader.getObject()) : nullptr;
 
         if (!shaders.m_closestHitShader && !shaders.m_anyHitShader && !shaders.m_intersectionShader)
         {
@@ -1306,8 +1329,13 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
         return RayTracingPipelineReference();
     }
 
-    return RayTracingPipelineReference(
-        new D3D12RayTracingPipeline(_desc, std::move(stateObject), std::move(shaderTable), shaderRecordSize, static_cast<uint32_t>(hitGroupExportNames.size()), layout));
+    return RayTracingPipelineReference(new D3D12RayTracingPipeline(
+        _desc,
+        std::move(stateObject),
+        std::move(shaderTable),
+        shaderRecordSize,
+        static_cast<uint32_t>(hitGroupExportNames.size()),
+        layout));
 }
 
 ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(const BindingLayoutDesc& _desc)
@@ -1352,7 +1380,8 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
 
     if (m_deviceContext.getCapabilities().m_supportsBindlessResources)
     {
-        rootSignatureDesc.Desc_1_1.Flags |= D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+        rootSignatureDesc.Desc_1_1.Flags |=
+            D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
     }
 
     Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSignature;
@@ -1363,7 +1392,9 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
     }
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
-    if (FAILED(getD3D12Device()->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(&rootSignature))))
+    if (FAILED(
+            getD3D12Device()
+                ->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(&rootSignature))))
     {
         return BindingLayoutReference();
     }
@@ -1389,7 +1420,7 @@ ego::gpu::FenceReference ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence:
 
 ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
     const SwapChainDesc& _swapChainDesc,
-    const PresentationSurface& _surface,
+    const PlatformSurface& _surface,
     const CommandQueueReference& _presentationQueue)
 {
     if (!m_deviceContext.getFactory() || !getD3D12Device() || !_surface.getNativeHandle())
@@ -1419,9 +1450,9 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
         return SwapChainReference();
     }
 
-    const PresentationSurfaceSize& clientAreaSize = _surface.getSize();
-    const uint32_t width = clientAreaSize.m_x;
-    const uint32_t height = clientAreaSize.m_y;
+    const SurfaceSize& surfaceSize = _surface.getSize();
+    const uint32_t width = surfaceSize.m_x;
+    const uint32_t height = surfaceSize.m_y;
 
     if (width == 0 || height == 0)
     {

@@ -11,8 +11,6 @@ target_link_libraries(
     EgoApplication
         PUBLIC
             Ego::Core
-            Ego::Engine
-            Ego::Event
             Ego::Gui
             Ego::Input
             Ego::Plugin

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 
+#include "EgoCore/Math/Color.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/EngineSession.h"
@@ -11,7 +12,7 @@
 
 namespace
 {
-    constexpr auto TriangleColor = ego::FloatVector4(0.1f, 0.8f, 1.0f, 1.0f);
+    constexpr ego::NormalizedColorRGB TriangleColor(0.1f, 0.8f, 1.0f);
     constexpr auto TriangleTop = ego::FloatVector3(0.0f, 0.6f, 0.0f);
     constexpr auto TriangleBottomLeft = ego::FloatVector3(-0.6f, -0.5f, 0.0f);
     constexpr auto TriangleBottomRight = ego::FloatVector3(0.6f, -0.5f, 0.0f);
@@ -40,6 +41,8 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
 
     const gui::GuiControllerPointer guiController = engineSession->getGuiControllerPointer();
     EGO_CHECK_INITIALIZATION(guiController);
+    m_wasMultiViewportEnabled = guiController->isMultiViewportEnabled();
+    guiController->setMultiViewportEnabled(true);
 
     const gui::ViewportPointer primaryViewport = guiController->getPrimaryViewport();
     EGO_CHECK_INITIALIZATION(primaryViewport);
@@ -49,20 +52,19 @@ bool ego::demo::GuiDemo::init(const InitData& _initData)
 
     const gui::WindowPointer demoWindow = createWindow();
     const gui::WindowPointer sceneWindow =
-        createToolWindow("Scene", gui::Rect(440.0f, 15.0f, 280.0f, 180.0f), "Drag this window over the docked area and choose a docking target.");
-    const gui::WindowPointer inspectorWindow = createToolWindow(
-        "Inspector",
-        gui::Rect(440.0f, 210.0f, 280.0f, 220.0f),
-        "Drop into the center to create a tab, or onto a side target to split the space.");
+        createToolWindow("Scene", gui::Rect(440.0f, 15.0f, 280.0f, 180.0f), "This floating window is hosted by its own native viewport.");
+    const gui::WindowPointer inspectorWindow =
+        createToolWindow("Inspector", gui::Rect(440.0f, 210.0f, 280.0f, 220.0f), "This window is bound to the primary viewport.");
     EGO_CHECK_INITIALIZATION(demoWindow && sceneWindow && inspectorWindow);
 
     const gui::DockingSpaceID defaultSpaceID = primaryViewport->getDefaultDockingSpaceID();
     EGO_CHECK_INITIALIZATION(defaultSpaceID != gui::InvalidDockingSpaceID);
 
     m_windows = {demoWindow, sceneWindow, inspectorWindow};
-    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(demoWindow, {.m_spaceID = defaultSpaceID}));
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(demoWindow));
+    EGO_CHECK_INITIALIZATION(primaryViewport->moveWindow(demoWindow, {.m_spaceID = defaultSpaceID}));
     EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(sceneWindow));
-    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(inspectorWindow));
+    EGO_CHECK_INITIALIZATION(primaryViewport->addWindow(inspectorWindow, true));
 
     return true;
 }
@@ -83,13 +85,25 @@ void ego::demo::GuiDemo::update(float)
 
 void ego::demo::GuiDemo::release()
 {
-    const gui::ViewportPointer viewport = m_viewport.lock();
-    if (viewport)
+    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
+    const gui::GuiControllerPointer guiController = engineSession ? engineSession->getGuiControllerPointer() : nullptr;
+    if (guiController && !m_wasMultiViewportEnabled)
     {
-        for (const gui::WindowPointer& window : m_windows)
+        guiController->setMultiViewportEnabled(false);
+    }
+
+    for (const gui::WindowPointer& window : m_windows)
+    {
+        const gui::ViewportPointer viewport = guiController ? guiController->findViewport(window) : nullptr;
+        if (viewport)
         {
             viewport->removeWindow(window);
         }
+    }
+
+    const gui::ViewportPointer viewport = m_viewport.lock();
+    if (viewport)
+    {
         if (!m_wasDockingEnabled)
         {
             viewport->setDockingEnabled(false);
@@ -99,8 +113,8 @@ void ego::demo::GuiDemo::release()
     m_windows.clear();
     m_viewport.reset();
     m_wasDockingEnabled = false;
+    m_wasMultiViewportEnabled = false;
 
-    const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     if (engineSession && m_level)
     {
         const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();

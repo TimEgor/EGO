@@ -1,8 +1,7 @@
 #pragma once
 
+#include "EgoCore/Event/Event.h"
 #include "EgoCore/Platform/Input/InputDevice.h"
-
-#include "EgoEvent/Event.h"
 
 namespace ego
 {
@@ -74,11 +73,7 @@ namespace ego
 
     struct InputButtonPressedEvent final : public InputKeyEvent
     {
-        InputButtonPressedEvent(
-            const InputDevicePointer& _device,
-            InputDeviceKey _key,
-            InputDeviceKeyValue _value,
-            InputDeviceKeyValue _previousValue)
+        InputButtonPressedEvent(const InputDevicePointer& _device, InputDeviceKey _key, InputDeviceKeyValue _value, InputDeviceKeyValue _previousValue)
             : InputKeyEvent(_device, _key, InputDeviceKeyType::Button, _value, _previousValue)
         {
         }
@@ -88,11 +83,7 @@ namespace ego
 
     struct InputButtonReleasedEvent final : public InputKeyEvent
     {
-        InputButtonReleasedEvent(
-            const InputDevicePointer& _device,
-            InputDeviceKey _key,
-            InputDeviceKeyValue _value,
-            InputDeviceKeyValue _previousValue)
+        InputButtonReleasedEvent(const InputDevicePointer& _device, InputDeviceKey _key, InputDeviceKeyValue _value, InputDeviceKeyValue _previousValue)
             : InputKeyEvent(_device, _key, InputDeviceKeyType::Button, _value, _previousValue)
         {
         }

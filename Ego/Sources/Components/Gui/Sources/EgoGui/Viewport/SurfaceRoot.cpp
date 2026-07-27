@@ -2,16 +2,189 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <functional>
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 #include "EgoGui/Docking/DockingArea.h"
+#include "EgoGui/Docking/DockingNode.h"
 #include "EgoGui/Docking/DockingOverlay.h"
+#include "EgoGui/Docking/DockingPreview.h"
 #include "EgoGui/Docking/DockingSpace.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Widgets/Window.h"
 
 ego::gui::SurfaceRoot::~SurfaceRoot() = default;
+
+ego::gui::SurfaceRootPointer ego::gui::SurfaceRoot::ViewportAccessor::Create()
+{
+    return SurfaceRoot::Create();
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::AttachWindow(SurfaceRoot& _root, const WindowPointer& _window, bool _isBound)
+{
+    return _root.attachWindow(_window, _isBound);
+}
+
+ego::gui::WindowPointer ego::gui::SurfaceRoot::ViewportAccessor::ExtractWindow(SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.extractWindow(_window);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::TransferWindowTo(SurfaceRoot& _root, SurfaceRoot& _target, const WindowPointer& _window)
+{
+    return _root.transferWindowTo(_target, _window);
+}
+
+void ego::gui::SurfaceRoot::ViewportAccessor::ClearWindows(SurfaceRoot& _root)
+{
+    _root.clearWindows();
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::ContainsWindow(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.containsWindow(_window);
+}
+
+size_t ego::gui::SurfaceRoot::ViewportAccessor::GetWindowCount(const SurfaceRoot& _root)
+{
+    return _root.getWindowCount();
+}
+
+ego::gui::WindowPointer ego::gui::SurfaceRoot::ViewportAccessor::GetWindow(const SurfaceRoot& _root, size_t _index)
+{
+    return _root.getWindow(_index);
+}
+
+size_t ego::gui::SurfaceRoot::ViewportAccessor::GetFloatingWindowCount(const SurfaceRoot& _root)
+{
+    return _root.getFloatingWindowCount();
+}
+
+ego::gui::WindowPointer ego::gui::SurfaceRoot::ViewportAccessor::GetFloatingWindow(const SurfaceRoot& _root, size_t _index)
+{
+    return _root.getFloatingWindow(_index);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::IsWindowBound(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.isWindowBound(_window);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::IsWindowFloating(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.isWindowFloating(_window);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::SetDockingEnabled(SurfaceRoot& _root, bool _isEnabled)
+{
+    return _root.setDockingEnabled(_isEnabled);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::IsDockingEnabled(const SurfaceRoot& _root)
+{
+    return _root.isDockingEnabled();
+}
+
+ego::gui::DockingSpaceID ego::gui::SurfaceRoot::ViewportAccessor::GetDefaultDockingSpaceID(const SurfaceRoot& _root)
+{
+    return _root.getDefaultDockingSpaceID();
+}
+
+ego::gui::DockingSpaceID ego::gui::SurfaceRoot::ViewportAccessor::GetWindowDockingSpaceID(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.getWindowDockingSpaceID(_window);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::DockWindow(SurfaceRoot& _root, const WindowPointer& _window, const DockingLocation& _location)
+{
+    return _root.dockWindow(_window, _location);
+}
+
+void ego::gui::SurfaceRoot::ViewportAccessor::InvalidateLayout(SurfaceRoot& _root)
+{
+    _root.invalidateLayout();
+}
+
+void ego::gui::SurfaceRoot::ViewportAccessor::UpdateExternalDragPreview(SurfaceRoot& _root, const WindowPointer& _window, const Position& _position)
+{
+    _root.updateExternalDragPreview(_window, _position);
+}
+
+bool ego::gui::SurfaceRoot::ViewportAccessor::DockExternalWindow(SurfaceRoot& _root, const WindowPointer& _window, const Position& _position)
+{
+    return _root.dockExternalWindow(_window, _position);
+}
+
+void ego::gui::SurfaceRoot::ViewportAccessor::ClearExternalDragPreview(SurfaceRoot& _root)
+{
+    _root.clearExternalDragPreview();
+}
+
+void ego::gui::SurfaceRoot::InputAccessor::ClearInteraction(SurfaceRoot& _root)
+{
+    _root.clearInteraction();
+}
+
+void ego::gui::SurfaceRoot::InputAccessor::ClearPreview(SurfaceRoot& _root)
+{
+    _root.clearDockingPreview();
+}
+
+void ego::gui::SurfaceRoot::InputAccessor::BringWidgetToFront(SurfaceRoot& _root, const WidgetPointer& _widget)
+{
+    _root.bringWidgetToFront(_widget);
+}
+
+bool ego::gui::SurfaceRoot::WindowDragAccessor::ContainsWindow(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.containsWindow(_window);
+}
+
+bool ego::gui::SurfaceRoot::WindowDragAccessor::IsWindowFloating(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.isWindowFloating(_window);
+}
+
+bool ego::gui::SurfaceRoot::WindowDragAccessor::IsWindowDocked(const SurfaceRoot& _root, const WindowPointer& _window)
+{
+    return _root.m_dockingArea && _root.m_dockingArea->getRootNode() && _root.m_dockingArea->findWindowSpace(_window);
+}
+
+bool ego::gui::SurfaceRoot::WindowDragAccessor::MakeWindowFloating(SurfaceRoot& _root, const WindowPointer& _window, const Rect& _bounds)
+{
+    return _root.makeWindowFloating(_window, _bounds);
+}
+
+const ego::gui::DockingStyle& ego::gui::SurfaceRoot::WindowDragAccessor::GetDockingStyle(const SurfaceRoot& _root)
+{
+    return _root.m_dockingStyle;
+}
+
+ego::gui::DockingPreview ego::gui::SurfaceRoot::WindowDragAccessor::BuildPreview(
+    const SurfaceRoot& _root,
+    const WindowPointer& _window,
+    const Position& _position)
+{
+    return _root.buildDockingPreview(_window, _position);
+}
+
+void ego::gui::SurfaceRoot::WindowDragAccessor::ShowPreview(SurfaceRoot& _root, const DockingPreview& _preview)
+{
+    _root.showDockingPreview(_preview);
+}
+
+bool ego::gui::SurfaceRoot::WindowDragAccessor::ApplyPreview(SurfaceRoot& _root, const WindowPointer& _window, const DockingPreview& _preview)
+{
+    return _root.applyDockingPreview(_window, _preview);
+}
+
+void ego::gui::SurfaceRoot::WindowDragAccessor::ClearPreview(SurfaceRoot& _root)
+{
+    _root.clearDockingPreview();
+}
 
 ego::gui::SurfaceRootPointer ego::gui::SurfaceRoot::Create()
 {
@@ -40,65 +213,173 @@ bool ego::gui::SurfaceRoot::initialize()
     return true;
 }
 
-bool ego::gui::SurfaceRoot::addWindow(const WindowPointer& _window)
+bool ego::gui::SurfaceRoot::attachWindow(const WindowPointer& _window, bool _isBound)
 {
-    const WindowPointer window = _window;
+    if (!_window || containsWindow(_window) || _window->getParent() || !attachFloatingWindow(_window))
+    {
+        return false;
+    }
 
-    return window && !isHostedWindow(window) && attachFloatingWindow(window);
+    if (_isBound)
+    {
+        m_boundWindows.push_back(_window);
+    }
+
+    return true;
 }
 
-ego::gui::WindowPointer ego::gui::SurfaceRoot::removeWindow(const WindowPointer& _window)
+ego::gui::WindowPointer ego::gui::SurfaceRoot::extractWindow(const WindowPointer& _window)
 {
     const WindowPointer window = _window;
-    if (!window)
+    if (!containsWindow(window))
     {
         return nullptr;
     }
 
-    if (m_dockingOverlay)
+    if (!detachFloatingWindow(window) && (!m_dockingArea || !m_dockingArea->undockWindow(window)))
     {
-        m_dockingOverlay->cancelDrag(window);
+        return nullptr;
     }
 
-    if (detachFloatingWindow(window))
+    removeWindowBinding(window);
+
+    return window;
+}
+
+bool ego::gui::SurfaceRoot::transferWindowTo(SurfaceRoot& _target, const WindowPointer& _window)
+{
+    const WindowPointer window = _window;
+    if (&_target == this || !isWindowFloating(window))
     {
-        return window;
+        return false;
     }
 
-    return m_dockingArea ? m_dockingArea->undockWindow(window) : nullptr;
+    const WindowCollection::iterator windowIt = std::find_if(
+        m_floatingWindows.begin(),
+        m_floatingWindows.end(),
+        [&window](const WindowPointer& _currentWindow)
+        {
+            return _currentWindow.get() == window.get();
+        });
+    EGO_ASSERT(windowIt != m_floatingWindows.end());
+
+    const size_t windowIndex = static_cast<size_t>(windowIt - m_floatingWindows.begin());
+    const bool isBound = isWindowBound(window);
+    if (!detachFloatingWindow(window))
+    {
+        return false;
+    }
+
+    removeWindowBinding(window);
+    if (_target.attachWindow(window, isBound))
+    {
+        return true;
+    }
+
+    const bool attached = attachFloatingWindow(window);
+    EGO_ASSERT(attached);
+    if (windowIndex + 1 < m_floatingWindows.size())
+    {
+        m_floatingWindows.insert(m_floatingWindows.begin() + static_cast<std::ptrdiff_t>(windowIndex), window);
+        m_floatingWindows.pop_back();
+    }
+
+    if (isBound)
+    {
+        m_boundWindows.push_back(window);
+    }
+
+    return false;
 }
 
 void ego::gui::SurfaceRoot::clearWindows()
 {
-    if (m_dockingArea)
+    clearInteraction();
+
+    while (getWindowCount() > 0)
     {
-        m_dockingArea->clearInteraction();
+        const WindowPointer window = getWindow(0);
+        const WindowPointer extractedWindow = extractWindow(window);
+        if (!extractedWindow)
+        {
+            EGO_ASSERT_FAIL_MESSAGE("Failed to extract a window while clearing the surface.");
+            break;
+        }
     }
 
-    if (m_dockingOverlay)
-    {
-        m_dockingOverlay->clear();
-    }
-
-    if (m_dockingArea)
-    {
-        m_dockingArea->clearWindows();
-    }
-
-    const WindowCollection floatingWindows = m_floatingWindows;
-    for (const WindowPointer& window : floatingWindows)
-    {
-        const bool detached = detachFloatingWindow(window);
-        EGO_ASSERT(detached);
-    }
+    m_boundWindows.clear();
 }
 
-ego::gui::SurfaceRoot::WindowCollection ego::gui::SurfaceRoot::getWindows() const
+bool ego::gui::SurfaceRoot::containsWindow(const WindowPointer& _window) const
 {
-    WindowCollection windows = m_dockingArea ? m_dockingArea->getWindows() : WindowCollection();
-    windows.insert(windows.end(), m_floatingWindows.begin(), m_floatingWindows.end());
+    if (!_window)
+    {
+        return false;
+    }
 
-    return windows;
+    if (isWindowFloating(_window))
+    {
+        return true;
+    }
+
+    return m_dockingArea && m_dockingArea->findWindowSpace(_window);
+}
+
+size_t ego::gui::SurfaceRoot::getWindowCount() const
+{
+    return (m_dockingArea ? m_dockingArea->getWindowCount() : 0) + m_floatingWindows.size();
+}
+
+ego::gui::WindowPointer ego::gui::SurfaceRoot::getWindow(size_t _index) const
+{
+    const size_t dockedWindowCount = m_dockingArea ? m_dockingArea->getWindowCount() : 0;
+    if (_index < dockedWindowCount)
+    {
+        return m_dockingArea->getWindow(_index);
+    }
+
+    _index -= dockedWindowCount;
+
+    return getFloatingWindow(_index);
+}
+
+size_t ego::gui::SurfaceRoot::getFloatingWindowCount() const
+{
+    return m_floatingWindows.size();
+}
+
+ego::gui::WindowPointer ego::gui::SurfaceRoot::getFloatingWindow(size_t _index) const
+{
+    return _index < m_floatingWindows.size() ? m_floatingWindows[_index] : nullptr;
+}
+
+bool ego::gui::SurfaceRoot::isWindowBound(const WindowPointer& _window) const
+{
+    if (!_window)
+    {
+        return false;
+    }
+
+    return std::find_if(
+               m_boundWindows.begin(),
+               m_boundWindows.end(),
+               [&_window](const WindowWeakPointer& _boundWindow)
+               {
+                   const WindowPointer boundWindow = _boundWindow.lock();
+
+                   return boundWindow.get() == _window.get();
+               }) != m_boundWindows.end();
+}
+
+bool ego::gui::SurfaceRoot::isWindowFloating(const WindowPointer& _window) const
+{
+    return _window && std::find_if(
+                          m_floatingWindows.begin(),
+                          m_floatingWindows.end(),
+                          [&_window](const WindowPointer& _floatingWindow)
+                          {
+                              return _floatingWindow.get() == _window.get();
+                          }) != m_floatingWindows.end();
 }
 
 bool ego::gui::SurfaceRoot::setDockingEnabled(bool _isEnabled)
@@ -108,15 +389,7 @@ bool ego::gui::SurfaceRoot::setDockingEnabled(bool _isEnabled)
         return true;
     }
 
-    if (m_dockingArea)
-    {
-        m_dockingArea->clearInteraction();
-    }
-
-    if (m_dockingOverlay)
-    {
-        m_dockingOverlay->clear();
-    }
+    clearInteraction();
 
     if (_isEnabled)
     {
@@ -130,13 +403,20 @@ bool ego::gui::SurfaceRoot::setDockingEnabled(bool _isEnabled)
         return true;
     }
 
-    const WindowCollection dockedWindows = m_dockingArea ? m_dockingArea->releaseWindows() : WindowCollection();
-    for (const WindowPointer& window : dockedWindows)
+    while (m_dockingArea && m_dockingArea->getWindowCount() > 0)
     {
-        const bool attached = attachFloatingWindow(window);
+        const WindowPointer window = m_dockingArea->getWindow(0);
+        const WindowPointer undockedWindow = m_dockingArea->undockWindow(window);
+        const bool attached = undockedWindow && attachFloatingWindow(undockedWindow);
         EGO_ASSERT(attached);
+        if (!attached)
+        {
+            break;
+        }
     }
 
+    const bool rootCleared = !m_dockingArea || m_dockingArea->clearRoot();
+    EGO_ASSERT(rootCleared);
     invalidateLayout();
 
     return true;
@@ -156,20 +436,20 @@ ego::gui::DockingSpaceID ego::gui::SurfaceRoot::getDefaultDockingSpaceID() const
 
 ego::gui::DockingSpaceID ego::gui::SurfaceRoot::getWindowDockingSpaceID(const WindowPointer& _window) const
 {
-    const DockingSpacePointer space = isDockingEnabled() ? m_dockingArea->findWindowSpace(_window) : nullptr;
+    const DockingSpacePointer space = _window && isDockingEnabled() ? m_dockingArea->findWindowSpace(_window) : nullptr;
 
     return space ? space->getID() : InvalidDockingSpaceID;
 }
 
-bool ego::gui::SurfaceRoot::dockWindow(const WindowPointer& _window, const WindowPlacement& _placement)
+bool ego::gui::SurfaceRoot::dockWindow(const WindowPointer& _window, const DockingLocation& _location)
 {
     const WindowPointer window = _window;
-    if (!window || !isHostedWindow(window))
+    if (!containsWindow(window))
     {
         return false;
     }
 
-    if (_placement.m_spaceID == InvalidDockingSpaceID)
+    if (_location.m_spaceID == InvalidDockingSpaceID)
     {
         return makeWindowFloating(window, window->getFloatingBounds());
     }
@@ -179,7 +459,7 @@ bool ego::gui::SurfaceRoot::dockWindow(const WindowPointer& _window, const Windo
         return false;
     }
 
-    switch (_placement.m_placement)
+    switch (_location.m_placement)
     {
     case DockingPlacement::Center:
     case DockingPlacement::Left:
@@ -192,24 +472,24 @@ bool ego::gui::SurfaceRoot::dockWindow(const WindowPointer& _window, const Windo
         return false;
     }
 
-    if (!std::isfinite(_placement.m_splitRatio))
+    if (!std::isfinite(_location.m_splitRatio))
     {
         return false;
     }
 
-    const DockingSpacePointer targetSpace = m_dockingArea->findSpace(_placement.m_spaceID);
+    const DockingSpacePointer targetSpace = m_dockingArea->findSpace(_location.m_spaceID);
     if (!targetSpace)
     {
         return false;
     }
 
-    const bool wasFloating = window->isDirectChildOf(*this);
+    const bool wasFloating = isWindowFloating(window);
     if (wasFloating && !detachFloatingWindow(window))
     {
         return false;
     }
 
-    if (m_dockingArea->dockWindow(window, targetSpace, _placement.m_placement, _placement.m_splitRatio))
+    if (m_dockingArea->dockWindow(window, targetSpace, _location.m_placement, _location.m_splitRatio))
     {
         invalidateLayout();
 
@@ -228,7 +508,7 @@ bool ego::gui::SurfaceRoot::dockWindow(const WindowPointer& _window, const Windo
 bool ego::gui::SurfaceRoot::dockWindowToRoot(const WindowPointer& _window, DockingPlacement _placement, float _ratio)
 {
     const WindowPointer window = _window;
-    if (!window || !isHostedWindow(window) || !isDockingEnabled())
+    if (!containsWindow(window) || !isDockingEnabled())
     {
         return false;
     }
@@ -250,7 +530,7 @@ bool ego::gui::SurfaceRoot::dockWindowToRoot(const WindowPointer& _window, Docki
         return false;
     }
 
-    const bool wasFloating = window->isDirectChildOf(*this);
+    const bool wasFloating = isWindowFloating(window);
     if (wasFloating && !detachFloatingWindow(window))
     {
         return false;
@@ -275,12 +555,12 @@ bool ego::gui::SurfaceRoot::dockWindowToRoot(const WindowPointer& _window, Docki
 bool ego::gui::SurfaceRoot::makeWindowFloating(const WindowPointer& _window, const Rect& _bounds)
 {
     const WindowPointer window = _window;
-    if (!window || !isHostedWindow(window))
+    if (!containsWindow(window))
     {
         return false;
     }
 
-    if (!window->isDirectChildOf(*this))
+    if (!isWindowFloating(window))
     {
         const WindowPointer undockedWindow = m_dockingArea ? m_dockingArea->undockWindow(window) : nullptr;
         if (!undockedWindow || !attachFloatingWindow(undockedWindow))
@@ -296,132 +576,200 @@ bool ego::gui::SurfaceRoot::makeWindowFloating(const WindowPointer& _window, con
     return true;
 }
 
-ego::gui::DockingAreaPointer ego::gui::SurfaceRoot::getDockingArea() const
+void ego::gui::SurfaceRoot::clearInteraction()
 {
-    return m_dockingArea;
+    if (m_dockingArea)
+    {
+        m_dockingArea->clearInteraction();
+    }
+
+    clearDockingPreview();
 }
 
-ego::gui::DockingOverlayPointer ego::gui::SurfaceRoot::getDockingOverlay() const
+ego::gui::DockingPreview ego::gui::SurfaceRoot::buildDockingPreview(const WindowPointer& _window, const Position& _position) const
 {
-    return m_dockingOverlay;
+    const DockingNodePointer dockingRoot = m_dockingArea ? m_dockingArea->getRootNode() : nullptr;
+    const DockingSpacePointer targetSpace = m_dockingArea ? m_dockingArea->findSpaceAt(_position) : nullptr;
+    const DockingMetrics rootMetrics = dockingRoot ? dockingRoot->measure(DockingMeasureContext()) : DockingMetrics();
+    const bool showRootTargets = rootMetrics.m_spaceCount > 1;
+    if (!targetSpace && (!showRootTargets || !getLayoutBounds().contains(_position)))
+    {
+        return DockingPreview();
+    }
+
+    const WindowPointer dragWindow = _window;
+    const DockingSpacePointer dragSpace = m_dockingArea ? m_dockingArea->findWindowSpace(dragWindow) : nullptr;
+    const bool removesOriginSpace = dragSpace && dragWindow && !dragSpace->hasNonCollapsedWindowExcept(*dragWindow);
+    const DockingSpaceID targetSpaceID = targetSpace ? targetSpace->getID() : InvalidDockingSpaceID;
+    const Rect targetSpaceBounds = m_dockingArea ? m_dockingArea->getDockingBounds(targetSpace) : Rect();
+    DockingMeasureContext rootMeasureContext{
+        .m_minimumSpaceSize = m_dockingStyle.m_minimumSpaceSize,
+        .m_separatorThickness = m_dockingStyle.m_separatorThickness,
+    };
+    if (removesOriginSpace)
+    {
+        rootMeasureContext.m_excludedSpace = std::cref(*dragSpace);
+    }
+
+    const Size rootMinimumSize = dockingRoot ? dockingRoot->measure(rootMeasureContext).m_minimumSize : SizeZero;
+    const bool canReuseOriginSpaceExtent = removesOriginSpace && targetSpace && dragSpace.get() != targetSpace.get();
+    const bool allowHorizontalSpaceSplitAfterOriginRemoval = canReuseOriginSpaceExtent && m_dockingArea->isSplitAvailableAfterRemoving(
+                                                                                              dragSpace,
+                                                                                              targetSpace,
+                                                                                              DockingAxis::Horizontal,
+                                                                                              getLayoutBounds().m_size,
+                                                                                              m_dockingStyle.m_minimumSpaceSize,
+                                                                                              m_dockingStyle.m_separatorThickness);
+    const bool allowVerticalSpaceSplitAfterOriginRemoval = canReuseOriginSpaceExtent && m_dockingArea->isSplitAvailableAfterRemoving(
+                                                                                            dragSpace,
+                                                                                            targetSpace,
+                                                                                            DockingAxis::Vertical,
+                                                                                            getLayoutBounds().m_size,
+                                                                                            m_dockingStyle.m_minimumSpaceSize,
+                                                                                            m_dockingStyle.m_separatorThickness);
+    DockingPreview preview = DockingPreviewBuilder::Build(
+        _position,
+        targetSpaceID,
+        targetSpaceBounds,
+        getLayoutBounds(),
+        rootMinimumSize,
+        showRootTargets,
+        allowHorizontalSpaceSplitAfterOriginRemoval,
+        allowVerticalSpaceSplitAfterOriginRemoval,
+        m_dockingStyle);
+
+    const bool isOnlyTabInTarget =
+        dragSpace && dragWindow && targetSpace && dragSpace.get() == targetSpace.get() && !targetSpace->hasNonCollapsedWindowExcept(*dragWindow);
+    if (targetSpace && (targetSpace->measure(DockingMeasureContext()).m_spaceCount == 0 || isOnlyTabInTarget))
+    {
+        for (DockingTarget& target : preview.m_targets)
+        {
+            if (target.m_level == DockingTargetLevel::Space && target.m_placement != DockingPlacement::Center)
+            {
+                target.m_isAvailable = false;
+            }
+        }
+
+        if (preview.m_targetLevel == DockingTargetLevel::Space && preview.m_placement != DockingPlacement::Center)
+        {
+            preview.m_isDropAllowed = false;
+        }
+    }
+
+    return preview;
+}
+
+void ego::gui::SurfaceRoot::showDockingPreview(const DockingPreview& _preview)
+{
+    if (m_dockingOverlay)
+    {
+        m_dockingOverlay->setPreview(_preview);
+    }
+}
+
+bool ego::gui::SurfaceRoot::applyDockingPreview(const WindowPointer& _window, const DockingPreview& _preview)
+{
+    if (!_window || !_preview.m_isDropAllowed)
+    {
+        return false;
+    }
+
+    if (_preview.m_targetLevel == DockingTargetLevel::Root)
+    {
+        return dockWindowToRoot(_window, _preview.m_placement, _preview.m_splitRatio);
+    }
+
+    return dockWindow(
+        _window,
+        DockingLocation{
+            .m_spaceID = _preview.m_targetSpaceID,
+            .m_placement = _preview.m_placement,
+            .m_splitRatio = _preview.m_splitRatio,
+        });
+}
+
+void ego::gui::SurfaceRoot::clearDockingPreview()
+{
+    if (m_dockingOverlay)
+    {
+        m_dockingOverlay->clearPreview();
+    }
+}
+
+void ego::gui::SurfaceRoot::updateExternalDragPreview(const WindowPointer& _window, const Position& _position)
+{
+    if (_window)
+    {
+        showDockingPreview(buildDockingPreview(_window, _position));
+    }
+}
+
+bool ego::gui::SurfaceRoot::dockExternalWindow(const WindowPointer& _window, const Position& _position)
+{
+    if (!_window)
+    {
+        clearDockingPreview();
+
+        return false;
+    }
+
+    const DockingPreview preview = buildDockingPreview(_window, _position);
+    const bool docked = applyDockingPreview(_window, preview);
+    clearDockingPreview();
+
+    return docked;
+}
+
+void ego::gui::SurfaceRoot::clearExternalDragPreview()
+{
+    clearDockingPreview();
 }
 
 void ego::gui::SurfaceRoot::bringWidgetToFront(const WidgetPointer& _widget)
 {
     WidgetPointer widget = _widget;
-    while (widget && widget->getParent().get() != this)
+    while (widget && widget.get() != this)
     {
-        widget = widget->getParent();
-    }
-
-    if (widget && rtti::IsObjectBasedOn<Window>(*widget))
-    {
-        moveFloatingWindowToFront(ego::StaticPointerCast<Window>(widget));
-    }
-}
-
-ego::gui::WidgetPointer ego::gui::SurfaceRoot::findWidgetAt(const Position& _position)
-{
-    if (!hitTest(_position))
-    {
-        return nullptr;
-    }
-
-    WidgetPointer currentWidget = sharedFromThis();
-    while (currentWidget && currentWidget->isChildHitTestVisible(_position))
-    {
-        WidgetPointer hitWidget = nullptr;
-        const size_t childCount = currentWidget->getChildCount();
-        for (size_t childIndex = childCount; childIndex > 0; --childIndex)
+        if (rtti::IsObjectBasedOn<Window>(*widget))
         {
-            const WidgetPointer child = currentWidget->getChild(childIndex - 1);
-            if (child && currentWidget->isChildActive(childIndex - 1) && child->isDirectChildOf(*currentWidget) && child->hitTest(_position))
+            const WindowPointer window = ego::StaticPointerCast<Window>(widget);
+            if (containsWindow(window))
             {
-                hitWidget = child;
-
-                break;
+                moveFloatingWindowToFront(window);
+                return;
             }
         }
 
-        if (!hitWidget)
-        {
-            break;
-        }
-
-        currentWidget = hitWidget;
+        widget = widget->getParent();
     }
-
-    return currentWidget;
-}
-
-bool ego::gui::SurfaceRoot::isInputTarget(const WidgetPointer& _widget) const
-{
-    if (!_widget)
-    {
-        return false;
-    }
-
-    WidgetPointer currentWidget = _widget;
-    while (currentWidget)
-    {
-        const Rect& bounds = currentWidget->getLayoutBounds();
-        if (!currentWidget->isVisible() || (currentWidget.get() != this && (bounds.m_size.m_x <= 0.0f || bounds.m_size.m_y <= 0.0f)))
-        {
-            return false;
-        }
-
-        if (currentWidget.get() == this)
-        {
-            return true;
-        }
-
-        const WidgetPointer parent = currentWidget->getParent();
-        if (!parent || !containsDirectChild(*parent, *currentWidget))
-        {
-            return false;
-        }
-
-        currentWidget = parent;
-    }
-
-    return false;
-}
-
-bool ego::gui::SurfaceRoot::updateLayoutIfNeeded(const LayoutContext& _context, const Size& _size)
-{
-    if (!isLayoutInvalidated())
-    {
-        return false;
-    }
-
-    const Rect surfaceBounds(0.0f, 0.0f, _size.m_x, _size.m_y);
-    updatePreferredSize(_context, LayoutConstraints(_size));
-    applyLayout(_context, surfaceBounds);
-    completeLayout();
-
-    return true;
 }
 
 ego::gui::Size ego::gui::SurfaceRoot::calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints)
 {
+    m_dockingStyle = _context.getTheme().m_docking;
+    m_dockingStyle.m_targetSize = (std::max)(0.0f, m_dockingStyle.m_targetSize);
+    m_dockingStyle.m_targetSpacing = (std::max)(0.0f, m_dockingStyle.m_targetSpacing);
+    m_dockingStyle.m_separatorThickness = (std::max)(0.0f, m_dockingStyle.m_separatorThickness);
+    m_dockingStyle.m_tabHeight = (std::max)(0.0f, m_dockingStyle.m_tabHeight);
+    m_dockingStyle.m_dragThreshold = (std::max)(0.0f, m_dockingStyle.m_dragThreshold);
+    m_dockingStyle.m_minimumSpaceSize = Size((std::max)(0.0f, m_dockingStyle.m_minimumSpaceSize.m_x), (std::max)(0.0f, m_dockingStyle.m_minimumSpaceSize.m_y));
+
     if (m_dockingArea)
     {
-        m_dockingArea->updatePreferredSize(_context, _constraints);
+        _context.measure(*m_dockingArea, _constraints);
     }
 
-    const WindowCollection floatingWindows = m_floatingWindows;
-    for (const WindowPointer& window : floatingWindows)
+    for (const WindowPointer& window : m_floatingWindows)
     {
         if (window && window->getParent().get() == this)
         {
-            const Rect windowBounds = window->getFloatingBounds();
-            window->updatePreferredSize(_context, LayoutConstraints(windowBounds.m_size));
+            _context.measure(*window, LayoutConstraints(window->getFloatingBounds().m_size));
         }
     }
 
     if (m_dockingOverlay)
     {
-        m_dockingOverlay->updatePreferredSize(_context, _constraints);
+        _context.measure(*m_dockingOverlay, _constraints);
     }
 
     return _constraints.m_maximumSize;
@@ -432,40 +780,21 @@ void ego::gui::SurfaceRoot::updateGeometry(const LayoutContext& _context)
     const Rect& surfaceBounds = getLayoutBounds();
     if (m_dockingArea)
     {
-        m_dockingArea->applyLayout(_context, surfaceBounds);
+        _context.arrange(*m_dockingArea, surfaceBounds);
     }
 
-    const WindowCollection floatingWindows = m_floatingWindows;
-    for (const WindowPointer& window : floatingWindows)
+    for (const WindowPointer& window : m_floatingWindows)
     {
         if (window && window->getParent().get() == this)
         {
-            window->applyLayout(_context, window->getFloatingBounds());
+            _context.arrange(*window, window->getFloatingBounds());
         }
     }
 
     if (m_dockingOverlay)
     {
-        m_dockingOverlay->applyLayout(_context, surfaceBounds);
+        _context.arrange(*m_dockingOverlay, surfaceBounds);
     }
-}
-
-bool ego::gui::SurfaceRoot::isHostedWindow(const WindowPointer& _window) const
-{
-    if (!_window)
-    {
-        return false;
-    }
-
-    const WindowCollection windows = getWindows();
-
-    return std::find_if(
-               windows.begin(),
-               windows.end(),
-               [&_window](const WindowPointer& _currentWindow)
-               {
-                   return _currentWindow.get() == _window.get();
-               }) != windows.end();
 }
 
 bool ego::gui::SurfaceRoot::attachFloatingWindow(const WindowPointer& _window)
@@ -490,7 +819,7 @@ bool ego::gui::SurfaceRoot::detachFloatingWindow(const WindowPointer& _window)
         {
             return _currentWindow.get() == _window.get();
         });
-    if (windowIt == m_floatingWindows.end() || !detachChild(*windowIt))
+    if (windowIt == m_floatingWindows.end() || !_window || !detachChild(_window))
     {
         return false;
     }
@@ -521,19 +850,19 @@ void ego::gui::SurfaceRoot::moveFloatingWindowToFront(const WindowPointer& _wind
     notifyTreeChanged();
 }
 
-bool ego::gui::SurfaceRoot::containsDirectChild(const Widget& _parent, const Widget& _child) const
+void ego::gui::SurfaceRoot::removeWindowBinding(const WindowPointer& _window)
 {
-    const size_t childCount = _parent.getChildCount();
-    for (size_t childIndex = 0; childIndex < childCount; ++childIndex)
-    {
-        const WidgetPointer child = _parent.getChild(childIndex);
-        if (child.get() == &_child && _parent.isChildActive(childIndex))
-        {
-            return true;
-        }
-    }
+    m_boundWindows.erase(
+        std::remove_if(
+            m_boundWindows.begin(),
+            m_boundWindows.end(),
+            [&_window](const WindowWeakPointer& _boundWindow)
+            {
+                const WindowPointer boundWindow = _boundWindow.lock();
 
-    return false;
+                return !boundWindow || boundWindow.get() == _window.get();
+            }),
+        m_boundWindows.end());
 }
 
 size_t ego::gui::SurfaceRoot::getChildCount() const

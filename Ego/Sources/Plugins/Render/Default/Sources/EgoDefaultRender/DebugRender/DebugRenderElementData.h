@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "EgoCore/Math/Vector.h"
+#include "EgoCore/Math/Color.h"
 
 #include "EgoEngine/Graphic/SceneRender/MaterialRenderPassInfo.h"
 
@@ -16,11 +16,11 @@ namespace ego::render
         struct PointData final
         {
             FloatVector3 m_position = FloatVector3Zero;
-            FloatVector4 m_color = FloatVector4One;
+            NormalizedColorRGB m_color = NormalizedColorWhite;
 
             PointData() = default;
 
-            PointData(const FloatVector3& _position, const FloatVector4& _color)
+            PointData(const FloatVector3& _position, const NormalizedColorRGB& _color)
                 : m_position(_position),
                   m_color(_color)
             {
@@ -40,11 +40,11 @@ namespace ego::render
         struct VertexData final
         {
             FloatVector3 m_position = FloatVector3Zero;
-            FloatVector4 m_color = FloatVector4One;
+            NormalizedColorRGB m_color = NormalizedColorWhite;
 
             VertexData() = default;
 
-            VertexData(const FloatVector3& _position, const FloatVector4& _color)
+            VertexData(const FloatVector3& _position, const NormalizedColorRGB& _color)
                 : m_position(_position),
                   m_color(_color)
             {

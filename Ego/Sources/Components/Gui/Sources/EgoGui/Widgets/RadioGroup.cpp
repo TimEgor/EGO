@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <utility>
 
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 
 namespace
@@ -130,13 +133,13 @@ void ego::gui::RadioGroup::applyUserSelection(OptionIndex _index)
     m_onSelectionChanged.invoke(m_selectedOptionIndex);
 }
 
-ego::gui::InputReply ego::gui::RadioGroup::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::RadioGroup::onPointerMove(InputContext&, const PointerMoveEvent& _event)
 {
     m_hoveredOptionIndex = findOptionAtPosition(_event.m_position);
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::RadioGroup::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::RadioGroup::onMouseButton(InputContext&, const MouseButtonEvent& _event)
 {
     const OptionIndex optionIndex = findOptionAtPosition(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && isValidOptionIndex(optionIndex) &&
@@ -162,17 +165,17 @@ ego::gui::InputReply ego::gui::RadioGroup::onMouseButton(WidgetUpdateContext&, c
     return InputReply::Unhandled;
 }
 
-void ego::gui::RadioGroup::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
+void ego::gui::RadioGroup::onPointerEnter(const Position& _position, const InputModifiers&)
 {
     m_hoveredOptionIndex = findOptionAtPosition(_position);
 }
 
-void ego::gui::RadioGroup::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
+void ego::gui::RadioGroup::onPointerLeave(const Position&, const InputModifiers&)
 {
     m_hoveredOptionIndex = InvalidOptionIndex;
 }
 
-void ego::gui::RadioGroup::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
+void ego::gui::RadioGroup::onPointerCaptureLost(const Position&)
 {
     m_hoveredOptionIndex = InvalidOptionIndex;
     m_pressedOptionIndex = InvalidOptionIndex;
@@ -188,14 +191,16 @@ ego::gui::Size ego::gui::RadioGroup::calculatePreferredSize(const LayoutContext&
 
     if (!m_title.empty())
     {
-        const Size titleSize = _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_title) : SizeZero;
+        const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+        const Size titleSize = fontAtlas ? fontAtlas->measureText(m_title) : SizeZero;
         result.m_x = (std::max)(result.m_x, titleSize.m_x);
         result.m_y += titleSize.m_y + (std::max)(0.0f, selection.m_groupTitleSpacing);
     }
 
     for (OptionIndex optionIndex = 0; optionIndex < m_options.size(); ++optionIndex)
     {
-        const Size textSize = _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_options[optionIndex]) : SizeZero;
+        const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+        const Size textSize = fontAtlas ? fontAtlas->measureText(m_options[optionIndex]) : SizeZero;
         result.m_x = (std::max)(result.m_x, textOffset + textSize.m_x);
         result.m_y += (std::max)(minimumOptionHeight, textSize.m_y);
 
@@ -218,7 +223,8 @@ void ego::gui::RadioGroup::updateGeometry(const LayoutContext& _context)
     float currentY = layoutBounds.m_position.m_y;
     if (!m_title.empty())
     {
-        const Size titleSize = _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_title) : SizeZero;
+        const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+        const Size titleSize = fontAtlas ? fontAtlas->measureText(m_title) : SizeZero;
         m_titleRect = Rect(layoutBounds.m_position.m_x, currentY, layoutBounds.m_size.m_x, titleSize.m_y);
         currentY += titleSize.m_y + (std::max)(0.0f, selection.m_groupTitleSpacing);
     }
@@ -230,7 +236,8 @@ void ego::gui::RadioGroup::updateGeometry(const LayoutContext& _context)
     m_optionRects.resize(m_options.size());
     for (OptionIndex optionIndex = 0; optionIndex < m_options.size(); ++optionIndex)
     {
-        const Size textSize = _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_options[optionIndex]) : SizeZero;
+        const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+        const Size textSize = fontAtlas ? fontAtlas->measureText(m_options[optionIndex]) : SizeZero;
         const float optionHeight = (std::max)(minimumOptionHeight, textSize.m_y);
         m_optionRects[optionIndex] = Rect(layoutBounds.m_position.m_x, currentY, layoutBounds.m_size.m_x, optionHeight);
         currentY += optionHeight + optionSpacing;

@@ -1,7 +1,7 @@
 struct VSInput
 {
     float3 InstancePosition : INST_POSITION;
-    float4 InstanceColor : INST_COLOR;
+    float3 InstanceColor : INST_COLOR;
 };
 
 struct CameraShaderData
@@ -47,6 +47,6 @@ VSOutput VSMain(VSInput input, uint vertexID : SV_VertexID)
 
     VSOutput output;
     output.Position = position + float4(pointVertexOffset * position.w, 0.0, 0.0);
-    output.Color = input.InstanceColor;
+    output.Color = float4(input.InstanceColor, 1.0);
     return output;
 }

@@ -1,22 +1,27 @@
 #pragma once
 
-#include <unordered_map>
+#include <memory>
 
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Reference/Pointer.h"
 
-#include "EgoGui/Input/Input.h"
 #include "EgoGui/Rendering/FontAtlas.h"
 #include "EgoGui/Rendering/GuiRenderData.h"
 #include "EgoGui/Theme/Theme.h"
-
-#include "EgoGui/Viewport/Viewport.h"
-#include "EgoGui/Viewport/ViewportProvider.h"
+#include "EgoGui/Viewport/ViewportTypes.h"
 
 namespace ego::gui
 {
-    class GuiController final
-        : public NonCopyable
+    class Viewport;
+    class ViewportManager;
+    class ViewportProvider;
+    class Window;
+
+    EGO_POINTER(Viewport);
+    EGO_POINTER(ViewportProvider);
+    EGO_POINTER(Window);
+
+    class GuiController final : public NonCopyable
     {
     public:
         struct InitData final
@@ -24,6 +29,7 @@ namespace ego::gui
             FontAtlasDesc m_fontAtlasDesc;
             Theme m_theme = Theme::GetDefault();
             ViewportProviderPointer m_viewportProvider = nullptr;
+            bool m_enableMultiViewport = false;
         };
 
         GuiController();
@@ -41,13 +47,16 @@ namespace ego::gui
         bool destroyViewport(const ViewportPointer& _viewport);
 
         ViewportPointer getPrimaryViewport() const;
+        ViewportPointer findViewport(const WindowPointer& _window) const;
+
+        void setMultiViewportEnabled(bool _isEnabled);
+        bool isMultiViewportEnabled() const;
 
         void setTheme(const Theme& _theme);
         ThemePointer getTheme() const;
 
     private:
-        class VisualOperationScope final
-            : public NonCopyable
+        class VisualOperationScope final : public NonCopyable
         {
         public:
             explicit VisualOperationScope(GuiController& _controller);
@@ -57,21 +66,11 @@ namespace ego::gui
             GuiController& m_controller;
         };
 
-        static constexpr ViewportID FirstViewportID = 1;
-
-        using ViewportMap = std::unordered_map<ViewportID, ViewportPointer>;
-
-        ViewportPointer createViewport(ViewportRole _role, const ViewportDesc& _desc);
-        ViewportPointer createViewport(const ViewportCreateRequest& _request);
-        ViewportPointer findViewport(ViewportID _viewportID) const;
-        ViewportID prepareNewViewportID();
+        void releaseState();
         bool ensureVisualOperationInactive() const;
         void applyTheme(ThemePointer _theme);
 
-        ViewportMap m_viewports;
-        ViewportID m_primaryViewportID = InvalidViewportID;
-        ViewportID m_nextViewportID = FirstViewportID;
-        ViewportProviderPointer m_viewportProvider = nullptr;
+        std::unique_ptr<ViewportManager> m_viewportManager;
         FontAtlasPointer m_fontAtlas = nullptr;
         ThemePointer m_theme = nullptr;
         bool m_isVisualOperationActive = false;

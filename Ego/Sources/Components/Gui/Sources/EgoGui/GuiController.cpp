@@ -1,12 +1,12 @@
 #include "EgoGui/GuiController.h"
 
 #include <utility>
-#include <vector>
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGui/Rendering/PaintContext.h"
+#include "EgoGui/Layout/Layout.h"
+#include "EgoGui/Viewport/ViewportManager.h"
 
 ego::gui::GuiController::VisualOperationScope::VisualOperationScope(GuiController& _controller)
     : m_controller(_controller)
@@ -22,7 +22,8 @@ ego::gui::GuiController::VisualOperationScope::~VisualOperationScope()
 }
 
 ego::gui::GuiController::GuiController()
-    : m_theme(SharedPointer<Theme>(new Theme(Theme::GetDefault())))
+    : m_viewportManager(std::make_unique<ViewportManager>()),
+      m_theme(SharedPointer<Theme>(new Theme(Theme::GetDefault())))
 {
 }
 
@@ -41,7 +42,6 @@ bool ego::gui::GuiController::init(const InitData& _initData)
     EGO_CHECK_RETURN_FALSE(initData.m_viewportProvider);
 
     setTheme(initData.m_theme);
-    m_viewportProvider = initData.m_viewportProvider;
 
     if (!initData.m_fontAtlasDesc.m_fontData.empty())
     {
@@ -49,15 +49,9 @@ bool ego::gui::GuiController::init(const InitData& _initData)
         EGO_CHECK_RETURN_CALL_FALSE(m_fontAtlas && m_fontAtlas->init(initData.m_fontAtlasDesc), release());
     }
 
+    EGO_CHECK_RETURN_CALL_FALSE(m_viewportManager->init(initData.m_viewportProvider, initData.m_enableMultiViewport), release());
+
     m_isInitialized = true;
-
-    const ViewportPointer primaryViewport = createViewport(ViewportRole::Primary, ViewportDesc());
-    if (!primaryViewport)
-    {
-        release();
-        return false;
-    }
-
     return true;
 }
 
@@ -68,137 +62,54 @@ void ego::gui::GuiController::release()
         return;
     }
 
-    ViewportMap viewports;
-    viewports.swap(m_viewports);
-
-    const ViewportProviderPointer viewportProvider = m_viewportProvider;
-
-    m_primaryViewportID = InvalidViewportID;
-    m_viewportProvider = nullptr;
-    m_fontAtlas = nullptr;
-    m_isInitialized = false;
-
-    for (const ViewportMap::value_type& viewportEntry : viewports)
-    {
-        if (viewportProvider)
-        {
-            viewportProvider->destroyViewport(viewportEntry.first);
-        }
-
-        if (viewportEntry.second)
-        {
-            viewportEntry.second->clearInteraction();
-        }
-    }
+    releaseState();
 }
 
-ego::gui::ViewportPointer ego::gui::GuiController::createViewport(ViewportRole _role, const ViewportDesc& _desc)
+void ego::gui::GuiController::releaseState()
 {
-    const ViewportCreateRequest request(_role, _desc);
-    return createViewport(request);
+    m_viewportManager->release();
+    m_fontAtlas = nullptr;
+    m_isInitialized = false;
 }
 
 ego::gui::ViewportPointer ego::gui::GuiController::createViewport(const ViewportDesc& _desc)
 {
-    return createViewport(ViewportRole::Secondary, _desc);
-}
-
-ego::gui::ViewportPointer ego::gui::GuiController::createViewport(const ViewportCreateRequest& _request)
-{
-    if (!ensureVisualOperationInactive() || !m_isInitialized || (_request.m_role == ViewportRole::Primary && m_primaryViewportID != InvalidViewportID))
+    if (!m_isInitialized || !ensureVisualOperationInactive())
     {
         return nullptr;
     }
 
-    const ViewportID viewportID = prepareNewViewportID();
-    if (viewportID == InvalidViewportID)
-    {
-        return nullptr;
-    }
-
-    ViewportCreateRequest request = _request;
-    request.m_id = viewportID;
-
-    const ViewportProviderPointer viewportProvider = m_viewportProvider;
-    if (!viewportProvider || !viewportProvider->createViewport(request))
-    {
-        return nullptr;
-    }
-
-    ViewportPointer viewport = Viewport::Create(request.m_id, request.m_role, request.m_desc.m_size);
-    if (!viewport)
-    {
-        viewportProvider->destroyViewport(request.m_id);
-        return nullptr;
-    }
-
-    const std::pair<ViewportMap::iterator, bool> insertResult = m_viewports.emplace(request.m_id, viewport);
-    if (!insertResult.second)
-    {
-        viewportProvider->destroyViewport(request.m_id);
-        return nullptr;
-    }
-
-    if (request.m_role == ViewportRole::Primary)
-    {
-        m_primaryViewportID = request.m_id;
-    }
-
-    return viewport;
+    return m_viewportManager->createViewport(_desc);
 }
 
 bool ego::gui::GuiController::destroyViewport(const ViewportPointer& _viewport)
 {
-    if (!ensureVisualOperationInactive())
-    {
-        return false;
-    }
-
-    const ViewportPointer viewport = _viewport;
-    if (!viewport)
-    {
-        return false;
-    }
-
-    const ViewportID viewportID = viewport->getID();
-    const ViewportMap::iterator viewportIt = m_viewports.find(viewportID);
-    if (viewportIt == m_viewports.end() || viewportIt->second.getObject() != viewport.getObject())
-    {
-        return false;
-    }
-
-    if (m_primaryViewportID == viewportID)
-    {
-        m_primaryViewportID = InvalidViewportID;
-    }
-
-    m_viewports.erase(viewportIt);
-
-    const ViewportProviderPointer viewportProvider = m_viewportProvider;
-    if (viewportProvider)
-    {
-        viewportProvider->destroyViewport(viewportID);
-    }
-
-    viewport->clearInteraction();
-
-    return true;
-}
-
-ego::gui::ViewportPointer ego::gui::GuiController::findViewport(ViewportID _viewportID) const
-{
-    if (!m_isInitialized || _viewportID == InvalidViewportID)
-    {
-        return nullptr;
-    }
-
-    const ViewportMap::const_iterator viewportIt = m_viewports.find(_viewportID);
-    return viewportIt != m_viewports.end() ? viewportIt->second : nullptr;
+    return m_isInitialized && ensureVisualOperationInactive() && m_viewportManager->destroyViewport(_viewport);
 }
 
 ego::gui::ViewportPointer ego::gui::GuiController::getPrimaryViewport() const
 {
-    return findViewport(m_primaryViewportID);
+    return m_viewportManager->getPrimaryViewport();
+}
+
+ego::gui::ViewportPointer ego::gui::GuiController::findViewport(const WindowPointer& _window) const
+{
+    return m_viewportManager->findViewport(_window);
+}
+
+void ego::gui::GuiController::setMultiViewportEnabled(bool _isEnabled)
+{
+    if (!m_isInitialized || !ensureVisualOperationInactive())
+    {
+        return;
+    }
+
+    m_viewportManager->setMultiViewportEnabled(_isEnabled);
+}
+
+bool ego::gui::GuiController::isMultiViewportEnabled() const
+{
+    return m_viewportManager->isMultiViewportEnabled();
 }
 
 void ego::gui::GuiController::setTheme(const Theme& _theme)
@@ -213,92 +124,32 @@ ego::gui::ThemePointer ego::gui::GuiController::getTheme() const
 
 void ego::gui::GuiController::update()
 {
-    if (!m_isInitialized || !m_viewportProvider || !ensureVisualOperationInactive())
+    if (!m_isInitialized || !ensureVisualOperationInactive())
     {
         return;
     }
 
-    std::vector<ViewportPointer> viewportsToDestroy;
+    const ThemePointer theme = m_theme;
+    const VisualOperationScope visualOperation(*this);
+    const LayoutContext layoutContext{m_fontAtlas, theme};
+
+    if (!m_viewportManager->update(layoutContext))
     {
-        const ThemePointer theme = m_theme;
-        const VisualOperationScope visualOperation(*this);
-        const ViewportProviderPointer viewportProvider = m_viewportProvider;
-        const LayoutContext layoutContext{m_fontAtlas, theme};
-
-        for (const auto& [viewportID, viewport] : m_viewports)
-        {
-            const ViewportUpdate viewportUpdate = viewportProvider->pollViewport(viewportID);
-
-            switch (viewportUpdate.m_status)
-            {
-            case ViewportUpdateStatus::Alive:
-            {
-                viewport->update(layoutContext, viewportUpdate);
-
-                break;
-            }
-
-            case ViewportUpdateStatus::CloseRequested:
-            case ViewportUpdateStatus::Lost:
-            {
-                viewportsToDestroy.push_back(viewport);
-                break;
-            }
-            }
-        }
-    }
-
-    for (const ViewportPointer& viewport : viewportsToDestroy)
-    {
-        const bool destroyResult = destroyViewport(viewport);
-        EGO_ASSERT(destroyResult);
+        releaseState();
     }
 }
 
 ego::gui::GuiRenderData ego::gui::GuiController::buildFrame()
 {
-    GuiRenderData frame;
     if (!m_isInitialized || !ensureVisualOperationInactive())
     {
-        return frame;
+        return GuiRenderData();
     }
 
-    const FontAtlasPointer fontAtlas = m_fontAtlas;
-    const ThemePointer theme = m_theme;
     const VisualOperationScope visualOperation(*this);
-    const LayoutContext layoutContext{fontAtlas, theme};
+    const LayoutContext layoutContext{m_fontAtlas, m_theme};
 
-    if (fontAtlas && fontAtlas->isInitialized())
-    {
-        const gpu::TextureViewReference& fontTextureView = fontAtlas->getTextureView();
-        if (fontTextureView)
-        {
-            frame.m_resourceTextureViews.push_back(fontTextureView);
-        }
-    }
-
-    frame.m_viewports.reserve(m_viewports.size());
-    for (const ViewportMap::value_type& viewportEntry : m_viewports)
-    {
-        const ViewportPointer& viewport = viewportEntry.second;
-
-        ViewportRenderData viewportFrame;
-        viewportFrame.m_graphicPresenter = viewport->getGraphicPresenterPointer();
-
-        const Size viewportSize = viewport->getSize();
-        if (viewportSize.m_x > 0.0f && viewportSize.m_y > 0.0f)
-        {
-            viewportFrame.m_drawData.m_viewportSize = viewportSize;
-
-            const Rect viewportRect(0.0f, 0.0f, viewportSize.m_x, viewportSize.m_y);
-            PaintContext paintContext(viewportFrame.m_drawData, frame.m_resourceTextureViews, viewportRect, fontAtlas, theme);
-            viewport->emitDrawCommands(layoutContext, paintContext);
-        }
-
-        frame.m_viewports.push_back(std::move(viewportFrame));
-    }
-
-    return frame;
+    return m_viewportManager->buildFrame(layoutContext);
 }
 
 bool ego::gui::GuiController::isInitialized() const
@@ -306,20 +157,10 @@ bool ego::gui::GuiController::isInitialized() const
     return m_isInitialized;
 }
 
-ego::gui::ViewportID ego::gui::GuiController::prepareNewViewportID()
-{
-    if (m_nextViewportID == InvalidViewportID)
-    {
-        return InvalidViewportID;
-    }
-
-    return m_nextViewportID++;
-}
-
 bool ego::gui::GuiController::ensureVisualOperationInactive() const
 {
     const bool isInactive = !m_isVisualOperationActive;
-    EGO_ASSERT_MESSAGE(isInactive, "Visual operations cannot be reentered or mutate the viewport collection.");
+    EGO_ASSERT_MESSAGE(isInactive, "Public visual operations cannot reenter an active update or frame build.");
 
     return isInactive;
 }
@@ -327,11 +168,5 @@ bool ego::gui::GuiController::ensureVisualOperationInactive() const
 void ego::gui::GuiController::applyTheme(ThemePointer _theme)
 {
     m_theme = std::move(_theme);
-    for (const ViewportMap::value_type& viewportEntry : m_viewports)
-    {
-        if (viewportEntry.second)
-        {
-            viewportEntry.second->invalidateLayout();
-        }
-    }
+    m_viewportManager->invalidateLayouts();
 }

@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "EgoCore/Math/Color.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/EngineSession.h"
@@ -12,13 +13,13 @@ namespace
 {
     constexpr float FullRotation = 6.28318530718f;
 
-    constexpr auto Red = ego::FloatVector4(1.0f, 0.1f, 0.1f, 1.0f);
-    constexpr auto Green = ego::FloatVector4(0.1f, 1.0f, 0.1f, 1.0f);
-    constexpr auto Blue = ego::FloatVector4(0.1f, 0.3f, 1.0f, 1.0f);
-    constexpr auto Cyan = ego::FloatVector4(0.0f, 0.9f, 1.0f, 1.0f);
-    constexpr auto Yellow = ego::FloatVector4(1.0f, 0.9f, 0.0f, 1.0f);
-    constexpr auto Magenta = ego::FloatVector4(1.0f, 0.0f, 0.9f, 1.0f);
-    constexpr auto White = ego::FloatVector4(1.0f, 1.0f, 1.0f, 1.0f);
+    constexpr ego::NormalizedColorRGB Red(1.0f, 0.1f, 0.1f);
+    constexpr ego::NormalizedColorRGB Green(0.1f, 1.0f, 0.1f);
+    constexpr ego::NormalizedColorRGB Blue(0.1f, 0.3f, 1.0f);
+    constexpr ego::NormalizedColorRGB Cyan(0.0f, 0.9f, 1.0f);
+    constexpr ego::NormalizedColorRGB Yellow(1.0f, 0.9f, 0.0f);
+    constexpr ego::NormalizedColorRGB Magenta(1.0f, 0.0f, 0.9f);
+    constexpr ego::NormalizedColorRGB White = ego::NormalizedColorWhite;
 } // namespace
 
 bool ego::demo::DebugDrawDemo::init(const InitData& _initData)

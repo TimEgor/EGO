@@ -2,15 +2,20 @@
 
 #include <algorithm>
 
-#include "EgoCore/RTTI/RTTI.h"
-
 #include "EgoGui/Docking/DockingSplit.h"
-#include "EgoGui/Input/WidgetUpdateContext.h"
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Input/InputContext.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 
-ego::gui::DockingSeparatorPointer ego::gui::DockingSeparator::Create(DockingAxis _axis)
+ego::gui::DockingSeparatorPointer ego::gui::DockingSeparator::Create(const DockingSplitPointer& _split, DockingAxis _axis)
 {
+    if (!_split)
+    {
+        return nullptr;
+    }
+
     switch (_axis)
     {
     case DockingAxis::Horizontal:
@@ -21,11 +26,12 @@ ego::gui::DockingSeparatorPointer ego::gui::DockingSeparator::Create(DockingAxis
         return nullptr;
     }
 
-    return new DockingSeparator(_axis);
+    return new DockingSeparator(_split, _axis);
 }
 
-ego::gui::DockingSeparator::DockingSeparator(DockingAxis _axis)
-    : m_axis(_axis)
+ego::gui::DockingSeparator::DockingSeparator(const DockingSplitPointer& _split, DockingAxis _axis)
+    : m_split(_split),
+      m_axis(_axis)
 {
 }
 
@@ -37,12 +43,10 @@ void ego::gui::DockingSeparator::clearInteraction()
 
 ego::gui::DockingSplitPointer ego::gui::DockingSeparator::getSplit() const
 {
-    const WidgetPointer parent = getParent();
-
-    return parent && rtti::IsObjectBasedOn<DockingSplit>(*parent) ? ego::StaticPointerCast<DockingSplit>(parent) : nullptr;
+    return m_split.lock();
 }
 
-ego::gui::InputReply ego::gui::DockingSeparator::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::DockingSeparator::onPointerMove(InputContext&, const PointerMoveEvent& _event)
 {
     m_isHovered = getLayoutBounds().contains(_event.m_position);
     if (!m_isPressed)
@@ -59,7 +63,7 @@ ego::gui::InputReply ego::gui::DockingSeparator::onPointerMove(WidgetUpdateConte
     return InputReply::Handled;
 }
 
-ego::gui::InputReply ego::gui::DockingSeparator::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::DockingSeparator::onMouseButton(InputContext&, const MouseButtonEvent& _event)
 {
     if (_event.m_key != MouseInputKey::ButtonLeft)
     {
@@ -90,17 +94,17 @@ ego::gui::InputReply ego::gui::DockingSeparator::onMouseButton(WidgetUpdateConte
     return InputReply::Unhandled;
 }
 
-void ego::gui::DockingSeparator::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
+void ego::gui::DockingSeparator::onPointerEnter(const Position& _position, const InputModifiers&)
 {
     m_isHovered = getLayoutBounds().contains(_position);
 }
 
-void ego::gui::DockingSeparator::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
+void ego::gui::DockingSeparator::onPointerLeave(const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::DockingSeparator::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
+void ego::gui::DockingSeparator::onPointerCaptureLost(const Position&)
 {
     clearInteraction();
 }

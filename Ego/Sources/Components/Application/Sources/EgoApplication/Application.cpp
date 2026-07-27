@@ -4,12 +4,11 @@
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Diagnostic/DiagnosticSubsystem.h"
+#include "EgoCore/Event/EventSubsystem.h"
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
-
-#include "EgoEvent/EventSubsystem.h"
 
 #include "EgoInput/InputController.h"
 
@@ -20,11 +19,11 @@
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
+#include "ApplicationEvents.h"
 #include "ApplicationSubsystem.h"
 #include "Input/ApplicationInputKeyProvider.h"
 #include "Profile/ApplicationProfiler.h"
-#include "Window/ApplicationWindowEvents.h"
-#include "Window/ApplicationWindowPresentationProvider.h"
+#include "Surface/PlatformSurfacePresentationProvider.h"
 
 ego::application::Application::Application() = default;
 
@@ -39,7 +38,20 @@ bool ego::application::Application::init(const InitData& _initData)
 
     m_isExitRequested = false;
 
-    EGO_CHECK_INITIALIZATION(initSubsystems(_initData));
+    EGO_CHECK_INITIALIZATION(initSubsystemRegistry());
+    EGO_CHECK_INITIALIZATION(initDiagnosticSubsystem());
+    EGO_CHECK_INITIALIZATION(initEventSubsystem());
+    EGO_CHECK_INITIALIZATION(initPlatformSubsystem(_initData.m_nativeInstanceHandle));
+    EGO_CHECK_INITIALIZATION(initPluginSubsystem(_initData.m_pluginDirectory));
+    EGO_CHECK_INITIALIZATION(initApplicationProfiler(_initData.m_profilerPluginModuleName));
+    EGO_CHECK_INITIALIZATION(initApplicationSubsystem());
+
+    if (_initData.m_enableGraphicHardware)
+    {
+        EGO_CHECK_INITIALIZATION(initGraphicHardwareSubsystem(_initData.m_graphicHardwarePluginModuleName));
+    }
+
+    EGO_CHECK_INITIALIZATION(initResourceSubsystem());
     EGO_CHECK_INITIALIZATION(initInputController());
 
     if (_initData.m_enableWindowing)
@@ -54,7 +66,15 @@ void ego::application::Application::release()
 {
     releaseWindowing();
     releaseInputController();
-    releaseSubsystems();
+    releaseResourceSubsystem();
+    releaseGraphicHardwareSubsystem();
+    releaseApplicationSubsystem();
+    releaseApplicationProfiler();
+    releasePluginSubsystem();
+    releasePlatformSubsystem();
+    releaseEventSubsystem();
+    releaseDiagnosticSubsystem();
+    releaseSubsystemRegistry();
 
     m_isExitRequested = false;
 }
@@ -95,54 +115,78 @@ bool ego::application::Application::isExitRequested() const
     return m_isExitRequested;
 }
 
-bool ego::application::Application::initSubsystems(const InitData& _initData)
+bool ego::application::Application::initDiagnosticSubsystem()
 {
-    EGO_CHECK_RETURN_FALSE(initSubsystemRegistry());
-
-    m_applicationSubsystem = new ApplicationSubsystem();
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem->init(sharedFromThis()));
-    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_applicationSubsystem));
-
     m_diagnosticSubsystem = new DiagnosticSubsystem();
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem);
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem->init());
-    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_diagnosticSubsystem));
 
+    return registerSubsystem(m_diagnosticSubsystem);
+}
+
+bool ego::application::Application::initEventSubsystem()
+{
+    m_eventSubsystem = new EventSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_eventSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_eventSubsystem->init());
+
+    return registerSubsystem(m_eventSubsystem);
+}
+
+bool ego::application::Application::initPlatformSubsystem(void* _nativeInstanceHandle)
+{
     m_platformSubsystem = new PlatformSubsystem();
     EGO_CHECK_RETURN_FALSE(m_platformSubsystem);
 
     PlatformSubsystem::InitData platformSubsystemInitData;
-    platformSubsystemInitData.m_nativeInstanceHandle = _initData.m_nativeInstanceHandle;
+    platformSubsystemInitData.m_nativeInstanceHandle = _nativeInstanceHandle;
     EGO_CHECK_RETURN_FALSE(m_platformSubsystem->init(platformSubsystemInitData));
-    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_platformSubsystem));
 
+    return registerSubsystem(m_platformSubsystem);
+}
+
+bool ego::application::Application::initPluginSubsystem(const FileName& _pluginDirectory)
+{
     m_pluginSubsystem = new PluginSubsystem();
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem->init());
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_pluginSubsystem));
-    EGO_CHECK_RETURN_FALSE(registerPluginDirectory(_initData.m_pluginDirectory));
 
+    return registerPluginDirectory(_pluginDirectory);
+}
+
+bool ego::application::Application::initApplicationProfiler(const FileName& _pluginModuleName)
+{
+    // TODO: remove it with explicit profile handler
     m_applicationProfiler = new ApplicationProfiler();
     EGO_CHECK_RETURN_FALSE(m_applicationProfiler);
-    EGO_CHECK_RETURN_FALSE(m_applicationProfiler->init(_initData.m_profilerPluginModuleName));
 
-    m_eventSubsystem = new EventSubsystem();
-    EGO_CHECK_RETURN_FALSE(m_eventSubsystem);
-    EGO_CHECK_RETURN_FALSE(m_eventSubsystem->init());
-    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_eventSubsystem));
+    return m_applicationProfiler->init(_pluginModuleName);
+}
 
-    if (_initData.m_enableGraphicHardware)
-    {
-        m_graphicHardwareSubsystem = new gpu::GraphicHardwareSubsystem();
-        EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem);
+bool ego::application::Application::initApplicationSubsystem()
+{
+    m_applicationSubsystem = new ApplicationSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
+    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem->init(sharedFromThis()));
 
-        gpu::GraphicHardwareSubsystem::InitData graphicHardwareSubsystemInitData;
-        graphicHardwareSubsystemInitData.m_pluginModuleName = _initData.m_graphicHardwarePluginModuleName;
-        EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem->init(graphicHardwareSubsystemInitData));
-        EGO_CHECK_RETURN_FALSE(registerSubsystem(m_graphicHardwareSubsystem));
-    }
+    return registerSubsystem(m_applicationSubsystem);
+}
 
+bool ego::application::Application::initGraphicHardwareSubsystem(const FileName& _pluginModuleName)
+{
+    m_graphicHardwareSubsystem = new gpu::GraphicHardwareSubsystem();
+    EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem);
+
+    gpu::GraphicHardwareSubsystem::InitData graphicHardwareSubsystemInitData;
+    graphicHardwareSubsystemInitData.m_pluginModuleName = _pluginModuleName;
+    EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem->init(graphicHardwareSubsystemInitData));
+
+    return registerSubsystem(m_graphicHardwareSubsystem);
+}
+
+bool ego::application::Application::initResourceSubsystem()
+{
     const PlatformPointer platform = GetPlatformPointer();
     const FileSystemPointer resourceFileSystem = platform ? platform->getFileSystem() : nullptr;
     EGO_CHECK_RETURN_FALSE(resourceFileSystem);
@@ -154,38 +198,56 @@ bool ego::application::Application::initSubsystems(const InitData& _initData)
     resourceSubsystemInitData.m_resourceFileSystem = resourceFileSystem;
     EGO_CHECK_RETURN_FALSE(m_resourceSubsystem->init(resourceSubsystemInitData));
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_resourceSubsystem));
-    EGO_CHECK_RETURN_FALSE(registerGraphicResourceProvider());
 
-    return true;
+    return registerGraphicResourceProvider();
 }
 
-void ego::application::Application::releaseSubsystems()
+void ego::application::Application::releaseResourceSubsystem()
 {
     releaseSubsystem(m_resourceSubsystem);
     m_resourceSubsystem = nullptr;
+}
 
+void ego::application::Application::releaseGraphicHardwareSubsystem()
+{
     releaseSubsystem(m_graphicHardwareSubsystem);
     m_graphicHardwareSubsystem = nullptr;
+}
 
-    releaseSubsystem(m_eventSubsystem);
-    m_eventSubsystem = nullptr;
+void ego::application::Application::releaseApplicationSubsystem()
+{
+    releaseSubsystem(m_applicationSubsystem);
+    m_applicationSubsystem = nullptr;
+}
 
+void ego::application::Application::releaseApplicationProfiler()
+{
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationProfiler);
+}
 
+void ego::application::Application::releasePluginSubsystem()
+{
     unregisterPluginDirectory();
     releaseSubsystem(m_pluginSubsystem);
     m_pluginSubsystem = nullptr;
+}
 
+void ego::application::Application::releasePlatformSubsystem()
+{
     releaseSubsystem(m_platformSubsystem);
     m_platformSubsystem = nullptr;
+}
 
+void ego::application::Application::releaseEventSubsystem()
+{
+    releaseSubsystem(m_eventSubsystem);
+    m_eventSubsystem = nullptr;
+}
+
+void ego::application::Application::releaseDiagnosticSubsystem()
+{
     releaseSubsystem(m_diagnosticSubsystem);
     m_diagnosticSubsystem = nullptr;
-
-    releaseSubsystem(m_applicationSubsystem);
-    m_applicationSubsystem = nullptr;
-
-    releaseSubsystemRegistry();
 }
 
 bool ego::application::Application::initInputController()
@@ -340,11 +402,11 @@ bool ego::application::Application::initWindowing()
     const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
     EGO_CHECK_RETURN_FALSE(eventController);
 
-    ApplicationWindowPresentationProvider::InitData presentationInitData;
+    PlatformSurfacePresentationProvider::InitData presentationInitData;
     presentationInitData.m_swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
     presentationInitData.m_swapChainDesc.m_bufferCount = 2;
 
-    ApplicationWindowPresentationProviderPointer presenterProvider = new ApplicationWindowPresentationProvider();
+    PlatformSurfacePresentationProviderPointer presenterProvider = new PlatformSurfacePresentationProvider();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
     EGO_CHECK_RETURN_FALSE(presenterProvider->init(presentationInitData));
     m_presenterProvider = presenterProvider;

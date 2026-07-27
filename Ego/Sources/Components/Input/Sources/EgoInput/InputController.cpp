@@ -1,10 +1,9 @@
 #include "InputController.h"
 
 #include "EgoCore/Assert/Assert.h"
+#include "EgoCore/Event/EventController.h"
+#include "EgoCore/Event/EventSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
-
-#include "EgoEvent/EventController.h"
-#include "EgoEvent/EventSubsystem.h"
 
 #include "InputEvents.h"
 

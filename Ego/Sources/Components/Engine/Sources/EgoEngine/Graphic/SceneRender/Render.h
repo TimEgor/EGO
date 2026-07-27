@@ -43,11 +43,15 @@ namespace ego::render
         virtual void wait() = 0;
 
         virtual void drawPoint(const DebugDrawPointData& _point) = 0;
-        void drawPoint(const FloatVector3& _position, const FloatVector4& _color);
+        void drawPoint(const FloatVector3& _position, const NormalizedColorRGB& _color);
 
         virtual void drawLine(const DebugDrawLineData& _line) = 0;
-        void drawLine(const FloatVector3& _startPosition, const FloatVector3& _endPosition, const FloatVector4& _color);
-        void drawLine(const FloatVector3& _startPosition, const FloatVector4& _startColor, const FloatVector3& _endPosition, const FloatVector4& _endColor);
+        void drawLine(const FloatVector3& _startPosition, const FloatVector3& _endPosition, const NormalizedColorRGB& _color);
+        void drawLine(
+            const FloatVector3& _startPosition,
+            const NormalizedColorRGB& _startColor,
+            const FloatVector3& _endPosition,
+            const NormalizedColorRGB& _endColor);
 
         virtual RenderType getType() const = 0;
 
@@ -58,22 +62,22 @@ namespace ego::render
     EGO_WEAK_POINTER(Render);
 } // namespace ego::render
 
-#define EGO_RENDER(_RENDER, ...)                                                                                                                                                   \
-    EGO_RTTI_VIRTUAL(_RENDER, __VA_ARGS__)                                                                                                                                         \
-                                                                                                                                                                                   \
-    static const char* GetRenderTypeName()                                                                                                                                         \
-    {                                                                                                                                                                              \
-        return GetMetaInfoTypeName();                                                                                                                                              \
-    }                                                                                                                                                                              \
-                                                                                                                                                                                   \
-    static ego::render::RenderType GetRenderType()                                                                                                                                 \
-    {                                                                                                                                                                              \
-        return GetMetaInfoID();                                                                                                                                                    \
-    }                                                                                                                                                                              \
-                                                                                                                                                                                   \
-    virtual ego::render::RenderType getType() const override                                                                                                                       \
-    {                                                                                                                                                                              \
-        return GetRenderType();                                                                                                                                                    \
+#define EGO_RENDER(_RENDER, ...)                                                                                                                               \
+    EGO_RTTI_VIRTUAL(_RENDER, __VA_ARGS__)                                                                                                                     \
+                                                                                                                                                               \
+    static const char* GetRenderTypeName()                                                                                                                     \
+    {                                                                                                                                                          \
+        return GetMetaInfoTypeName();                                                                                                                          \
+    }                                                                                                                                                          \
+                                                                                                                                                               \
+    static ego::render::RenderType GetRenderType()                                                                                                             \
+    {                                                                                                                                                          \
+        return GetMetaInfoID();                                                                                                                                \
+    }                                                                                                                                                          \
+                                                                                                                                                               \
+    virtual ego::render::RenderType getType() const override                                                                                                   \
+    {                                                                                                                                                          \
+        return GetRenderType();                                                                                                                                \
     }
 
 #define EGO_RENDER_TYPE(_RENDER) (_RENDER::GetRenderType())

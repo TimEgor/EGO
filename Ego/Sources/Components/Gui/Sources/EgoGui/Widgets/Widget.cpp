@@ -2,9 +2,122 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 #include "EgoCore/Assert/Assert.h"
+
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Layout/Layout.h"
+#include "EgoGui/Rendering/PaintContext.h"
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::OnPointerMove(Widget& _widget, InputContext& _context, const PointerMoveEvent& _event)
+{
+    return _widget.onPointerMove(_context, _event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::OnMouseButton(Widget& _widget, InputContext& _context, const MouseButtonEvent& _event)
+{
+    return _widget.onMouseButton(_context, _event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::OnMouseWheel(Widget& _widget, InputContext& _context, const MouseWheelEvent& _event)
+{
+    return _widget.onMouseWheel(_context, _event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::OnKey(Widget& _widget, InputContext& _context, const KeyEvent& _event)
+{
+    return _widget.onKey(_context, _event);
+}
+
+ego::gui::InputReply ego::gui::Widget::WidgetAccessor::OnTextInput(Widget& _widget, InputContext& _context, const TextInputEvent& _event)
+{
+    return _widget.onTextInput(_context, _event);
+}
+
+void ego::gui::Widget::WidgetAccessor::OnPointerEnter(Widget& _widget, const Position& _position, const InputModifiers& _modifiers)
+{
+    _widget.onPointerEnter(_position, _modifiers);
+}
+
+void ego::gui::Widget::WidgetAccessor::OnPointerLeave(Widget& _widget, const Position& _position, const InputModifiers& _modifiers)
+{
+    _widget.onPointerLeave(_position, _modifiers);
+}
+
+void ego::gui::Widget::WidgetAccessor::OnPointerCaptureLost(Widget& _widget, const Position& _position)
+{
+    _widget.onPointerCaptureLost(_position);
+}
+
+void ego::gui::Widget::WidgetAccessor::OnFocusChanged(Widget& _widget, FocusChange _change)
+{
+    _widget.onFocusChanged(_change);
+}
+
+ego::gui::Size ego::gui::Widget::WidgetAccessor::UpdatePreferredSize(Widget& _widget, const LayoutContext& _context, const LayoutConstraints& _constraints)
+{
+    return _widget.updatePreferredSize(_context, _constraints);
+}
+
+void ego::gui::Widget::WidgetAccessor::ApplyLayout(Widget& _widget, const LayoutContext& _context, const Rect& _bounds)
+{
+    _widget.applyLayout(_context, _bounds);
+}
+
+bool ego::gui::Widget::WidgetAccessor::IsLayoutInvalidated(const Widget& _widget)
+{
+    return _widget.isLayoutInvalidated();
+}
+
+void ego::gui::Widget::WidgetAccessor::OnLayoutCompleted(Widget& _widget)
+{
+    _widget.onLayoutCompleted();
+}
+
+void ego::gui::Widget::WidgetAccessor::DrawBaseLayer(const Widget& _widget, PaintContext& _context)
+{
+    _widget.drawBaseLayer(_context);
+}
+
+void ego::gui::Widget::WidgetAccessor::DrawOverlayLayer(const Widget& _widget, PaintContext& _context)
+{
+    _widget.drawOverlayLayer(_context);
+}
+
+bool ego::gui::Widget::WidgetAccessor::ClipsChildren(const Widget& _widget)
+{
+    return _widget.clipsChildren();
+}
+
+ego::gui::Rect ego::gui::Widget::WidgetAccessor::GetChildrenClipRect(const Widget& _widget)
+{
+    return _widget.getChildrenClipRect();
+}
+
+size_t ego::gui::Widget::WidgetAccessor::GetChildCount(const Widget& _widget)
+{
+    return _widget.getChildCount();
+}
+
+ego::gui::WidgetPointer ego::gui::Widget::WidgetAccessor::GetChild(const Widget& _widget, size_t _index)
+{
+    return _widget.getChild(_index);
+}
+
+bool ego::gui::Widget::WidgetAccessor::IsChildActive(const Widget& _widget, size_t _index)
+{
+    return _widget.isChildActive(_index);
+}
+
+bool ego::gui::Widget::WidgetAccessor::HitTest(const Widget& _widget, const Position& _position)
+{
+    return _widget.hitTest(_position);
+}
+
+bool ego::gui::Widget::WidgetAccessor::IsChildHitTestVisible(const Widget& _widget, const Position& _position)
+{
+    return _widget.isChildHitTestVisible(_position);
+}
 
 ego::gui::Widget::Widget() = default;
 
@@ -37,82 +150,6 @@ void ego::gui::Widget::applyLayout(const LayoutContext& _context, const Rect& _b
 
     m_layoutBounds = Rect(_bounds.m_position, Size((std::max)(0.0f, _bounds.m_size.m_x), (std::max)(0.0f, _bounds.m_size.m_y)));
     updateGeometry(_context);
-}
-
-void ego::gui::Widget::completeLayout()
-{
-    const WidgetPointer root = sharedFromThis();
-    if (!root)
-    {
-        return;
-    }
-
-    std::vector<WidgetPointer> widgets;
-    widgets.push_back(root);
-    for (size_t widgetIndex = 0; widgetIndex < widgets.size(); ++widgetIndex)
-    {
-        const WidgetPointer widget = widgets[widgetIndex];
-        if (widget->isCollapsed())
-        {
-            continue;
-        }
-
-        const size_t childCount = widget->getChildCount();
-        for (size_t childIndex = 0; childIndex < childCount; ++childIndex)
-        {
-            const WidgetPointer child = widget->getChild(childIndex);
-            if (child && child->isDirectChildOf(*widget))
-            {
-                widgets.push_back(child);
-            }
-        }
-    }
-
-    for (const WidgetPointer& widget : widgets)
-    {
-        if (isLayoutInvalidated())
-        {
-            break;
-        }
-
-        if (!widget->isCollapsed() && (widget.get() == this || widget->isDescendantOf(*this)))
-        {
-            widget->onLayoutCompleted();
-        }
-    }
-}
-
-void ego::gui::Widget::emitDrawCommands(PaintContext& _context) const
-{
-    if (!isVisible() || m_layoutBounds.m_size.m_x <= 0.0f || m_layoutBounds.m_size.m_y <= 0.0f)
-    {
-        return;
-    }
-
-    drawBaseLayer(_context);
-
-    const bool clipChildren = clipsChildren();
-    if (clipChildren)
-    {
-        _context.pushClipRect(getChildrenClipRect());
-    }
-
-    const size_t childCount = getChildCount();
-    for (size_t childIndex = 0; childIndex < childCount; ++childIndex)
-    {
-        const WidgetPointer child = getChild(childIndex);
-        if (child && isChildActive(childIndex) && child->isDirectChildOf(*this))
-        {
-            child->emitDrawCommands(_context);
-        }
-    }
-
-    if (clipChildren)
-    {
-        _context.popClipRect();
-    }
-
-    drawOverlayLayer(_context);
 }
 
 bool ego::gui::Widget::attachChild(const WidgetPointer& _child)
@@ -217,38 +254,38 @@ const ego::gui::Rect& ego::gui::Widget::getLayoutBounds() const
     return m_layoutBounds;
 }
 
-ego::gui::InputReply ego::gui::Widget::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent&)
+ego::gui::InputReply ego::gui::Widget::onPointerMove(InputContext&, const PointerMoveEvent&)
 {
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Widget::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent&)
+ego::gui::InputReply ego::gui::Widget::onMouseButton(InputContext&, const MouseButtonEvent&)
 {
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Widget::onMouseWheel(WidgetUpdateContext&, const MouseWheelEvent&)
+ego::gui::InputReply ego::gui::Widget::onMouseWheel(InputContext&, const MouseWheelEvent&)
 {
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Widget::onKey(WidgetUpdateContext&, const KeyEvent&)
+ego::gui::InputReply ego::gui::Widget::onKey(InputContext&, const KeyEvent&)
 {
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Widget::onTextInput(WidgetUpdateContext&, const TextInputEvent&)
+ego::gui::InputReply ego::gui::Widget::onTextInput(InputContext&, const TextInputEvent&)
 {
     return InputReply::Unhandled;
 }
 
-void ego::gui::Widget::onPointerEnter(WidgetUpdateContext&, const Position&, const InputModifiers&) {}
+void ego::gui::Widget::onPointerEnter(const Position&, const InputModifiers&) {}
 
-void ego::gui::Widget::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&) {}
+void ego::gui::Widget::onPointerLeave(const Position&, const InputModifiers&) {}
 
-void ego::gui::Widget::onPointerCaptureLost(WidgetUpdateContext&, const Position&) {}
+void ego::gui::Widget::onPointerCaptureLost(const Position&) {}
 
-void ego::gui::Widget::onFocusChanged(WidgetUpdateContext&, FocusChange) {}
+void ego::gui::Widget::onFocusChanged(FocusChange) {}
 
 ego::gui::Size ego::gui::Widget::calculatePreferredSize(const LayoutContext&, const LayoutConstraints&)
 {

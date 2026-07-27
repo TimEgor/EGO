@@ -4,6 +4,7 @@
 
 #include "EgoCore/Assert/Assert.h"
 
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Theme/Theme.h"
 
 ego::gui::BoxSlot ego::gui::BoxSlot::Content(const Margin& _padding, BoxCrossAlignment _alignment)
@@ -133,7 +134,7 @@ ego::gui::Size ego::gui::Box::calculatePreferredSize(const LayoutContext& _conte
     {
         if (child.m_widget->isCollapsed())
         {
-            child.m_widget->updatePreferredSize(_context, LayoutConstraints(SizeZero));
+            _context.measure(*child.m_widget, LayoutConstraints(SizeZero));
             continue;
         }
 
@@ -143,7 +144,7 @@ ego::gui::Size ego::gui::Box::calculatePreferredSize(const LayoutContext& _conte
         const float childMainExtent = (std::max)(0.0f, availableMainExtent - mainPadding);
         const float childCrossExtent = (std::max)(0.0f, availableCrossExtent - crossPadding);
         const Size childAvailableSize = isVertical ? Size(childCrossExtent, childMainExtent) : Size(childMainExtent, childCrossExtent);
-        const Size childPreferredSize = child.m_widget->updatePreferredSize(_context, LayoutConstraints(childAvailableSize));
+        const Size childPreferredSize = _context.measure(*child.m_widget, LayoutConstraints(childAvailableSize));
 
         if (visibleChildCount > 0)
         {
@@ -183,7 +184,7 @@ void ego::gui::Box::updateGeometry(const LayoutContext& _context)
     {
         if (child.m_widget->isCollapsed())
         {
-            child.m_widget->applyLayout(_context, Rect(layoutBounds.m_position, SizeZero));
+            _context.arrange(*child.m_widget, Rect(layoutBounds.m_position, SizeZero));
             continue;
         }
 
@@ -254,7 +255,7 @@ void ego::gui::Box::updateGeometry(const LayoutContext& _context)
         const float childMainPosition = currentMainPosition + leadingMainPadding;
         const Rect childRect = isVertical ? Rect(childCrossPosition, childMainPosition, childCrossExtent, childMainExtent) :
                                             Rect(childMainPosition, childCrossPosition, childMainExtent, childCrossExtent);
-        child.m_widget->applyLayout(_context, childRect);
+        _context.arrange(*child.m_widget, childRect);
         currentMainPosition += leadingMainPadding + childMainExtent + trailingMainPadding;
         ++arrangedChildCount;
     }

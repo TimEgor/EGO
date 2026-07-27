@@ -55,12 +55,12 @@ namespace ego::gui
         EGO_RTTI_VIRTUAL(ScrollView, Container);
 
     protected:
-        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
-        InputReply onMouseWheel(WidgetUpdateContext& _context, const MouseWheelEvent& _event) override;
-        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
+        InputReply onPointerMove(InputContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(InputContext& _context, const MouseButtonEvent& _event) override;
+        InputReply onMouseWheel(InputContext& _context, const MouseWheelEvent& _event) override;
+        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(const Position& _position) override;
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
         void drawOverlayLayer(PaintContext& _context) const override;

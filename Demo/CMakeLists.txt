@@ -12,4 +12,4 @@ endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Demos)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Standalone)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Launcher)

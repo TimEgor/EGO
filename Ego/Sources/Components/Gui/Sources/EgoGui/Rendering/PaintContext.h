@@ -4,6 +4,8 @@
 #include <string_view>
 #include <vector>
 
+#include "EgoCore/Patterns/NonInstanceable.h"
+
 #include "EgoGui/Theme/Theme.h"
 
 #include "DrawData.h"
@@ -11,9 +13,19 @@
 
 namespace ego::gui
 {
+    class Viewport;
+    class Widget;
+
     class PaintContext final
     {
     public:
+        class ViewportAccessor final : public NonInstanceable
+        {
+            friend class Viewport;
+
+            static void Paint(PaintContext& _context, const Widget& _root);
+        };
+
         PaintContext(
             DrawData& _drawData,
             std::vector<gpu::TextureViewReference>& _resourceTextureViews,
@@ -40,6 +52,8 @@ namespace ego::gui
         const Theme& getTheme() const;
 
     private:
+        void paint(const Widget& _widget);
+
         void appendQuad(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex);
         void appendQuad(
             const Rect& _rect,

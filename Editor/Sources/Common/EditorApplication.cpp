@@ -1,10 +1,10 @@
 #include "EditorApplication.h"
 
+#include "EgoCore/Math/Color.h"
 #include "EgoCore/Parsers/ArgParser/Parser.h"
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
-#include "EgoCore/RTTI/RTTI.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
@@ -13,17 +13,11 @@
 #include "EgoEngine/Graphic/SceneRender/Render.h"
 
 #include "EgoApplication/Presentation/PresenterProvider.h"
-#include "EgoApplication/Window/ApplicationWindow.h"
 
 namespace
 {
     constexpr const char* DefaultGuiFontPath = "C:/Windows/Fonts/segoeui.ttf";
     constexpr ego::gpu::Texture2DSize SceneTextureSize(900, 600);
-
-    constexpr ego::FloatVector4 Red(1.0f, 0.1f, 0.1f, 1.0f);
-    constexpr ego::FloatVector4 Green(0.1f, 1.0f, 0.1f, 1.0f);
-    constexpr ego::FloatVector4 Blue(0.1f, 0.3f, 1.0f, 1.0f);
-    constexpr ego::FloatVector4 White = ego::FloatVector4One;
 } // namespace
 
 ego::editor::EditorApplication::~EditorApplication()
@@ -111,17 +105,15 @@ bool ego::editor::EditorApplication::initEngine(const CommandLineOptions& _optio
     EGO_CHECK_RETURN_FALSE(m_engine && m_engine->init());
 
     engine::EngineSession::InitData sceneInitData;
-    sceneInitData.m_enableSceneRender = true;
-    sceneInitData.m_enableGui = false;
     sceneInitData.m_sceneRender.m_pluginModuleName = m_renderPluginModuleName;
     EGO_CHECK_RETURN_FALSE(createSceneSession(SceneTextureSize, sceneInitData, m_sceneSession));
 
     engine::EngineSession::InitData editorInitData;
-    editorInitData.m_enableSceneRender = false;
-    editorInitData.m_enableGui = true;
-    editorInitData.m_guiRender.m_pluginModuleName = m_guiRenderPluginModuleName;
+    editorInitData.m_sceneRender.m_isEnabled = false;
+    editorInitData.m_gui.m_isEnabled = true;
+    editorInitData.m_gui.m_pluginModuleName = m_guiRenderPluginModuleName;
     EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(editorInitData.m_gui.m_fontAtlasDesc));
-    EGO_CHECK_RETURN_FALSE(createPresentedSession("EgoEditor", PresentationSurfaceSize(1100, 700), editorInitData, m_editorSession));
+    EGO_CHECK_RETURN_FALSE(createPresentedSession("EgoEditor", SurfaceSize(1100, 700), editorInitData, m_editorSession));
 
     EGO_CHECK_RETURN_FALSE(initScene());
     EGO_CHECK_RETURN_FALSE(initEditorUi());
@@ -141,12 +133,12 @@ void ego::editor::EditorApplication::releaseEngine()
 
 bool ego::editor::EditorApplication::createPresentedSession(
     const std::string& _name,
-    const PresentationSurfaceSize& _size,
+    const SurfaceSize& _size,
     engine::EngineSession::InitData& _sessionInitData,
     PresentedSession& _session)
 {
     EGO_CHECK_RETURN_FALSE(m_application && m_engine);
-    EGO_CHECK_RETURN_FALSE(!_session.m_engineSession && !_session.m_surface && !_session.m_viewportProvider);
+    EGO_CHECK_RETURN_FALSE(!_session.m_engineSession && !_session.m_surface);
 
     const application::PresenterProviderPointer presenterProvider = m_application->getPresenterProviderPointer();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
@@ -165,28 +157,16 @@ bool ego::editor::EditorApplication::createPresentedSession(
         return false;
     }
 
-    application::ApplicationGuiViewportProviderPointer viewportProvider = new application::ApplicationGuiViewportProvider();
-    if (!viewportProvider || !viewportProvider->init(presentation))
-    {
-        EGO_SAFE_RESET_POINTER_WITH_RELEASING(viewportProvider);
-        presenterProvider->destroyPresentation(presentation.m_surface);
-        return false;
-    }
-
-    _sessionInitData.m_enablePresentation = true;
-    _sessionInitData.m_gui.m_viewportProvider = viewportProvider;
+    _sessionInitData.m_mainPresentation = presentation;
     const engine::EngineSessionPointer engineSession = m_engine->createSession(_sessionInitData);
     if (!engineSession)
     {
-        viewportProvider->release();
-        viewportProvider = nullptr;
         presenterProvider->destroyPresentation(presentation.m_surface);
         return false;
     }
 
     _session.m_engineSession = engineSession;
     _session.m_surface = presentation.m_surface;
-    _session.m_viewportProvider = viewportProvider;
     return true;
 }
 
@@ -197,8 +177,6 @@ void ego::editor::EditorApplication::releasePresentedSession(PresentedSession& _
         m_engine->destroySession(_session.m_engineSession->getID());
     }
     _session.m_engineSession = nullptr;
-
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(_session.m_viewportProvider);
 
     const application::PresenterProviderPointer presenterProvider = m_application ? m_application->getPresenterProviderPointer() : nullptr;
     if (presenterProvider && _session.m_surface)
@@ -225,8 +203,7 @@ bool ego::editor::EditorApplication::createSceneSession(
         return false;
     }
 
-    _sessionInitData.m_sceneRender.m_presenter = graphicPresenter;
-    _sessionInitData.m_enablePresentation = true;
+    _sessionInitData.m_mainPresentation.m_graphicPresenter = graphicPresenter;
     const engine::EngineSessionPointer engineSession = m_engine->createSession(_sessionInitData);
     if (!engineSession)
     {
@@ -303,13 +280,13 @@ void ego::editor::EditorApplication::drawSceneEditor()
     const FloatVector3 bottomLeft(-0.6f, -0.5f, 0.0f);
     const FloatVector3 bottomRight(0.6f, -0.5f, 0.0f);
 
-    render.drawLine(top, bottomLeft, Red);
-    render.drawLine(bottomLeft, bottomRight, Green);
-    render.drawLine(bottomRight, top, Blue);
+    render.drawLine(top, bottomLeft, NormalizedColorRed);
+    render.drawLine(bottomLeft, bottomRight, NormalizedColorGreen);
+    render.drawLine(bottomRight, top, NormalizedColorBlue);
 
-    render.drawPoint(top, White);
-    render.drawPoint(bottomLeft, White);
-    render.drawPoint(bottomRight, White);
+    render.drawPoint(top, NormalizedColorWhite);
+    render.drawPoint(bottomLeft, NormalizedColorWhite);
+    render.drawPoint(bottomRight, NormalizedColorWhite);
 }
 
 bool ego::editor::EditorApplication::initEditorUi()
@@ -320,6 +297,8 @@ bool ego::editor::EditorApplication::initEditorUi()
     const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession->getGuiControllerPointer();
     const gui::ViewportPointer viewport = guiController ? guiController->getPrimaryViewport() : nullptr;
     EGO_CHECK_RETURN_FALSE(viewport);
+    guiController->setMultiViewportEnabled(true);
+    EGO_CHECK_RETURN_FALSE(guiController->isMultiViewportEnabled());
     EGO_CHECK_RETURN_FALSE(viewport->setDockingEnabled(true));
 
     const gui::ImagePointer sceneImage = gui::Image::Create(m_sceneSession.m_graphicPresenter->getTextureView());
@@ -375,13 +354,20 @@ bool ego::editor::EditorApplication::initEditorUi()
     const gui::DockingSpaceID defaultSpaceID = viewport->getDefaultDockingSpaceID();
     EGO_CHECK_RETURN_FALSE(defaultSpaceID != gui::InvalidDockingSpaceID);
 
-    EGO_CHECK_RETURN_FALSE(viewport->addWindow(sceneWindow, {.m_spaceID = defaultSpaceID}));
+    EGO_CHECK_RETURN_FALSE(viewport->addWindow(sceneWindow));
+    EGO_CHECK_RETURN_FALSE(viewport->moveWindow(sceneWindow, {.m_spaceID = defaultSpaceID}));
+
+    EGO_CHECK_RETURN_FALSE(viewport->addWindow(hierarchyWindow));
     EGO_CHECK_RETURN_FALSE(
-        viewport->addWindow(hierarchyWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Left, .m_splitRatio = 0.22f}));
+        viewport->moveWindow(hierarchyWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Left, .m_splitRatio = 0.22f}));
+
+    EGO_CHECK_RETURN_FALSE(viewport->addWindow(inspectorWindow));
     EGO_CHECK_RETURN_FALSE(
-        viewport->addWindow(inspectorWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Right, .m_splitRatio = 0.28f}));
+        viewport->moveWindow(inspectorWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Right, .m_splitRatio = 0.28f}));
+
+    EGO_CHECK_RETURN_FALSE(viewport->addWindow(consoleWindow));
     EGO_CHECK_RETURN_FALSE(
-        viewport->addWindow(consoleWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Bottom, .m_splitRatio = 0.25f}));
+        viewport->moveWindow(consoleWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Bottom, .m_splitRatio = 0.25f}));
 
     return true;
 }
@@ -404,10 +390,12 @@ void ego::editor::EditorApplication::releaseEditorUi()
         }
     }
 
-    const gui::ViewportPointer viewport = m_editorViewport.lock();
-    if (viewport)
+    const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession ? m_editorSession.m_engineSession->getGuiControllerPointer() : nullptr;
+    const gui::ViewportPointer primaryViewport = m_editorViewport.lock();
+    for (const gui::WindowPointer& window : m_editorWindows)
     {
-        for (const gui::WindowPointer& window : m_editorWindows)
+        const gui::ViewportPointer viewport = guiController ? guiController->findViewport(window) : primaryViewport;
+        if (viewport)
         {
             viewport->removeWindow(window);
         }
@@ -459,17 +447,7 @@ void ego::editor::EditorApplication::ParseCommandLine(int _argCount, char** _arg
     argParser.parse(_argCount, _argValues);
 }
 
-bool ego::editor::EditorApplication::IsSurfaceValid(const PresentationSurfacePointer& _surface)
+bool ego::editor::EditorApplication::IsSurfaceValid(const PlatformSurfacePointer& _surface)
 {
-    if (!_surface)
-    {
-        return false;
-    }
-    if (!rtti::IsObjectBasedOn<application::ApplicationWindow>(*_surface))
-    {
-        return true;
-    }
-
-    const application::ApplicationWindowPointer window = StaticPointerCast<application::ApplicationWindow>(_surface);
-    return window && window->isValid();
+    return _surface && _surface->isValid();
 }

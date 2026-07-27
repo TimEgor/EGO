@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <limits>
 
+#include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "EgoGui/Core/Geometry.h"
@@ -9,6 +11,8 @@
 namespace ego::gui
 {
     class FontAtlas;
+    class Viewport;
+    class Widget;
     struct Theme;
 
     inline constexpr float UnboundedLayoutExtent = (std::numeric_limits<float>::max)();
@@ -64,9 +68,27 @@ namespace ego::gui
 
     struct LayoutContext final
     {
+        class ViewportAccessor final : public NonInstanceable
+        {
+            friend class Viewport;
+
+            static bool IsLayoutInvalidated(const Widget& _root);
+            static void Layout(const LayoutContext& _context, Widget& _root, const Size& _size);
+        };
+
+        LayoutContext(ego::SharedPointer<FontAtlas> _fontAtlas, ego::SharedPointer<const Theme> _theme);
+
+        Size measure(Widget& _widget, const LayoutConstraints& _constraints) const;
+        void arrange(Widget& _widget, const Rect& _bounds) const;
+        const ego::SharedPointer<FontAtlas>& getFontAtlas() const;
+        const ego::SharedPointer<const Theme>& getThemePointer() const;
+        const Theme& getTheme() const;
+
+    private:
+        void completeLayout(Widget& _root) const;
+        bool completeLayoutLevel(Widget& _widget, const Widget& _root, size_t _level) const;
+
         ego::SharedPointer<FontAtlas> m_fontAtlas = nullptr;
         ego::SharedPointer<const Theme> m_theme = nullptr;
-
-        const Theme& getTheme() const;
     };
 } // namespace ego::gui

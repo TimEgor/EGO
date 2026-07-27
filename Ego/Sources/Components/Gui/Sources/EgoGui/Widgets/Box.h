@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Widgets/Container.h"
 
 namespace ego::gui

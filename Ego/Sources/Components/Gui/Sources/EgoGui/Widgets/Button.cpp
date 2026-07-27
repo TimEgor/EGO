@@ -2,7 +2,10 @@
 
 #include <utility>
 
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 
 ego::gui::ButtonPointer ego::gui::Button::Create()
@@ -39,13 +42,13 @@ void ego::gui::Button::onClick(ClickedHandler _handler)
     m_onClicked.set(std::move(_handler));
 }
 
-ego::gui::InputReply ego::gui::Button::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::Button::onPointerMove(InputContext&, const PointerMoveEvent& _event)
 {
     m_isHovered = getLayoutBounds().contains(_event.m_position);
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::Button::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::Button::onMouseButton(InputContext&, const MouseButtonEvent& _event)
 {
     const bool containsMouse = getLayoutBounds().contains(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && containsMouse && !m_isPressed)
@@ -70,17 +73,17 @@ ego::gui::InputReply ego::gui::Button::onMouseButton(WidgetUpdateContext&, const
     return InputReply::Unhandled;
 }
 
-void ego::gui::Button::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
+void ego::gui::Button::onPointerEnter(const Position& _position, const InputModifiers&)
 {
     m_isHovered = getLayoutBounds().contains(_position);
 }
 
-void ego::gui::Button::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
+void ego::gui::Button::onPointerLeave(const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::Button::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
+void ego::gui::Button::onPointerCaptureLost(const Position&)
 {
     m_isHovered = false;
     m_isPressed = false;
@@ -89,7 +92,8 @@ void ego::gui::Button::onPointerCaptureLost(WidgetUpdateContext&, const Position
 ego::gui::Size ego::gui::Button::calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints&)
 {
     const Margin& padding = _context.getTheme().m_button.m_padding;
-    const Size textSize = _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_text) : SizeZero;
+    const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+    const Size textSize = fontAtlas ? fontAtlas->measureText(m_text) : SizeZero;
     return Size(textSize.m_x + padding.getHorizontal(), textSize.m_y + padding.getVertical());
 }
 

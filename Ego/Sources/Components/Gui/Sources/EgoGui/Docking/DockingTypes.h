@@ -22,7 +22,7 @@ namespace ego::gui
         Bottom
     };
 
-    struct WindowPlacement final
+    struct DockingLocation final
     {
         DockingSpaceID m_spaceID = InvalidDockingSpaceID;
         DockingPlacement m_placement = DockingPlacement::Center;

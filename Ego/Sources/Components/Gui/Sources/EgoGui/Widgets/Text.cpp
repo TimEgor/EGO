@@ -2,7 +2,9 @@
 
 #include <utility>
 
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 
 ego::gui::TextPointer ego::gui::Text::Create()
@@ -35,7 +37,9 @@ const std::string& ego::gui::Text::getText() const
 
 ego::gui::Size ego::gui::Text::calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints&)
 {
-    return _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_text) : SizeZero;
+    const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+
+    return fontAtlas ? fontAtlas->measureText(m_text) : SizeZero;
 }
 
 void ego::gui::Text::drawBaseLayer(PaintContext& _context) const

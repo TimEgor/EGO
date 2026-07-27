@@ -15,6 +15,8 @@
 #include "EgoGui/Rendering/FontAtlas.h"
 #include "EgoGui/Theme/Theme.h"
 
+#include "EgoApplication/Presentation/PresenterProvider.h"
+
 #include "FrameLogic.h"
 #include "Graphic/GraphicFrameController.h"
 #include "Level/LevelController.h"
@@ -36,6 +38,13 @@ namespace ego::render
     class Render;
 } // namespace ego::render
 
+namespace ego::application
+{
+    class ApplicationGuiViewportProvider;
+
+    EGO_POINTER(ApplicationGuiViewportProvider);
+} // namespace ego::application
+
 namespace ego::engine
 {
     using EngineSessionID = uint32_t;
@@ -49,31 +58,24 @@ namespace ego::engine
     public:
         struct GuiOptions final
         {
+            FileName m_pluginModuleName;
             gui::FontAtlasDesc m_fontAtlasDesc;
             gui::Theme m_theme;
-            gui::ViewportProviderPointer m_viewportProvider = nullptr;
+            bool m_isEnabled = false;
         };
 
         struct SceneRenderOptions final
         {
             FileName m_pluginModuleName;
-            GraphicPresenterPointer m_presenter = nullptr;
-        };
-
-        struct GuiRenderOptions final
-        {
-            FileName m_pluginModuleName;
+            bool m_isEnabled = true;
         };
 
         struct InitData final
         {
             ProjectPointer m_project = nullptr;
+            application::Presentation m_mainPresentation;
             GuiOptions m_gui;
             SceneRenderOptions m_sceneRender;
-            GuiRenderOptions m_guiRender;
-            bool m_enableSceneRender = true;
-            bool m_enablePresentation = false;
-            bool m_enableGui = false;
         };
 
         EngineSession();
@@ -98,7 +100,7 @@ namespace ego::engine
         PluginControllerPointer getPluginControllerPointer() const;
         ResourceControllerPointer getResourceControllerPointer() const;
 
-        bool initGuiController(const GuiOptions& _guiOptions, bool _enableGui);
+        bool initGuiController(const GuiOptions& _guiOptions, const application::Presentation& _mainPresentation);
         bool initGraphicFrameController(const InitData& _initData);
         bool initFrameLogic();
 
@@ -125,6 +127,7 @@ namespace ego::engine
         GraphicFrameController m_graphicFrameController;
 
         GraphicPresenterPointer m_scenePresenter = nullptr;
+        application::ApplicationGuiViewportProviderPointer m_guiViewportProvider = nullptr;
         gui::GuiControllerPointer m_guiController = nullptr;
 
         ClockTimePoint m_currentFrameTime;

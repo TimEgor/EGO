@@ -7,12 +7,17 @@
 #include <vector>
 
 #include "EgoCore/Callback/StableCallback.h"
+#include "EgoCore/Platform/Input/KeyboardInputDevice.h"
 
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Widgets/Widget.h"
 
 namespace ego::gui
 {
+    class FontAtlas;
     struct FieldStyle;
+
+    EGO_POINTER(FontAtlas);
 
     enum class TextCommitReason
     {
@@ -54,14 +59,14 @@ namespace ego::gui
         EGO_RTTI_VIRTUAL(TextInput, Widget);
 
     protected:
-        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
-        InputReply onKey(WidgetUpdateContext& _context, const KeyEvent& _event) override;
-        InputReply onTextInput(WidgetUpdateContext& _context, const TextInputEvent& _event) override;
-        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
-        void onFocusChanged(WidgetUpdateContext& _context, FocusChange _change) override;
+        InputReply onPointerMove(InputContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(InputContext& _context, const MouseButtonEvent& _event) override;
+        InputReply onKey(InputContext& _context, const KeyEvent& _event) override;
+        InputReply onTextInput(InputContext& _context, const TextInputEvent& _event) override;
+        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(const Position& _position) override;
+        void onFocusChanged(FocusChange _change) override;
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
         void drawBaseLayer(PaintContext& _context) const override;

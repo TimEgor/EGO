@@ -7,6 +7,7 @@
 #include "EgoCore/Assert/Assert.h"
 
 #include "EgoGui/Docking/DockingSeparator.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Theme/Theme.h"
 
 ego::gui::DockingSplitPointer ego::gui::DockingSplit::Create(DockingAxis _axis, float _ratio)
@@ -28,7 +29,7 @@ ego::gui::DockingSplitPointer ego::gui::DockingSplit::Create(DockingAxis _axis, 
 
     const DockingSplitPointer split = new DockingSplit(_axis, (std::clamp)(_ratio, 0.0f, 1.0f));
 
-    return split->initialize() ? split : nullptr;
+    return split->initialize(split) ? split : nullptr;
 }
 
 ego::gui::DockingSplit::DockingSplit(DockingAxis _axis, float _ratio)
@@ -37,9 +38,9 @@ ego::gui::DockingSplit::DockingSplit(DockingAxis _axis, float _ratio)
 {
 }
 
-bool ego::gui::DockingSplit::initialize()
+bool ego::gui::DockingSplit::initialize(const DockingSplitPointer& _self)
 {
-    m_separator = DockingSeparator::Create(m_axis);
+    m_separator = DockingSeparator::Create(_self, m_axis);
 
     return m_separator && attachChild(m_separator);
 }
@@ -188,7 +189,18 @@ ego::gui::DockingNodePointer ego::gui::DockingSplit::releaseSibling(const Dockin
 
 void ego::gui::DockingSplit::updateRatio(const Position& _position, const Size& _minimumSpaceSize, float _separatorThickness)
 {
-    if (!m_first || !m_second || !m_separator || m_first->getSpaceCount() == 0 || m_second->getSpaceCount() == 0)
+    if (!m_first || !m_second || !m_separator)
+    {
+        return;
+    }
+
+    const DockingMeasureContext measureContext{
+        .m_minimumSpaceSize = _minimumSpaceSize,
+        .m_separatorThickness = _separatorThickness,
+    };
+    const DockingMetrics firstMetrics = m_first->measure(measureContext);
+    const DockingMetrics secondMetrics = m_second->measure(measureContext);
+    if (firstMetrics.m_spaceCount == 0 || secondMetrics.m_spaceCount == 0)
     {
         return;
     }
@@ -204,8 +216,8 @@ void ego::gui::DockingSplit::updateRatio(const Position& _position, const Size& 
         return;
     }
 
-    const Size firstMinimumSize = m_first->getMinimumSize(_minimumSpaceSize, _separatorThickness);
-    const Size secondMinimumSize = m_second->getMinimumSize(_minimumSpaceSize, _separatorThickness);
+    const Size& firstMinimumSize = firstMetrics.m_minimumSize;
+    const Size& secondMinimumSize = secondMetrics.m_minimumSize;
     const float firstMinimumExtent = horizontal ? firstMinimumSize.m_x : firstMinimumSize.m_y;
     const float secondMinimumExtent = horizontal ? secondMinimumSize.m_x : secondMinimumSize.m_y;
     float minimumRatio = firstMinimumExtent / availableExtent;
@@ -221,64 +233,37 @@ void ego::gui::DockingSplit::updateRatio(const Position& _position, const Size& 
     setRatio((std::clamp)((pointerOffset - separatorExtent * 0.5f) / availableExtent, minimumRatio, maximumRatio));
 }
 
-size_t ego::gui::DockingSplit::getSpaceCount() const
+ego::gui::DockingMetrics ego::gui::DockingSplit::measure(const DockingMeasureContext& _context) const
 {
-    return (m_first ? m_first->getSpaceCount() : 0) + (m_second ? m_second->getSpaceCount() : 0);
-}
-
-size_t ego::gui::DockingSplit::getSpaceCountExcluding(const DockingSpace& _space) const
-{
-    return (m_first ? m_first->getSpaceCountExcluding(_space) : 0) + (m_second ? m_second->getSpaceCountExcluding(_space) : 0);
-}
-
-ego::gui::Size ego::gui::DockingSplit::getMinimumSize(const Size& _minimumSpaceSize, float _separatorThickness) const
-{
-    const Size firstMinimumSize = m_first ? m_first->getMinimumSize(_minimumSpaceSize, _separatorThickness) : SizeZero;
-    const Size secondMinimumSize = m_second ? m_second->getMinimumSize(_minimumSpaceSize, _separatorThickness) : SizeZero;
-    const size_t firstSpaceCount = m_first ? m_first->getSpaceCount() : 0;
-    const size_t secondSpaceCount = m_second ? m_second->getSpaceCount() : 0;
-    if (firstSpaceCount == 0)
+    const DockingMetrics firstMetrics = m_first ? m_first->measure(_context) : DockingMetrics();
+    const DockingMetrics secondMetrics = m_second ? m_second->measure(_context) : DockingMetrics();
+    if (firstMetrics.m_spaceCount == 0)
     {
-        return secondMinimumSize;
+        return secondMetrics;
     }
 
-    if (secondSpaceCount == 0)
+    if (secondMetrics.m_spaceCount == 0)
     {
-        return firstMinimumSize;
+        return firstMetrics;
     }
 
-    const float separatorThickness = (std::max)(0.0f, _separatorThickness);
+    DockingMetrics metrics;
+    metrics.m_spaceCount = firstMetrics.m_spaceCount + secondMetrics.m_spaceCount;
+    const float separatorThickness = (std::max)(0.0f, _context.m_separatorThickness);
     if (m_axis == DockingAxis::Horizontal)
     {
-        return Size(firstMinimumSize.m_x + separatorThickness + secondMinimumSize.m_x, (std::max)(firstMinimumSize.m_y, secondMinimumSize.m_y));
+        metrics.m_minimumSize = Size(
+            firstMetrics.m_minimumSize.m_x + separatorThickness + secondMetrics.m_minimumSize.m_x,
+            (std::max)(firstMetrics.m_minimumSize.m_y, secondMetrics.m_minimumSize.m_y));
     }
-
-    return Size((std::max)(firstMinimumSize.m_x, secondMinimumSize.m_x), firstMinimumSize.m_y + separatorThickness + secondMinimumSize.m_y);
-}
-
-ego::gui::Size ego::gui::DockingSplit::getMinimumSizeExcluding(const DockingSpace& _space, const Size& _minimumSpaceSize, float _separatorThickness) const
-{
-    const Size firstMinimumSize = m_first ? m_first->getMinimumSizeExcluding(_space, _minimumSpaceSize, _separatorThickness) : SizeZero;
-    const Size secondMinimumSize = m_second ? m_second->getMinimumSizeExcluding(_space, _minimumSpaceSize, _separatorThickness) : SizeZero;
-    const size_t firstSpaceCount = m_first ? m_first->getSpaceCountExcluding(_space) : 0;
-    const size_t secondSpaceCount = m_second ? m_second->getSpaceCountExcluding(_space) : 0;
-    if (firstSpaceCount == 0)
+    else
     {
-        return secondMinimumSize;
+        metrics.m_minimumSize = Size(
+            (std::max)(firstMetrics.m_minimumSize.m_x, secondMetrics.m_minimumSize.m_x),
+            firstMetrics.m_minimumSize.m_y + separatorThickness + secondMetrics.m_minimumSize.m_y);
     }
 
-    if (secondSpaceCount == 0)
-    {
-        return firstMinimumSize;
-    }
-
-    const float separatorThickness = (std::max)(0.0f, _separatorThickness);
-    if (m_axis == DockingAxis::Horizontal)
-    {
-        return Size(firstMinimumSize.m_x + separatorThickness + secondMinimumSize.m_x, (std::max)(firstMinimumSize.m_y, secondMinimumSize.m_y));
-    }
-
-    return Size((std::max)(firstMinimumSize.m_x, secondMinimumSize.m_x), firstMinimumSize.m_y + separatorThickness + secondMinimumSize.m_y);
+    return metrics;
 }
 
 void ego::gui::DockingSplit::clearInteraction()
@@ -308,16 +293,22 @@ void ego::gui::DockingSplit::calculateChildBounds(
 {
     const bool horizontal = m_axis == DockingAxis::Horizontal;
     const float totalExtent = horizontal ? _bounds.m_size.m_x : _bounds.m_size.m_y;
-    const size_t firstSpaceCount = m_first ? m_first->getSpaceCount() : 0;
-    const size_t secondSpaceCount = m_second ? m_second->getSpaceCount() : 0;
+    const DockingMeasureContext measureContext{
+        .m_minimumSpaceSize = _style.m_minimumSpaceSize,
+        .m_separatorThickness = _style.m_separatorThickness,
+    };
+    const DockingMetrics firstMetrics = m_first ? m_first->measure(measureContext) : DockingMetrics();
+    const DockingMetrics secondMetrics = m_second ? m_second->measure(measureContext) : DockingMetrics();
+    const size_t firstSpaceCount = firstMetrics.m_spaceCount;
+    const size_t secondSpaceCount = secondMetrics.m_spaceCount;
     const bool hasBothChildren = firstSpaceCount > 0 && secondSpaceCount > 0;
     const float separatorThickness = hasBothChildren ? (std::min)((std::max)(0.0f, _style.m_separatorThickness), totalExtent) : 0.0f;
     const float availableExtent = (std::max)(0.0f, totalExtent - separatorThickness);
     float ratio = (std::clamp)(m_ratio, 0.0f, 1.0f);
     if (hasBothChildren && availableExtent > 0.0f)
     {
-        const Size firstMinimumSize = m_first->getMinimumSize(_style.m_minimumSpaceSize, _style.m_separatorThickness);
-        const Size secondMinimumSize = m_second->getMinimumSize(_style.m_minimumSpaceSize, _style.m_separatorThickness);
+        const Size& firstMinimumSize = firstMetrics.m_minimumSize;
+        const Size& secondMinimumSize = secondMetrics.m_minimumSize;
         const float firstMinimumExtent = horizontal ? firstMinimumSize.m_x : firstMinimumSize.m_y;
         const float secondMinimumExtent = horizontal ? secondMinimumSize.m_x : secondMinimumSize.m_y;
         float minimumRatio = firstMinimumExtent / availableExtent;
@@ -369,17 +360,17 @@ ego::gui::Size ego::gui::DockingSplit::calculatePreferredSize(const LayoutContex
     calculateChildBounds(Rect(PositionZero, _constraints.m_maximumSize), _context.getTheme().m_docking, firstBounds, separatorBounds, secondBounds);
     if (m_first)
     {
-        m_first->updatePreferredSize(_context, LayoutConstraints(firstBounds.m_size));
+        _context.measure(*m_first, LayoutConstraints(firstBounds.m_size));
     }
 
     if (m_separator)
     {
-        m_separator->updatePreferredSize(_context, LayoutConstraints(separatorBounds.m_size));
+        _context.measure(*m_separator, LayoutConstraints(separatorBounds.m_size));
     }
 
     if (m_second)
     {
-        m_second->updatePreferredSize(_context, LayoutConstraints(secondBounds.m_size));
+        _context.measure(*m_second, LayoutConstraints(secondBounds.m_size));
     }
 
     return _constraints.m_maximumSize;
@@ -393,17 +384,17 @@ void ego::gui::DockingSplit::updateGeometry(const LayoutContext& _context)
     calculateChildBounds(getLayoutBounds(), _context.getTheme().m_docking, firstBounds, separatorBounds, secondBounds);
     if (m_first)
     {
-        m_first->applyLayout(_context, firstBounds);
+        _context.arrange(*m_first, firstBounds);
     }
 
     if (m_separator)
     {
-        m_separator->applyLayout(_context, separatorBounds);
+        _context.arrange(*m_separator, separatorBounds);
     }
 
     if (m_second)
     {
-        m_second->applyLayout(_context, secondBounds);
+        _context.arrange(*m_second, secondBounds);
     }
 }
 

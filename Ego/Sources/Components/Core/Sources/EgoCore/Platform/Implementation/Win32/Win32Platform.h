@@ -6,7 +6,10 @@
 
 namespace ego::win32
 {
-    class Win32Platform final : public Platform
+    class Win32PlatformSurfaceController;
+
+    class Win32Platform final
+        : public Platform
     {
     public:
         Win32Platform(HINSTANCE _instance);
@@ -16,7 +19,7 @@ namespace ego::win32
 
         FileSystemPointer getFileSystem() override;
         InputDeviceController& getInputDeviceController() override;
-        WindowSystem& getWindowSystem() override;
+        PlatformSurfaceController& getSurfaceController() override;
         FileName selectOpenFile(const Platform::OpenFileDialogParams& _params) const override;
 
         Platform::DynamicLibraryHandle loadDynamicLibrary(const FileName& _libraryPath) override;
@@ -30,7 +33,7 @@ namespace ego::win32
 
         Win32FileSystemPointer m_fileSystem;
         InputDeviceControllerPointer m_inputDeviceController;
-        WindowSystemPointer m_windowSystem;
+        SharedPointer<Win32PlatformSurfaceController> m_surfaceController;
 
         HINSTANCE m_instance;
         bool m_isInitialized = false;

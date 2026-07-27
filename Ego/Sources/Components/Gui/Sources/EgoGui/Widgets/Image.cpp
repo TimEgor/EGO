@@ -4,6 +4,9 @@
 
 #include "EgoCore/RTTI/RTTI.h"
 
+#include "EgoGui/Layout/Layout.h"
+#include "EgoGui/Rendering/PaintContext.h"
+
 ego::gui::ImagePointer ego::gui::Image::Create()
 {
     return new Image();

@@ -44,7 +44,7 @@ ego::gpu::InputLayoutDesc ego::render::DefaultRenderDebugDraw::CreatePointInputL
     colorDesc.m_index = 0;
     colorDesc.m_slot = 0;
     colorDesc.m_offset = offsetof(ego::render::DebugPointRenderData::PointData, m_color);
-    colorDesc.m_componentsCount = 4;
+    colorDesc.m_componentsCount = 3;
     colorDesc.m_type = ego::gpu::InputLayoutElementType::Float32;
     inputLayout.m_elements.push_back(colorDesc);
 
@@ -77,7 +77,7 @@ ego::gpu::InputLayoutDesc ego::render::DefaultRenderDebugDraw::CreateLineInputLa
     colorDesc.m_index = 0;
     colorDesc.m_slot = 0;
     colorDesc.m_offset = offsetof(ego::render::DebugLineRenderData::VertexData, m_color);
-    colorDesc.m_componentsCount = 4;
+    colorDesc.m_componentsCount = 3;
     colorDesc.m_type = ego::gpu::InputLayoutElementType::Float32;
     inputLayout.m_elements.push_back(colorDesc);
 
@@ -125,7 +125,10 @@ ego::render::RenderGraphicPipeline ego::render::DefaultRenderDebugDraw::getOrCre
     return _pipelineStateCache.getOrCreateGraphicPipeline(_graphicDevice, pipelineDesc);
 }
 
-bool ego::render::DefaultRenderDebugDraw::init(const RenderBindingLayout& _bindingLayout, gpu::GraphicResourceFormat _renderTargetFormat, const InitData& _initData)
+bool ego::render::DefaultRenderDebugDraw::init(
+    const RenderBindingLayout& _bindingLayout,
+    gpu::GraphicResourceFormat _renderTargetFormat,
+    const InitData& _initData)
 {
     EGO_CHECK_INITIALIZATION(_initData.m_point.m_vertexShader);
     EGO_CHECK_INITIALIZATION(_initData.m_point.m_pixelShader);
@@ -203,7 +206,9 @@ void ego::render::DefaultRenderDebugDraw::drawPoint(const DebugDrawPointData& _p
 
 void ego::render::DefaultRenderDebugDraw::drawLine(const DebugDrawLineData& _line)
 {
-    appendLine(DebugLineRenderData::VertexData(_line.m_start.m_position, _line.m_start.m_color), DebugLineRenderData::VertexData(_line.m_end.m_position, _line.m_end.m_color));
+    appendLine(
+        DebugLineRenderData::VertexData(_line.m_start.m_position, _line.m_start.m_color),
+        DebugLineRenderData::VertexData(_line.m_end.m_position, _line.m_end.m_color));
 }
 
 void ego::render::DefaultRenderDebugDraw::clearCommands()
@@ -290,8 +295,12 @@ void ego::render::DefaultRenderDebugDraw::renderPoints(
         return;
     }
 
-    const RenderGraphicPipeline pipeline =
-        getOrCreateDebugDrawPipeline(_graphicDevice, _pipelineStateCache, m_pointRenderData.m_materialInfo, CreatePointInputLayout(), gpu::PrimitiveTopology::TriangleStrip);
+    const RenderGraphicPipeline pipeline = getOrCreateDebugDrawPipeline(
+        _graphicDevice,
+        _pipelineStateCache,
+        m_pointRenderData.m_materialInfo,
+        CreatePointInputLayout(),
+        gpu::PrimitiveTopology::TriangleStrip);
     if (!pipeline)
     {
         return;
@@ -337,8 +346,12 @@ void ego::render::DefaultRenderDebugDraw::renderLines(
         return;
     }
 
-    const RenderGraphicPipeline pipeline =
-        getOrCreateDebugDrawPipeline(_graphicDevice, _pipelineStateCache, m_lineRenderData.m_materialInfo, CreateLineInputLayout(), gpu::PrimitiveTopology::LineList);
+    const RenderGraphicPipeline pipeline = getOrCreateDebugDrawPipeline(
+        _graphicDevice,
+        _pipelineStateCache,
+        m_lineRenderData.m_materialInfo,
+        CreateLineInputLayout(),
+        gpu::PrimitiveTopology::LineList);
     if (!pipeline)
     {
         return;

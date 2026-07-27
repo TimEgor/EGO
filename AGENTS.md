@@ -19,6 +19,7 @@
 - Use `#pragma once` and namespaces `ego`/`ego::*`.
 - Do not move logic out of a class into any namespace-level function without a clear need. Keep class-related behavior in the owning class; use namespace-level helpers, including anonymous namespaces, only for clearly utility code or implementation details that are not tied to class logic.
 - Do not put implementations of regular non-template functions or methods in headers; prefer source files, especially when the body is more than one line.
+- Keep definitions in `.cpp` files in the same order as their corresponding declarations in the `.h` file.
 - Naming: classes, structs, unions, enums, enum members, concepts, typedefs/type aliases, global functions, global variables, and constants use `UpperCamelCase`.
 - Naming: instance methods, local variables, and lambdas use `lowerCamelCase`.
 - Naming: static class/struct methods use `UpperCamelCase`.
@@ -29,7 +30,7 @@
 - Structure functions and classes into clear logical blocks. Prefer separating independent steps, responsibilities, and declaration groups instead of keeping large uninterrupted blocks of code.
 - Formatting: keep at most one consecutive blank line in code and declarations.
 - Formatting: after a scope's closing brace, always insert a blank line before a following statement; omit it only when the next line closes the parent scope.
-- Formatting: always insert a blank line before `return` when its containing scope has more than two lines.
+- Formatting: always insert a blank line before `return`, `continue`, and `break` unless the control-flow statement is the only statement in its scope.
 - Formatting: preprocessor directives use normal indentation; keep empty blocks compact.
 - Formatting: simple `case` statements and embedded statements use line breaks instead of staying on one line.
 - Formatting: in multiline declarations and calls, wrap after the opening parenthesis and before the closing parenthesis; wrap parameters, arguments, and braced init lists with `chop if long` behavior.
@@ -59,5 +60,3 @@
 
 ## Verification
 - Do not add tests for a project or component that has no existing tests.
-- For C++ or CMake changes, when appropriate, verify CMake configuration/build with the project's existing commands.
-- If build or tests cannot be run, state the reason clearly in the final response.

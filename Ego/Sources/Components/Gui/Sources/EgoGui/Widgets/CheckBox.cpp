@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <utility>
 
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 
 ego::gui::CheckBoxPointer ego::gui::CheckBox::Create()
@@ -67,13 +70,13 @@ void ego::gui::CheckBox::applyUserChecked(bool _isChecked)
     m_onCheckedChanged.invoke(m_isChecked);
 }
 
-ego::gui::InputReply ego::gui::CheckBox::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::CheckBox::onPointerMove(InputContext&, const PointerMoveEvent& _event)
 {
     m_isHovered = getLayoutBounds().contains(_event.m_position);
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::CheckBox::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::CheckBox::onMouseButton(InputContext&, const MouseButtonEvent& _event)
 {
     const bool containsMouse = getLayoutBounds().contains(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && containsMouse && !m_isPressed)
@@ -97,17 +100,17 @@ ego::gui::InputReply ego::gui::CheckBox::onMouseButton(WidgetUpdateContext&, con
     return InputReply::Unhandled;
 }
 
-void ego::gui::CheckBox::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
+void ego::gui::CheckBox::onPointerEnter(const Position& _position, const InputModifiers&)
 {
     m_isHovered = getLayoutBounds().contains(_position);
 }
 
-void ego::gui::CheckBox::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
+void ego::gui::CheckBox::onPointerLeave(const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::CheckBox::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
+void ego::gui::CheckBox::onPointerCaptureLost(const Position&)
 {
     m_isHovered = false;
     m_isPressed = false;
@@ -118,7 +121,8 @@ ego::gui::Size ego::gui::CheckBox::calculatePreferredSize(const LayoutContext& _
     const SelectionStyle& selection = _context.getTheme().m_selection;
     const float indicatorSize = (std::max)(0.0f, selection.m_indicatorSize);
     const float textOffset = indicatorSize + (std::max)(0.0f, selection.m_labelSpacing);
-    const Size textSize = _context.m_fontAtlas ? _context.m_fontAtlas->measureText(m_text) : SizeZero;
+    const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+    const Size textSize = fontAtlas ? fontAtlas->measureText(m_text) : SizeZero;
     const float minimumHeight = (std::max)(indicatorSize, (std::max)(0.0f, selection.m_minimumHeight));
     return Size(textOffset + textSize.m_x, (std::max)(minimumHeight, textSize.m_y));
 }

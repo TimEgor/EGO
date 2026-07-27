@@ -1,12 +1,27 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
+#include <optional>
 
 #include "EgoGui/Widgets/Container.h"
 
 namespace ego::gui
 {
     class DockingSpace;
+
+    struct DockingMeasureContext final
+    {
+        Size m_minimumSpaceSize = SizeZero;
+        float m_separatorThickness = 0.0f;
+        std::optional<std::reference_wrapper<const DockingSpace>> m_excludedSpace;
+    };
+
+    struct DockingMetrics final
+    {
+        size_t m_spaceCount = 0;
+        Size m_minimumSize = SizeZero;
+    };
 
     class DockingNode;
     EGO_POINTER(DockingNode);
@@ -16,10 +31,7 @@ namespace ego::gui
     public:
         ~DockingNode() override;
 
-        virtual size_t getSpaceCount() const = 0;
-        virtual size_t getSpaceCountExcluding(const DockingSpace& _space) const = 0;
-        virtual Size getMinimumSize(const Size& _minimumSpaceSize, float _separatorThickness) const = 0;
-        virtual Size getMinimumSizeExcluding(const DockingSpace& _space, const Size& _minimumSpaceSize, float _separatorThickness) const = 0;
+        virtual DockingMetrics measure(const DockingMeasureContext& _context) const = 0;
         virtual void clearInteraction() = 0;
 
         EGO_RTTI_VIRTUAL(DockingNode, Container);

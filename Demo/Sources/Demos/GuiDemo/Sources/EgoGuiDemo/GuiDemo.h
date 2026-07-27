@@ -29,6 +29,7 @@ namespace ego::demo
         gui::ViewportWeakPointer m_viewport;
         std::vector<gui::WindowPointer> m_windows;
         bool m_wasDockingEnabled = false;
+        bool m_wasMultiViewportEnabled = false;
     };
 
     EGO_POINTER(GuiDemo);

@@ -2,14 +2,50 @@
 
 #include <algorithm>
 
-#include "EgoCore/RTTI/RTTI.h"
-
-#include "EgoGui/Docking/DockingOverlay.h"
 #include "EgoGui/Docking/DockingSpace.h"
-#include "EgoGui/Input/WidgetUpdateContext.h"
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Input/InputContext.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 #include "EgoGui/Widgets/Window.h"
+
+namespace
+{
+    using WindowAccessor = ego::gui::Window::HierarchyAccessor;
+} // namespace
+
+bool ego::gui::DockingTab::HierarchyAccessor::AttachToSpace(DockingTab& _tab, const DockingSpacePointer& _space)
+{
+    if (!_space || _tab.m_space.lock())
+    {
+        return false;
+    }
+
+    _tab.m_space = _space;
+
+    return true;
+}
+
+bool ego::gui::DockingTab::HierarchyAccessor::IsAttachedToSpace(const DockingTab& _tab, const DockingSpace& _space)
+{
+    const DockingSpacePointer space = _tab.m_space.lock();
+
+    return space.get() == &_space;
+}
+
+void ego::gui::DockingTab::HierarchyAccessor::DetachFromSpace(DockingTab& _tab)
+{
+    _tab.m_space.reset();
+}
+
+ego::gui::DockingTab::~DockingTab()
+{
+    if (m_window)
+    {
+        WindowAccessor::SetDocked(*m_window, false);
+    }
+}
 
 ego::gui::DockingTabPointer ego::gui::DockingTab::Create(const WindowPointer& _window)
 {
@@ -26,6 +62,7 @@ bool ego::gui::DockingTab::initialize(const WindowPointer& _window)
     }
 
     m_window = _window;
+    WindowAccessor::SetDocked(*m_window, true);
 
     return true;
 }
@@ -44,6 +81,7 @@ ego::gui::WindowPointer ego::gui::DockingTab::releaseWindow()
     }
 
     m_window = nullptr;
+    WindowAccessor::SetDocked(*window, false);
     notifyTreeChanged();
 
     return window;
@@ -75,12 +113,10 @@ bool ego::gui::DockingTab::hitTest(const Position& _position) const
 
 ego::gui::DockingSpacePointer ego::gui::DockingTab::getSpace() const
 {
-    const WidgetPointer parent = getParent();
-
-    return parent && rtti::IsObjectBasedOn<DockingSpace>(*parent) ? ego::StaticPointerCast<DockingSpace>(parent) : nullptr;
+    return m_space.lock();
 }
 
-ego::gui::InputReply ego::gui::DockingTab::onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::DockingTab::onPointerMove(InputContext& _context, const PointerMoveEvent& _event)
 {
     m_isHovered = m_headerBounds.contains(_event.m_position);
     if (!m_isPressed || !m_window)
@@ -88,16 +124,12 @@ ego::gui::InputReply ego::gui::DockingTab::onPointerMove(WidgetUpdateContext& _c
         return InputReply::Unhandled;
     }
 
-    const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
-    if (dockingOverlay)
-    {
-        dockingOverlay->updateDrag(_context, m_window, _event.m_position);
-    }
+    _context.updateWindowDrag(m_window, _event.m_position);
 
     return InputReply::Handled;
 }
 
-ego::gui::InputReply ego::gui::DockingTab::onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::DockingTab::onMouseButton(InputContext& _context, const MouseButtonEvent& _event)
 {
     if (_event.m_key != MouseInputKey::ButtonLeft)
     {
@@ -114,11 +146,7 @@ ego::gui::InputReply ego::gui::DockingTab::onMouseButton(WidgetUpdateContext& _c
 
         m_isHovered = true;
         m_isPressed = true;
-        const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
-        if (dockingOverlay)
-        {
-            dockingOverlay->beginDockedDrag(_context, m_window, _event.m_position);
-        }
+        _context.beginDockedWindowDrag(m_window, _event.m_position);
 
         return InputReply::Capture;
     }
@@ -129,11 +157,7 @@ ego::gui::InputReply ego::gui::DockingTab::onMouseButton(WidgetUpdateContext& _c
         m_isHovered = m_headerBounds.contains(_event.m_position);
         if (m_window)
         {
-            const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
-            if (dockingOverlay)
-            {
-                dockingOverlay->finishDrag(_context, m_window, _event.m_position);
-            }
+            _context.finishWindowDrag(m_window, _event.m_position);
         }
 
         return InputReply::Handled;
@@ -142,35 +166,26 @@ ego::gui::InputReply ego::gui::DockingTab::onMouseButton(WidgetUpdateContext& _c
     return InputReply::Unhandled;
 }
 
-void ego::gui::DockingTab::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
+void ego::gui::DockingTab::onPointerEnter(const Position& _position, const InputModifiers&)
 {
     m_isHovered = m_headerBounds.contains(_position);
 }
 
-void ego::gui::DockingTab::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
+void ego::gui::DockingTab::onPointerLeave(const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::DockingTab::onPointerCaptureLost(WidgetUpdateContext& _context, const Position&)
+void ego::gui::DockingTab::onPointerCaptureLost(const Position&)
 {
-    const bool wasPressed = m_isPressed;
     clearInteraction();
-    if (wasPressed && m_window)
-    {
-        const DockingOverlayPointer dockingOverlay = _context.getDockingOverlay();
-        if (dockingOverlay)
-        {
-            dockingOverlay->cancelDrag(m_window);
-        }
-    }
 }
 
 ego::gui::Size ego::gui::DockingTab::calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints)
 {
     if (m_window)
     {
-        m_window->updatePreferredSize(_context, LayoutConstraints(m_contentBounds.m_size));
+        _context.measure(*m_window, LayoutConstraints(m_contentBounds.m_size));
     }
 
     return _constraints.m_maximumSize;
@@ -180,7 +195,7 @@ void ego::gui::DockingTab::updateGeometry(const LayoutContext& _context)
 {
     if (m_window)
     {
-        m_window->applyLayout(_context, m_contentBounds);
+        _context.arrange(*m_window, m_contentBounds);
     }
 }
 

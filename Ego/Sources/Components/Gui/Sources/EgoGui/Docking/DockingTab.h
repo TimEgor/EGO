@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include "EgoCore/Patterns/NonInstanceable.h"
+
 #include "EgoGui/Widgets/Container.h"
 
 namespace ego::gui
@@ -11,12 +13,24 @@ namespace ego::gui
     class Window;
 
     EGO_POINTER(DockingSpace);
+    EGO_WEAK_POINTER(DockingSpace);
     EGO_POINTER(DockingTab);
     EGO_POINTER(Window);
 
     class DockingTab final : public Container
     {
     public:
+        class HierarchyAccessor final : public NonInstanceable
+        {
+            friend class DockingSpace;
+
+            static bool AttachToSpace(DockingTab& _tab, const DockingSpacePointer& _space);
+            static bool IsAttachedToSpace(const DockingTab& _tab, const DockingSpace& _space);
+            static void DetachFromSpace(DockingTab& _tab);
+        };
+
+        ~DockingTab() override;
+
         static DockingTabPointer Create(const WindowPointer& _window);
 
         WindowPointer getWindow() const;
@@ -25,17 +39,17 @@ namespace ego::gui
         void setArrangement(const Rect& _headerBounds, const Rect& _contentBounds);
         void clearInteraction();
 
-        bool isChildActive(size_t _index) const override;
-        bool hitTest(const Position& _position) const override;
-
         EGO_RTTI_VIRTUAL(DockingTab, Container);
 
     protected:
-        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
-        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
+        bool isChildActive(size_t _index) const override;
+        bool hitTest(const Position& _position) const override;
+
+        InputReply onPointerMove(InputContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(InputContext& _context, const MouseButtonEvent& _event) override;
+        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(const Position& _position) override;
 
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
@@ -51,6 +65,7 @@ namespace ego::gui
         size_t getChildCount() const override;
         WidgetPointer getChild(size_t _index) const override;
 
+        DockingSpaceWeakPointer m_space;
         WindowPointer m_window = nullptr;
         Rect m_headerBounds;
         Rect m_contentBounds;

@@ -13,6 +13,7 @@ namespace ego::gui
     class DockingSpace;
     class DockingSplit;
     class Window;
+    struct DockingMetrics;
 
     EGO_POINTER(DockingArea);
     EGO_POINTER(DockingNode);
@@ -28,6 +29,7 @@ namespace ego::gui
         static DockingAreaPointer Create();
 
         bool initializeRoot();
+        bool clearRoot();
         WindowCollection clearWindows();
         WindowCollection releaseWindows();
 
@@ -37,6 +39,8 @@ namespace ego::gui
         DockingSpacePointer findSpaceAt(const Position& _position) const;
         DockingSpacePointer findWindowSpace(const WindowPointer& _window) const;
         Rect getDockingBounds(const DockingSpacePointer& _space) const;
+        size_t getWindowCount() const;
+        WindowPointer getWindow(size_t _index) const;
         WindowCollection getWindows() const;
         bool isSplitAvailableAfterRemoving(
             const DockingSpacePointer& _originSpace,
@@ -58,12 +62,6 @@ namespace ego::gui
         void updateGeometry(const LayoutContext& _context) override;
 
     private:
-        struct DockingRequirements final
-        {
-            size_t m_spaceCount = 0;
-            Size m_minimumSize = SizeZero;
-        };
-
         DockingArea() = default;
 
         DockingSpaceID prepareSpaceID();
@@ -82,19 +80,17 @@ namespace ego::gui
         DockingSpacePointer findSpace(const DockingNodePointer& _node, DockingSpaceID _spaceID) const;
         DockingSpacePointer findSpaceAt(const DockingNodePointer& _node, const Position& _position) const;
         DockingSpacePointer findWindowSpace(const DockingNodePointer& _node, const WindowPointer& _window) const;
+        size_t getWindowCount(const DockingNodePointer& _node) const;
+        WindowPointer getWindow(const DockingNodePointer& _node, size_t _index) const;
         void appendWindows(const DockingNodePointer& _node, WindowCollection& _windows) const;
-        DockingRequirements calculateRequirementsAfterRemoving(
+        DockingMetrics calculateMetricsAfterRemoving(
             const DockingNodePointer& _node,
             const DockingSpace& _originSpace,
             const DockingSpace& _targetSpace,
             DockingAxis _payloadAxis,
             const Size& _minimumSpaceSize,
             float _separatorThickness) const;
-        static DockingRequirements CombineRequirements(
-            const DockingRequirements& _first,
-            const DockingRequirements& _second,
-            DockingAxis _axis,
-            float _separatorThickness);
+        static DockingMetrics CombineMetrics(const DockingMetrics& _first, const DockingMetrics& _second, DockingAxis _axis, float _separatorThickness);
 
         size_t getChildCount() const override;
         WidgetPointer getChild(size_t _index) const override;

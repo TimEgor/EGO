@@ -26,6 +26,8 @@ namespace ego::gui
         static DockingSpacePointer Create(DockingSpaceID _id);
 
         DockingSpaceID getID() const;
+        size_t getWindowCount() const;
+        WindowPointer getWindow(size_t _index) const;
         WindowCollection getWindows() const;
         DockingTabPointer findTab(const WindowPointer& _window) const;
 
@@ -39,16 +41,13 @@ namespace ego::gui
         bool hasNonCollapsedWindowExcept(const Window& _window) const;
         bool isEmpty() const;
 
-        size_t getSpaceCount() const override;
-        size_t getSpaceCountExcluding(const DockingSpace& _space) const override;
-        Size getMinimumSize(const Size& _minimumSpaceSize, float _separatorThickness) const override;
-        Size getMinimumSizeExcluding(const DockingSpace& _space, const Size& _minimumSpaceSize, float _separatorThickness) const override;
+        DockingMetrics measure(const DockingMeasureContext& _context) const override;
         void clearInteraction() override;
-        bool isChildActive(size_t _index) const override;
-
         EGO_RTTI_VIRTUAL(DockingSpace, DockingNode);
 
     protected:
+        bool isChildActive(size_t _index) const override;
+
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
         void drawBaseLayer(PaintContext& _context) const override;

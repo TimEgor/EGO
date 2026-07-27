@@ -20,5 +20,4 @@ target_link_libraries(
     EgoInput
         PUBLIC
             Ego::Core
-            Ego::Event
 )

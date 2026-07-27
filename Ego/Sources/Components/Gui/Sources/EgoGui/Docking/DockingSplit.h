@@ -29,10 +29,7 @@ namespace ego::gui
         DockingNodePointer releaseSibling(const DockingNodePointer& _node);
         void updateRatio(const Position& _position, const Size& _minimumSpaceSize, float _separatorThickness);
 
-        size_t getSpaceCount() const override;
-        size_t getSpaceCountExcluding(const DockingSpace& _space) const override;
-        Size getMinimumSize(const Size& _minimumSpaceSize, float _separatorThickness) const override;
-        Size getMinimumSizeExcluding(const DockingSpace& _space, const Size& _minimumSpaceSize, float _separatorThickness) const override;
+        DockingMetrics measure(const DockingMeasureContext& _context) const override;
         void clearInteraction() override;
 
         EGO_RTTI_VIRTUAL(DockingSplit, DockingNode);
@@ -44,7 +41,7 @@ namespace ego::gui
     private:
         explicit DockingSplit(DockingAxis _axis, float _ratio);
 
-        bool initialize();
+        bool initialize(const DockingSplitPointer& _self);
         void setRatio(float _ratio);
         void calculateChildBounds(const Rect& _bounds, const DockingStyle& _style, Rect& _firstBounds, Rect& _separatorBounds, Rect& _secondBounds) const;
 

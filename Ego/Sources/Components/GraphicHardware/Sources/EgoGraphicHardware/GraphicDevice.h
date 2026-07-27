@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "EgoCore/Platform/Surface/PlatformSurface.h"
 #include "EgoCore/Reference/Pointer.h"
 
 #include "GraphicObjects/AccelerationStructure.h"
@@ -16,7 +17,6 @@
 #include "GraphicObjects/Shader.h"
 #include "GraphicObjects/SwapChain.h"
 #include "GraphicObjects/Texture.h"
-#include "PresentationSurface.h"
 
 namespace ego::gpu
 {
@@ -99,7 +99,8 @@ namespace ego
         virtual gpu::GpuInstanceAccelerationStructureTicket buildInstanceAccelerationStructure(
             const gpu::InstanceAccelerationStructureBuildDesc& _desc,
             const gpu::GpuOperationOptions& _options = gpu::GpuOperationOptions()) = 0;
-        virtual gpu::AccelerationStructureViewReference createAccelerationStructureView(const gpu::InstanceAccelerationStructureReference& _accelerationStructure) = 0;
+        virtual gpu::AccelerationStructureViewReference createAccelerationStructureView(
+            const gpu::InstanceAccelerationStructureReference& _accelerationStructure) = 0;
 
         virtual gpu::BufferViewReference createBufferView(const gpu::BufferReference& _buffer, const gpu::BufferViewDesc& _desc) = 0;
         virtual gpu::TextureViewReference createTextureView(const gpu::TextureReference& _texture, const gpu::TextureViewDesc& _desc) = 0;
@@ -112,7 +113,7 @@ namespace ego
 
         virtual gpu::SwapChainReference createSwapChain(
             const gpu::SwapChainDesc& _swapChainDesc,
-            const PresentationSurface& _surface,
+            const PlatformSurface& _surface,
             const gpu::CommandQueueReference& _presentationQueue) = 0;
 
         virtual const Capabilities& getCapabilities() const = 0;

@@ -17,7 +17,6 @@
 #include "EgoEngine/Level/Level.h"
 
 #include "EgoApplication/Application.h"
-#include "EgoApplication/Engine/Gui/ApplicationGuiViewportProvider.h"
 
 namespace ego::editor
 {
@@ -49,8 +48,7 @@ namespace ego::editor
         struct PresentedSession final
         {
             engine::EngineSessionPointer m_engineSession = nullptr;
-            PresentationSurfacePointer m_surface = nullptr;
-            application::ApplicationGuiViewportProviderPointer m_viewportProvider = nullptr;
+            PlatformSurfacePointer m_surface = nullptr;
         };
 
         struct SceneSession final
@@ -67,7 +65,7 @@ namespace ego::editor
 
         bool createPresentedSession(
             const std::string& _name,
-            const PresentationSurfaceSize& _size,
+            const SurfaceSize& _size,
             engine::EngineSession::InitData& _sessionInitData,
             PresentedSession& _session);
         void releasePresentedSession(PresentedSession& _session);
@@ -86,7 +84,7 @@ namespace ego::editor
         bool loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const;
 
         static void ParseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options);
-        static bool IsSurfaceValid(const PresentationSurfacePointer& _surface);
+        static bool IsSurfaceValid(const PlatformSurfacePointer& _surface);
 
         application::ApplicationPointer m_application = nullptr;
         engine::EnginePointer m_engine = nullptr;

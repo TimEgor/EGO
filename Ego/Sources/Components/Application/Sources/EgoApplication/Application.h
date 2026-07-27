@@ -1,12 +1,10 @@
 #pragma once
 
-#include "EgoCore/Subsystem/SubsystemRegistry.h"
+#include "EgoCore/Event/EventController.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Platform/Window/Window.h"
 #include "EgoCore/Reference/Pointer.h"
-
-#include "EgoEvent/EventController.h"
+#include "EgoCore/Subsystem/SubsystemRegistry.h"
 
 #include "EgoPlugin/Catalog/PluginCatalog.h"
 
@@ -79,8 +77,23 @@ namespace ego::application
         bool isExitRequested() const;
 
     private:
-        bool initSubsystems(const InitData& _initData);
-        void releaseSubsystems();
+        bool initDiagnosticSubsystem();
+        bool initEventSubsystem();
+        bool initPlatformSubsystem(void* _nativeInstanceHandle);
+        bool initPluginSubsystem(const FileName& _pluginDirectory);
+        bool initApplicationProfiler(const FileName& _pluginModuleName);
+        bool initApplicationSubsystem();
+        bool initGraphicHardwareSubsystem(const FileName& _pluginModuleName);
+        bool initResourceSubsystem();
+
+        void releaseResourceSubsystem();
+        void releaseGraphicHardwareSubsystem();
+        void releaseApplicationSubsystem();
+        void releaseApplicationProfiler();
+        void releasePluginSubsystem();
+        void releasePlatformSubsystem();
+        void releaseEventSubsystem();
+        void releaseDiagnosticSubsystem();
 
         bool initInputController();
         void releaseInputController();

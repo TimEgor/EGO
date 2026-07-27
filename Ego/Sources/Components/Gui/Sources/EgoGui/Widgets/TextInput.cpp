@@ -6,7 +6,10 @@
 #include <utility>
 
 #include "EgoGui/Core/TextEncoding.h"
+#include "EgoGui/Input/Input.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 
 ego::gui::TextInput::TextInput()
@@ -93,7 +96,7 @@ bool ego::gui::TextInput::isFocused() const
     return m_isFocused;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onPointerMove(WidgetUpdateContext&, const PointerMoveEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onPointerMove(InputContext&, const PointerMoveEvent& _event)
 {
     const bool containsMouse = m_inputRect.contains(_event.m_position);
     m_isHovered = containsMouse;
@@ -105,7 +108,7 @@ ego::gui::InputReply ego::gui::TextInput::onPointerMove(WidgetUpdateContext&, co
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onMouseButton(WidgetUpdateContext&, const MouseButtonEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onMouseButton(InputContext&, const MouseButtonEvent& _event)
 {
     const bool containsMouse = m_inputRect.contains(_event.m_position);
     if (_event.m_action == InputButtonAction::Pressed && _event.m_key == MouseInputKey::ButtonLeft && !m_isPressed)
@@ -136,7 +139,7 @@ ego::gui::InputReply ego::gui::TextInput::onMouseButton(WidgetUpdateContext&, co
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onKey(WidgetUpdateContext&, const KeyEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onKey(InputContext&, const KeyEvent& _event)
 {
     if (_event.m_action == InputButtonAction::Pressed && m_isFocused)
     {
@@ -177,7 +180,7 @@ ego::gui::InputReply ego::gui::TextInput::onKey(WidgetUpdateContext&, const KeyE
     return InputReply::Unhandled;
 }
 
-ego::gui::InputReply ego::gui::TextInput::onTextInput(WidgetUpdateContext&, const TextInputEvent& _event)
+ego::gui::InputReply ego::gui::TextInput::onTextInput(InputContext&, const TextInputEvent& _event)
 {
     if (m_isFocused)
     {
@@ -187,17 +190,17 @@ ego::gui::InputReply ego::gui::TextInput::onTextInput(WidgetUpdateContext&, cons
     return InputReply::Unhandled;
 }
 
-void ego::gui::TextInput::onPointerEnter(WidgetUpdateContext&, const Position& _position, const InputModifiers&)
+void ego::gui::TextInput::onPointerEnter(const Position& _position, const InputModifiers&)
 {
     m_isHovered = m_inputRect.contains(_position);
 }
 
-void ego::gui::TextInput::onPointerLeave(WidgetUpdateContext&, const Position&, const InputModifiers&)
+void ego::gui::TextInput::onPointerLeave(const Position&, const InputModifiers&)
 {
     m_isHovered = false;
 }
 
-void ego::gui::TextInput::onPointerCaptureLost(WidgetUpdateContext&, const Position&)
+void ego::gui::TextInput::onPointerCaptureLost(const Position&)
 {
     m_isPressed = false;
     m_isSelecting = false;
@@ -208,7 +211,7 @@ void ego::gui::TextInput::onPointerCaptureLost(WidgetUpdateContext&, const Posit
     }
 }
 
-void ego::gui::TextInput::onFocusChanged(WidgetUpdateContext&, FocusChange _change)
+void ego::gui::TextInput::onFocusChanged(FocusChange _change)
 {
     if (_change == FocusChange::Gained)
     {
@@ -242,9 +245,10 @@ ego::gui::Size ego::gui::TextInput::calculatePreferredSize(const LayoutContext& 
 
     const std::string& displayText = m_text.empty() ? m_placeholder : m_text;
     Size textSize = SizeZero;
-    if (_context.m_fontAtlas)
+    const FontAtlasPointer& fontAtlas = _context.getFontAtlas();
+    if (fontAtlas)
     {
-        textSize = _context.m_fontAtlas->measureText(displayText);
+        textSize = fontAtlas->measureText(displayText);
     }
 
     const float minimumWidth = (std::max)(0.0f, style.m_minimumWidth);
@@ -258,7 +262,7 @@ void ego::gui::TextInput::updateGeometry(const LayoutContext& _context)
     const FieldStyle& style = _context.getTheme().m_field;
     applyFieldStyle(style);
 
-    rebuildCaretOffsets(_context.m_fontAtlas);
+    rebuildCaretOffsets(_context.getFontAtlas());
     const Rect& layoutBounds = getLayoutBounds();
     m_inputRect = Rect(layoutBounds.m_position.m_x, layoutBounds.m_position.m_y, layoutBounds.m_size.m_x, (std::max)(0.0f, style.m_height));
     ensureCaretVisible();

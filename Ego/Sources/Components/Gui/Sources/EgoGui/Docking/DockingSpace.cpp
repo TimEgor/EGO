@@ -5,9 +5,15 @@
 #include "EgoCore/Assert/Assert.h"
 
 #include "EgoGui/Docking/DockingTab.h"
+#include "EgoGui/Layout/Layout.h"
 #include "EgoGui/Rendering/PaintContext.h"
 #include "EgoGui/Theme/Theme.h"
 #include "EgoGui/Widgets/Window.h"
+
+namespace
+{
+    using TabAccessor = ego::gui::DockingTab::HierarchyAccessor;
+} // namespace
 
 ego::gui::DockingSpacePointer ego::gui::DockingSpace::Create(DockingSpaceID _id)
 {
@@ -22,6 +28,18 @@ ego::gui::DockingSpace::DockingSpace(DockingSpaceID _id)
 ego::gui::DockingSpaceID ego::gui::DockingSpace::getID() const
 {
     return m_id;
+}
+
+size_t ego::gui::DockingSpace::getWindowCount() const
+{
+    return m_tabs.size();
+}
+
+ego::gui::WindowPointer ego::gui::DockingSpace::getWindow(size_t _index) const
+{
+    const DockingTabPointer tab = _index < m_tabs.size() ? m_tabs[_index] : nullptr;
+
+    return tab ? tab->getWindow() : nullptr;
 }
 
 ego::gui::DockingSpace::WindowCollection ego::gui::DockingSpace::getWindows() const
@@ -84,8 +102,22 @@ ego::gui::WindowPointer ego::gui::DockingSpace::removeWindow(const WindowPointer
 
 bool ego::gui::DockingSpace::insertTab(const DockingTabPointer& _tab)
 {
-    if (!_tab || !_tab->getWindow() || findTab(_tab->getWindow()) || !attachChild(_tab))
+    if (!_tab || !_tab->getWindow() || findTab(_tab->getWindow()))
     {
+        return false;
+    }
+
+    const DockingSpacePointer self = ego::StaticPointerCast<DockingSpace>(sharedFromThis());
+    if (!self || !attachChild(_tab))
+    {
+        return false;
+    }
+
+    if (!TabAccessor::AttachToSpace(*_tab, self))
+    {
+        const bool detached = detachChild(_tab);
+        EGO_ASSERT(detached);
+
         return false;
     }
 
@@ -112,11 +144,12 @@ ego::gui::DockingTabPointer ego::gui::DockingSpace::releaseTab(const WindowPoint
 
     const size_t tabIndex = static_cast<size_t>(tabIt - m_tabs.begin());
     const DockingTabPointer tab = *tabIt;
-    if (!detachChild(tab))
+    if (!TabAccessor::IsAttachedToSpace(*tab, *this) || !detachChild(tab))
     {
         return nullptr;
     }
 
+    TabAccessor::DetachFromSpace(*tab);
     m_tabs.erase(tabIt);
     if (m_tabs.empty())
     {
@@ -191,33 +224,26 @@ bool ego::gui::DockingSpace::isEmpty() const
     return m_tabs.empty();
 }
 
-size_t ego::gui::DockingSpace::getSpaceCount() const
+ego::gui::DockingMetrics ego::gui::DockingSpace::measure(const DockingMeasureContext& _context) const
 {
+    if (_context.m_excludedSpace && &_context.m_excludedSpace->get() == this)
+    {
+        return DockingMetrics();
+    }
+
     for (const DockingTabPointer& tab : m_tabs)
     {
         const WindowPointer window = tab ? tab->getWindow() : nullptr;
         if (window && !window->isCollapsed())
         {
-            return 1;
+            return DockingMetrics{
+                .m_spaceCount = 1,
+                .m_minimumSize = Size((std::max)(0.0f, _context.m_minimumSpaceSize.m_x), (std::max)(0.0f, _context.m_minimumSpaceSize.m_y)),
+            };
         }
     }
 
-    return 0;
-}
-
-size_t ego::gui::DockingSpace::getSpaceCountExcluding(const DockingSpace& _space) const
-{
-    return this == &_space ? 0 : getSpaceCount();
-}
-
-ego::gui::Size ego::gui::DockingSpace::getMinimumSize(const Size& _minimumSpaceSize, float) const
-{
-    return getSpaceCount() > 0 ? Size((std::max)(0.0f, _minimumSpaceSize.m_x), (std::max)(0.0f, _minimumSpaceSize.m_y)) : SizeZero;
-}
-
-ego::gui::Size ego::gui::DockingSpace::getMinimumSizeExcluding(const DockingSpace& _space, const Size& _minimumSpaceSize, float _separatorThickness) const
-{
-    return this == &_space ? SizeZero : getMinimumSize(_minimumSpaceSize, _separatorThickness);
+    return DockingMetrics();
 }
 
 void ego::gui::DockingSpace::clearInteraction()
@@ -316,7 +342,7 @@ ego::gui::Size ego::gui::DockingSpace::calculatePreferredSize(const LayoutContex
     {
         if (tab)
         {
-            tab->updatePreferredSize(_context, _constraints);
+            _context.measure(*tab, _constraints);
         }
     }
 
@@ -331,7 +357,7 @@ void ego::gui::DockingSpace::updateGeometry(const LayoutContext& _context)
     {
         if (tab)
         {
-            tab->applyLayout(_context, bounds);
+            _context.arrange(*tab, bounds);
         }
     }
 }

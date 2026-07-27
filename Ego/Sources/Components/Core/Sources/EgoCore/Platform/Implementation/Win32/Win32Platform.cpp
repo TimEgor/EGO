@@ -8,7 +8,7 @@
 #include "EgoCore/String/StringConverter.h"
 #include "EgoCore/UtilsMacros.h"
 #include "Input/Win32InputDeviceProvider.h"
-#include "WindowSystem/Win32WindowSystem.h"
+#include "Surface/Win32PlatformSurfaceController.h"
 
 #include <commdlg.h>
 
@@ -64,10 +64,11 @@ bool ego::win32::Win32Platform::init()
     EGO_CHECK_INITIALIZATION(m_fileSystem && m_fileSystem->init());
 
     m_inputDeviceController = new InputDeviceController();
-    EGO_CHECK_INITIALIZATION(m_inputDeviceController && m_inputDeviceController->addProvider(new Win32InputDeviceProvider()) && m_inputDeviceController->init());
+    EGO_CHECK_INITIALIZATION(
+        m_inputDeviceController && m_inputDeviceController->addProvider(new Win32InputDeviceProvider()) && m_inputDeviceController->init());
 
-    m_windowSystem = new Win32WindowSystem(m_instance);
-    EGO_CHECK_INITIALIZATION(m_windowSystem && m_windowSystem->init());
+    m_surfaceController = new Win32PlatformSurfaceController(m_instance);
+    EGO_CHECK_INITIALIZATION(m_surfaceController && m_surfaceController->init());
 
     m_isInitialized = true;
 
@@ -76,12 +77,12 @@ bool ego::win32::Win32Platform::init()
 
 void ego::win32::Win32Platform::release()
 {
-    if (!m_isInitialized && !m_windowSystem && !m_inputDeviceController && !m_fileSystem)
+    if (!m_isInitialized && !m_surfaceController && !m_inputDeviceController && !m_fileSystem)
     {
         return;
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_windowSystem);
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_surfaceController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputDeviceController);
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_fileSystem);
     m_isInitialized = false;
@@ -98,10 +99,10 @@ ego::InputDeviceController& ego::win32::Win32Platform::getInputDeviceController(
     return *m_inputDeviceController;
 }
 
-ego::WindowSystem& ego::win32::Win32Platform::getWindowSystem()
+ego::PlatformSurfaceController& ego::win32::Win32Platform::getSurfaceController()
 {
-    EGO_ASSERT(m_windowSystem);
-    return *m_windowSystem;
+    EGO_ASSERT(m_surfaceController);
+    return *m_surfaceController;
 }
 
 ego::FileName ego::win32::Win32Platform::selectOpenFile(const Platform::OpenFileDialogParams& _params) const

@@ -79,7 +79,10 @@ namespace ego::gpu::d3d12
 
         FenceReference createFence(Fence::FenceValue _initialValue = 0) override;
 
-        SwapChainReference createSwapChain(const SwapChainDesc& _swapChainDesc, const PresentationSurface& _surface, const CommandQueueReference& _presentationQueue) override;
+        SwapChainReference createSwapChain(
+            const SwapChainDesc& _swapChainDesc,
+            const PlatformSurface& _surface,
+            const CommandQueueReference& _presentationQueue) override;
 
         const GraphicDevice::Capabilities& getCapabilities() const override;
 
@@ -99,7 +102,10 @@ namespace ego::gpu::d3d12
         bool createUploadBuffer(uint64_t _size, Microsoft::WRL::ComPtr<ID3D12Resource>& _resource) const;
         ego::Reference<D3D12Buffer> createUploadD3D12Buffer(uint64_t _size);
         GpuTaskReference uploadBufferToDefaultHeap(ID3D12Resource* _dstResource, uint64_t _dstSize, const InitialGraphicResourceData& _initialData);
-        GpuTaskReference uploadTexture2DToDefaultHeap(ID3D12Resource* _dstResource, const D3D12_RESOURCE_DESC& _dstDesc, const InitialGraphicResourceData& _initialData);
+        GpuTaskReference uploadTexture2DToDefaultHeap(
+            ID3D12Resource* _dstResource,
+            const D3D12_RESOURCE_DESC& _dstDesc,
+            const InitialGraphicResourceData& _initialData);
         bool createShaderTable(
             ID3D12StateObject* _stateObject,
             const std::vector<std::wstring>& _hitGroupExportNames,

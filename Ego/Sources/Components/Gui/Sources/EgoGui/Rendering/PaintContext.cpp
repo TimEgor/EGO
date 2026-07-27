@@ -7,11 +7,14 @@
 #include "EgoCore/Assert/Assert.h"
 
 #include "EgoGui/Core/TextEncoding.h"
+#include "EgoGui/Widgets/Widget.h"
 
 namespace
 {
     constexpr float CircleAngle = 6.28318530718f;
     constexpr uint32_t CircleSegmentCount = 24;
+
+    using WidgetAccessor = ego::gui::Widget::WidgetAccessor;
 
     ego::gui::Rect IntersectRects(const ego::gui::Rect& _left, const ego::gui::Rect& _right)
     {
@@ -37,6 +40,11 @@ ego::gui::PaintContext::PaintContext(
 {
     EGO_ASSERT(m_theme);
     m_clipStack.push_back(_viewportRect);
+}
+
+void ego::gui::PaintContext::ViewportAccessor::Paint(PaintContext& _context, const Widget& _root)
+{
+    _context.paint(_root);
 }
 
 void ego::gui::PaintContext::pushClipRect(const Rect& _clipRect)
@@ -172,6 +180,40 @@ const ego::gui::Theme& ego::gui::PaintContext::getTheme() const
 {
     EGO_ASSERT(m_theme);
     return *m_theme;
+}
+
+void ego::gui::PaintContext::paint(const Widget& _widget)
+{
+    const Rect& layoutBounds = _widget.getLayoutBounds();
+    if (!_widget.isVisible() || layoutBounds.m_size.m_x <= 0.0f || layoutBounds.m_size.m_y <= 0.0f)
+    {
+        return;
+    }
+
+    WidgetAccessor::DrawBaseLayer(_widget, *this);
+
+    const bool clipChildren = WidgetAccessor::ClipsChildren(_widget);
+    if (clipChildren)
+    {
+        pushClipRect(WidgetAccessor::GetChildrenClipRect(_widget));
+    }
+
+    const size_t childCount = WidgetAccessor::GetChildCount(_widget);
+    for (size_t childIndex = 0; childIndex < childCount; ++childIndex)
+    {
+        const WidgetPointer child = WidgetAccessor::GetChild(_widget, childIndex);
+        if (child && WidgetAccessor::IsChildActive(_widget, childIndex) && child->isDirectChildOf(_widget))
+        {
+            paint(*child);
+        }
+    }
+
+    if (clipChildren)
+    {
+        popClipRect();
+    }
+
+    WidgetAccessor::DrawOverlayLayer(_widget, *this);
 }
 
 void ego::gui::PaintContext::appendQuad(const Rect& _rect, const NormalizedColorRGBA& _color, uint32_t _textureIndex)

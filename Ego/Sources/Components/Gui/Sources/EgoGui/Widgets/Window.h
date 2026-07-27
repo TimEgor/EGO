@@ -4,6 +4,7 @@
 #include <string>
 
 #include "EgoCore/Callback/StableCallback.h"
+#include "EgoCore/Patterns/NonInstanceable.h"
 
 #include "EgoGui/Widgets/Container.h"
 
@@ -11,6 +12,7 @@ namespace ego::gui
 {
     struct WindowStyle;
 
+    class DockingTab;
     class Window;
     EGO_POINTER(Window);
     EGO_WEAK_POINTER(Window);
@@ -28,6 +30,13 @@ namespace ego::gui
     class Window final : public Container
     {
     public:
+        class HierarchyAccessor final : public NonInstanceable
+        {
+            friend class DockingTab;
+
+            static void SetDocked(Window& _window, bool _isDocked);
+        };
+
         ~Window() override = default;
 
         static WindowPointer Create();
@@ -54,15 +63,16 @@ namespace ego::gui
         const Rect& getBounds() const;
         const Rect& getFloatingBounds() const;
         bool isDocked() const;
+        void clearInteraction();
 
         EGO_RTTI_VIRTUAL(Window, Container);
 
     protected:
-        InputReply onPointerMove(WidgetUpdateContext& _context, const PointerMoveEvent& _event) override;
-        InputReply onMouseButton(WidgetUpdateContext& _context, const MouseButtonEvent& _event) override;
-        void onPointerEnter(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerLeave(WidgetUpdateContext& _context, const Position& _position, const InputModifiers& _modifiers) override;
-        void onPointerCaptureLost(WidgetUpdateContext& _context, const Position& _position) override;
+        InputReply onPointerMove(InputContext& _context, const PointerMoveEvent& _event) override;
+        InputReply onMouseButton(InputContext& _context, const MouseButtonEvent& _event) override;
+        void onPointerEnter(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerLeave(const Position& _position, const InputModifiers& _modifiers) override;
+        void onPointerCaptureLost(const Position& _position) override;
 
         Size calculatePreferredSize(const LayoutContext& _context, const LayoutConstraints& _constraints) override;
         void updateGeometry(const LayoutContext& _context) override;
@@ -94,11 +104,11 @@ namespace ego::gui
         PointerRegion resolvePointerRegion(const Position& _position) const;
         void updateHoveredRegion(const Position& _position);
 
-        void beginInteraction(WidgetUpdateContext& _context, InteractionState _state, const Position& _position);
+        void beginInteraction(InputContext& _context, InteractionState _state, const Position& _position);
         void pauseInteraction();
-        void updateInteraction(WidgetUpdateContext& _context, const Position& _position);
-        void endInteraction(WidgetUpdateContext& _context, const Position& _position);
-        void cancelInteraction(WidgetUpdateContext& _context, const Position& _position);
+        void updateInteraction(InputContext& _context, const Position& _position);
+        void endInteraction(InputContext& _context, const Position& _position);
+        void cancelInteraction(const Position& _position);
         void applyWindowStyle(const WindowStyle& _style);
         bool updateFloatingSize();
         void applyUserSize(const Size& _size);
@@ -128,6 +138,7 @@ namespace ego::gui
         bool m_hasUserSize = false;
         bool m_hasMinimumSizeOverride = false;
         bool m_isInteractionPaused = false;
+        bool m_isDocked = false;
         StableCallback<const Size&> m_onSizeChanged;
     };
 } // namespace ego::gui
