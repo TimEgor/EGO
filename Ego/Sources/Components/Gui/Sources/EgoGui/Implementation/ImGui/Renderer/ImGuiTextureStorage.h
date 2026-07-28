@@ -16,16 +16,16 @@ namespace ego::gui
         ~ImGuiTextureStorage() override;
 
         bool synchronize(ImTextureData& _textureData);
-        gpu::TextureViewReference getTextureView(ImTextureData& _textureData) const;
+        gpu::TextureViewPointer getTextureView(ImTextureData& _textureData) const;
         void release();
 
     private:
-        using TextureCollection = std::unordered_map<ImTextureData*, gpu::TextureViewReference>;
+        using TextureCollection = std::unordered_map<ImTextureData*, gpu::TextureViewPointer>;
 
         bool createTexture(ImTextureData& _textureData);
         bool replaceTexture(ImTextureData& _textureData);
         void destroyTexture(ImTextureData& _textureData);
-        gpu::TextureViewReference createTextureResource(ImTextureData& _textureData) const;
+        gpu::TextureViewPointer createTextureResource(ImTextureData& _textureData) const;
 
         TextureCollection m_textures;
     };

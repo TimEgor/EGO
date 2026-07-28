@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "EgoCore/Reference/Reference.h"
+#include "EgoCore/Pointer/IntrusivePointer.h"
 
 namespace ego
 {
@@ -16,7 +16,7 @@ namespace ego
         void invoke(TArguments... _arguments) const;
 
     private:
-        class State final : public STDDestroyMTCountable
+        class State final : public MTCountable
         {
         public:
             explicit State(Function _function);
@@ -24,9 +24,9 @@ namespace ego
             Function m_function;
         };
 
-        using StateReference = Reference<State>;
+        using StatePointer = IntrusivePointer<State>;
 
-        StateReference m_state;
+        StatePointer m_state;
     };
 } // namespace ego
 

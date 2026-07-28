@@ -17,5 +17,5 @@ namespace ego::gpu
         virtual void waitValue(FenceValue _value) = 0;
     };
 
-    EGO_REFERENCE(Fence);
+    EGO_INTRUSIVE_POINTER(Fence);
 } // namespace ego::gpu

@@ -76,7 +76,7 @@ ego::ResourcePointer ego::ResourceRegistry::getOrCreateResource(ResourceType _ty
                 return nullptr;
             }
 
-            const JobReference loadingJob = resourceIt->second.m_loadingJob.lock();
+            const JobPointer loadingJob = resourceIt->second.m_loadingJob.lock();
             if (loadingJob && !loadingJob->isFinished())
             {
                 return resource;
@@ -146,7 +146,7 @@ bool ego::ResourceRegistry::removeResource(Resource* _resource)
     return true;
 }
 
-void ego::ResourceRegistry::setLoadingJob(const ResourcePointer& _resource, const JobReference& _job)
+void ego::ResourceRegistry::setLoadingJob(const ResourcePointer& _resource, const JobPointer& _job)
 {
     if (!_resource)
     {
@@ -169,7 +169,7 @@ void ego::ResourceRegistry::setLoadingJob(const ResourcePointer& _resource, cons
     }
 }
 
-ego::JobReference ego::ResourceRegistry::getLoadingJob(const ResourcePointer& _resource) const
+ego::JobPointer ego::ResourceRegistry::getLoadingJob(const ResourcePointer& _resource) const
 {
     if (!_resource)
     {
@@ -189,13 +189,13 @@ ego::JobReference ego::ResourceRegistry::getLoadingJob(const ResourcePointer& _r
     return resourceIt != m_resources.end() && resourceIt->second.m_resourcePtr == _resource.get() ? resourceIt->second.m_loadingJob.lock() : nullptr;
 }
 
-void ego::ResourceRegistry::collectLoadingJobs(std::vector<JobReference>& _jobs) const
+void ego::ResourceRegistry::collectLoadingJobs(std::vector<JobPointer>& _jobs) const
 {
     std::lock_guard locker(m_mutex);
 
     for (const auto& resourceEntry : m_resources)
     {
-        const JobReference loadingJob = resourceEntry.second.m_loadingJob.lock();
+        const JobPointer loadingJob = resourceEntry.second.m_loadingJob.lock();
         if (loadingJob && loadingJob->getState() != JobState::Undefined && !loadingJob->isFinished())
         {
             _jobs.push_back(loadingJob);

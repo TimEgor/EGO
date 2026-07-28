@@ -94,7 +94,7 @@ namespace ego
         ModuleContainer m_modules;
         PluginContainer m_plugins;
 
-        PluginLoaderReference m_loader;
+        PluginLoaderPointer m_loader;
     };
 
     EGO_POINTER(PluginController);

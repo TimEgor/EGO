@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EgoCore/Handler/Handler.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 

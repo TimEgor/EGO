@@ -10,40 +10,40 @@ namespace ego::gpu::d3d12
     class D3D12GeometryAccelerationStructure final : public GeometryAccelerationStructure, public D3D12Resource
     {
     public:
-        explicit D3D12GeometryAccelerationStructure(const BufferReference& _buffer);
+        explicit D3D12GeometryAccelerationStructure(const BufferPointer& _buffer);
 
         void* getNativeHandle() const override;
         void setName(const char* _name) override;
-        const BufferReference& getBuffer() const override;
+        const BufferPointer& getBuffer() const override;
 
         ID3D12Resource* getD3D12Resource() const override;
         D3D12_GPU_VIRTUAL_ADDRESS getGpuVirtualAddress() const;
 
     private:
-        BufferReference m_buffer = nullptr;
+        BufferPointer m_buffer = nullptr;
     };
 
     class D3D12InstanceAccelerationStructure final : public InstanceAccelerationStructure, public D3D12Resource
     {
     public:
-        explicit D3D12InstanceAccelerationStructure(const BufferReference& _buffer);
+        explicit D3D12InstanceAccelerationStructure(const BufferPointer& _buffer);
 
         void* getNativeHandle() const override;
         void setName(const char* _name) override;
-        const BufferReference& getBuffer() const override;
+        const BufferPointer& getBuffer() const override;
 
         ID3D12Resource* getD3D12Resource() const override;
         D3D12_GPU_VIRTUAL_ADDRESS getGpuVirtualAddress() const;
 
     private:
-        BufferReference m_buffer = nullptr;
+        BufferPointer m_buffer = nullptr;
     };
 
     class D3D12AccelerationStructureView final : public AccelerationStructureView, public D3D12Descriptor
     {
     public:
         D3D12AccelerationStructureView(
-            const InstanceAccelerationStructureReference& _accelerationStructure,
+            const InstanceAccelerationStructurePointer& _accelerationStructure,
             D3D12DescriptorIndex _descriptorIndex,
             D3D12DescriptorAllocatorPointer& _allocator);
 

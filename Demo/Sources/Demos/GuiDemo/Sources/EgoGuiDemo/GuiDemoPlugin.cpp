@@ -15,5 +15,5 @@ ego::demo::GuiDemoPlugin::GuiDemoPlugin(const PluginModulePointer& _module, Plug
 
 ego::engine::EngineLogicPointer ego::demo::GuiDemoPlugin::createEngineLogic()
 {
-    return engine::EngineLogicPointer(new GuiDemo());
+    return MakePointer<GuiDemo>();
 }

@@ -15,5 +15,5 @@ ego::gpu::d3d12::D3D12GraphicHardwarePlugin::D3D12GraphicHardwarePlugin(const Pl
 
 ego::GraphicDevicePointer ego::gpu::d3d12::D3D12GraphicHardwarePlugin::createGraphicDevice()
 {
-    return GraphicDevicePointer(new D3D12GraphicDevice());
+    return MakePointer<D3D12GraphicDevice>();
 }

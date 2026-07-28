@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 namespace ego::profile
 {

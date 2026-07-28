@@ -60,14 +60,16 @@ bool ego::win32::Win32Platform::init()
         return true;
     }
 
-    m_fileSystem = new Win32FileSystem();
+    m_fileSystem = MakePointer<Win32FileSystem>();
     EGO_CHECK_INITIALIZATION(m_fileSystem && m_fileSystem->init());
 
-    m_inputDeviceController = new InputDeviceController();
+    m_inputDeviceController = MakePointer<InputDeviceController>();
     EGO_CHECK_INITIALIZATION(
-        m_inputDeviceController && m_inputDeviceController->addProvider(new Win32InputDeviceProvider()) && m_inputDeviceController->init());
+        m_inputDeviceController &&
+        m_inputDeviceController->addProvider(MakePointer<Win32InputDeviceProvider>()) &&
+        m_inputDeviceController->init());
 
-    m_surfaceController = new Win32PlatformSurfaceController(m_instance);
+    m_surfaceController = MakePointer<Win32PlatformSurfaceController>(m_instance);
     EGO_CHECK_INITIALIZATION(m_surfaceController && m_surfaceController->init());
 
     m_isInitialized = true;

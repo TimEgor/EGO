@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "EgoCore/Platform/Input/InputDevice.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "InputKeyProvider.h"
 

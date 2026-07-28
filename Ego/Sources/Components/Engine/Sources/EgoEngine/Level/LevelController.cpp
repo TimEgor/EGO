@@ -64,7 +64,9 @@ ego::LevelPointer ego::LevelController::createLevel()
     }
 
     const LevelID levelID = allocateLevelID();
-    LevelPointer level(new Level(levelID), LevelDeleter(weakFromThis()));
+    LevelPointer level = MakePointerWithDeleter<Level>(
+        LevelDeleter(weakFromThis()),
+        levelID);
     if (!level)
     {
         return nullptr;

@@ -12,12 +12,12 @@ namespace ego
     class JobDescriptor final
     {
     public:
-        using JobFactory = std::function<JobReference()>;
+        using JobFactory = std::function<JobPointer()>;
 
         JobDescriptor() = default;
         explicit JobDescriptor(JobFactory _factory);
 
-        JobReference createJob() const;
+        JobPointer createJob() const;
 
         bool isValid() const;
         explicit operator bool() const;
@@ -29,7 +29,7 @@ namespace ego
     JobDescriptor CreateJobDescriptor(JobDescriptor::JobFactory _factory);
 
     template <typename TFactory>
-    std::enable_if_t<std::is_invocable_r_v<JobReference, TFactory>, JobDescriptor> CreateJobDescriptor(TFactory _factory)
+    std::enable_if_t<std::is_invocable_r_v<JobPointer, TFactory>, JobDescriptor> CreateJobDescriptor(TFactory _factory)
     {
         return CreateJobDescriptor(JobDescriptor::JobFactory(std::move(_factory)));
     }
@@ -46,12 +46,12 @@ namespace ego
 
         return CreateJobDescriptor(
             JobDescriptor::JobFactory(
-                [args = std::move(args)]() mutable -> JobReference
+                [args = std::move(args)]() mutable -> JobPointer
                 {
                     return std::apply(
-                        [](auto&... _storedArgs) -> JobReference
+                        [](auto&... _storedArgs) -> JobPointer
                         {
-                            return JobReference(new TJob(_storedArgs...));
+                            return MakePointer<TJob>(_storedArgs...);
                         },
                         args);
                 }));

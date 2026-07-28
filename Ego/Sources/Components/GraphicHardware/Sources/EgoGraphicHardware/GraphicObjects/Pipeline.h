@@ -121,10 +121,10 @@ namespace ego::gpu
 
     struct GraphicPipelineDesc final
     {
-        BindingLayoutReference m_bindingLayout = nullptr;
+        BindingLayoutPointer m_bindingLayout = nullptr;
 
-        VertexShaderReference m_vertexShader = nullptr;
-        PixelShaderReference m_pixelShader = nullptr;
+        VertexShaderPointer m_vertexShader = nullptr;
+        PixelShaderPointer m_pixelShader = nullptr;
 
         InputLayoutDesc m_inputLayoutDesc;
 
@@ -144,8 +144,8 @@ namespace ego::gpu
 
     struct ComputePipelineDesc final
     {
-        BindingLayoutReference m_bindingLayout = nullptr;
-        ComputeShaderReference m_computeShader = nullptr;
+        BindingLayoutPointer m_bindingLayout = nullptr;
+        ComputeShaderPointer m_computeShader = nullptr;
 
         bool operator==(const ComputePipelineDesc& _other) const;
         bool operator!=(const ComputePipelineDesc& _other) const;
@@ -160,9 +160,9 @@ namespace ego::gpu
     struct RayTracingHitGroupDesc final
     {
         RayTracingHitGroupType m_type = RayTracingHitGroupType::Triangles;
-        ClosestHitShaderReference m_closestHitShader = nullptr;
-        AnyHitShaderReference m_anyHitShader = nullptr;
-        IntersectionShaderReference m_intersectionShader = nullptr;
+        ClosestHitShaderPointer m_closestHitShader = nullptr;
+        AnyHitShaderPointer m_anyHitShader = nullptr;
+        IntersectionShaderPointer m_intersectionShader = nullptr;
 
         bool operator==(const RayTracingHitGroupDesc& _other) const;
         bool operator!=(const RayTracingHitGroupDesc& _other) const;
@@ -170,9 +170,9 @@ namespace ego::gpu
 
     struct RayTracingPipelineDesc final
     {
-        BindingLayoutReference m_bindingLayout = nullptr;
-        RayGenerationShaderReference m_rayGenerationShader = nullptr;
-        MissShaderReference m_missShader = nullptr;
+        BindingLayoutPointer m_bindingLayout = nullptr;
+        RayGenerationShaderPointer m_rayGenerationShader = nullptr;
+        MissShaderPointer m_missShader = nullptr;
         std::vector<RayTracingHitGroupDesc> m_hitGroups;
         uint32_t m_maxPayloadSize = 0;
         uint32_t m_maxAttributeSize = 0;
@@ -199,7 +199,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(Pipeline, GraphicResource);
     };
 
-    EGO_REFERENCE(Pipeline);
+    EGO_INTRUSIVE_POINTER(Pipeline);
 
     class GraphicPipeline : public Pipeline
     {
@@ -216,7 +216,7 @@ namespace ego::gpu
         GraphicPipelineDesc m_desc;
     };
 
-    EGO_REFERENCE(GraphicPipeline);
+    EGO_INTRUSIVE_POINTER(GraphicPipeline);
 
     class ComputePipeline : public Pipeline
     {
@@ -233,7 +233,7 @@ namespace ego::gpu
         ComputePipelineDesc m_desc;
     };
 
-    EGO_REFERENCE(ComputePipeline);
+    EGO_INTRUSIVE_POINTER(ComputePipeline);
 
     class RayTracingPipeline : public Pipeline
     {
@@ -250,5 +250,5 @@ namespace ego::gpu
         RayTracingPipelineDesc m_desc;
     };
 
-    EGO_REFERENCE(RayTracingPipeline);
+    EGO_INTRUSIVE_POINTER(RayTracingPipeline);
 } // namespace ego::gpu

@@ -82,7 +82,7 @@ void ego::engine::GraphicFrameController::prepareFrame(gui::GuiRenderData&& _gui
 
 void ego::engine::GraphicFrameController::renderFrame()
 {
-    const gpu::Texture2DReference targetTexture = m_framePresenterController.getTargetTexture(m_sceneGraphicPresenter);
+    const gpu::Texture2DPointer targetTexture = m_framePresenterController.getTargetTexture(m_sceneGraphicPresenter);
     if (!targetTexture)
     {
         m_sceneRenderController.render(nullptr);
@@ -94,7 +94,7 @@ void ego::engine::GraphicFrameController::renderFrame()
     targetViewDesc.m_dimension = gpu::TextureViewDimension::D2;
     targetViewDesc.m_format = targetTexture->getDesc().m_format;
 
-    const gpu::TextureViewReference targetView = gpu::GetGraphicDevice().createTextureView(targetTexture, targetViewDesc);
+    const gpu::TextureViewPointer targetView = gpu::GetGraphicDevice().createTextureView(targetTexture, targetViewDesc);
     EGO_ASSERT(targetView);
     m_sceneRenderController.render(targetView);
 }
@@ -125,7 +125,7 @@ void ego::engine::GraphicFrameController::prepareGuiFrame(gui::GuiRenderData&& _
     {
         const GraphicPresenterPointer graphicPresenter = viewportRenderData.m_graphicPresenter;
         const FloatVector2& viewportSize = viewportRenderData.m_drawData.m_viewportSize;
-        const gpu::Texture2DReference targetTexture = m_framePresenterController.getTargetTexture(graphicPresenter);
+        const gpu::Texture2DPointer targetTexture = m_framePresenterController.getTargetTexture(graphicPresenter);
         if (!targetTexture || viewportSize.m_x <= 0.0f || viewportSize.m_y <= 0.0f)
         {
             continue;
@@ -155,7 +155,7 @@ void ego::engine::GraphicFrameController::prepareSceneFrame(const SceneRenderDat
         return;
     }
 
-    const gpu::Texture2DReference targetTexture = m_framePresenterController.getTargetTexture(m_sceneGraphicPresenter);
+    const gpu::Texture2DPointer targetTexture = m_framePresenterController.getTargetTexture(m_sceneGraphicPresenter);
     if (!targetTexture)
     {
         return;

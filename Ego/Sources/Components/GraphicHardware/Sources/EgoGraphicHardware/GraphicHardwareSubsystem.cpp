@@ -40,7 +40,7 @@ ego::GraphicDevice& ego::gpu::GraphicHardwareSubsystem::getGraphicDevice()
     return *m_graphicDevice;
 }
 
-const ego::gpu::CommandQueueReference& ego::gpu::GraphicHardwareSubsystem::getGraphicCommandQueue() const
+const ego::gpu::CommandQueuePointer& ego::gpu::GraphicHardwareSubsystem::getGraphicCommandQueue() const
 {
     EGO_ASSERT(m_graphicCommandQueue);
     return m_graphicCommandQueue;
@@ -110,7 +110,7 @@ ego::GraphicDevice& ego::gpu::GetGraphicDevice()
     return *graphicDevice;
 }
 
-const ego::gpu::CommandQueueReference& ego::gpu::GetGraphicCommandQueue()
+const ego::gpu::CommandQueuePointer& ego::gpu::GetGraphicCommandQueue()
 {
     return GetGraphicHardwareSubsystem().getGraphicCommandQueue();
 }

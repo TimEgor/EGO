@@ -10,7 +10,7 @@ bool ego::ResourceSubsystem::init(const InitData& _initData)
 {
     EGO_CHECK_RETURN_FALSE(_initData.m_resourceFileSystem);
 
-    m_resourceController = new ResourceController();
+    m_resourceController = MakePointer<ResourceController>();
     EGO_CHECK_RETURN_FALSE(m_resourceController);
     EGO_CHECK_RETURN_FALSE(m_resourceController->init(_initData.m_resourceJobThreadCount, _initData.m_resourceJobThreadName));
     m_resourceController->addFileSystem(_initData.m_resourceFileSystem);

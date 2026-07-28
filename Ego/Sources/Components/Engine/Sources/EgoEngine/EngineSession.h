@@ -5,7 +5,7 @@
 #include "EgoCore/Clock.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoECS/Entity.h"
 
@@ -109,7 +109,7 @@ namespace ego::engine
         void beginFrame();
         void endFrame();
         float getDeltaTime() const;
-        JobGraphReference getFrameLogicJobGraph();
+        JobGraphPointer getFrameLogicJobGraph();
         void prepareGraphicFrame();
 
         ProjectRuntime m_projectRuntime;

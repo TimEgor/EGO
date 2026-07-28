@@ -15,5 +15,5 @@ ego::render::default_render::DefaultRenderPlugin::DefaultRenderPlugin(const Plug
 
 ego::render::RenderPointer ego::render::default_render::DefaultRenderPlugin::createRender()
 {
-    return RenderPointer(new DefaultRender());
+    return MakePointer<DefaultRender>();
 }

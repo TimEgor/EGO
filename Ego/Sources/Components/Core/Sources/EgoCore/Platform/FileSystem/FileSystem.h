@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 namespace ego

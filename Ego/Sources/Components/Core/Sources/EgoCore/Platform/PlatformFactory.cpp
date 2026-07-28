@@ -7,7 +7,8 @@
 ego::PlatformPointer ego::CreatePlatform(void* _nativeInstanceHandle)
 {
 #if defined(WIN32) || defined(_WIN32)
-    return PlatformPointer(new win32::Win32Platform(static_cast<HINSTANCE>(_nativeInstanceHandle)));
+    return MakePointer<win32::Win32Platform>(
+        static_cast<HINSTANCE>(_nativeInstanceHandle));
 #else
     (void)_nativeInstanceHandle;
     return nullptr;

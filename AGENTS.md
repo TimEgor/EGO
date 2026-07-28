@@ -40,10 +40,12 @@
 - Formatting: put `extern "C"`/linkage specification braces on the next line and keep the body indented.
 - Do not introduce raw pointers for ownership, object references, or project-level API contracts.
 - If a platform, third-party, or C ABI forces a raw pointer or raw handle, keep it isolated at the boundary and do not propagate it as normal project ownership.
-- Prefer the project's object reference types: `ego::Reference<T>`/`TypeReference` declared through `EGO_REFERENCE`, and `ego::SharedPointer<T>`/`TypePointer` plus `ego::WeakPointer<T>`/`TypeWeakPointer` declared through `EGO_POINTER`/`EGO_WEAK_POINTER`.
-- Choose deliberately between `Reference` and `Pointer`: prefer `Reference` when its lifetime model fits, because the project pointer type has higher overhead.
-- Use project pointer/reference types where they are already used by the surrounding code.
-- If project pointer/reference types do not fit the required ownership, lifetime, performance, or interoperability constraints, use standard C++ ownership tools (`std::unique_ptr`, `std::shared_ptr`, `std::weak_ptr`, references, `std::optional`, `std::reference_wrapper`) according to normal C++ ownership rules.
+- Prefer the project's object pointer types: `ego::IntrusivePointer<T>`/`TypePointer` declared through `EGO_INTRUSIVE_POINTER`, and `ego::SharedPointer<T>`/`TypePointer` plus `ego::WeakPointer<T>`/`TypeWeakPointer` declared through `EGO_POINTER`/`EGO_WEAK_POINTER`.
+- Choose deliberately between `IntrusivePointer` and `Pointer`: prefer `IntrusivePointer` when its lifetime model fits, because the project shared pointer type has higher overhead.
+- Create intrusive objects through `ego::MakeIntrusive`/`ego::MakeIntrusiveWithDeleter`; direct construction from a freshly allocated object does not bind its destroy function.
+- Create shared objects through `ego::MakePointer`/`ego::MakePointerWithDeleter`; keep direct raw-pointer adoption isolated to API and ABI boundaries.
+- Use project pointer types where they are already used by the surrounding code.
+- If project pointer types do not fit the required ownership, lifetime, performance, or interoperability constraints, use standard C++ ownership tools (`std::unique_ptr`, `std::shared_ptr`, `std::weak_ptr`, references, `std::optional`, `std::reference_wrapper`) according to normal C++ ownership rules.
 - For checks and invariants, use the existing macros `EGO_ASSERT`, `EGO_ASSERT_FAIL_MESSAGE`, and `EGO_CHECK_INITIALIZATION`.
 - For template implementations, preserve the existing `.h` + `.hpp` pattern.
 

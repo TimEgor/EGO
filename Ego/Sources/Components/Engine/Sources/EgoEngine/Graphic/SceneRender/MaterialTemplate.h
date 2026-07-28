@@ -17,15 +17,15 @@ namespace ego::render
     MaterialRenderPassId MakeMaterialRenderPassId(const char* _name, std::size_t _length);
     MaterialRenderPassId MakeMaterialRenderPassId(std::string_view _name);
 
-    class MaterialTemplate final : public STDDestroyMTCountable
+    class MaterialTemplate final : public MTCountable
     {
     public:
-        using RenderPassInfoCollection = std::unordered_map<MaterialRenderPassId, MaterialRenderPassInfoReference>;
+        using RenderPassInfoCollection = std::unordered_map<MaterialRenderPassId, MaterialRenderPassInfoPointer>;
 
         MaterialTemplate() = default;
 
-        bool setRenderPassInfo(MaterialRenderPassId _id, const MaterialRenderPassInfoReference& _info);
-        bool setRenderPassInfo(std::string_view _name, const MaterialRenderPassInfoReference& _info);
+        bool setRenderPassInfo(MaterialRenderPassId _id, const MaterialRenderPassInfoPointer& _info);
+        bool setRenderPassInfo(std::string_view _name, const MaterialRenderPassInfoPointer& _info);
 
         void removeRenderPassInfo(MaterialRenderPassId _id);
         void removeRenderPassInfo(std::string_view _name);
@@ -34,8 +34,8 @@ namespace ego::render
         bool hasRenderPassInfo(MaterialRenderPassId _id) const;
         bool hasRenderPassInfo(std::string_view _name) const;
 
-        MaterialRenderPassInfoReference getRenderPassInfo(MaterialRenderPassId _id) const;
-        MaterialRenderPassInfoReference getRenderPassInfo(std::string_view _name) const;
+        MaterialRenderPassInfoPointer getRenderPassInfo(MaterialRenderPassId _id) const;
+        MaterialRenderPassInfoPointer getRenderPassInfo(std::string_view _name) const;
 
         const RenderPassInfoCollection& getRenderPassInfos() const;
 
@@ -43,6 +43,6 @@ namespace ego::render
         RenderPassInfoCollection m_renderPassInfos;
     };
 
-    EGO_REFERENCE(MaterialTemplate);
-    EGO_NAMED_HANDLER(MaterialTemplateReference, MaterialTemplate);
+    EGO_INTRUSIVE_POINTER(MaterialTemplate);
+    EGO_NAMED_HANDLER(MaterialTemplatePointer, MaterialTemplate);
 } // namespace ego::render

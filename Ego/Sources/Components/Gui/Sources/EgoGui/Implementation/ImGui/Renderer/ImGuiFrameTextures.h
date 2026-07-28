@@ -15,17 +15,17 @@ namespace ego::gui
     public:
         struct Texture final
         {
-            gpu::TextureViewReference m_textureView = nullptr;
+            gpu::TextureViewPointer m_textureView = nullptr;
             TextureSamplingMode m_samplingMode = TextureSamplingMode::Color;
         };
 
         void reset();
 
-        GuiFrameTextureID bind(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode);
+        GuiFrameTextureID bind(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode);
         bool resolve(GuiFrameTextureID _textureID, Texture& _texture) const;
 
     private:
-        static bool IsTextureViewValid(const gpu::TextureViewReference& _textureView);
+        static bool IsTextureViewValid(const gpu::TextureViewPointer& _textureView);
 
         std::vector<Texture> m_textures;
     };

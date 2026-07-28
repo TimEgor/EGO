@@ -18,7 +18,7 @@ void ego::JobController::ThreadFunction(JobControllerWeakPointer _jobController)
             return;
         }
 
-        JobReference job = jobController->m_jobQueue.getJob();
+        JobPointer job = jobController->m_jobQueue.getJob();
 
         if (jobController->m_isStoped)
         {
@@ -34,7 +34,7 @@ void ego::JobController::ThreadFunction(JobControllerWeakPointer _jobController)
 
 bool ego::JobController::executeOnCurrentThread()
 {
-    JobReference job = m_jobQueue.tryGetJob();
+    JobPointer job = m_jobQueue.tryGetJob();
 
     if (m_isStoped)
     {
@@ -98,7 +98,7 @@ void ego::JobController::release()
     m_threads.clear();
 }
 
-void ego::JobController::addJob(const JobReference& _job)
+void ego::JobController::addJob(const JobPointer& _job)
 {
     if (!_job)
     {
@@ -126,7 +126,7 @@ void ego::JobController::addJob(const JobReference& _job)
     m_jobQueue.addJob(_job);
 }
 
-void ego::JobController::addJobGraph(const JobGraphReference& _jobGraph)
+void ego::JobController::addJobGraph(const JobGraphPointer& _jobGraph)
 {
     if (!_jobGraph)
     {
@@ -152,13 +152,13 @@ void ego::JobController::addJobGraph(const JobGraphReference& _jobGraph)
         return;
     }
 
-    for (const JobReference& job : baseGraphJobs)
+    for (const JobPointer& job : baseGraphJobs)
     {
         addJob(job);
     }
 }
 
-void ego::JobController::wait(const JobReference& job)
+void ego::JobController::wait(const JobPointer& job)
 {
     if (job)
     {
@@ -166,7 +166,7 @@ void ego::JobController::wait(const JobReference& job)
     }
 }
 
-void ego::JobController::waitAndExecute(const JobReference& job)
+void ego::JobController::waitAndExecute(const JobPointer& job)
 {
     if (!job)
     {
@@ -188,7 +188,7 @@ void ego::JobController::waitAndExecute(const JobReference& job)
     }
 }
 
-void ego::JobController::wait(const JobGraphReference& _jobGraph)
+void ego::JobController::wait(const JobGraphPointer& _jobGraph)
 {
     if (_jobGraph)
     {
@@ -196,7 +196,7 @@ void ego::JobController::wait(const JobGraphReference& _jobGraph)
     }
 }
 
-void ego::JobController::waitAndExecute(const JobGraphReference& _jobGraph)
+void ego::JobController::waitAndExecute(const JobGraphPointer& _jobGraph)
 {
     if (!_jobGraph)
     {

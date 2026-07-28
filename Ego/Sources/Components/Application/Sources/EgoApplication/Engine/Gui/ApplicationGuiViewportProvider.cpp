@@ -136,7 +136,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
         return false;
     }
 
-    ViewportPointer viewport = new ApplicationGuiViewport();
+    ViewportPointer viewport = MakePointer<ApplicationGuiViewport>();
     if (!viewport || !viewport->init(presentation))
     {
         if (viewport)

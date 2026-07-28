@@ -6,7 +6,7 @@
 
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoECS/Entity.h"
 #include "EgoECS/World.h"

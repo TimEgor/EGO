@@ -278,10 +278,11 @@ ego::application::SurfaceGraphicPresenterPointer ego::application::PlatformSurfa
 {
     const gpu::GraphicHardwareSubsystemPointer graphicHardwareSubsystem = gpu::GetGraphicHardwareSubsystemPointer();
     const GraphicDevicePointer graphicDevice = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicDevicePointer() : nullptr;
-    const gpu::CommandQueueReference presentationQueue = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicCommandQueue() : nullptr;
+    const gpu::CommandQueuePointer presentationQueue = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicCommandQueue() : nullptr;
     EGO_CHECK_RETURN_NULL(graphicDevice && presentationQueue);
 
-    SurfaceGraphicPresenterPointer graphicPresenter = new SurfaceGraphicPresenter();
+    SurfaceGraphicPresenterPointer graphicPresenter =
+        MakePointer<SurfaceGraphicPresenter>();
     if (!graphicPresenter || !graphicPresenter->init(*graphicDevice, _surface, m_swapChainDesc, presentationQueue))
     {
         EGO_SAFE_RESET_POINTER_WITH_RELEASING(graphicPresenter);

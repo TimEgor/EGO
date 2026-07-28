@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
@@ -22,7 +22,7 @@ namespace ego::engine
     class GuiRenderController final : public NonCopyable
     {
     public:
-        using FrameRenderTargetCollection = std::vector<gpu::Texture2DReference>;
+        using FrameRenderTargetCollection = std::vector<gpu::Texture2DPointer>;
 
         GuiRenderController() = default;
         ~GuiRenderController() override;

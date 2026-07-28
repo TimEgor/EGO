@@ -23,7 +23,7 @@ namespace ego::gui
         bool endFrame(GuiRenderData& _renderData) override;
         void cancelFrame() override;
 
-        GuiFrameTextureID bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode) override;
+        GuiFrameTextureID bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode) override;
 
         bool isInitialized() const override;
 

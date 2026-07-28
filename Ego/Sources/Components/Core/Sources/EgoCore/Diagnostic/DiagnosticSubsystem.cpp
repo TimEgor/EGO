@@ -12,14 +12,14 @@ bool ego::DiagnosticSubsystem::init()
 {
     release();
 
-    m_assertController = new AssertController();
+    m_assertController = MakePointer<AssertController>();
     EGO_CHECK_INITIALIZATION(m_assertController);
 
-    m_loggerController = new log::LoggerController();
+    m_loggerController = MakePointer<log::LoggerController>();
     EGO_CHECK_INITIALIZATION(m_loggerController);
     EGO_CHECK_INITIALIZATION(m_loggerController->init());
 
-    m_profilerController = new profile::ProfilerController();
+    m_profilerController = MakePointer<profile::ProfilerController>();
     EGO_CHECK_INITIALIZATION(m_profilerController);
 
     return true;

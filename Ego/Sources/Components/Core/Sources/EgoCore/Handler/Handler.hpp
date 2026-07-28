@@ -14,7 +14,7 @@ namespace ego::handler_details
     }
 
     template <typename T>
-    const Reference<T>& ResolveHandlerObject(const Reference<T>& _object)
+    const IntrusivePointer<T>& ResolveHandlerObject(const IntrusivePointer<T>& _object)
     {
         return _object;
     }
@@ -66,7 +66,7 @@ namespace ego::handler_details
     }
 
     template <typename T>
-    T* GetObjectPointer(const Reference<T>& _object)
+    T* GetObjectPointer(const IntrusivePointer<T>& _object)
     {
         return _object.getObject();
     }
@@ -85,7 +85,7 @@ ego::Handler<T>::Handler(std::nullptr_t)
 }
 
 template <typename T>
-ego::Handler<T>::Handler(const SourceReference& _source)
+ego::Handler<T>::Handler(const SourcePointer& _source)
     : m_source(_source)
 {
 }
@@ -130,7 +130,7 @@ typename ego::Handler<T>::ObjectResult ego::Handler<T>::getObject() const
 }
 
 template <typename T>
-const typename ego::Handler<T>::SourceReference& ego::Handler<T>::getSource() const
+const typename ego::Handler<T>::SourcePointer& ego::Handler<T>::getSource() const
 {
     return m_source;
 }
@@ -200,7 +200,7 @@ ego::Handler<TResult> ego::MakeHandler(TOwner&& _owner, TResolver&& _resolver)
     using SourceResolverType = std::decay_t<TResolver>;
     using SourceType = ResolvedHandlerSource<TResult, SourceOwnerType, SourceResolverType>;
 
-    return Handler<TResult>(typename Handler<TResult>::SourceReference(new SourceType(std::forward<TOwner>(_owner), std::forward<TResolver>(_resolver))));
+    return Handler<TResult>(MakeIntrusive<SourceType>(std::forward<TOwner>(_owner), std::forward<TResolver>(_resolver)));
 }
 
 template <typename TResult>

@@ -28,7 +28,7 @@ namespace ego::gui
         void release();
 
         void beginFrame();
-        GuiFrameTextureID bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode);
+        GuiFrameTextureID bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode);
         bool buildRenderData(const ImGuiPlatformAdapter& _platform, GuiRenderData& _renderData);
 
     private:

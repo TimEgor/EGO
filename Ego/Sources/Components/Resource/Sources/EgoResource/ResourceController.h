@@ -94,7 +94,7 @@ namespace ego
                 _path,
                 [controller]()
                 {
-                    return SharedPointer<TResource>(new TResource(), ResourceDeleter(controller));
+                    return MakePointerWithDeleter<TResource>(ResourceDeleter(controller));
                 }));
         }
 
@@ -109,7 +109,7 @@ namespace ego
                 _path,
                 [controller]()
                 {
-                    return SharedPointer<TResource>(new TResource(), ResourceDeleter(controller));
+                    return MakePointerWithDeleter<TResource>(ResourceDeleter(controller));
                 });
         }
 
@@ -173,7 +173,7 @@ namespace ego
         void completePendingLoading(const ResourceDependencyGraph::PendingLoadingPointer& _pendingLoading);
         bool waitResourceLoading(const ResourcePointer& _resource);
 
-        void waitLoadingJobs(const std::vector<JobReference>& _jobs);
+        void waitLoadingJobs(const std::vector<JobPointer>& _jobs);
         void waitAllLoadingJobs();
 
         ResourceRegistry m_resourceRegistry;

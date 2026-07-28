@@ -4,7 +4,7 @@
 #include <thread>
 #include <vector>
 
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "Job.h"
 #include "JobGraph.h"
@@ -24,14 +24,14 @@ namespace ego
         bool init(uint32_t _threadCount, const char* _name = "EgoJob");
         void release();
 
-        void addJob(const JobReference& _job);
-        void addJobGraph(const JobGraphReference& _jobGraph);
+        void addJob(const JobPointer& _job);
+        void addJobGraph(const JobGraphPointer& _jobGraph);
 
-        void wait(const JobReference& job);
-        void waitAndExecute(const JobReference& job);
+        void wait(const JobPointer& job);
+        void waitAndExecute(const JobPointer& job);
 
-        void wait(const JobGraphReference& _jobGraph);
-        void waitAndExecute(const JobGraphReference& _jobGraph);
+        void wait(const JobGraphPointer& _jobGraph);
+        void waitAndExecute(const JobGraphPointer& _jobGraph);
 
         uint32_t getJobExecutorCount() const;
 

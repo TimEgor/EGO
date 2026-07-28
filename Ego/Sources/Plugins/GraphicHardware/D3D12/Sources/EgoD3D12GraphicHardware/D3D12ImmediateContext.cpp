@@ -35,7 +35,7 @@ bool ego::gpu::d3d12::D3D12ImmediateContext::init(ID3D12Device5* _device)
         return false;
     }
 
-    m_fence = FenceReference(new D3D12Fence(0, std::move(fence)));
+    m_fence = MakeIntrusive<D3D12Fence>(0, std::move(fence));
     m_fenceValue = 0;
     return true;
 }
@@ -67,38 +67,38 @@ bool ego::gpu::d3d12::D3D12ImmediateContext::wait()
     return true;
 }
 
-ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12ImmediateContext::submit(
+ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12ImmediateContext::submit(
     const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands,
-    const std::vector<GraphicObjectReference>& _keepAliveObjects)
+    const std::vector<GraphicObjectPointer>& _keepAliveObjects)
 {
     if (!_recordCommands || !m_queue || !m_allocator || !m_commandList || !m_fence)
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
-    EGO_CHECK_RETURN_VALUE(wait(), GpuTaskReference());
-    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_allocator->Reset()), GpuTaskReference());
-    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_commandList->Reset(m_allocator.Get(), nullptr)), GpuTaskReference());
+    EGO_CHECK_RETURN_VALUE(wait(), GpuTaskPointer());
+    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_allocator->Reset()), GpuTaskPointer());
+    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_commandList->Reset(m_allocator.Get(), nullptr)), GpuTaskPointer());
 
     _recordCommands(m_commandList.Get());
-    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_commandList->Close()), GpuTaskReference());
+    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_commandList->Close()), GpuTaskPointer());
 
     ID3D12CommandList* commandLists[] = {m_commandList.Get()};
     m_queue->ExecuteCommandLists(1, commandLists);
 
     ++m_fenceValue;
     ID3D12Fence* fence = m_fence->getNativeHandle<ID3D12Fence>();
-    EGO_CHECK_RETURN_VALUE(fence, GpuTaskReference());
-    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_queue->Signal(fence, m_fenceValue)), GpuTaskReference());
+    EGO_CHECK_RETURN_VALUE(fence, GpuTaskPointer());
+    EGO_CHECK_RETURN_VALUE(SUCCEEDED(m_queue->Signal(fence, m_fenceValue)), GpuTaskPointer());
 
-    GpuTaskReference task(new GpuTask());
+    GpuTaskPointer task = MakeIntrusive<GpuTask>();
     GpuSyncPoint syncPoint;
     syncPoint.m_queueType = CommandType::Graphic;
     syncPoint.m_fence = m_fence;
     syncPoint.m_value = m_fenceValue;
     task->addSyncPoint(syncPoint);
 
-    for (const GraphicObjectReference& keepAliveObject : _keepAliveObjects)
+    for (const GraphicObjectPointer& keepAliveObject : _keepAliveObjects)
     {
         task->addKeepAliveObject(keepAliveObject);
     }
@@ -108,7 +108,7 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12ImmediateContext::submit(
 
 bool ego::gpu::d3d12::D3D12ImmediateContext::execute(const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands)
 {
-    GpuTaskReference task = submit(_recordCommands);
+    GpuTaskPointer task = submit(_recordCommands);
     if (!task)
     {
         return false;

@@ -29,7 +29,7 @@ namespace ego::render
 
         using PointCollection = std::vector<PointData>;
 
-        RasterizationMaterialRenderPassInfoReference m_materialInfo = nullptr;
+        RasterizationMaterialRenderPassInfoPointer m_materialInfo = nullptr;
         DebugElementBufferPool m_pointData;
         PointCollection m_pointCommands;
         uint32_t m_pointCount = 0;
@@ -67,7 +67,7 @@ namespace ego::render
 
         using LineCollection = std::vector<LineData>;
 
-        RasterizationMaterialRenderPassInfoReference m_materialInfo = nullptr;
+        RasterizationMaterialRenderPassInfoPointer m_materialInfo = nullptr;
         DebugElementBufferPool m_lineData;
         LineCollection m_lineCommands;
         uint32_t m_lineCount = 0;

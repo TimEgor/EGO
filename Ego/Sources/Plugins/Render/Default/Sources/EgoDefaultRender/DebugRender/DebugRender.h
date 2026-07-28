@@ -50,7 +50,7 @@ namespace ego::render
         RenderGraphicPipeline getOrCreateDebugDrawPipeline(
             GraphicDevice& _graphicDevice,
             RenderPipelineStateCache& _pipelineStateCache,
-            const RasterizationMaterialRenderPassInfoReference& _materialInfo,
+            const RasterizationMaterialRenderPassInfoPointer& _materialInfo,
             const gpu::InputLayoutDesc& _inputLayoutDesc,
             gpu::PrimitiveTopology _topology) const;
 
@@ -67,7 +67,7 @@ namespace ego::render
 
         static gpu::InputLayoutDesc CreatePointInputLayout();
         static gpu::InputLayoutDesc CreateLineInputLayout();
-        static RasterizationMaterialRenderPassInfoReference CreateDebugDrawMaterialInfo(const RenderVertexShader& _vertexShader, const RenderPixelShader& _pixelShader);
+        static RasterizationMaterialRenderPassInfoPointer CreateDebugDrawMaterialInfo(const RenderVertexShader& _vertexShader, const RenderPixelShader& _pixelShader);
 
         RenderBindingLayout m_bindingLayout = nullptr;
         gpu::GraphicResourceFormat m_renderTargetFormat = gpu::GraphicResourceFormat::Undefined;

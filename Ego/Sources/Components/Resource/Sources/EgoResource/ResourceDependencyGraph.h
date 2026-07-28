@@ -36,7 +36,7 @@ namespace ego
 
         using PendingLoadingPointer = std::shared_ptr<PendingLoading>;
         using PendingLoadingCollection = std::vector<PendingLoadingPointer>;
-        using LoadingJobResolver = std::function<JobReference(const ResourcePointer& _resource)>;
+        using LoadingJobResolver = std::function<JobPointer(const ResourcePointer& _resource)>;
 
         bool addDependency(Resource& _resource, const ResourcePointer& _dependency) const;
         PendingLoadingPointer createPendingLoading(Resource& _resource, const ResourcePointer& _registeredResource, Resource::DependencyCollection&& _dependencies) const;
@@ -45,7 +45,7 @@ namespace ego
         PendingLoadingCompletionResult completePendingLoading(const PendingLoadingPointer& _pendingLoading) const;
         ResourcePointer getPendingResource(const PendingLoadingPointer& _pendingLoading) const;
 
-        void collectResourceLoadingJobs(const ResourcePointer& _resource, const LoadingJobResolver& _loadingJobResolver, std::vector<JobReference>& _jobs) const;
+        void collectResourceLoadingJobs(const ResourcePointer& _resource, const LoadingJobResolver& _loadingJobResolver, std::vector<JobPointer>& _jobs) const;
         bool isChildResourcesLoaded(const ResourcePointer& _resource) const;
         void clear();
 
@@ -59,7 +59,7 @@ namespace ego
             const ResourcePointer& _resource,
             const LoadingJobResolver& _loadingJobResolver,
             std::unordered_set<const Resource*>& _checkedResources,
-            std::vector<JobReference>& _jobs) const;
+            std::vector<JobPointer>& _jobs) const;
         bool hasDependencyCycle(const Resource& _resource, const Resource::DependencyCollection& _dependencies) const;
         bool hasDependencyCycle(const Resource& _resource, const ResourcePointer& _dependency) const;
         bool hasDependencyPath(const ResourcePointer& _resource, const Resource* _targetResource, std::unordered_set<const Resource*>& _checkedResources) const;

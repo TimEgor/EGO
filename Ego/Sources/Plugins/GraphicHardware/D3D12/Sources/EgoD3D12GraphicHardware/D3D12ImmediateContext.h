@@ -20,16 +20,16 @@ namespace ego::gpu::d3d12
         void release();
         bool wait();
 
-        GpuTaskReference submit(
+        GpuTaskPointer submit(
             const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands,
-            const std::vector<GraphicObjectReference>& _keepAliveObjects = std::vector<GraphicObjectReference>());
+            const std::vector<GraphicObjectPointer>& _keepAliveObjects = std::vector<GraphicObjectPointer>());
         bool execute(const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands);
 
     private:
         Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_allocator;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> m_commandList;
-        FenceReference m_fence = nullptr;
+        FencePointer m_fence = nullptr;
         uint64_t m_fenceValue = 0;
     };
 } // namespace ego::gpu::d3d12

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "EgoCore/Pointer/IntrusivePointerIdentity.h"
+
 #include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 
 namespace ego
@@ -42,11 +44,6 @@ namespace ego::render
 
         using GraphicPipelineMap = std::unordered_multimap<uint64_t, GraphicPipelineEntry>;
         using RayTracingPipelineMap = std::unordered_multimap<uint64_t, RayTracingPipelineEntry>;
-
-        static uint64_t HashPointer(const void* _pointer);
-
-        template <typename TReference>
-        static uint64_t HashReference(const TReference& _reference);
 
         static uint64_t HashRasterizationState(const gpu::RasterizationStateDesc& _desc);
         static uint64_t HashDepthStencilState(const gpu::DepthStencilStateDesc& _desc);

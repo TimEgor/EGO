@@ -32,16 +32,16 @@ namespace ego::gpu::d3d12
         void endInternal();
 
         void bindBindlessDescriptorHeapsInternal();
-        void resourceBarrierInternal(const GraphicResourceReference& _resource, GraphicResourceState _nextState);
+        void resourceBarrierInternal(const GraphicResourcePointer& _resource, GraphicResourceState _nextState);
 
         void pushConstantsInternal(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data);
-        void setRayTracingPipelineInternal(const RayTracingPipelineReference& _pipeline);
+        void setRayTracingPipelineInternal(const RayTracingPipelinePointer& _pipeline);
         void dispatchRaysInternal(const DispatchRaysDesc& _desc);
 
-        void copyBufferInternal(const BufferReference& _srcBuffer, const BufferReference& _dstBuffer, const BufferCopyRegionDesc& _region);
-        void copyTextureInternal(const TextureReference& _srcTexture, const TextureReference& _dstTexture, const TextureCopyRegionDesc& _region);
-        void copyBufferToTextureInternal(const BufferReference& _srcBuffer, const TextureReference& _dstTexture, const BufferTextureCopyRegionDesc& _region);
-        void copyTextureToBufferInternal(const TextureReference& _srcTexture, const BufferReference& _dstBuffer, const BufferTextureCopyRegionDesc& _region);
+        void copyBufferInternal(const BufferPointer& _srcBuffer, const BufferPointer& _dstBuffer, const BufferCopyRegionDesc& _region);
+        void copyTextureInternal(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region);
+        void copyBufferToTextureInternal(const BufferPointer& _srcBuffer, const TexturePointer& _dstTexture, const BufferTextureCopyRegionDesc& _region);
+        void copyTextureToBufferInternal(const TexturePointer& _srcTexture, const BufferPointer& _dstBuffer, const BufferTextureCopyRegionDesc& _region);
 
         D3D12GraphicDevice* m_device = nullptr;
         const D3D12DescriptorFactory* m_descriptorFactory = nullptr;
@@ -69,17 +69,17 @@ namespace ego::gpu::d3d12
         void reset() override;
         void end() override;
 
-        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) override;
+        void resourceBarrier(const GraphicResourcePointer& _resource, GraphicResourceState _nextState) override;
 
         void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) override;
 
-        void copyBuffer(const BufferReference& _srcBuffer, const BufferReference& _dstBuffer, const BufferCopyRegionDesc& _region) override;
+        void copyBuffer(const BufferPointer& _srcBuffer, const BufferPointer& _dstBuffer, const BufferCopyRegionDesc& _region) override;
 
-        void copyTexture(const TextureReference& _srcTexture, const TextureReference& _dstTexture, const TextureCopyRegionDesc& _region) override;
+        void copyTexture(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region) override;
 
-        void copyBufferToTexture(const BufferReference& _srcBuffer, const TextureReference& _dstTexture, const BufferTextureCopyRegionDesc& _region) override;
+        void copyBufferToTexture(const BufferPointer& _srcBuffer, const TexturePointer& _dstTexture, const BufferTextureCopyRegionDesc& _region) override;
 
-        void copyTextureToBuffer(const TextureReference& _srcTexture, const BufferReference& _dstBuffer, const BufferTextureCopyRegionDesc& _region) override;
+        void copyTextureToBuffer(const TexturePointer& _srcTexture, const BufferPointer& _dstBuffer, const BufferTextureCopyRegionDesc& _region) override;
     };
 
     class D3D12ComputeCommandList final : public ComputeCommandList, public D3D12CommandListBase
@@ -98,20 +98,20 @@ namespace ego::gpu::d3d12
         void reset() override;
         void end() override;
 
-        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) override;
+        void resourceBarrier(const GraphicResourcePointer& _resource, GraphicResourceState _nextState) override;
 
         void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) override;
 
-        void copyBuffer(const BufferReference& _srcBuffer, const BufferReference& _dstBuffer, const BufferCopyRegionDesc& _region) override;
+        void copyBuffer(const BufferPointer& _srcBuffer, const BufferPointer& _dstBuffer, const BufferCopyRegionDesc& _region) override;
 
-        void copyTexture(const TextureReference& _srcTexture, const TextureReference& _dstTexture, const TextureCopyRegionDesc& _region) override;
+        void copyTexture(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region) override;
 
-        void copyBufferToTexture(const BufferReference& _srcBuffer, const TextureReference& _dstTexture, const BufferTextureCopyRegionDesc& _region) override;
+        void copyBufferToTexture(const BufferPointer& _srcBuffer, const TexturePointer& _dstTexture, const BufferTextureCopyRegionDesc& _region) override;
 
-        void copyTextureToBuffer(const TextureReference& _srcTexture, const BufferReference& _dstBuffer, const BufferTextureCopyRegionDesc& _region) override;
+        void copyTextureToBuffer(const TexturePointer& _srcTexture, const BufferPointer& _dstBuffer, const BufferTextureCopyRegionDesc& _region) override;
 
-        void setPipeline(const ComputePipelineReference& _pipeline) override;
-        void setPipeline(const RayTracingPipelineReference& _pipeline) override;
+        void setPipeline(const ComputePipelinePointer& _pipeline) override;
+        void setPipeline(const RayTracingPipelinePointer& _pipeline) override;
         void dispatch(uint32_t _threadGroupsX, uint32_t _threadGroupsY, uint32_t _threadGroupsZ) override;
         void dispatchRays(const DispatchRaysDesc& _desc) override;
     };
@@ -132,31 +132,31 @@ namespace ego::gpu::d3d12
         void reset() override;
         void end() override;
 
-        void resourceBarrier(const GraphicResourceReference& _resource, GraphicResourceState _nextState) override;
+        void resourceBarrier(const GraphicResourcePointer& _resource, GraphicResourceState _nextState) override;
 
         void pushConstants(ShaderStageFlags _stageFlags, uint32_t _offset, uint32_t _size, const void* _data) override;
 
-        void copyBuffer(const BufferReference& _srcBuffer, const BufferReference& _dstBuffer, const BufferCopyRegionDesc& _region) override;
+        void copyBuffer(const BufferPointer& _srcBuffer, const BufferPointer& _dstBuffer, const BufferCopyRegionDesc& _region) override;
 
-        void copyTexture(const TextureReference& _srcTexture, const TextureReference& _dstTexture, const TextureCopyRegionDesc& _region) override;
+        void copyTexture(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region) override;
 
-        void copyBufferToTexture(const BufferReference& _srcBuffer, const TextureReference& _dstTexture, const BufferTextureCopyRegionDesc& _region) override;
+        void copyBufferToTexture(const BufferPointer& _srcBuffer, const TexturePointer& _dstTexture, const BufferTextureCopyRegionDesc& _region) override;
 
-        void copyTextureToBuffer(const TextureReference& _srcTexture, const BufferReference& _dstBuffer, const BufferTextureCopyRegionDesc& _region) override;
+        void copyTextureToBuffer(const TexturePointer& _srcTexture, const BufferPointer& _dstBuffer, const BufferTextureCopyRegionDesc& _region) override;
 
-        void setPipeline(const ComputePipelineReference& _pipeline) override;
-        void setPipeline(const RayTracingPipelineReference& _pipeline) override;
+        void setPipeline(const ComputePipelinePointer& _pipeline) override;
+        void setPipeline(const RayTracingPipelinePointer& _pipeline) override;
         void dispatch(uint32_t _threadGroupsX, uint32_t _threadGroupsY, uint32_t _threadGroupsZ) override;
         void dispatchRays(const DispatchRaysDesc& _desc) override;
 
         void beginRendering(const RenderingDesc& _desc) override;
         void endRendering() override;
 
-        void setPipeline(const GraphicPipelineReference& _pipeline) override;
+        void setPipeline(const GraphicPipelinePointer& _pipeline) override;
         void setViewport(const ViewportDesc& _viewportDesc) override;
         void setScissorRect(const ScissorRectDesc& _scissorRect) override;
-        void setVertexBuffer(uint32_t _slot, const BufferReference& _buffer, uint32_t _stride, uint32_t _offset) override;
-        void setIndexBuffer(const BufferReference& _buffer, GraphicResourceFormat _format, uint32_t _offset) override;
+        void setVertexBuffer(uint32_t _slot, const BufferPointer& _buffer, uint32_t _stride, uint32_t _offset) override;
+        void setIndexBuffer(const BufferPointer& _buffer, GraphicResourceFormat _format, uint32_t _offset) override;
 
         void draw(uint32_t _vertexCount, uint32_t _instanceCount, uint32_t _firstVertex, uint32_t _firstInstance) override;
 

@@ -11,7 +11,7 @@
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Platform/FileSystem/FileSystem.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 namespace ego
@@ -125,26 +125,27 @@ namespace ego
     SharedPointer<TResource> CreateResource(TArgs&&... _args)
     {
         static_assert(std::is_base_of_v<Resource, TResource>);
-        return SharedPointer<TResource>(new TResource(std::forward<TArgs>(_args)...), ResourceDeleter{});
+
+        return MakePointerWithDeleter<TResource>(ResourceDeleter{}, std::forward<TArgs>(_args)...);
     }
 } // namespace ego
 
-#define EGO_RESOURCE(_RESOURCE, ...)                                                                                                                                               \
-    EGO_RTTI_VIRTUAL(_RESOURCE, __VA_ARGS__)                                                                                                                                       \
-                                                                                                                                                                                   \
-    static const char* GetResourceTypeName()                                                                                                                                       \
-    {                                                                                                                                                                              \
-        return GetMetaInfoTypeName();                                                                                                                                              \
-    }                                                                                                                                                                              \
-                                                                                                                                                                                   \
-    static ego::ResourceType GetResourceType()                                                                                                                                     \
-    {                                                                                                                                                                              \
-        return GetMetaInfoID();                                                                                                                                                    \
-    }                                                                                                                                                                              \
-                                                                                                                                                                                   \
-    virtual ego::ResourceType getType() const override                                                                                                                             \
-    {                                                                                                                                                                              \
-        return GetResourceType();                                                                                                                                                  \
+#define EGO_RESOURCE(_RESOURCE, ...)                                                                                                                           \
+    EGO_RTTI_VIRTUAL(_RESOURCE, __VA_ARGS__)                                                                                                                   \
+                                                                                                                                                               \
+    static const char* GetResourceTypeName()                                                                                                                   \
+    {                                                                                                                                                          \
+        return GetMetaInfoTypeName();                                                                                                                          \
+    }                                                                                                                                                          \
+                                                                                                                                                               \
+    static ego::ResourceType GetResourceType()                                                                                                                 \
+    {                                                                                                                                                          \
+        return GetMetaInfoID();                                                                                                                                \
+    }                                                                                                                                                          \
+                                                                                                                                                               \
+    virtual ego::ResourceType getType() const override                                                                                                         \
+    {                                                                                                                                                          \
+        return GetResourceType();                                                                                                                              \
     }
 
 #define EGO_RESOURCE_TYPE(_RESOURCE) (_RESOURCE::GetResourceType())

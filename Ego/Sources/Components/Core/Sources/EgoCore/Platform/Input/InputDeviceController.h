@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "InputDeviceProvider.h"
 
 namespace ego

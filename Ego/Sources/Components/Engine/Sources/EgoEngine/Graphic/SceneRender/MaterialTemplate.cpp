@@ -22,7 +22,7 @@ ego::render::MaterialRenderPassId ego::render::MakeMaterialRenderPassId(std::str
     return Crc32(_name.data(), _name.size());
 }
 
-bool ego::render::MaterialTemplate::setRenderPassInfo(MaterialRenderPassId _id, const MaterialRenderPassInfoReference& _info)
+bool ego::render::MaterialTemplate::setRenderPassInfo(MaterialRenderPassId _id, const MaterialRenderPassInfoPointer& _info)
 {
     if (_id == InvalidMaterialRenderPassId || !_info)
     {
@@ -33,7 +33,7 @@ bool ego::render::MaterialTemplate::setRenderPassInfo(MaterialRenderPassId _id, 
     return true;
 }
 
-bool ego::render::MaterialTemplate::setRenderPassInfo(std::string_view _name, const MaterialRenderPassInfoReference& _info)
+bool ego::render::MaterialTemplate::setRenderPassInfo(std::string_view _name, const MaterialRenderPassInfoPointer& _info)
 {
     return setRenderPassInfo(MakeMaterialRenderPassId(_name), _info);
 }
@@ -63,13 +63,13 @@ bool ego::render::MaterialTemplate::hasRenderPassInfo(std::string_view _name) co
     return hasRenderPassInfo(MakeMaterialRenderPassId(_name));
 }
 
-ego::render::MaterialRenderPassInfoReference ego::render::MaterialTemplate::getRenderPassInfo(MaterialRenderPassId _id) const
+ego::render::MaterialRenderPassInfoPointer ego::render::MaterialTemplate::getRenderPassInfo(MaterialRenderPassId _id) const
 {
     const auto foundInfo = m_renderPassInfos.find(_id);
     return foundInfo != m_renderPassInfos.end() ? foundInfo->second : nullptr;
 }
 
-ego::render::MaterialRenderPassInfoReference ego::render::MaterialTemplate::getRenderPassInfo(std::string_view _name) const
+ego::render::MaterialRenderPassInfoPointer ego::render::MaterialTemplate::getRenderPassInfo(std::string_view _name) const
 {
     return getRenderPassInfo(MakeMaterialRenderPassId(_name));
 }

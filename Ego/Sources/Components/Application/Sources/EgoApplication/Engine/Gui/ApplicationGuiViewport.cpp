@@ -332,7 +332,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceActivation(const Pla
     }
 
     resetInput();
-    m_input.push_back(gui::InputEventOwner(new gui::ViewportDeactivatedEvent()));
+    m_input.push_back(MakePointer<gui::ViewportDeactivatedEvent>());
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfacePointerCaptureLost(const PlatformSurfacePointerCaptureLostEvent& _event)
@@ -340,7 +340,7 @@ void ego::application::ApplicationGuiViewport::handleSurfacePointerCaptureLost(c
     EGO_CHECK_RETURN(m_presentation.m_surface && &_event.m_surface == m_presentation.m_surface.get());
 
     m_pressedMouseButtons = 0;
-    m_input.push_back(gui::InputEventOwner(new gui::PointerCaptureLostEvent()));
+    m_input.push_back(MakePointer<gui::PointerCaptureLostEvent>());
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfaceKeyboardInput(const PlatformSurfaceKeyboardInputEvent& _event)
@@ -357,7 +357,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceKeyboardInput(const 
     event.m_key = _event.m_input.m_key;
     event.m_action = _event.m_input.m_action;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(gui::InputEventOwner(new gui::KeyEvent(event)));
+    m_input.push_back(MakePointer<gui::KeyEvent>(event));
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfaceTextInput(const PlatformSurfaceTextInputEvent& _event)
@@ -368,7 +368,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceTextInput(const Plat
     gui::TextInputEvent event;
     event.m_codepoint = _event.m_input.m_codepoint;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(gui::InputEventOwner(new gui::TextInputEvent(event)));
+    m_input.push_back(MakePointer<gui::TextInputEvent>(event));
 }
 
 void ego::application::ApplicationGuiViewport::updateBounds()
@@ -437,7 +437,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerExit(const FloatVec
     event.m_position = position;
     event.m_screenPosition = _screenPosition;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(gui::InputEventOwner(new gui::PointerExitEvent(event)));
+    m_input.push_back(MakePointer<gui::PointerExitEvent>(event));
 
     return true;
 }
@@ -480,12 +480,12 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::PointerM
         pointerExitEvent.m_position = _event.m_position;
         pointerExitEvent.m_screenPosition = _event.m_screenPosition;
         pointerExitEvent.m_modifiers = m_modifiers;
-        m_input.push_back(gui::InputEventOwner(new gui::PointerExitEvent(pointerExitEvent)));
+        m_input.push_back(MakePointer<gui::PointerExitEvent>(pointerExitEvent));
         return true;
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(gui::InputEventOwner(new gui::PointerMoveEvent(std::move(_event))));
+    m_input.push_back(MakePointer<gui::PointerMoveEvent>(std::move(_event)));
     return true;
 }
 
@@ -500,7 +500,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::MouseBut
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(gui::InputEventOwner(new gui::MouseButtonEvent(std::move(_event))));
+    m_input.push_back(MakePointer<gui::MouseButtonEvent>(std::move(_event)));
     return true;
 }
 
@@ -515,7 +515,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::MouseWhe
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(gui::InputEventOwner(new gui::MouseWheelEvent(std::move(_event))));
+    m_input.push_back(MakePointer<gui::MouseWheelEvent>(std::move(_event)));
     return true;
 }
 

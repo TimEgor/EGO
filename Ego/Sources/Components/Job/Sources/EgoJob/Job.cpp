@@ -118,12 +118,12 @@ ego::LambdaJob::LambdaJob(const JobFunction& _function, const char* _dbgName)
     EGO_ASSERT_MESSAGE(_function, "Job lambda is null");
 }
 
-ego::JobReference ego::CreateLambdaJob(const LambdaJob::JobFunction& _function)
+ego::JobPointer ego::CreateLambdaJob(const LambdaJob::JobFunction& _function)
 {
-    return JobReference(new LambdaJob(_function));
+    return MakePointer<LambdaJob>(_function);
 }
 
-ego::JobReference ego::CreateLambdaJob(const LambdaJob::JobFunction& _function, const char* _dbgName)
+ego::JobPointer ego::CreateLambdaJob(const LambdaJob::JobFunction& _function, const char* _dbgName)
 {
-    return JobReference(new LambdaJob(_function, _dbgName));
+    return MakePointer<LambdaJob>(_function, _dbgName);
 }

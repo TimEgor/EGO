@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 #include "EgoECS/Entity.h"
@@ -39,7 +39,7 @@ namespace ego::render
         virtual void clearResources() = 0;
 
         virtual bool prepare(const RenderPrepareContext& _context) = 0;
-        virtual void render(const gpu::TextureViewReference& _targetView) = 0;
+        virtual void render(const gpu::TextureViewPointer& _targetView) = 0;
         virtual void wait() = 0;
 
         virtual void drawPoint(const DebugDrawPointData& _point) = 0;

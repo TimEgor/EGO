@@ -45,7 +45,7 @@ void ego::gpu::GpuTask::addSyncPoint(const GpuSyncPoint& _syncPoint)
     }
 }
 
-void ego::gpu::GpuTask::addKeepAliveObject(const GraphicObjectReference& _object)
+void ego::gpu::GpuTask::addKeepAliveObject(const GraphicObjectPointer& _object)
 {
     if (_object)
     {

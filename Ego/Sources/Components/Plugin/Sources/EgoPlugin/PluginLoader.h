@@ -2,7 +2,7 @@
 
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Reference/Reference.h"
+#include "EgoCore/Pointer/IntrusivePointer.h"
 
 #include "Plugin.h"
 
@@ -14,7 +14,7 @@ namespace ego
     class FileName;
     EGO_POINTER(Platform);
 
-    class PluginLoader : public STDDestroyMTCountable
+    class PluginLoader : public MTCountable
     {
     public:
         PluginLoader() = default;
@@ -36,5 +36,5 @@ namespace ego
         void releaseModule(void* _moduleHandle);
     };
 
-    EGO_REFERENCE(PluginLoader);
+    EGO_INTRUSIVE_POINTER(PluginLoader);
 } // namespace ego

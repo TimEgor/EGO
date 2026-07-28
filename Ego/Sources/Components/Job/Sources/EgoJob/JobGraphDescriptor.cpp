@@ -59,7 +59,7 @@ ego::JobGraphDescriptor::JobGraphDescriptor(const NodeCollection& _nodes, const 
 {
 }
 
-ego::JobGraphReference ego::JobGraphDescriptor::createJobGraph() const
+ego::JobGraphPointer ego::JobGraphDescriptor::createJobGraph() const
 {
     if (m_nodes.empty())
     {
@@ -76,7 +76,7 @@ ego::JobGraphReference ego::JobGraphDescriptor::createJobGraph() const
 
         if (node.m_type == NodeType::Job)
         {
-            const JobReference job = node.m_jobDescriptor.createJob();
+            const JobPointer job = node.m_jobDescriptor.createJob();
             if (!job)
             {
                 EGO_ASSERT_FAIL_MESSAGE("Job graph descriptor failed to create job.");
@@ -93,7 +93,7 @@ ego::JobGraphReference ego::JobGraphDescriptor::createJobGraph() const
                 return nullptr;
             }
 
-            const JobGraphReference jobGraph = node.m_jobGraphDescriptor->createJobGraph();
+            const JobGraphPointer jobGraph = node.m_jobGraphDescriptor->createJobGraph();
             if (!jobGraph)
             {
                 EGO_ASSERT_FAIL_MESSAGE("Nested job graph descriptor failed to create graph.");
@@ -421,7 +421,7 @@ ego::JobGraphDescriptorPointer ego::JobGraphDescriptorBuilder::build() const
                 JobDescriptorID(m_ownerID, childJobIndex, JobDescriptorID::BaseGeneration)});
     }
 
-    return JobGraphDescriptorPointer(new JobGraphDescriptor(nodes, dependencies, getDbgName()));
+    return MakePointer<JobGraphDescriptor>(nodes, dependencies, getDbgName());
 }
 
 bool ego::JobGraphDescriptorBuilder::hasDependency(JobDescriptorID _parentJobID, JobDescriptorID _childJobID) const

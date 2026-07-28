@@ -118,7 +118,7 @@ void ego::gui::ImGuiBackend::cancelFrame()
     restorePreviousContext();
 }
 
-ego::gui::GuiFrameTextureID ego::gui::ImGuiBackend::bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode)
+ego::gui::GuiFrameTextureID ego::gui::ImGuiBackend::bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode)
 {
     EGO_CHECK_RETURN_VALUE(m_isFrameActive, InvalidGuiFrameTextureID);
 

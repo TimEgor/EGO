@@ -54,7 +54,7 @@ ego::engine::EngineSessionPointer ego::engine::Engine::createSession(const Engin
     const EngineSessionID sessionID = allocateSessionID();
     EGO_CHECK_RETURN_NULL(sessionID != InvalidEngineSessionID);
 
-    EngineSessionPointer session = new EngineSession();
+    EngineSessionPointer session = MakePointer<EngineSession>();
     EGO_CHECK_RETURN_NULL(session);
     EGO_CHECK_RETURN_NULL(session->init(m_jobController, sessionID, _initData));
 
@@ -122,7 +122,7 @@ bool ego::engine::Engine::initJobController()
         threadCount = 1;
     }
 
-    m_jobController = new JobController();
+    m_jobController = MakePointer<JobController>();
     return m_jobController && m_jobController->init(threadCount, "EgoJob");
 }
 

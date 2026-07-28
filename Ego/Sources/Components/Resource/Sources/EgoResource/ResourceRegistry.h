@@ -21,9 +21,9 @@ namespace ego
         ResourcePointer getOrCreateResource(ResourceType _type, const FileName& _path, ResourceID _id, const ResourceFactory& _factory, bool& _needLoading);
 
         bool removeResource(Resource* _resource);
-        void setLoadingJob(const ResourcePointer& _resource, const JobReference& _job);
-        JobReference getLoadingJob(const ResourcePointer& _resource) const;
-        void collectLoadingJobs(std::vector<JobReference>& _jobs) const;
+        void setLoadingJob(const ResourcePointer& _resource, const JobPointer& _job);
+        JobPointer getLoadingJob(const ResourcePointer& _resource) const;
+        void collectLoadingJobs(std::vector<JobPointer>& _jobs) const;
         void clear();
 
     private:
@@ -34,7 +34,7 @@ namespace ego
             ResourceFactory m_factory;
             ResourceWeakPointer m_resource;
             Resource* m_resourcePtr = nullptr;
-            JobWeakReference m_loadingJob;
+            JobWeakPointer m_loadingJob;
         };
 
         using ResourceCollection = std::unordered_map<ResourceID, ResourceEntry>;

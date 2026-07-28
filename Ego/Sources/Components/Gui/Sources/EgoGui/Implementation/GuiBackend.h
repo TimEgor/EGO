@@ -22,7 +22,7 @@ namespace ego::gui
         virtual bool endFrame(GuiRenderData& _renderData) = 0;
         virtual void cancelFrame() = 0;
 
-        virtual GuiFrameTextureID bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode) = 0;
+        virtual GuiFrameTextureID bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode) = 0;
 
         virtual bool isInitialized() const = 0;
     };

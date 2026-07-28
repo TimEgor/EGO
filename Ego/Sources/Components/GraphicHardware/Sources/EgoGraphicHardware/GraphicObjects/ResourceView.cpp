@@ -1,11 +1,11 @@
 #include "ResourceView.h"
 
-ego::gpu::ResourceView::ResourceView(const GraphicResourceReference& _resource)
+ego::gpu::ResourceView::ResourceView(const GraphicResourcePointer& _resource)
     : m_resource(_resource)
 {
 }
 
-const ego::gpu::GraphicResourceReference& ego::gpu::ResourceView::getResource() const
+const ego::gpu::GraphicResourcePointer& ego::gpu::ResourceView::getResource() const
 {
     return m_resource;
 }

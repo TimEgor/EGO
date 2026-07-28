@@ -4,7 +4,7 @@
 
 #include "EgoGui/Implementation/GuiBackend.h"
 
-ego::gui::GuiFrameTextureID ego::gui::GuiLayer::bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode) const
+ego::gui::GuiFrameTextureID ego::gui::GuiLayer::bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode) const
 {
     if (!m_activeBackend)
     {

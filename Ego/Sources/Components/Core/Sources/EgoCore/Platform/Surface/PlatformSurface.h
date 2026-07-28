@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 #include "PlatformSurfaceEvents.h"

@@ -17,7 +17,8 @@ namespace ego::resources::dxc
 
     bool DXCResourceProviderPlugin::createRegistrations(RegistrationCollection& _registrations)
     {
-        const DXCShaderResourceProviderPointer shaderProvider = new DXCShaderResourceProvider();
+        const DXCShaderResourceProviderPointer shaderProvider =
+            MakePointer<DXCShaderResourceProvider>();
         if (!shaderProvider)
         {
             return false;

@@ -95,7 +95,7 @@ namespace ego::gpu::d3d12
         return D3D12_SHADER_VISIBILITY_ALL;
     }
 
-    inline bool IsValidShaderCode(const ShaderCodeReference& _code)
+    inline bool IsValidShaderCode(const ShaderCodePointer& _code)
     {
         return _code && _code->getCode() && _code->getCodeSize();
     }

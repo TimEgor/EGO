@@ -15,5 +15,5 @@ ego::gui::default_gui_render::DefaultGuiRenderPlugin::DefaultGuiRenderPlugin(con
 
 ego::gui::GuiRenderPointer ego::gui::default_gui_render::DefaultGuiRenderPlugin::createGuiRender()
 {
-    return GuiRenderPointer(new DefaultGuiRender());
+    return MakePointer<DefaultGuiRender>();
 }

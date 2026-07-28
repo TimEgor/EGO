@@ -11,7 +11,7 @@
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Containers/ObjectPool/ObjectPool.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoCore/Event/Event.h"
 

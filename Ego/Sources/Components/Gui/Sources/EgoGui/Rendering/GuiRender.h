@@ -13,7 +13,7 @@ namespace ego::gui
     class GuiRender : public NonCopyable
     {
     public:
-        using TargetCollection = std::vector<gpu::TextureViewReference>;
+        using TargetCollection = std::vector<gpu::TextureViewPointer>;
 
         GuiRender() = default;
         ~GuiRender() override = default;

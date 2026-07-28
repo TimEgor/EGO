@@ -94,7 +94,7 @@ bool ego::render::RayTracingGeometryCache::FillGeometryDesc(const Mesh& _mesh, g
 
 size_t ego::render::RayTracingGeometryCache::findEntryIndex(const MeshHandler& _mesh) const
 {
-    const MeshReference mesh = _mesh.getObject();
+    const MeshPointer mesh = _mesh.getObject();
     for (size_t entryIndex = 0; entryIndex < m_entries.size(); ++entryIndex)
     {
         if (m_entries[entryIndex].m_mesh.getObject() == mesh)

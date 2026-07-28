@@ -117,7 +117,7 @@ bool ego::application::Application::isExitRequested() const
 
 bool ego::application::Application::initDiagnosticSubsystem()
 {
-    m_diagnosticSubsystem = new DiagnosticSubsystem();
+    m_diagnosticSubsystem = MakePointer<DiagnosticSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem);
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem->init());
 
@@ -126,7 +126,7 @@ bool ego::application::Application::initDiagnosticSubsystem()
 
 bool ego::application::Application::initEventSubsystem()
 {
-    m_eventSubsystem = new EventSubsystem();
+    m_eventSubsystem = MakePointer<EventSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_eventSubsystem);
     EGO_CHECK_RETURN_FALSE(m_eventSubsystem->init());
 
@@ -135,7 +135,7 @@ bool ego::application::Application::initEventSubsystem()
 
 bool ego::application::Application::initPlatformSubsystem(void* _nativeInstanceHandle)
 {
-    m_platformSubsystem = new PlatformSubsystem();
+    m_platformSubsystem = MakePointer<PlatformSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_platformSubsystem);
 
     PlatformSubsystem::InitData platformSubsystemInitData;
@@ -147,7 +147,7 @@ bool ego::application::Application::initPlatformSubsystem(void* _nativeInstanceH
 
 bool ego::application::Application::initPluginSubsystem(const FileName& _pluginDirectory)
 {
-    m_pluginSubsystem = new PluginSubsystem();
+    m_pluginSubsystem = MakePointer<PluginSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem->init());
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_pluginSubsystem));
@@ -158,7 +158,7 @@ bool ego::application::Application::initPluginSubsystem(const FileName& _pluginD
 bool ego::application::Application::initApplicationProfiler(const FileName& _pluginModuleName)
 {
     // TODO: remove it with explicit profile handler
-    m_applicationProfiler = new ApplicationProfiler();
+    m_applicationProfiler = MakePointer<ApplicationProfiler>();
     EGO_CHECK_RETURN_FALSE(m_applicationProfiler);
 
     return m_applicationProfiler->init(_pluginModuleName);
@@ -166,7 +166,7 @@ bool ego::application::Application::initApplicationProfiler(const FileName& _plu
 
 bool ego::application::Application::initApplicationSubsystem()
 {
-    m_applicationSubsystem = new ApplicationSubsystem();
+    m_applicationSubsystem = MakePointer<ApplicationSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
     EGO_CHECK_RETURN_FALSE(m_applicationSubsystem->init(sharedFromThis()));
 
@@ -175,7 +175,7 @@ bool ego::application::Application::initApplicationSubsystem()
 
 bool ego::application::Application::initGraphicHardwareSubsystem(const FileName& _pluginModuleName)
 {
-    m_graphicHardwareSubsystem = new gpu::GraphicHardwareSubsystem();
+    m_graphicHardwareSubsystem = MakePointer<gpu::GraphicHardwareSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem);
 
     gpu::GraphicHardwareSubsystem::InitData graphicHardwareSubsystemInitData;
@@ -191,7 +191,7 @@ bool ego::application::Application::initResourceSubsystem()
     const FileSystemPointer resourceFileSystem = platform ? platform->getFileSystem() : nullptr;
     EGO_CHECK_RETURN_FALSE(resourceFileSystem);
 
-    m_resourceSubsystem = new ResourceSubsystem();
+    m_resourceSubsystem = MakePointer<ResourceSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_resourceSubsystem);
 
     ResourceSubsystem::InitData resourceSubsystemInitData;
@@ -254,7 +254,7 @@ bool ego::application::Application::initInputController()
 {
     EGO_CHECK_RETURN_FALSE(!m_inputController && !m_platformInputKeyProvider);
 
-    m_inputController = new InputController();
+    m_inputController = MakePointer<InputController>();
     EGO_CHECK_RETURN_FALSE(m_inputController && m_inputController->init());
 
     const PlatformPointer platform = GetPlatformPointer();
@@ -263,7 +263,8 @@ bool ego::application::Application::initInputController()
     InputDeviceController& platformInputDeviceController = platform->getInputDeviceController();
     EGO_CHECK_RETURN_FALSE(platformInputDeviceController.isInitialized());
 
-    m_platformInputKeyProvider = new ApplicationInputKeyProvider(platformInputDeviceController);
+    m_platformInputKeyProvider =
+        MakePointer<ApplicationInputKeyProvider>(platformInputDeviceController);
     EGO_CHECK_RETURN_FALSE(m_platformInputKeyProvider);
 
     return m_inputController->registerKeyProvider(m_platformInputKeyProvider);
@@ -284,7 +285,7 @@ bool ego::application::Application::initSubsystemRegistry()
 {
     EGO_CHECK_RETURN_FALSE(!m_subsystemRegistry);
 
-    m_subsystemRegistry = new subsystem::SubsystemRegistry();
+    m_subsystemRegistry = MakePointer<subsystem::SubsystemRegistry>();
     EGO_CHECK_RETURN_FALSE(m_subsystemRegistry);
 
     if (!subsystem::SubsystemLocator::GetInstance().bind(m_subsystemRegistry))
@@ -406,7 +407,8 @@ bool ego::application::Application::initWindowing()
     presentationInitData.m_swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
     presentationInitData.m_swapChainDesc.m_bufferCount = 2;
 
-    PlatformSurfacePresentationProviderPointer presenterProvider = new PlatformSurfacePresentationProvider();
+    PlatformSurfacePresentationProviderPointer presenterProvider =
+        MakePointer<PlatformSurfacePresentationProvider>();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
     EGO_CHECK_RETURN_FALSE(presenterProvider->init(presentationInitData));
     m_presenterProvider = presenterProvider;

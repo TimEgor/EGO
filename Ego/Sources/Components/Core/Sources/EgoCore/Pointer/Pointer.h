@@ -15,6 +15,12 @@ namespace ego
     template <typename T>
     class WeakPointer;
 
+    template <typename T, typename... TArguments>
+    SharedPointer<T> MakePointer(TArguments&&... _arguments);
+
+    template <typename T, typename TDeleter, typename... TArguments>
+    SharedPointer<T> MakePointerWithDeleter(TDeleter&& _deleter, TArguments&&... _arguments);
+
     template <typename T>
     class EnableSharedFromThis;
 
@@ -219,5 +225,9 @@ namespace ego
 #define EGO_WEAK_POINTER(_TYPE) EGO_WEAK_POINTER_DECLARATION(_TYPE, _TYPE, WeakPointer)
 
 #define EGO_NAMED_WEAK_POINTER(_TYPE, _NAME) EGO_WEAK_POINTER_DECLARATION(_TYPE, _NAME, WeakPointer)
+
+#define EGO_MAKE_POINTER(_TYPE, ...) ego::MakePointer<_TYPE>(__VA_ARGS__)
+
+#define EGO_MAKE_POINTER_WITH_DELETER(_TYPE, _DELETER, ...) ego::MakePointerWithDeleter<_TYPE>(_DELETER __VA_OPT__(, ) __VA_ARGS__)
 
 #include "Pointer.hpp"

@@ -70,7 +70,7 @@ ID3D12Resource* ego::gpu::d3d12::D3D12Buffer::getD3D12Resource() const
 }
 
 ego::gpu::d3d12::D3D12BufferView::D3D12BufferView(
-    const BufferReference& _buffer,
+    const BufferPointer& _buffer,
     const BufferViewDesc& _desc,
     D3D12DescriptorIndex _descriptorIndex,
     D3D12DescriptorAllocatorPointer& _allocator)

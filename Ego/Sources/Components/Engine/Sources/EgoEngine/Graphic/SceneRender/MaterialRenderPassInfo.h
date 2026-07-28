@@ -16,7 +16,7 @@ namespace ego::render
         bool operator!=(const RayTracingMaterialHitGroup& _other) const;
     };
 
-    class MaterialRenderPassInfo : public STDDestroyMTCountable
+    class MaterialRenderPassInfo : public MTCountable
     {
     public:
         MaterialRenderPassInfo() = default;
@@ -25,7 +25,7 @@ namespace ego::render
         EGO_RTTI_VIRTUAL_BASE(MaterialRenderPassInfo);
     };
 
-    EGO_REFERENCE(MaterialRenderPassInfo);
+    EGO_INTRUSIVE_POINTER(MaterialRenderPassInfo);
 
     class RasterizationMaterialRenderPassInfo final : public MaterialRenderPassInfo
     {
@@ -42,7 +42,7 @@ namespace ego::render
         RenderPixelShader m_pixelShader = nullptr;
     };
 
-    EGO_REFERENCE(RasterizationMaterialRenderPassInfo);
+    EGO_INTRUSIVE_POINTER(RasterizationMaterialRenderPassInfo);
 
     class RayTracingMaterialRenderPassInfo final : public MaterialRenderPassInfo
     {
@@ -57,5 +57,5 @@ namespace ego::render
         RayTracingMaterialHitGroup m_hitGroup;
     };
 
-    EGO_REFERENCE(RayTracingMaterialRenderPassInfo);
+    EGO_INTRUSIVE_POINTER(RayTracingMaterialRenderPassInfo);
 } // namespace ego::render

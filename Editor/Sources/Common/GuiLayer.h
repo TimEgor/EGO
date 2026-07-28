@@ -8,14 +8,14 @@ namespace ego::editor
     class GuiLayer final : public gui::GuiLayer
     {
     public:
-        void setSceneTexture(const gpu::TextureViewReference& _sceneTexture);
+        void setSceneTexture(const gpu::TextureViewPointer& _sceneTexture);
         void reset();
 
     private:
         void initializeDefaultLayout();
         void drawGui() override;
 
-        gpu::TextureViewReference m_sceneTexture = nullptr;
+        gpu::TextureViewPointer m_sceneTexture = nullptr;
         bool m_showSceneWindow = true;
         bool m_showHierarchyWindow = true;
         bool m_showInspectorWindow = true;

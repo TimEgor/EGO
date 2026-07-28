@@ -39,29 +39,29 @@ namespace
     }
 } // namespace
 
-template <typename TCommandListReference, typename TCommandListObject>
-TCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createCommandList(D3D12_COMMAND_LIST_TYPE _type)
+template <typename TCommandListPointer, typename TCommandListObject>
+TCommandListPointer ego::gpu::d3d12::D3D12GraphicDevice::createCommandList(D3D12_COMMAND_LIST_TYPE _type)
 {
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
 
     if (!getD3D12Device())
     {
-        return TCommandListReference();
+        return TCommandListPointer();
     }
 
     if (FAILED(getD3D12Device()->CreateCommandAllocator(_type, IID_PPV_ARGS(&allocator))))
     {
-        return TCommandListReference();
+        return TCommandListPointer();
     }
 
     if (FAILED(getD3D12Device()->CreateCommandList(0, _type, allocator.Get(), nullptr, IID_PPV_ARGS(&commandList))))
     {
-        return TCommandListReference();
+        return TCommandListPointer();
     }
 
     commandList->Close();
-    return TCommandListReference(new TCommandListObject(this, &m_descriptorFactory, std::move(allocator), std::move(commandList)));
+    return MakeIntrusive<TCommandListObject>(this, &m_descriptorFactory, std::move(allocator), std::move(commandList));
 }
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::createUploadBuffer(uint64_t _size, Microsoft::WRL::ComPtr<ID3D12Resource>& _resource) const
@@ -95,11 +95,11 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createUploadBuffer(uint64_t _size, Mic
             IID_PPV_ARGS(&_resource)));
 }
 
-ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createUploadD3D12Buffer(uint64_t _size)
+ego::IntrusivePointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createUploadD3D12Buffer(uint64_t _size)
 {
     if (!FitsUint32(_size))
     {
-        return ego::Reference<D3D12Buffer>();
+        return ego::IntrusivePointer<D3D12Buffer>();
     }
 
     BufferDesc uploadDesc;
@@ -111,17 +111,17 @@ ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice
     return createD3D12Buffer(uploadDesc);
 }
 
-ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBufferToDefaultHeap(
+ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadBufferToDefaultHeap(
     ID3D12Resource* _dstResource,
     uint64_t _dstSize,
     const InitialGraphicResourceData& _initialData)
 {
     const uint64_t uploadSize = (std::min<uint64_t>)(_initialData.m_dataSize, _dstSize);
-    ego::Reference<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(uploadSize);
+    ego::IntrusivePointer<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(uploadSize);
 
     if (!uploadBuffer || !WriteToUploadBuffer(uploadBuffer->getD3D12Resource(), _initialData.m_data, uploadSize, uploadSize))
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     return submitImmediateCommands(
@@ -145,10 +145,10 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBufferToDe
             afterCopyBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             _commandList->ResourceBarrier(1, &afterCopyBarrier);
         },
-        std::vector<GraphicObjectReference>{uploadBuffer});
+        std::vector<GraphicObjectPointer>{uploadBuffer});
 }
 
-ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DToDefaultHeap(
+ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DToDefaultHeap(
     ID3D12Resource* _dstResource,
     const D3D12_RESOURCE_DESC& _dstDesc,
     const InitialGraphicResourceData& _initialData)
@@ -159,22 +159,22 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DT
     UINT64 totalBytes = 0;
     if (!getD3D12Device())
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     getD3D12Device()->GetCopyableFootprints(&_dstDesc, 0, 1, 0, &footprint, &numRows, &rowSizeInBytes, &totalBytes);
 
-    ego::Reference<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(totalBytes);
+    ego::IntrusivePointer<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(totalBytes);
     if (!uploadBuffer)
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     void* mappedData = nullptr;
     D3D12_RANGE readRange = {};
     if (FAILED(uploadBuffer->getD3D12Resource()->Map(0, &readRange, &mappedData)))
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     auto srcBytes = static_cast<const uint8_t*>(_initialData.m_data);
@@ -224,7 +224,7 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DT
             afterCopyBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             _commandList->ResourceBarrier(1, &afterCopyBarrier);
         },
-        std::vector<GraphicObjectReference>{uploadBuffer});
+        std::vector<GraphicObjectPointer>{uploadBuffer});
 }
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
@@ -293,15 +293,15 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createShaderTable(
     return true;
 }
 
-template <typename TReference, typename TObject>
-ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::buildAccelerationStructure(
+template <typename TPointer, typename TObject>
+ego::gpu::GpuResourceTicket<TPointer> ego::gpu::d3d12::D3D12GraphicDevice::buildAccelerationStructure(
     const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& _inputs,
     const GpuOperationOptions& _options,
-    const std::vector<GraphicObjectReference>& _keepAliveObjects)
+    const std::vector<GraphicObjectPointer>& _keepAliveObjects)
 {
     if (!getD3D12Device())
     {
-        return GpuResourceTicket<TReference>();
+        return GpuResourceTicket<TPointer>();
     }
 
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
@@ -309,7 +309,7 @@ ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::bui
     if (prebuildInfo.ResultDataMaxSizeInBytes == 0 || prebuildInfo.ScratchDataSizeInBytes == 0 || !FitsUint32(prebuildInfo.ResultDataMaxSizeInBytes) ||
         !FitsUint32(prebuildInfo.ScratchDataSizeInBytes))
     {
-        return GpuResourceTicket<TReference>();
+        return GpuResourceTicket<TPointer>();
     }
 
     BufferDesc scratchDesc;
@@ -317,10 +317,10 @@ ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::bui
     scratchDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessGpuRead | GraphicResourceAccessGpuWrite);
     scratchDesc.m_size = static_cast<uint32_t>(prebuildInfo.ScratchDataSizeInBytes);
 
-    ego::Reference<D3D12Buffer> scratchBuffer = createD3D12Buffer(scratchDesc);
+    ego::IntrusivePointer<D3D12Buffer> scratchBuffer = createD3D12Buffer(scratchDesc);
     if (!scratchBuffer)
     {
-        return GpuResourceTicket<TReference>();
+        return GpuResourceTicket<TPointer>();
     }
 
     BufferDesc resultDesc;
@@ -328,16 +328,16 @@ ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::bui
     resultDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessGpuRead | GraphicResourceAccessGpuWrite);
     resultDesc.m_size = static_cast<uint32_t>(prebuildInfo.ResultDataMaxSizeInBytes);
 
-    ego::Reference<D3D12Buffer> resultBuffer = createD3D12Buffer(resultDesc);
+    ego::IntrusivePointer<D3D12Buffer> resultBuffer = createD3D12Buffer(resultDesc);
     if (!resultBuffer)
     {
-        return GpuResourceTicket<TReference>();
+        return GpuResourceTicket<TPointer>();
     }
 
-    std::vector<GraphicObjectReference> keepAliveObjects = _keepAliveObjects;
+    std::vector<GraphicObjectPointer> keepAliveObjects = _keepAliveObjects;
     keepAliveObjects.push_back(scratchBuffer);
 
-    GpuTaskReference buildTask = submitImmediateCommands(
+    GpuTaskPointer buildTask = submitImmediateCommands(
         [&](ID3D12GraphicsCommandList4* _commandList)
         {
             D3D12_RESOURCE_BARRIER scratchBarrier = {};
@@ -363,12 +363,12 @@ ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::bui
         keepAliveObjects);
     if (!buildTask)
     {
-        return GpuResourceTicket<TReference>();
+        return GpuResourceTicket<TPointer>();
     }
 
     resultBuffer->setLastWriteTask(buildTask);
 
-    TReference accelerationStructure(new TObject(resultBuffer));
+    TPointer accelerationStructure = MakeIntrusive<TObject>(resultBuffer);
     accelerationStructure->setLastWriteTask(buildTask);
 
     if (_options.shouldWait())
@@ -376,7 +376,7 @@ ego::gpu::GpuResourceTicket<TReference> ego::gpu::d3d12::D3D12GraphicDevice::bui
         buildTask->wait();
     }
 
-    return GpuResourceTicket<TReference>{accelerationStructure, buildTask};
+    return GpuResourceTicket<TPointer>{accelerationStructure, buildTask};
 }
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::init(const GraphicDevice::InitData& _initData)
@@ -411,11 +411,11 @@ void ego::gpu::d3d12::D3D12GraphicDevice::setName(const char* _name)
     SetD3D12ObjectName(getD3D12Device(), _name);
 }
 
-ego::gpu::CommandQueueReference ego::gpu::d3d12::D3D12GraphicDevice::createCommandQueue(const CommandQueueDesc& _desc)
+ego::gpu::CommandQueuePointer ego::gpu::d3d12::D3D12GraphicDevice::createCommandQueue(const CommandQueueDesc& _desc)
 {
     if (!getD3D12Device())
     {
-        return CommandQueueReference();
+        return CommandQueuePointer();
     }
 
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
@@ -427,37 +427,37 @@ ego::gpu::CommandQueueReference ego::gpu::d3d12::D3D12GraphicDevice::createComma
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> queue;
     if (FAILED(getD3D12Device()->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&queue))))
     {
-        return CommandQueueReference();
+        return CommandQueuePointer();
     }
 
-    return CommandQueueReference(new D3D12CommandQueue(_desc, std::move(queue)));
+    return MakeIntrusive<D3D12CommandQueue>(_desc, std::move(queue));
 }
 
-ego::gpu::GraphicCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createGraphicCommandList()
+ego::gpu::GraphicCommandListPointer ego::gpu::d3d12::D3D12GraphicDevice::createGraphicCommandList()
 {
-    return createCommandList<GraphicCommandListReference, D3D12GraphicCommandList>(D3D12_COMMAND_LIST_TYPE_DIRECT);
+    return createCommandList<GraphicCommandListPointer, D3D12GraphicCommandList>(D3D12_COMMAND_LIST_TYPE_DIRECT);
 }
 
-ego::gpu::ComputeCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createComputeCommandList()
+ego::gpu::ComputeCommandListPointer ego::gpu::d3d12::D3D12GraphicDevice::createComputeCommandList()
 {
-    return createCommandList<ComputeCommandListReference, D3D12ComputeCommandList>(D3D12_COMMAND_LIST_TYPE_COMPUTE);
+    return createCommandList<ComputeCommandListPointer, D3D12ComputeCommandList>(D3D12_COMMAND_LIST_TYPE_COMPUTE);
 }
 
-ego::gpu::CopyCommandListReference ego::gpu::d3d12::D3D12GraphicDevice::createCopyCommandList()
+ego::gpu::CopyCommandListPointer ego::gpu::d3d12::D3D12GraphicDevice::createCopyCommandList()
 {
-    return createCommandList<CopyCommandListReference, D3D12CopyCommandList>(D3D12_COMMAND_LIST_TYPE_COPY);
+    return createCommandList<CopyCommandListPointer, D3D12CopyCommandList>(D3D12_COMMAND_LIST_TYPE_COPY);
 }
 
-ego::gpu::BufferReference ego::gpu::d3d12::D3D12GraphicDevice::createBuffer(const BufferDesc& _desc)
+ego::gpu::BufferPointer ego::gpu::d3d12::D3D12GraphicDevice::createBuffer(const BufferDesc& _desc)
 {
     return createD3D12Buffer(_desc);
 }
 
-ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createD3D12Buffer(const BufferDesc& _desc)
+ego::IntrusivePointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createD3D12Buffer(const BufferDesc& _desc)
 {
     if (!getD3D12Device() || !_desc.m_size)
     {
-        return ego::Reference<D3D12Buffer>();
+        return ego::IntrusivePointer<D3D12Buffer>();
     }
 
     D3D12_HEAP_PROPERTIES heapProperties = {};
@@ -490,21 +490,21 @@ ego::Reference<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice
                 nullptr,
                 IID_PPV_ARGS(&resource))))
     {
-        return ego::Reference<D3D12Buffer>();
+        return ego::IntrusivePointer<D3D12Buffer>();
     }
 
-    return ego::Reference<D3D12Buffer>(new D3D12Buffer(_desc, std::move(resource)));
+    return MakeIntrusive<D3D12Buffer>(_desc, std::move(resource));
 }
 
-ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBuffer(
-    const BufferReference& _buffer,
+ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadBuffer(
+    const BufferPointer& _buffer,
     const InitialGraphicResourceData& _initialData,
     const GpuOperationOptions& _options)
 {
     ID3D12Resource* resource = _buffer ? _buffer->getNativeHandle<ID3D12Resource>() : nullptr;
     if (!resource || !_initialData.isValid())
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     const BufferDesc& desc = _buffer->getDesc();
@@ -513,20 +513,20 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBuffer(
     {
         if (!WriteToUploadBuffer(resource, _initialData.m_data, _initialData.m_dataSize, desc.m_size))
         {
-            return GpuTaskReference();
+            return GpuTaskPointer();
         }
 
-        GpuTaskReference uploadTask(new GpuTask());
+        GpuTaskPointer uploadTask = MakeIntrusive<GpuTask>();
         _buffer->setLastWriteTask(uploadTask);
         return uploadTask;
     }
 
     if (heapType == D3D12_HEAP_TYPE_DEFAULT)
     {
-        GpuTaskReference uploadTask = uploadBufferToDefaultHeap(resource, desc.m_size, _initialData);
+        GpuTaskPointer uploadTask = uploadBufferToDefaultHeap(resource, desc.m_size, _initialData);
         if (!uploadTask)
         {
-            return GpuTaskReference();
+            return GpuTaskPointer();
         }
 
         _buffer->setLastWriteTask(uploadTask);
@@ -539,14 +539,14 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadBuffer(
     }
 
     EGO_ASSERT_FAIL_MESSAGE("Initial data upload to readback heap is not supported");
-    return GpuTaskReference();
+    return GpuTaskPointer();
 }
 
-ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2D(const Texture2DDesc& _desc)
+ego::gpu::Texture2DPointer ego::gpu::d3d12::D3D12GraphicDevice::createTexture2D(const Texture2DDesc& _desc)
 {
     if (!getD3D12Device())
     {
-        return Texture2DReference();
+        return Texture2DPointer();
     }
 
     EGO_ASSERT_MESSAGE(
@@ -556,7 +556,7 @@ ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2
     const DXGI_FORMAT format = ToDXGIFormat(_desc.m_format);
     if (format == DXGI_FORMAT_UNKNOWN)
     {
-        return Texture2DReference();
+        return Texture2DPointer();
     }
 
     D3D12_RESOURCE_DESC resourceDesc = {};
@@ -604,33 +604,33 @@ ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12GraphicDevice::createTexture2
                 clearValuePtr,
                 IID_PPV_ARGS(&resource))))
     {
-        return Texture2DReference();
+        return Texture2DPointer();
     }
 
-    return Texture2DReference(new D3D12Texture2D(_desc, std::move(resource)));
+    return MakeIntrusive<D3D12Texture2D>(_desc, std::move(resource));
 }
 
-ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2D(
-    const Texture2DReference& _texture,
+ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2D(
+    const Texture2DPointer& _texture,
     const InitialGraphicResourceData& _initialData,
     const GpuOperationOptions& _options)
 {
     D3D12Texture2D* d3d12Texture = _texture ? static_cast<D3D12Texture2D*>(_texture.getObject()) : nullptr;
     if (!d3d12Texture || !_initialData.isValid())
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     EGO_ASSERT_MESSAGE(_texture->getDesc().m_samples.m_count <= 1, "Initial data upload for multisampled textures is not supported");
     if (_texture->getDesc().m_samples.m_count > 1)
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
-    GpuTaskReference uploadTask = uploadTexture2DToDefaultHeap(d3d12Texture->getD3D12Resource(), d3d12Texture->getD3D12Resource()->GetDesc(), _initialData);
+    GpuTaskPointer uploadTask = uploadTexture2DToDefaultHeap(d3d12Texture->getD3D12Resource(), d3d12Texture->getD3D12Resource()->GetDesc(), _initialData);
     if (!uploadTask)
     {
-        return GpuTaskReference();
+        return GpuTaskPointer();
     }
 
     _texture->setLastWriteTask(uploadTask);
@@ -642,99 +642,99 @@ ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2D(
     return uploadTask;
 }
 
-ego::gpu::SamplerReference ego::gpu::d3d12::D3D12GraphicDevice::createSampler(const SamplerDesc& _desc)
+ego::gpu::SamplerPointer ego::gpu::d3d12::D3D12GraphicDevice::createSampler(const SamplerDesc& _desc)
 {
     return m_descriptorFactory.createSampler(_desc);
 }
 
-ego::gpu::BufferViewReference ego::gpu::d3d12::D3D12GraphicDevice::createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc)
+ego::gpu::BufferViewPointer ego::gpu::d3d12::D3D12GraphicDevice::createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc)
 {
     return m_descriptorFactory.createBufferView(_buffer, _desc);
 }
 
-ego::gpu::TextureViewReference ego::gpu::d3d12::D3D12GraphicDevice::createTextureView(const TextureReference& _texture, const TextureViewDesc& _desc)
+ego::gpu::TextureViewPointer ego::gpu::d3d12::D3D12GraphicDevice::createTextureView(const TexturePointer& _texture, const TextureViewDesc& _desc)
 {
     return m_descriptorFactory.createTextureView(_texture, _desc);
 }
 
-ego::gpu::VertexShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createVertexShader(const ShaderCodeReference& _code)
+ego::gpu::VertexShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createVertexShader(const ShaderCodePointer& _code)
 {
     if (!_code || !_code->getCode() || !_code->getCodeSize())
     {
-        return VertexShaderReference();
+        return VertexShaderPointer();
     }
 
-    return VertexShaderReference(new D3D12VertexShader(_code));
+    return MakeIntrusive<D3D12VertexShader>(_code);
 }
 
-ego::gpu::PixelShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createPixelShader(const ShaderCodeReference& _code)
+ego::gpu::PixelShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createPixelShader(const ShaderCodePointer& _code)
 {
     if (!_code || !_code->getCode() || !_code->getCodeSize())
     {
-        return PixelShaderReference();
+        return PixelShaderPointer();
     }
 
-    return PixelShaderReference(new D3D12PixelShader(_code));
+    return MakeIntrusive<D3D12PixelShader>(_code);
 }
 
-ego::gpu::ComputeShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createComputeShader(const ShaderCodeReference& _code)
+ego::gpu::ComputeShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createComputeShader(const ShaderCodePointer& _code)
 {
     if (!IsValidShaderCode(_code))
     {
-        return ComputeShaderReference();
+        return ComputeShaderPointer();
     }
 
-    return ComputeShaderReference(new D3D12ComputeShader(_code));
+    return MakeIntrusive<D3D12ComputeShader>(_code);
 }
 
-ego::gpu::RayGenerationShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createRayGenerationShader(const ShaderCodeReference& _code)
+ego::gpu::RayGenerationShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createRayGenerationShader(const ShaderCodePointer& _code)
 {
     if (!IsValidShaderCode(_code))
     {
-        return RayGenerationShaderReference();
+        return RayGenerationShaderPointer();
     }
 
-    return RayGenerationShaderReference(new D3D12RayGenerationShader(_code));
+    return MakeIntrusive<D3D12RayGenerationShader>(_code);
 }
 
-ego::gpu::MissShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createMissShader(const ShaderCodeReference& _code)
+ego::gpu::MissShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createMissShader(const ShaderCodePointer& _code)
 {
     if (!IsValidShaderCode(_code))
     {
-        return MissShaderReference();
+        return MissShaderPointer();
     }
 
-    return MissShaderReference(new D3D12MissShader(_code));
+    return MakeIntrusive<D3D12MissShader>(_code);
 }
 
-ego::gpu::ClosestHitShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createClosestHitShader(const ShaderCodeReference& _code)
+ego::gpu::ClosestHitShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createClosestHitShader(const ShaderCodePointer& _code)
 {
     if (!IsValidShaderCode(_code))
     {
-        return ClosestHitShaderReference();
+        return ClosestHitShaderPointer();
     }
 
-    return ClosestHitShaderReference(new D3D12ClosestHitShader(_code));
+    return MakeIntrusive<D3D12ClosestHitShader>(_code);
 }
 
-ego::gpu::AnyHitShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createAnyHitShader(const ShaderCodeReference& _code)
+ego::gpu::AnyHitShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createAnyHitShader(const ShaderCodePointer& _code)
 {
     if (!IsValidShaderCode(_code))
     {
-        return AnyHitShaderReference();
+        return AnyHitShaderPointer();
     }
 
-    return AnyHitShaderReference(new D3D12AnyHitShader(_code));
+    return MakeIntrusive<D3D12AnyHitShader>(_code);
 }
 
-ego::gpu::IntersectionShaderReference ego::gpu::d3d12::D3D12GraphicDevice::createIntersectionShader(const ShaderCodeReference& _code)
+ego::gpu::IntersectionShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createIntersectionShader(const ShaderCodePointer& _code)
 {
     if (!IsValidShaderCode(_code))
     {
-        return IntersectionShaderReference();
+        return IntersectionShaderPointer();
     }
 
-    return IntersectionShaderReference(new D3D12IntersectionShader(_code));
+    return MakeIntrusive<D3D12IntersectionShader>(_code);
 }
 
 ego::gpu::GpuGeometryAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDevice::buildGeometryAccelerationStructure(
@@ -791,7 +791,7 @@ ego::gpu::GpuGeometryAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
     inputs.pGeometryDescs = geometryDescs.data();
 
     GpuGeometryAccelerationStructureTicket accelerationStructure =
-        buildAccelerationStructure<GeometryAccelerationStructureReference, D3D12GeometryAccelerationStructure>(inputs, _options);
+        buildAccelerationStructure<GeometryAccelerationStructurePointer, D3D12GeometryAccelerationStructure>(inputs, _options);
 
     return accelerationStructure;
 }
@@ -849,13 +849,13 @@ ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
 
     const InitialGraphicResourceData instanceData(instanceDescs.data(), static_cast<uint32_t>(instanceBufferSize));
     const GpuOperationOptions uploadOptions{GpuCompletionMode::WaitForCompletion};
-    ego::Reference<D3D12Buffer> instanceBuffer = createD3D12Buffer(instanceBufferDesc);
+    ego::IntrusivePointer<D3D12Buffer> instanceBuffer = createD3D12Buffer(instanceBufferDesc);
     if (!instanceBuffer)
     {
         return GpuInstanceAccelerationStructureTicket();
     }
 
-    GpuTaskReference instanceUploadTask = uploadBuffer(instanceBuffer, instanceData, uploadOptions);
+    GpuTaskPointer instanceUploadTask = uploadBuffer(instanceBuffer, instanceData, uploadOptions);
     if (!instanceUploadTask)
     {
         return GpuInstanceAccelerationStructureTicket();
@@ -869,21 +869,21 @@ ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
     inputs.InstanceDescs = instanceBuffer->getD3D12Resource()->GetGPUVirtualAddress();
 
     GpuInstanceAccelerationStructureTicket accelerationStructure =
-        buildAccelerationStructure<InstanceAccelerationStructureReference, D3D12InstanceAccelerationStructure>(
+        buildAccelerationStructure<InstanceAccelerationStructurePointer, D3D12InstanceAccelerationStructure>(
             inputs,
             _options,
-            std::vector<GraphicObjectReference>{instanceBuffer});
+            std::vector<GraphicObjectPointer>{instanceBuffer});
 
     return accelerationStructure;
 }
 
-ego::gpu::AccelerationStructureViewReference ego::gpu::d3d12::D3D12GraphicDevice::createAccelerationStructureView(
-    const InstanceAccelerationStructureReference& _accelerationStructure)
+ego::gpu::AccelerationStructureViewPointer ego::gpu::d3d12::D3D12GraphicDevice::createAccelerationStructureView(
+    const InstanceAccelerationStructurePointer& _accelerationStructure)
 {
     return m_descriptorFactory.createAccelerationStructureView(_accelerationStructure);
 }
 
-ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGraphicPipeline(const GraphicPipelineDesc& _desc)
+ego::gpu::GraphicPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createGraphicPipeline(const GraphicPipelineDesc& _desc)
 {
     const bool hasValidVertexShader = !_desc.m_vertexShader || _desc.m_vertexShader->getShaderType() == ShaderStage::Vertex;
     const bool hasValidPixelShader = !_desc.m_pixelShader || _desc.m_pixelShader->getShaderType() == ShaderStage::Pixel;
@@ -902,7 +902,7 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     if ((_desc.m_bindingLayout && !layout) || (_desc.m_vertexShader && !vertexShader) || (_desc.m_pixelShader && !pixelShader) || !hasValidVertexShader ||
         !hasValidPixelShader)
     {
-        return GraphicPipelineReference();
+        return GraphicPipelinePointer();
     }
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
@@ -1020,13 +1020,13 @@ ego::gpu::GraphicPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createGr
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
     if (FAILED(getD3D12Device()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
     {
-        return GraphicPipelineReference();
+        return GraphicPipelinePointer();
     }
 
-    return GraphicPipelineReference(new D3D12GraphicPipeline(_desc, std::move(pipelineState), layout));
+    return MakeIntrusive<D3D12GraphicPipeline>(_desc, std::move(pipelineState), layout);
 }
 
-ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createComputePipeline(const ComputePipelineDesc& _desc)
+ego::gpu::ComputePipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createComputePipeline(const ComputePipelineDesc& _desc)
 {
     const bool hasValidComputeShader = !_desc.m_computeShader || _desc.m_computeShader->getShaderType() == ShaderStage::Compute;
 
@@ -1040,7 +1040,7 @@ ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createCo
 
     if ((_desc.m_bindingLayout && !layout) || (_desc.m_computeShader && !computeShader) || !hasValidComputeShader)
     {
-        return ComputePipelineReference();
+        return ComputePipelinePointer();
     }
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
@@ -1053,17 +1053,17 @@ ego::gpu::ComputePipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createCo
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
     if (FAILED(getD3D12Device()->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState))))
     {
-        return ComputePipelineReference();
+        return ComputePipelinePointer();
     }
 
-    return ComputePipelineReference(new D3D12ComputePipeline(_desc, std::move(pipelineState), layout));
+    return MakeIntrusive<D3D12ComputePipeline>(_desc, std::move(pipelineState), layout);
 }
 
-ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::createRayTracingPipeline(const RayTracingPipelineDesc& _desc)
+ego::gpu::RayTracingPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createRayTracingPipeline(const RayTracingPipelineDesc& _desc)
 {
     if (!getD3D12Device() || !m_deviceContext.getCapabilities().m_supportsRayTracing)
     {
-        return RayTracingPipelineReference();
+        return RayTracingPipelinePointer();
     }
 
     D3D12BindingLayout* layout = _desc.m_bindingLayout ? static_cast<D3D12BindingLayout*>(_desc.m_bindingLayout.getObject()) : nullptr;
@@ -1093,17 +1093,17 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
 
         if (!shaders.m_closestHitShader && !shaders.m_anyHitShader && !shaders.m_intersectionShader)
         {
-            return RayTracingPipelineReference();
+            return RayTracingPipelinePointer();
         }
 
         if (shaders.m_type == RayTracingHitGroupType::Triangles && shaders.m_intersectionShader)
         {
-            return RayTracingPipelineReference();
+            return RayTracingPipelinePointer();
         }
 
         if (shaders.m_type == RayTracingHitGroupType::ProceduralPrimitive && !shaders.m_intersectionShader)
         {
-            return RayTracingPipelineReference();
+            return RayTracingPipelinePointer();
         }
 
         hitGroupShaders.push_back(shaders);
@@ -1116,7 +1116,7 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
 
     if (!layout || !rayGenerationShader || !missShader || hitGroupShaders.empty())
     {
-        return RayTracingPipelineReference();
+        return RayTracingPipelinePointer();
     }
 
     D3D12_EXPORT_DESC rayGenerationExport = {};
@@ -1319,26 +1319,26 @@ ego::gpu::RayTracingPipelineReference ego::gpu::d3d12::D3D12GraphicDevice::creat
     Microsoft::WRL::ComPtr<ID3D12StateObject> stateObject;
     if (FAILED(getD3D12Device()->CreateStateObject(&stateObjectDesc, IID_PPV_ARGS(&stateObject))))
     {
-        return RayTracingPipelineReference();
+        return RayTracingPipelinePointer();
     }
 
     Microsoft::WRL::ComPtr<ID3D12Resource> shaderTable;
     uint64_t shaderRecordSize = 0;
     if (!createShaderTable(stateObject.Get(), hitGroupExportNames, shaderTable, shaderRecordSize))
     {
-        return RayTracingPipelineReference();
+        return RayTracingPipelinePointer();
     }
 
-    return RayTracingPipelineReference(new D3D12RayTracingPipeline(
+    return MakeIntrusive<D3D12RayTracingPipeline>(
         _desc,
         std::move(stateObject),
         std::move(shaderTable),
         shaderRecordSize,
         static_cast<uint32_t>(hitGroupExportNames.size()),
-        layout));
+        layout);
 }
 
-ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(const BindingLayoutDesc& _desc)
+ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindingLayout(const BindingLayoutDesc& _desc)
 {
     std::vector<D3D12_ROOT_PARAMETER1> rootParameters;
     std::vector<D3D12BindingLayout::PushConstantInfo> pushConstants;
@@ -1388,7 +1388,7 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
     Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
     if (FAILED(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &serializedRootSignature, &errorBlob)))
     {
-        return BindingLayoutReference();
+        return BindingLayoutPointer();
     }
 
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
@@ -1396,58 +1396,58 @@ ego::gpu::BindingLayoutReference ego::gpu::d3d12::D3D12GraphicDevice::createBind
             getD3D12Device()
                 ->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(&rootSignature))))
     {
-        return BindingLayoutReference();
+        return BindingLayoutPointer();
     }
 
-    return BindingLayoutReference(new D3D12BindingLayout(_desc, std::move(rootSignature), std::move(pushConstants)));
+    return MakeIntrusive<D3D12BindingLayout>(_desc, std::move(rootSignature), std::move(pushConstants));
 }
 
-ego::gpu::FenceReference ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence::FenceValue _initialValue)
+ego::gpu::FencePointer ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence::FenceValue _initialValue)
 {
     if (!getD3D12Device())
     {
-        return FenceReference();
+        return FencePointer();
     }
 
     Microsoft::WRL::ComPtr<ID3D12Fence> fence;
     if (FAILED(getD3D12Device()->CreateFence(_initialValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))))
     {
-        return FenceReference();
+        return FencePointer();
     }
 
-    return FenceReference(new D3D12Fence(_initialValue, std::move(fence)));
+    return MakeIntrusive<D3D12Fence>(_initialValue, std::move(fence));
 }
 
-ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
+ego::gpu::SwapChainPointer ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
     const SwapChainDesc& _swapChainDesc,
     const PlatformSurface& _surface,
-    const CommandQueueReference& _presentationQueue)
+    const CommandQueuePointer& _presentationQueue)
 {
     if (!m_deviceContext.getFactory() || !getD3D12Device() || !_surface.getNativeHandle())
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     if (_swapChainDesc.m_bufferCount == 0)
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     const DXGI_FORMAT format = ToDXGIFormat(_swapChainDesc.m_format);
     if (format == DXGI_FORMAT_UNKNOWN)
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     if (!_presentationQueue || _presentationQueue->getCommandType() != CommandType::Graphic || !_presentationQueue->getDesc().m_supportsPresentation)
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     ID3D12CommandQueue* presentationQueue = _presentationQueue->getNativeHandle<ID3D12CommandQueue>();
     if (!presentationQueue)
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     const SurfaceSize& surfaceSize = _surface.getSize();
@@ -1456,7 +1456,7 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
 
     if (width == 0 || height == 0)
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -1477,7 +1477,7 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
     Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain;
     if (FAILED(m_deviceContext.getFactory()->CreateSwapChainForHwnd(presentationQueue, windowHandle, &swapChainDesc, nullptr, nullptr, &swapChain)))
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
     m_deviceContext.getFactory()->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_ALT_ENTER);
@@ -1485,10 +1485,10 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
     Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain3;
     if (FAILED(swapChain.As(&swapChain3)))
     {
-        return SwapChainReference();
+        return SwapChainPointer();
     }
 
-    std::vector<Texture2DReference> targetTextures;
+    std::vector<Texture2DPointer> targetTextures;
     targetTextures.reserve(_swapChainDesc.m_bufferCount);
 
     Texture2DDesc textureDesc;
@@ -1505,15 +1505,15 @@ ego::gpu::SwapChainReference ego::gpu::d3d12::D3D12GraphicDevice::createSwapChai
         Microsoft::WRL::ComPtr<ID3D12Resource> resource;
         if (FAILED(swapChain3->GetBuffer(bufferIndex, IID_PPV_ARGS(&resource))))
         {
-            return SwapChainReference();
+            return SwapChainPointer();
         }
 
-        Texture2DReference targetTexture = new D3D12Texture2D(textureDesc, std::move(resource));
+        Texture2DPointer targetTexture = MakeIntrusive<D3D12Texture2D>(textureDesc, std::move(resource));
         targetTexture->setState(GraphicResourceState::Present);
         targetTextures.push_back(targetTexture);
     }
 
-    return SwapChainReference(new D3D12SwapChain(_swapChainDesc, std::move(swapChain3), std::move(targetTextures), _presentationQueue));
+    return MakeIntrusive<D3D12SwapChain>(_swapChainDesc, std::move(swapChain3), std::move(targetTextures), _presentationQueue);
 }
 
 const ego::GraphicDevice::Capabilities& ego::gpu::d3d12::D3D12GraphicDevice::getCapabilities() const
@@ -1536,9 +1536,9 @@ ID3D12Device5* ego::gpu::d3d12::D3D12GraphicDevice::getD3D12Device() const
     return m_deviceContext.getDevice();
 }
 
-ego::gpu::GpuTaskReference ego::gpu::d3d12::D3D12GraphicDevice::submitImmediateCommands(
+ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::submitImmediateCommands(
     const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands,
-    const std::vector<GraphicObjectReference>& _keepAliveObjects)
+    const std::vector<GraphicObjectPointer>& _keepAliveObjects)
 {
     return m_immediateContext.submit(_recordCommands, _keepAliveObjects);
 }

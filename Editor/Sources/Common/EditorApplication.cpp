@@ -293,7 +293,7 @@ bool ego::editor::EditorApplication::initEditorUi()
     const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession->getGuiControllerPointer();
     EGO_CHECK_RETURN_FALSE(guiController);
 
-    const gpu::TextureViewReference sceneTexture = m_sceneSession.m_graphicPresenter->getTextureView();
+    const gpu::TextureViewPointer sceneTexture = m_sceneSession.m_graphicPresenter->getTextureView();
     if (!sceneTexture)
     {
         return false;

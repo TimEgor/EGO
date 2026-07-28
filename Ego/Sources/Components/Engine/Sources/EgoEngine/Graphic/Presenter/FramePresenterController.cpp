@@ -86,7 +86,7 @@ void ego::engine::FramePresenterController::presentFrame()
     }
 }
 
-ego::gpu::Texture2DReference ego::engine::FramePresenterController::getTargetTexture(const GraphicPresenterPointer& _graphicPresenter) const
+ego::gpu::Texture2DPointer ego::engine::FramePresenterController::getTargetTexture(const GraphicPresenterPointer& _graphicPresenter) const
 {
     return containsPresenter(_graphicPresenter) ? _graphicPresenter->getTargetTexture() : nullptr;
 }
@@ -147,7 +147,7 @@ void ego::engine::FramePresenterController::clearPresenters()
             continue;
         }
 
-        const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
+        const gpu::Texture2DPointer targetTexture = graphicPresenter->getTargetTexture();
         if (!targetTexture || targetTexture->getDesc().m_size.m_x == 0 || targetTexture->getDesc().m_size.m_y == 0)
         {
             continue;
@@ -165,7 +165,7 @@ void ego::engine::FramePresenterController::clearPresenters()
     }
 }
 
-bool ego::engine::FramePresenterController::recordTargetClear(const gpu::Texture2DReference& _targetTexture)
+bool ego::engine::FramePresenterController::recordTargetClear(const gpu::Texture2DPointer& _targetTexture)
 {
     EGO_CHECK_RETURN_FALSE(m_commandList && _targetTexture);
 
@@ -174,7 +174,7 @@ bool ego::engine::FramePresenterController::recordTargetClear(const gpu::Texture
     targetViewDesc.m_dimension = gpu::TextureViewDimension::D2;
     targetViewDesc.m_format = _targetTexture->getDesc().m_format;
 
-    const gpu::TextureViewReference targetView = gpu::GetGraphicDevice().createTextureView(_targetTexture, targetViewDesc);
+    const gpu::TextureViewPointer targetView = gpu::GetGraphicDevice().createTextureView(_targetTexture, targetViewDesc);
     EGO_CHECK_RETURN_FALSE(targetView);
     m_targetViews.push_back(targetView);
 
@@ -210,7 +210,7 @@ void ego::engine::FramePresenterController::transitionPresenterTargets()
 
     for (const GraphicPresenterPointer& graphicPresenter : m_graphicPresenters)
     {
-        const gpu::Texture2DReference targetTexture = graphicPresenter->getTargetTexture();
+        const gpu::Texture2DPointer targetTexture = graphicPresenter->getTargetTexture();
         const gpu::GraphicResourceState presentationState = graphicPresenter->getPresentationState();
         if (targetTexture && targetTexture->getState() != presentationState)
         {

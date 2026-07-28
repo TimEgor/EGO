@@ -16,11 +16,11 @@ namespace ego::gpu::d3d12
         void* getNativeHandle() const override;
         void setName(const char* _name) override;
 
-        void execute(const CommandListReference& _commandList) override;
-        void execute(const std::vector<CommandListReference>& _commandLists) override;
+        void execute(const CommandListPointer& _commandList) override;
+        void execute(const std::vector<CommandListPointer>& _commandLists) override;
 
-        void signal(const FenceReference& _fence, Fence::FenceValue _value) override;
-        void wait(const FenceReference& _fence, Fence::FenceValue _value) override;
+        void signal(const FencePointer& _fence, Fence::FenceValue _value) override;
+        void wait(const FencePointer& _fence, Fence::FenceValue _value) override;
         void waitIdle() override;
 
     private:

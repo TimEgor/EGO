@@ -11,7 +11,7 @@ bool ego::application::SurfaceGraphicPresenter::init(
     GraphicDevice& _graphicDevice,
     const PlatformSurface& _surface,
     const gpu::SwapChainDesc& _swapChainDesc,
-    const gpu::CommandQueueReference& _presentationQueue)
+    const gpu::CommandQueuePointer& _presentationQueue)
 {
     m_swapChain = _graphicDevice.createSwapChain(_swapChainDesc, _surface, _presentationQueue);
     EGO_CHECK_RETURN_FALSE(m_swapChain);
@@ -25,9 +25,9 @@ void ego::application::SurfaceGraphicPresenter::release()
     m_pendingSize = UInt32Vector2Zero;
 }
 
-ego::gpu::Texture2DReference ego::application::SurfaceGraphicPresenter::getTargetTexture()
+ego::gpu::Texture2DPointer ego::application::SurfaceGraphicPresenter::getTargetTexture()
 {
-    return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DReference();
+    return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DPointer();
 }
 
 bool ego::application::SurfaceGraphicPresenter::shouldClearTarget() const
@@ -68,7 +68,7 @@ bool ego::application::SurfaceGraphicPresenter::resize(const gpu::Texture2DSize&
         return false;
     }
 
-    const gpu::Texture2DReference targetTexture = m_swapChain->getTargetTexture();
+    const gpu::Texture2DPointer targetTexture = m_swapChain->getTargetTexture();
     if (targetTexture)
     {
         const gpu::Texture2DSize& currentSize = targetTexture->getDesc().m_size;

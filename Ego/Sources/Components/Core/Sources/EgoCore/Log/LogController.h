@@ -6,7 +6,7 @@
 #include <string_view>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 namespace ego::log
 {

@@ -17,7 +17,7 @@ namespace ego::gui
 
     struct GuiRenderData final
     {
-        using TextureViewCollection = std::vector<gpu::TextureViewReference>;
+        using TextureViewCollection = std::vector<gpu::TextureViewPointer>;
         using ViewportCollection = std::vector<ViewportRenderData>;
 
         TextureViewCollection m_resourceTextureViews;

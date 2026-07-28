@@ -7,7 +7,7 @@ ego::JobDescriptor::JobDescriptor(JobFactory _factory)
 {
 }
 
-ego::JobReference ego::JobDescriptor::createJob() const
+ego::JobPointer ego::JobDescriptor::createJob() const
 {
     if (!m_factory)
     {
@@ -15,7 +15,7 @@ ego::JobReference ego::JobDescriptor::createJob() const
         return nullptr;
     }
 
-    JobReference job = m_factory();
+    JobPointer job = m_factory();
     if (!job)
     {
         EGO_ASSERT_FAIL_MESSAGE("Job descriptor factory returned null job.");

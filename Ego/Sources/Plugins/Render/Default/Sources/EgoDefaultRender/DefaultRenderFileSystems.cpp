@@ -113,7 +113,8 @@ ego::RootedFileSystemPointer ego::render::DefaultRenderFileSystems::CreateFileSy
     const FileSystemPointer sourceFileSystem = platform->getFileSystem();
     EGO_CHECK_RETURN_NULL(sourceFileSystem);
 
-    RootedFileSystemPointer fileSystem = new RootedFileSystem(sourceFileSystem, _rootPath);
+    RootedFileSystemPointer fileSystem =
+        MakePointer<RootedFileSystem>(sourceFileSystem, _rootPath);
     if (!fileSystem)
     {
         return nullptr;

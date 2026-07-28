@@ -106,7 +106,7 @@ bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
     return true;
 }
 
-void ego::render::DefaultRender::render(const gpu::TextureViewReference& _targetView)
+void ego::render::DefaultRender::render(const gpu::TextureViewPointer& _targetView)
 {
     if (!m_isInitialized)
     {
@@ -119,7 +119,7 @@ void ego::render::DefaultRender::render(const gpu::TextureViewReference& _target
         return;
     }
 
-    const gpu::Texture2DReference targetTexture = resolvePresentationTargetTexture(_targetView);
+    const gpu::Texture2DPointer targetTexture = resolvePresentationTargetTexture(_targetView);
     if (!targetTexture)
     {
         EGO_ASSERT_FAIL();
@@ -153,7 +153,7 @@ void ego::render::DefaultRender::render(const gpu::TextureViewReference& _target
         return;
     }
 
-    std::vector<gpu::GraphicObjectReference> frameResources;
+    std::vector<gpu::GraphicObjectPointer> frameResources;
     frameResources.reserve(4);
     frameResources.push_back(m_renderTarget.getTexture().getObject());
     frameResources.push_back(m_renderTarget.getRenderTargetView().getObject());
@@ -222,7 +222,7 @@ void ego::render::DefaultRender::releasePassGraph()
     m_passGraph.clear();
 }
 
-ego::gpu::Texture2DReference ego::render::DefaultRender::resolvePresentationTargetTexture(const gpu::TextureViewReference& _targetView) const
+ego::gpu::Texture2DPointer ego::render::DefaultRender::resolvePresentationTargetTexture(const gpu::TextureViewPointer& _targetView) const
 {
     if (!m_renderTarget.isReady() || !_targetView || _targetView->getViewType() != gpu::GraphicResourceViewType::RenderTarget ||
         _targetView->getDesc().m_dimension != gpu::TextureViewDimension::D2)
@@ -230,13 +230,13 @@ ego::gpu::Texture2DReference ego::render::DefaultRender::resolvePresentationTarg
         return nullptr;
     }
 
-    const gpu::GraphicResourceReference& targetResource = _targetView->getResource();
+    const gpu::GraphicResourcePointer& targetResource = _targetView->getResource();
     if (!targetResource || !rtti::IsObjectBasedOn<gpu::Texture2D>(*targetResource))
     {
         return nullptr;
     }
 
-    const gpu::Texture2DReference targetTexture = targetResource.getObjectCast<gpu::Texture2D>();
+    const gpu::Texture2DPointer targetTexture = targetResource.getObjectCast<gpu::Texture2D>();
     const gpu::Texture2DDesc& resultDesc = m_renderTarget.getTexture()->getDesc();
     const gpu::Texture2DDesc& targetDesc = targetTexture->getDesc();
     const gpu::GraphicResourceFormat targetViewFormat = _targetView->getDesc().m_format;
@@ -249,7 +249,7 @@ ego::gpu::Texture2DReference ego::render::DefaultRender::resolvePresentationTarg
     return targetTexture;
 }
 
-void ego::render::DefaultRender::copyResultToTarget(const RenderGraphicCommandList& _commandList, const gpu::Texture2DReference& _targetTexture)
+void ego::render::DefaultRender::copyResultToTarget(const RenderGraphicCommandList& _commandList, const gpu::Texture2DPointer& _targetTexture)
 {
     EGO_ASSERT(_commandList && m_renderTarget.isReady() && _targetTexture);
 

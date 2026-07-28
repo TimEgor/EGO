@@ -59,7 +59,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 
     EGO_CHECK_INITIALIZATION(m_projectRuntime.init(_initData.m_project));
 
-    m_levelController = new LevelController();
+    m_levelController = MakePointer<LevelController>();
     EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
     if (_initData.m_gui.m_isEnabled)
@@ -128,7 +128,7 @@ bool ego::engine::EngineSession::tick()
         m_guiController->update(getDeltaTime());
     }
 
-    JobGraphReference frameLogicJobGraph = getFrameLogicJobGraph();
+    JobGraphPointer frameLogicJobGraph = getFrameLogicJobGraph();
     if (!frameLogicJobGraph)
     {
         EGO_ASSERT_FAIL_MESSAGE("Frame logic job graph is invalid.");
@@ -176,7 +176,7 @@ ego::gui::GuiControllerPointer ego::engine::EngineSession::getGuiControllerPoint
     return m_isGuiEnabled ? m_guiController : nullptr;
 }
 
-ego::JobGraphReference ego::engine::EngineSession::getFrameLogicJobGraph()
+ego::JobGraphPointer ego::engine::EngineSession::getFrameLogicJobGraph()
 {
     return m_frameLogic.createJobGraph();
 }
@@ -185,10 +185,11 @@ bool ego::engine::EngineSession::initGuiController(const application::Presentati
 {
     EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider && !m_guiController);
 
-    m_guiViewportProvider = new application::ApplicationGuiViewportProvider();
+    m_guiViewportProvider =
+        MakePointer<application::ApplicationGuiViewportProvider>();
     EGO_CHECK_RETURN_FALSE(m_guiViewportProvider && m_guiViewportProvider->init(_mainPresentation));
 
-    m_guiController = new gui::GuiController();
+    m_guiController = MakePointer<gui::GuiController>();
     EGO_CHECK_RETURN_FALSE(m_guiController);
 
     gui::GuiController::InitData guiInitData;

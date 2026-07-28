@@ -13,7 +13,6 @@ namespace ego
 
     class JobGraph;
     EGO_POINTER(JobGraph);
-    using JobGraphReference = JobGraphPointer;
 
     enum class JobGraphState
     {
@@ -22,10 +21,10 @@ namespace ego
         Finished
     };
 
-    class JobGraph final : public STDDestroyMTCountable
+    class JobGraph final
     {
     public:
-        class GraphJobData final : public STDDestroyMTCountable
+        class GraphJobData final
         {
             friend class JobGraphBuilder;
             friend class JobGraph;
@@ -36,7 +35,6 @@ namespace ego
 
         public:
             GraphJobData(const char* _dbgName = nullptr);
-            ~GraphJobData() override = default;
 
             JobControllerPointer getJobController() const
             {
@@ -86,12 +84,12 @@ namespace ego
 #endif
         };
 
-        using GraphJobDataReference = SharedPointer<GraphJobData>;
+        using GraphJobDataPointer = SharedPointer<GraphJobData>;
 
         class DependencyJob;
-        using DependencyJobReference = SharedPointer<DependencyJob>;
-        using DependencyJobCollection = std::vector<DependencyJobReference>;
-        using JobGraphCollection = std::vector<JobGraphReference>;
+        using DependencyJobPointer = SharedPointer<DependencyJob>;
+        using DependencyJobCollection = std::vector<DependencyJobPointer>;
+        using JobGraphCollection = std::vector<JobGraphPointer>;
 
         class DependencyJob : public Job
         {
@@ -99,12 +97,12 @@ namespace ego
             friend class JobGraph;
 
         public:
-            using DependencyCollection = std::vector<DependencyJobReference>;
+            using DependencyCollection = std::vector<DependencyJobPointer>;
 
             bool removeParentDependency();
 
         protected:
-            DependencyJob(const GraphJobDataReference& _graphData, const char* _dbgName);
+            DependencyJob(const GraphJobDataPointer& _graphData, const char* _dbgName);
 
         private:
             virtual bool executeDependencyJob() = 0;
@@ -115,19 +113,19 @@ namespace ego
 
             DependencyCollection m_dependencyJobs;
 
-            GraphJobDataReference m_graphData;
+            GraphJobDataPointer m_graphData;
             std::atomic<uint32_t> m_parentCounter = 0;
         };
 
         class JobDependencyJob final : public DependencyJob
         {
         public:
-            JobDependencyJob(const JobReference& _job, const GraphJobDataReference& _graphData);
+            JobDependencyJob(const JobPointer& _job, const GraphJobDataPointer& _graphData);
 
         private:
             bool executeDependencyJob() override;
 
-            JobReference m_job;
+            JobPointer m_job;
         };
 
         class BarrierDependencyJob final : public DependencyJob
@@ -139,7 +137,7 @@ namespace ego
                 End
             };
 
-            BarrierDependencyJob(const GraphJobDataReference& _graphData, Type _type);
+            BarrierDependencyJob(const GraphJobDataPointer& _graphData, Type _type);
 
         private:
             bool executeDependencyJob() override;
@@ -147,11 +145,11 @@ namespace ego
             Type m_type = Type::Begin;
         };
 
-        using JobCollection = std::vector<JobReference>;
+        using JobCollection = std::vector<JobPointer>;
 
-        JobGraph(const DependencyJobReference& _entryJob, const DependencyJobReference& _exitJob, JobGraphCollection&& _nestedGraphs, GraphJobDataReference _data);
+        JobGraph(const DependencyJobPointer& _entryJob, const DependencyJobPointer& _exitJob, JobGraphCollection&& _nestedGraphs, GraphJobDataPointer _data);
 
-        GraphJobDataReference getGraphData() const;
+        GraphJobDataPointer getGraphData() const;
 
         void setExecutionContext(const JobControllerWeakPointer& _jobController);
 
@@ -170,10 +168,10 @@ namespace ego
         bool schedule(const JobControllerWeakPointer& _jobController, JobCollection& _baseJobs);
         bool isScheduled() const;
 
-        DependencyJobReference m_entryJob;
-        DependencyJobReference m_exitJob;
+        DependencyJobPointer m_entryJob;
+        DependencyJobPointer m_exitJob;
         JobGraphCollection m_nestedGraphs;
-        GraphJobDataReference m_graphData;
+        GraphJobDataPointer m_graphData;
     };
 
     class JobGraphBuilder final
@@ -215,25 +213,25 @@ namespace ego
             return m_dbgName.c_str();
         }
 
-        JobGraphJobID addJob(const JobReference& _job);
-        JobGraphJobID addJobBefore(const JobReference& _job, JobGraphJobID _childJobID);
-        JobGraphJobID addJobBefore(const JobReference& _job, const JobGraphJobIDCollection& _childJobIDs);
-        JobGraphJobID addJobAfter(const JobReference& _job, JobGraphJobID _parentJobID);
-        JobGraphJobID addJobAfter(const JobReference& _job, const JobGraphJobIDCollection& _parentJobIDs);
-        JobGraphJobID addJobBetween(const JobReference& _job, JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
-        JobGraphJobID addJobBetween(const JobReference& _job, const JobGraphJobIDCollection& _parentJobIDs, const JobGraphJobIDCollection& _childJobIDs);
+        JobGraphJobID addJob(const JobPointer& _job);
+        JobGraphJobID addJobBefore(const JobPointer& _job, JobGraphJobID _childJobID);
+        JobGraphJobID addJobBefore(const JobPointer& _job, const JobGraphJobIDCollection& _childJobIDs);
+        JobGraphJobID addJobAfter(const JobPointer& _job, JobGraphJobID _parentJobID);
+        JobGraphJobID addJobAfter(const JobPointer& _job, const JobGraphJobIDCollection& _parentJobIDs);
+        JobGraphJobID addJobBetween(const JobPointer& _job, JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
+        JobGraphJobID addJobBetween(const JobPointer& _job, const JobGraphJobIDCollection& _parentJobIDs, const JobGraphJobIDCollection& _childJobIDs);
 
-        JobGraphJobID addJobGraph(const JobGraphReference& _graph);
-        JobGraphJobID addJobGraphBefore(const JobGraphReference& _graph, JobGraphJobID _childJobID);
-        JobGraphJobID addJobGraphBefore(const JobGraphReference& _graph, const JobGraphJobIDCollection& _childJobIDs);
-        JobGraphJobID addJobGraphAfter(const JobGraphReference& _graph, JobGraphJobID _parentJobID);
-        JobGraphJobID addJobGraphAfter(const JobGraphReference& _graph, const JobGraphJobIDCollection& _parentJobIDs);
-        JobGraphJobID addJobGraphBetween(const JobGraphReference& _graph, JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
-        JobGraphJobID addJobGraphBetween(const JobGraphReference& _graph, const JobGraphJobIDCollection& _parentJobIDs, const JobGraphJobIDCollection& _childJobIDs);
+        JobGraphJobID addJobGraph(const JobGraphPointer& _graph);
+        JobGraphJobID addJobGraphBefore(const JobGraphPointer& _graph, JobGraphJobID _childJobID);
+        JobGraphJobID addJobGraphBefore(const JobGraphPointer& _graph, const JobGraphJobIDCollection& _childJobIDs);
+        JobGraphJobID addJobGraphAfter(const JobGraphPointer& _graph, JobGraphJobID _parentJobID);
+        JobGraphJobID addJobGraphAfter(const JobGraphPointer& _graph, const JobGraphJobIDCollection& _parentJobIDs);
+        JobGraphJobID addJobGraphBetween(const JobGraphPointer& _graph, JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
+        JobGraphJobID addJobGraphBetween(const JobGraphPointer& _graph, const JobGraphJobIDCollection& _parentJobIDs, const JobGraphJobIDCollection& _childJobIDs);
 
         void makeDependency(JobGraphJobID _parentJobID, JobGraphJobID _childJobID);
 
-        JobGraphReference getGraph();
+        JobGraphPointer getGraph();
 
         static constexpr uint32_t InvalidJobGraphJobIndex = JobGraphJobID::InvalidIndex;
 
@@ -249,8 +247,8 @@ namespace ego
             struct Node final
             {
                 NodeType m_type = NodeType::Job;
-                JobReference m_job;
-                JobGraphReference m_jobGraph;
+                JobPointer m_job;
+                JobGraphPointer m_jobGraph;
             };
 
             struct Dependency final
@@ -262,8 +260,8 @@ namespace ego
             GraphBuildingContext();
             void clear();
 
-            JobGraphJobID addJob(const JobReference& _job);
-            JobGraphJobID addJobGraph(const JobGraphReference& _jobGraph);
+            JobGraphJobID addJob(const JobPointer& _job);
+            JobGraphJobID addJobGraph(const JobGraphPointer& _jobGraph);
             bool isValid(JobGraphJobID _jobID) const;
 
             std::vector<Node> m_nodes;

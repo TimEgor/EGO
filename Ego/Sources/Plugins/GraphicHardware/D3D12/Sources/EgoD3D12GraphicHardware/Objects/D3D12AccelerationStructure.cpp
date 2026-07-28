@@ -1,6 +1,6 @@
 #include "D3D12AccelerationStructure.h"
 
-ego::gpu::d3d12::D3D12GeometryAccelerationStructure::D3D12GeometryAccelerationStructure(const BufferReference& _buffer)
+ego::gpu::d3d12::D3D12GeometryAccelerationStructure::D3D12GeometryAccelerationStructure(const BufferPointer& _buffer)
     : m_buffer(_buffer)
 {
 }
@@ -15,7 +15,7 @@ void ego::gpu::d3d12::D3D12GeometryAccelerationStructure::setName(const char* _n
     SetD3D12ObjectName(getD3D12Resource(), _name);
 }
 
-const ego::gpu::BufferReference& ego::gpu::d3d12::D3D12GeometryAccelerationStructure::getBuffer() const
+const ego::gpu::BufferPointer& ego::gpu::d3d12::D3D12GeometryAccelerationStructure::getBuffer() const
 {
     return m_buffer;
 }
@@ -32,7 +32,7 @@ D3D12_GPU_VIRTUAL_ADDRESS ego::gpu::d3d12::D3D12GeometryAccelerationStructure::g
     return resource ? resource->GetGPUVirtualAddress() : 0;
 }
 
-ego::gpu::d3d12::D3D12InstanceAccelerationStructure::D3D12InstanceAccelerationStructure(const BufferReference& _buffer)
+ego::gpu::d3d12::D3D12InstanceAccelerationStructure::D3D12InstanceAccelerationStructure(const BufferPointer& _buffer)
     : m_buffer(_buffer)
 {
 }
@@ -47,7 +47,7 @@ void ego::gpu::d3d12::D3D12InstanceAccelerationStructure::setName(const char* _n
     SetD3D12ObjectName(getD3D12Resource(), _name);
 }
 
-const ego::gpu::BufferReference& ego::gpu::d3d12::D3D12InstanceAccelerationStructure::getBuffer() const
+const ego::gpu::BufferPointer& ego::gpu::d3d12::D3D12InstanceAccelerationStructure::getBuffer() const
 {
     return m_buffer;
 }
@@ -65,7 +65,7 @@ D3D12_GPU_VIRTUAL_ADDRESS ego::gpu::d3d12::D3D12InstanceAccelerationStructure::g
 }
 
 ego::gpu::d3d12::D3D12AccelerationStructureView::D3D12AccelerationStructureView(
-    const InstanceAccelerationStructureReference& _accelerationStructure,
+    const InstanceAccelerationStructurePointer& _accelerationStructure,
     D3D12DescriptorIndex _descriptorIndex,
     D3D12DescriptorAllocatorPointer& _allocator)
     : AccelerationStructureView(_accelerationStructure),

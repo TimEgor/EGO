@@ -86,7 +86,7 @@ void ego::render::MeshResource::onUnload()
 
 ego::render::RenderMesh ego::render::CreateMeshHandler(const MeshResourcePointer& _resource)
 {
-    return MakeHandler<MeshReference>(
+    return MakeHandler<MeshPointer>(
         _resource,
         [](const MeshResourcePointer& _storedResource) -> RenderMesh
         {

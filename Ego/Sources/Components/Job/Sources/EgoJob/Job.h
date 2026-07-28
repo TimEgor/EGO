@@ -5,8 +5,7 @@
 #include <functional>
 #include <mutex>
 
-#include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/Reference/Reference.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #ifndef EGO_ENABLE_JOB_DEBUG
     #if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE) || defined(EGO_CONFIG_PROFILE)
@@ -34,14 +33,14 @@ namespace ego
         Finished
     };
 
-    class Job : public STDDestroyMTCountable
+    class Job
     {
         friend class JobController;
 
     public:
         Job() = default;
         Job(const char* _dbgName);
-        ~Job() override = default;
+        virtual ~Job() = default;
 
         void wait();
         void execute();
@@ -87,8 +86,6 @@ namespace ego
 
     EGO_POINTER(Job);
     EGO_WEAK_POINTER(Job);
-    using JobReference = JobPointer;
-    using JobWeakReference = JobWeakPointer;
 
     class LambdaJob final : public Job
     {
@@ -104,6 +101,6 @@ namespace ego
         JobFunction m_function;
     };
 
-    JobReference CreateLambdaJob(const LambdaJob::JobFunction& _function);
-    JobReference CreateLambdaJob(const LambdaJob::JobFunction& _function, const char* _dbgName);
+    JobPointer CreateLambdaJob(const LambdaJob::JobFunction& _function);
+    JobPointer CreateLambdaJob(const LambdaJob::JobFunction& _function, const char* _dbgName);
 } // namespace ego

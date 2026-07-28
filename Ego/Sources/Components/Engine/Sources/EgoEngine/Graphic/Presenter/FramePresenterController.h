@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/Reference/PointerIdentity.h"
+#include "EgoCore/Pointer/Pointer.h"
+#include "EgoCore/Pointer/PointerIdentity.h"
 
 #include "EgoGraphicHardware/GraphicObjects/CommandList.h"
 #include "EgoGraphicHardware/GraphicObjects/CommandQueue.h"
@@ -28,24 +28,24 @@ namespace ego::engine
         void prepareFrame(const std::vector<GraphicPresenterPointer>& _graphicPresenters);
         void presentFrame();
 
-        gpu::Texture2DReference getTargetTexture(const GraphicPresenterPointer& _graphicPresenter) const;
+        gpu::Texture2DPointer getTargetTexture(const GraphicPresenterPointer& _graphicPresenter) const;
         bool containsPresenter(const GraphicPresenterPointer& _graphicPresenter) const;
 
     private:
         using GraphicPresenterCollection = std::unordered_set<GraphicPresenterPointer, PointerIdentityHash, PointerIdentityEqual>;
-        using TargetViewCollection = std::vector<gpu::TextureViewReference>;
+        using TargetViewCollection = std::vector<gpu::TextureViewPointer>;
 
         bool initPresentation();
         void releasePresentation();
         void clearPresenters();
-        bool recordTargetClear(const gpu::Texture2DReference& _targetTexture);
+        bool recordTargetClear(const gpu::Texture2DPointer& _targetTexture);
         void transitionPresenterTargets();
         void waitCommandList();
         void signalFence();
 
-        gpu::CommandQueueReference m_presentationQueue = nullptr;
-        gpu::GraphicCommandListReference m_commandList = nullptr;
-        gpu::FenceReference m_fence = nullptr;
+        gpu::CommandQueuePointer m_presentationQueue = nullptr;
+        gpu::GraphicCommandListPointer m_commandList = nullptr;
+        gpu::FencePointer m_fence = nullptr;
         gpu::Fence::FenceValue m_fenceValue = 0;
         TargetViewCollection m_targetViews;
         GraphicPresenterCollection m_graphicPresenters;

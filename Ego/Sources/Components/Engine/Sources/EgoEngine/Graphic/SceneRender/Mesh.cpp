@@ -123,5 +123,9 @@ ego::render::MeshHandler ego::render::CreateMeshFromRawData(ego::GraphicDevice& 
     indexBufferBinding.m_format = indexBuffer ? _rawData.m_indexFormat : gpu::GraphicResourceFormat::Undefined;
     indexBufferBinding.m_offset = indexBuffer ? _rawData.m_indexOffset : 0;
 
-    return MeshReference(new Mesh(vertexBufferBinding, vertexCount, indexBufferBinding, indexCount));
+    return MakeIntrusive<Mesh>(
+        vertexBufferBinding,
+        vertexCount,
+        indexBufferBinding,
+        indexCount);
 }

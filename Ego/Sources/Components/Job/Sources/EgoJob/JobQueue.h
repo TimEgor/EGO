@@ -18,12 +18,12 @@ namespace ego
         void init();
         void release();
 
-        void addJob(const JobReference& _job);
-        JobReference getJob();
-        JobReference tryGetJob();
+        void addJob(const JobPointer& _job);
+        JobPointer getJob();
+        JobPointer tryGetJob();
 
     private:
-        std::deque<JobReference> m_queue;
+        std::deque<JobPointer> m_queue;
         std::condition_variable m_wakeCondition;
         std::mutex m_mutex;
 

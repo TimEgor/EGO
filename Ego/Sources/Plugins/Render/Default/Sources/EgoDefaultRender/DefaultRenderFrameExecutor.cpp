@@ -4,7 +4,7 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-bool ego::render::DefaultRenderFrameExecutor::init(GraphicDevice& _graphicDevice, const gpu::CommandQueueReference& _commandQueue)
+bool ego::render::DefaultRenderFrameExecutor::init(GraphicDevice& _graphicDevice, const gpu::CommandQueuePointer& _commandQueue)
 {
     EGO_CHECK_RETURN_FALSE(_commandQueue && _commandQueue->getCommandType() == gpu::CommandType::Graphic);
     m_commandQueue = _commandQueue;
@@ -43,14 +43,14 @@ void ego::render::DefaultRenderFrameExecutor::wait()
 
 void ego::render::DefaultRenderFrameExecutor::submitCommandLists(
     const std::vector<RenderGraphicCommandList>& _commandLists,
-    std::vector<gpu::GraphicObjectReference>&& _frameResources)
+    std::vector<gpu::GraphicObjectPointer>&& _frameResources)
 {
     if (!m_commandQueue || _commandLists.empty())
     {
         return;
     }
 
-    std::vector<gpu::CommandListReference> commandLists;
+    std::vector<gpu::CommandListPointer> commandLists;
     commandLists.reserve(_commandLists.size());
 
     for (const RenderGraphicCommandList& commandList : _commandLists)

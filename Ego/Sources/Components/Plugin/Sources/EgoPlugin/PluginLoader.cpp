@@ -71,7 +71,10 @@ ego::PluginModulePointer ego::PluginLoader::loadModule(PluginModuleID _moduleID,
 
     initModule(moduleHandle, moduleInfo);
 
-    return PluginModulePointer(new PluginModule(moduleInfo, _pluginController), PluginModuleDeleter{});
+    return MakePointerWithDeleter<PluginModule>(
+        PluginModuleDeleter{},
+        moduleInfo,
+        _pluginController);
 }
 
 void ego::PluginLoader::unloadModule(void* _moduleHandle, const FileName& _moduleName)

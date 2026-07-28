@@ -70,7 +70,7 @@ bool ego::engine::GuiRenderController::renderFrame(const FrameRenderTargetCollec
 
     gui::GuiRender::TargetCollection targetViews;
     targetViews.reserve(_targets.size());
-    for (const gpu::Texture2DReference& targetTexture : _targets)
+    for (const gpu::Texture2DPointer& targetTexture : _targets)
     {
         EGO_CHECK_RETURN_FALSE(targetTexture);
 
@@ -79,7 +79,7 @@ bool ego::engine::GuiRenderController::renderFrame(const FrameRenderTargetCollec
         targetViewDesc.m_dimension = gpu::TextureViewDimension::D2;
         targetViewDesc.m_format = targetTexture->getDesc().m_format;
 
-        const gpu::TextureViewReference targetView = graphicDevice.createTextureView(targetTexture, targetViewDesc);
+        const gpu::TextureViewPointer targetView = graphicDevice.createTextureView(targetTexture, targetViewDesc);
         EGO_CHECK_RETURN_FALSE(targetView);
         targetViews.push_back(targetView);
     }

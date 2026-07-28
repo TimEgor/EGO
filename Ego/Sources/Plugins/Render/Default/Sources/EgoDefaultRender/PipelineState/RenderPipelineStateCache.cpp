@@ -6,17 +6,6 @@
 
 #include "EgoGraphicHardware/GraphicDevice.h"
 
-uint64_t ego::render::RenderPipelineStateCache::HashPointer(const void* _pointer)
-{
-    return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(_pointer));
-}
-
-template <typename TReference>
-uint64_t ego::render::RenderPipelineStateCache::HashReference(const TReference& _reference)
-{
-    return HashPointer(_reference.getObject());
-}
-
 uint64_t ego::render::RenderPipelineStateCache::HashRasterizationState(const gpu::RasterizationStateDesc& _desc)
 {
     return ego::HashValues(
@@ -65,9 +54,9 @@ uint64_t ego::render::RenderPipelineStateCache::HashGraphicPipelineDesc(const gp
 {
     uint64_t hash = ego::HashValues(
         0,
-        HashReference(_desc.m_bindingLayout),
-        HashReference(_desc.m_vertexShader),
-        HashReference(_desc.m_pixelShader),
+        IntrusivePointerIdentityHash{}(_desc.m_bindingLayout),
+        IntrusivePointerIdentityHash{}(_desc.m_vertexShader),
+        IntrusivePointerIdentityHash{}(_desc.m_pixelShader),
         _desc.m_inputLayoutDesc.getHash(),
         HashRasterizationState(_desc.m_rasterizationStateDesc),
         HashDepthStencilState(_desc.m_depthStencilStateDesc),
@@ -88,9 +77,9 @@ uint64_t ego::render::RenderPipelineStateCache::HashRayTracingPipelineDesc(const
 {
     uint64_t hash = ego::HashValues(
         0,
-        HashReference(_desc.m_bindingLayout),
-        HashReference(_desc.m_rayGenerationShader),
-        HashReference(_desc.m_missShader),
+        IntrusivePointerIdentityHash{}(_desc.m_bindingLayout),
+        IntrusivePointerIdentityHash{}(_desc.m_rayGenerationShader),
+        IntrusivePointerIdentityHash{}(_desc.m_missShader),
         _desc.m_hitGroups.size(),
         _desc.m_maxPayloadSize,
         _desc.m_maxAttributeSize,
@@ -101,9 +90,9 @@ uint64_t ego::render::RenderPipelineStateCache::HashRayTracingPipelineDesc(const
         hash = ego::HashValues(
             hash,
             hitGroup.m_type,
-            HashReference(hitGroup.m_closestHitShader),
-            HashReference(hitGroup.m_anyHitShader),
-            HashReference(hitGroup.m_intersectionShader));
+            IntrusivePointerIdentityHash{}(hitGroup.m_closestHitShader),
+            IntrusivePointerIdentityHash{}(hitGroup.m_anyHitShader),
+            IntrusivePointerIdentityHash{}(hitGroup.m_intersectionShader));
     }
 
     return hash;
@@ -111,13 +100,13 @@ uint64_t ego::render::RenderPipelineStateCache::HashRayTracingPipelineDesc(const
 
 bool ego::render::RenderPipelineStateCache::IsPipelineHandlerUsedOnlyByCache(const RenderGraphicPipeline& _pipeline)
 {
-    const RenderGraphicPipeline::SourceReference& source = _pipeline.getSource();
+    const RenderGraphicPipeline::SourcePointer& source = _pipeline.getSource();
     return !source || source->getReferenceCount() <= 1;
 }
 
 bool ego::render::RenderPipelineStateCache::IsPipelineHandlerUsedOnlyByCache(const RenderRayTracingPipeline& _pipeline)
 {
-    const RenderRayTracingPipeline::SourceReference& source = _pipeline.getSource();
+    const RenderRayTracingPipeline::SourcePointer& source = _pipeline.getSource();
     return !source || source->getReferenceCount() <= 1;
 }
 

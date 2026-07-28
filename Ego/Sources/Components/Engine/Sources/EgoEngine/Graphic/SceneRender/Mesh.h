@@ -26,7 +26,7 @@ namespace ego::render
         uint32_t m_indexCount = 0;
     };
 
-    class Mesh final : public STDDestroyMTCountable
+    class Mesh final : public MTCountable
     {
     public:
         struct VertexBufferBinding final
@@ -58,8 +58,8 @@ namespace ego::render
         const uint32_t m_indexCount;
     };
 
-    EGO_REFERENCE(Mesh);
-    EGO_NAMED_HANDLER(MeshReference, Mesh);
+    EGO_INTRUSIVE_POINTER(Mesh);
+    EGO_NAMED_HANDLER(MeshPointer, Mesh);
 
     MeshHandler CreateMeshFromRawData(ego::GraphicDevice& _graphicDevice, const MeshRawData& _rawData);
 } // namespace ego::render

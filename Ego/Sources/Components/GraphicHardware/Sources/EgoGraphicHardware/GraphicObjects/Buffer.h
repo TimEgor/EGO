@@ -36,7 +36,7 @@ namespace ego::gpu
         BufferDesc m_desc;
     };
 
-    EGO_REFERENCE(Buffer);
+    EGO_INTRUSIVE_POINTER(Buffer);
 
     struct BufferViewDesc final
     {
@@ -50,7 +50,7 @@ namespace ego::gpu
     class BufferView : public ResourceView
     {
     public:
-        BufferView(const BufferReference& _buffer, const BufferViewDesc& _desc);
+        BufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc);
 
         const BufferViewDesc& getDesc() const;
         GraphicResourceViewType getViewType() const override;
@@ -59,5 +59,5 @@ namespace ego::gpu
         BufferViewDesc m_desc;
     };
 
-    EGO_REFERENCE(BufferView);
+    EGO_INTRUSIVE_POINTER(BufferView);
 } // namespace ego::gpu

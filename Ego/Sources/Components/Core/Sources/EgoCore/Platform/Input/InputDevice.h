@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 #include "InputTypes.h"
 

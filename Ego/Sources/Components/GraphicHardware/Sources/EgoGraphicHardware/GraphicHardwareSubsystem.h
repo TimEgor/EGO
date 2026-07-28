@@ -27,7 +27,7 @@ namespace ego::gpu
         const GraphicDevice& getGraphicDevice() const;
         GraphicDevice& getGraphicDevice();
 
-        const CommandQueueReference& getGraphicCommandQueue() const;
+        const CommandQueuePointer& getGraphicCommandQueue() const;
 
         EGO_SUBSYSTEM(GraphicHardwareSubsystem, subsystem::Subsystem);
 
@@ -37,7 +37,7 @@ namespace ego::gpu
 
         GraphicHardwarePluginPointer m_graphicHardwarePlugin = nullptr;
         GraphicDevicePointer m_graphicDevice = nullptr;
-        CommandQueueReference m_graphicCommandQueue = nullptr;
+        CommandQueuePointer m_graphicCommandQueue = nullptr;
     };
 
     EGO_POINTER(GraphicHardwareSubsystem);
@@ -47,5 +47,5 @@ namespace ego::gpu
 
     GraphicDevicePointer GetGraphicDevicePointer();
     GraphicDevice& GetGraphicDevice();
-    const CommandQueueReference& GetGraphicCommandQueue();
+    const CommandQueuePointer& GetGraphicCommandQueue();
 } // namespace ego::gpu

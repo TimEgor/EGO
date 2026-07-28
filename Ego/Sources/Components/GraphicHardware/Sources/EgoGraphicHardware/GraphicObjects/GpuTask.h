@@ -13,11 +13,11 @@ namespace ego::gpu
     struct GpuSyncPoint final
     {
         CommandType m_queueType;
-        FenceReference m_fence = nullptr;
+        FencePointer m_fence = nullptr;
         Fence::FenceValue m_value = 0;
     };
 
-    class GpuTask : public STDDestroyMTCountable
+    class GpuTask : public MTCountable
     {
     public:
         GpuTask() = default;
@@ -27,16 +27,16 @@ namespace ego::gpu
         void waitOnQueue(CommandQueue& _queue) const;
 
         void addSyncPoint(const GpuSyncPoint& _syncPoint);
-        void addKeepAliveObject(const GraphicObjectReference& _object);
+        void addKeepAliveObject(const GraphicObjectPointer& _object);
 
         const std::vector<GpuSyncPoint>& getSyncPoints() const;
 
     private:
         std::vector<GpuSyncPoint> m_syncPoints;
-        std::vector<GraphicObjectReference> m_keepAliveObjects;
+        std::vector<GraphicObjectPointer> m_keepAliveObjects;
     };
 
-    EGO_REFERENCE(GpuTask);
+    EGO_INTRUSIVE_POINTER(GpuTask);
 
     enum class GpuCompletionMode
     {
@@ -54,11 +54,11 @@ namespace ego::gpu
         }
     };
 
-    template <typename TResourceReference>
+    template <typename TResourcePointer>
     struct GpuResourceTicket final
     {
-        TResourceReference m_resource = nullptr;
-        GpuTaskReference m_readyTask = nullptr;
+        TResourcePointer m_resource = nullptr;
+        GpuTaskPointer m_readyTask = nullptr;
 
         bool isReady() const
         {

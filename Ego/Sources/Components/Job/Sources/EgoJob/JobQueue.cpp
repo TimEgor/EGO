@@ -16,7 +16,7 @@ void ego::JobQueue::release()
     m_wakeCondition.notify_all();
 }
 
-void ego::JobQueue::addJob(const JobReference& job)
+void ego::JobQueue::addJob(const JobPointer& job)
 {
     std::lock_guard locker(m_mutex);
 
@@ -29,7 +29,7 @@ void ego::JobQueue::addJob(const JobReference& job)
     m_wakeCondition.notify_one();
 }
 
-ego::JobReference ego::JobQueue::getJob()
+ego::JobPointer ego::JobQueue::getJob()
 {
     std::unique_lock locker(m_mutex);
     m_wakeCondition.wait(
@@ -44,13 +44,13 @@ ego::JobReference ego::JobQueue::getJob()
         return nullptr;
     }
 
-    JobReference job = m_queue.front();
+    JobPointer job = m_queue.front();
     m_queue.pop_front();
 
     return job;
 }
 
-ego::JobReference ego::JobQueue::tryGetJob()
+ego::JobPointer ego::JobQueue::tryGetJob()
 {
     std::unique_lock locker(m_mutex);
 
@@ -59,7 +59,7 @@ ego::JobReference ego::JobQueue::tryGetJob()
         return nullptr;
     }
 
-    JobReference job = m_queue.front();
+    JobPointer job = m_queue.front();
     m_queue.pop_front();
 
     return job;

@@ -89,7 +89,7 @@ namespace ego::engine
         JobDescriptorID getPrepareRenderJobID() const;
         JobDescriptorID getPrepareRenderEndJobID() const;
 
-        JobGraphReference createJobGraph() const;
+        JobGraphPointer createJobGraph() const;
 
         bool isInitialized() const;
 

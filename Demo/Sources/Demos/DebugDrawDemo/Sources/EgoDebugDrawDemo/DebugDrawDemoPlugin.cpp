@@ -15,5 +15,5 @@ ego::demo::DebugDrawDemoPlugin::DebugDrawDemoPlugin(const PluginModulePointer& _
 
 ego::engine::EngineLogicPointer ego::demo::DebugDrawDemoPlugin::createEngineLogic()
 {
-    return ego::engine::EngineLogicPointer(new DebugDrawDemo());
+    return MakePointer<DebugDrawDemo>();
 }

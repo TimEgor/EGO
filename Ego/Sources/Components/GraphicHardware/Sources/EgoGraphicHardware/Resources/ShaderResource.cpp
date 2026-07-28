@@ -7,7 +7,7 @@
 namespace
 {
     template <typename TShader>
-    ego::Reference<TShader> MakeTypedShaderReference(const ego::gpu::ShaderReference& _shader, ego::gpu::ShaderStage _stage)
+    ego::IntrusivePointer<TShader> MakeTypedShaderPointer(const ego::gpu::ShaderPointer& _shader, ego::gpu::ShaderStage _stage)
     {
         ego::gpu::Shader* shader = _shader.getObject();
         if (!shader || shader->getShaderType() != _stage)
@@ -19,7 +19,7 @@ namespace
     }
 } // namespace
 
-ego::gpu::ShaderReference ego::gpu::ShaderResource::getShader() const
+ego::gpu::ShaderPointer ego::gpu::ShaderResource::getShader() const
 {
     return m_shader;
 }
@@ -32,7 +32,9 @@ bool ego::gpu::ShaderResource::onLoad(ego::FileContent&& _content, ResourceLoadi
         return false;
     }
 
-    const ShaderCodeReference code(new ShaderCode(_content.data(), static_cast<uint32_t>(_content.size())));
+    const ShaderCodePointer code = MakeIntrusive<ShaderCode>(
+        _content.data(),
+        static_cast<uint32_t>(_content.size()));
     m_shader = createShader(code);
 
     return m_shader != nullptr;
@@ -43,9 +45,9 @@ void ego::gpu::ShaderResource::onUnload()
     m_shader.reset();
 }
 
-ego::gpu::VertexShaderReference ego::gpu::VertexShaderResource::getVertexShader() const
+ego::gpu::VertexShaderPointer ego::gpu::VertexShaderResource::getVertexShader() const
 {
-    return MakeTypedShaderReference<VertexShader>(getShader(), ShaderStage::Vertex);
+    return MakeTypedShaderPointer<VertexShader>(getShader(), ShaderStage::Vertex);
 }
 
 ego::gpu::ShaderStage ego::gpu::VertexShaderResource::getShaderStage() const
@@ -53,14 +55,14 @@ ego::gpu::ShaderStage ego::gpu::VertexShaderResource::getShaderStage() const
     return ShaderStage::Vertex;
 }
 
-ego::gpu::ShaderReference ego::gpu::VertexShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::VertexShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createVertexShader(_code);
 }
 
-ego::gpu::PixelShaderReference ego::gpu::PixelShaderResource::getPixelShader() const
+ego::gpu::PixelShaderPointer ego::gpu::PixelShaderResource::getPixelShader() const
 {
-    return MakeTypedShaderReference<PixelShader>(getShader(), ShaderStage::Pixel);
+    return MakeTypedShaderPointer<PixelShader>(getShader(), ShaderStage::Pixel);
 }
 
 ego::gpu::ShaderStage ego::gpu::PixelShaderResource::getShaderStage() const
@@ -68,14 +70,14 @@ ego::gpu::ShaderStage ego::gpu::PixelShaderResource::getShaderStage() const
     return ShaderStage::Pixel;
 }
 
-ego::gpu::ShaderReference ego::gpu::PixelShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::PixelShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createPixelShader(_code);
 }
 
-ego::gpu::ComputeShaderReference ego::gpu::ComputeShaderResource::getComputeShader() const
+ego::gpu::ComputeShaderPointer ego::gpu::ComputeShaderResource::getComputeShader() const
 {
-    return MakeTypedShaderReference<ComputeShader>(getShader(), ShaderStage::Compute);
+    return MakeTypedShaderPointer<ComputeShader>(getShader(), ShaderStage::Compute);
 }
 
 ego::gpu::ShaderStage ego::gpu::ComputeShaderResource::getShaderStage() const
@@ -83,14 +85,14 @@ ego::gpu::ShaderStage ego::gpu::ComputeShaderResource::getShaderStage() const
     return ShaderStage::Compute;
 }
 
-ego::gpu::ShaderReference ego::gpu::ComputeShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::ComputeShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createComputeShader(_code);
 }
 
-ego::gpu::RayGenerationShaderReference ego::gpu::RayGenerationShaderResource::getRayGenerationShader() const
+ego::gpu::RayGenerationShaderPointer ego::gpu::RayGenerationShaderResource::getRayGenerationShader() const
 {
-    return MakeTypedShaderReference<RayGenerationShader>(getShader(), ShaderStage::RayGeneration);
+    return MakeTypedShaderPointer<RayGenerationShader>(getShader(), ShaderStage::RayGeneration);
 }
 
 ego::gpu::ShaderStage ego::gpu::RayGenerationShaderResource::getShaderStage() const
@@ -98,14 +100,14 @@ ego::gpu::ShaderStage ego::gpu::RayGenerationShaderResource::getShaderStage() co
     return ShaderStage::RayGeneration;
 }
 
-ego::gpu::ShaderReference ego::gpu::RayGenerationShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::RayGenerationShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createRayGenerationShader(_code);
 }
 
-ego::gpu::MissShaderReference ego::gpu::MissShaderResource::getMissShader() const
+ego::gpu::MissShaderPointer ego::gpu::MissShaderResource::getMissShader() const
 {
-    return MakeTypedShaderReference<MissShader>(getShader(), ShaderStage::Miss);
+    return MakeTypedShaderPointer<MissShader>(getShader(), ShaderStage::Miss);
 }
 
 ego::gpu::ShaderStage ego::gpu::MissShaderResource::getShaderStage() const
@@ -113,14 +115,14 @@ ego::gpu::ShaderStage ego::gpu::MissShaderResource::getShaderStage() const
     return ShaderStage::Miss;
 }
 
-ego::gpu::ShaderReference ego::gpu::MissShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::MissShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createMissShader(_code);
 }
 
-ego::gpu::ClosestHitShaderReference ego::gpu::ClosestHitShaderResource::getClosestHitShader() const
+ego::gpu::ClosestHitShaderPointer ego::gpu::ClosestHitShaderResource::getClosestHitShader() const
 {
-    return MakeTypedShaderReference<ClosestHitShader>(getShader(), ShaderStage::ClosestHit);
+    return MakeTypedShaderPointer<ClosestHitShader>(getShader(), ShaderStage::ClosestHit);
 }
 
 ego::gpu::ShaderStage ego::gpu::ClosestHitShaderResource::getShaderStage() const
@@ -128,14 +130,14 @@ ego::gpu::ShaderStage ego::gpu::ClosestHitShaderResource::getShaderStage() const
     return ShaderStage::ClosestHit;
 }
 
-ego::gpu::ShaderReference ego::gpu::ClosestHitShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::ClosestHitShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createClosestHitShader(_code);
 }
 
-ego::gpu::AnyHitShaderReference ego::gpu::AnyHitShaderResource::getAnyHitShader() const
+ego::gpu::AnyHitShaderPointer ego::gpu::AnyHitShaderResource::getAnyHitShader() const
 {
-    return MakeTypedShaderReference<AnyHitShader>(getShader(), ShaderStage::AnyHit);
+    return MakeTypedShaderPointer<AnyHitShader>(getShader(), ShaderStage::AnyHit);
 }
 
 ego::gpu::ShaderStage ego::gpu::AnyHitShaderResource::getShaderStage() const
@@ -143,14 +145,14 @@ ego::gpu::ShaderStage ego::gpu::AnyHitShaderResource::getShaderStage() const
     return ShaderStage::AnyHit;
 }
 
-ego::gpu::ShaderReference ego::gpu::AnyHitShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::AnyHitShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createAnyHitShader(_code);
 }
 
-ego::gpu::IntersectionShaderReference ego::gpu::IntersectionShaderResource::getIntersectionShader() const
+ego::gpu::IntersectionShaderPointer ego::gpu::IntersectionShaderResource::getIntersectionShader() const
 {
-    return MakeTypedShaderReference<IntersectionShader>(getShader(), ShaderStage::Intersection);
+    return MakeTypedShaderPointer<IntersectionShader>(getShader(), ShaderStage::Intersection);
 }
 
 ego::gpu::ShaderStage ego::gpu::IntersectionShaderResource::getShaderStage() const
@@ -158,7 +160,7 @@ ego::gpu::ShaderStage ego::gpu::IntersectionShaderResource::getShaderStage() con
     return ShaderStage::Intersection;
 }
 
-ego::gpu::ShaderReference ego::gpu::IntersectionShaderResource::createShader(const ShaderCodeReference& _code)
+ego::gpu::ShaderPointer ego::gpu::IntersectionShaderResource::createShader(const ShaderCodePointer& _code)
 {
     return gpu::GetGraphicDevice().createIntersectionShader(_code);
 }

@@ -20,47 +20,47 @@
 namespace ego::render
 {
     // Base GPU objects.
-    using RenderGraphicObject = Handler<gpu::GraphicObjectReference>;
+    using RenderGraphicObject = Handler<gpu::GraphicObjectPointer>;
 
     // Commands and synchronization.
-    using RenderCommandQueue = Handler<gpu::CommandQueueReference>;
-    using RenderFence = Handler<gpu::FenceReference>;
-    using RenderGpuTask = Handler<gpu::GpuTaskReference>;
-    using RenderCommandList = Handler<gpu::CommandListReference>;
-    using RenderCopyCommandList = Handler<gpu::CopyCommandListReference>;
-    using RenderComputeCommandList = Handler<gpu::ComputeCommandListReference>;
-    using RenderGraphicCommandList = Handler<gpu::GraphicCommandListReference>;
+    using RenderCommandQueue = Handler<gpu::CommandQueuePointer>;
+    using RenderFence = Handler<gpu::FencePointer>;
+    using RenderGpuTask = Handler<gpu::GpuTaskPointer>;
+    using RenderCommandList = Handler<gpu::CommandListPointer>;
+    using RenderCopyCommandList = Handler<gpu::CopyCommandListPointer>;
+    using RenderComputeCommandList = Handler<gpu::ComputeCommandListPointer>;
+    using RenderGraphicCommandList = Handler<gpu::GraphicCommandListPointer>;
 
     // Resource bindings and views.
-    using RenderBindingLayout = Handler<gpu::BindingLayoutReference>;
-    using RenderBuffer = Handler<gpu::BufferReference>;
-    using RenderBufferView = Handler<gpu::BufferViewReference>;
-    using RenderResourceView = Handler<gpu::ResourceViewReference>;
-    using RenderAccelerationStructure = Handler<gpu::AccelerationStructureReference>;
-    using RenderGeometryAccelerationStructure = Handler<gpu::GeometryAccelerationStructureReference>;
-    using RenderInstanceAccelerationStructure = Handler<gpu::InstanceAccelerationStructureReference>;
-    using RenderAccelerationStructureView = Handler<gpu::AccelerationStructureViewReference>;
-    using RenderSampler = Handler<gpu::SamplerReference>;
+    using RenderBindingLayout = Handler<gpu::BindingLayoutPointer>;
+    using RenderBuffer = Handler<gpu::BufferPointer>;
+    using RenderBufferView = Handler<gpu::BufferViewPointer>;
+    using RenderResourceView = Handler<gpu::ResourceViewPointer>;
+    using RenderAccelerationStructure = Handler<gpu::AccelerationStructurePointer>;
+    using RenderGeometryAccelerationStructure = Handler<gpu::GeometryAccelerationStructurePointer>;
+    using RenderInstanceAccelerationStructure = Handler<gpu::InstanceAccelerationStructurePointer>;
+    using RenderAccelerationStructureView = Handler<gpu::AccelerationStructureViewPointer>;
+    using RenderSampler = Handler<gpu::SamplerPointer>;
 
     // Shaders and pipelines.
-    using RenderPipeline = Handler<gpu::PipelineReference>;
-    using RenderGraphicPipeline = Handler<gpu::GraphicPipelineReference>;
-    using RenderComputePipeline = Handler<gpu::ComputePipelineReference>;
-    using RenderRayTracingPipeline = Handler<gpu::RayTracingPipelineReference>;
-    using RenderShaderCode = Handler<gpu::ShaderCodeReference>;
-    using RenderShader = Handler<gpu::ShaderReference>;
-    using RenderVertexShader = Handler<gpu::VertexShaderReference>;
-    using RenderPixelShader = Handler<gpu::PixelShaderReference>;
-    using RenderComputeShader = Handler<gpu::ComputeShaderReference>;
-    using RenderRayGenerationShader = Handler<gpu::RayGenerationShaderReference>;
-    using RenderMissShader = Handler<gpu::MissShaderReference>;
-    using RenderClosestHitShader = Handler<gpu::ClosestHitShaderReference>;
-    using RenderAnyHitShader = Handler<gpu::AnyHitShaderReference>;
-    using RenderIntersectionShader = Handler<gpu::IntersectionShaderReference>;
+    using RenderPipeline = Handler<gpu::PipelinePointer>;
+    using RenderGraphicPipeline = Handler<gpu::GraphicPipelinePointer>;
+    using RenderComputePipeline = Handler<gpu::ComputePipelinePointer>;
+    using RenderRayTracingPipeline = Handler<gpu::RayTracingPipelinePointer>;
+    using RenderShaderCode = Handler<gpu::ShaderCodePointer>;
+    using RenderShader = Handler<gpu::ShaderPointer>;
+    using RenderVertexShader = Handler<gpu::VertexShaderPointer>;
+    using RenderPixelShader = Handler<gpu::PixelShaderPointer>;
+    using RenderComputeShader = Handler<gpu::ComputeShaderPointer>;
+    using RenderRayGenerationShader = Handler<gpu::RayGenerationShaderPointer>;
+    using RenderMissShader = Handler<gpu::MissShaderPointer>;
+    using RenderClosestHitShader = Handler<gpu::ClosestHitShaderPointer>;
+    using RenderAnyHitShader = Handler<gpu::AnyHitShaderPointer>;
+    using RenderIntersectionShader = Handler<gpu::IntersectionShaderPointer>;
 
     // Textures and presentation.
-    using RenderTexture = Handler<gpu::TextureReference>;
-    using RenderTexture2D = Handler<gpu::Texture2DReference>;
-    using RenderTextureView = Handler<gpu::TextureViewReference>;
-    using RenderSwapChain = Handler<gpu::SwapChainReference>;
+    using RenderTexture = Handler<gpu::TexturePointer>;
+    using RenderTexture2D = Handler<gpu::Texture2DPointer>;
+    using RenderTextureView = Handler<gpu::TextureViewPointer>;
+    using RenderSwapChain = Handler<gpu::SwapChainPointer>;
 } // namespace ego::render

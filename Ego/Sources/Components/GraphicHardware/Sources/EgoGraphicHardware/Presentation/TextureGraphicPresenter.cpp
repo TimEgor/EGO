@@ -48,7 +48,7 @@ bool ego::TextureGraphicPresenter::prepare()
     return m_targetTexture && m_textureView;
 }
 
-ego::gpu::Texture2DReference ego::TextureGraphicPresenter::getTargetTexture()
+ego::gpu::Texture2DPointer ego::TextureGraphicPresenter::getTargetTexture()
 {
     return m_targetTexture;
 }
@@ -63,7 +63,7 @@ ego::gpu::GraphicResourceState ego::TextureGraphicPresenter::getPresentationStat
     return gpu::GraphicResourceState::ShaderRead;
 }
 
-const ego::gpu::TextureViewReference& ego::TextureGraphicPresenter::getTextureView() const
+const ego::gpu::TextureViewPointer& ego::TextureGraphicPresenter::getTextureView() const
 {
     return m_textureView;
 }

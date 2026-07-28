@@ -5,8 +5,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "EgoCore/Reference/Pointer.h"
-#include "EgoCore/Reference/Reference.h"
+#include "EgoCore/Pointer/IntrusivePointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 namespace ego
 {
@@ -25,7 +25,7 @@ namespace ego
         };
 
         template <typename T>
-        struct HandlerObjectType<Reference<T>> final
+        struct HandlerObjectType<IntrusivePointer<T>> final
         {
             using Type = T;
         };
@@ -50,7 +50,7 @@ namespace ego
         };
 
         template <typename T>
-        struct HasObjectAccess<Reference<T>> : std::true_type
+        struct HasObjectAccess<IntrusivePointer<T>> : std::true_type
         {
         };
 
@@ -69,14 +69,14 @@ namespace ego
         T* GetObjectPointer(T* _object);
 
         template <typename T>
-        T* GetObjectPointer(const Reference<T>& _object);
+        T* GetObjectPointer(const IntrusivePointer<T>& _object);
 
         template <typename T>
         T* GetObjectPointer(const SharedPointer<T>& _object);
     } // namespace handler_details
 
     template <typename T>
-    class HandlerSource : public STDDestroyMTCountable
+    class HandlerSource : public MTCountable
     {
     public:
         virtual T getObject() const = 0;
@@ -89,11 +89,11 @@ namespace ego
         using ObjectResult = T;
         using ObjectType = handler_details::HandlerObjectTypeT<ObjectResult>;
         using SourceType = HandlerSource<ObjectResult>;
-        using SourceReference = Reference<SourceType>;
+        using SourcePointer = IntrusivePointer<SourceType>;
 
         Handler() = default;
         Handler(std::nullptr_t);
-        explicit Handler(const SourceReference& _source);
+        explicit Handler(const SourcePointer& _source);
         Handler(const ObjectResult& _object);
         Handler(ObjectResult&& _object);
 
@@ -102,7 +102,7 @@ namespace ego
         Handler& operator=(ObjectResult&& _object);
 
         ObjectResult getObject() const;
-        const SourceReference& getSource() const;
+        const SourcePointer& getSource() const;
 
         ObjectType& operator*() const
             requires handler_details::HasObjectAccessV<T>;
@@ -116,7 +116,7 @@ namespace ego
         void reset();
 
     private:
-        SourceReference m_source = nullptr;
+        SourcePointer m_source = nullptr;
     };
 
     template <typename TResult, typename TOwner, typename TResolver>

@@ -6,7 +6,7 @@
 #include "EgoCore/Platform/Input/InputTypes.h"
 #include "EgoCore/Platform/Input/KeyboardInputDevice.h"
 #include "EgoCore/Platform/Input/MouseInputDevice.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "InputEventSink.h"
 

@@ -5,7 +5,7 @@
 #include "LevelController.h"
 
 ego::Level::Level(LevelID _id)
-    : m_world(new ecs::World()),
+    : m_world(MakePointer<ecs::World>()),
       m_id(_id)
 {
     createRootNode();

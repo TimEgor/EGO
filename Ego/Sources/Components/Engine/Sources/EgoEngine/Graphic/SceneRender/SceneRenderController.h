@@ -17,7 +17,7 @@ namespace ego::engine
         void clearResources();
 
         bool prepare(const render::RenderPrepareContext& _context);
-        void render(const gpu::TextureViewReference& _targetView);
+        void render(const gpu::TextureViewPointer& _targetView);
         void wait();
 
         render::Render& getRender();

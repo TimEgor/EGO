@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "JobDescriptor.h"
 #include "JobGraph.h"
@@ -41,8 +41,11 @@ namespace ego
 
     class JobGraphDescriptor final
     {
+        template <typename T, typename... TArguments>
+        friend SharedPointer<T> MakePointer(TArguments&&... _arguments);
+
     public:
-        JobGraphReference createJobGraph() const;
+        JobGraphPointer createJobGraph() const;
 
         bool isEmpty() const;
         const char* getDbgName() const

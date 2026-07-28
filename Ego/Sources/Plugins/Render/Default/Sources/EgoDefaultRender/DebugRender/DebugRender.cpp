@@ -84,24 +84,24 @@ ego::gpu::InputLayoutDesc ego::render::DefaultRenderDebugDraw::CreateLineInputLa
     return inputLayout;
 }
 
-ego::render::RasterizationMaterialRenderPassInfoReference ego::render::DefaultRenderDebugDraw::CreateDebugDrawMaterialInfo(
+ego::render::RasterizationMaterialRenderPassInfoPointer ego::render::DefaultRenderDebugDraw::CreateDebugDrawMaterialInfo(
     const ego::render::RenderVertexShader& _vertexShader,
     const ego::render::RenderPixelShader& _pixelShader)
 {
-    const ego::gpu::VertexShaderReference vertexShader = _vertexShader.getObject();
-    const ego::gpu::PixelShaderReference pixelShader = _pixelShader.getObject();
+    const ego::gpu::VertexShaderPointer vertexShader = _vertexShader.getObject();
+    const ego::gpu::PixelShaderPointer pixelShader = _pixelShader.getObject();
     if (!vertexShader || !pixelShader)
     {
         return nullptr;
     }
 
-    return RasterizationMaterialRenderPassInfoReference(new RasterizationMaterialRenderPassInfo(_vertexShader, _pixelShader));
+    return MakeIntrusive<RasterizationMaterialRenderPassInfo>(_vertexShader, _pixelShader);
 }
 
 ego::render::RenderGraphicPipeline ego::render::DefaultRenderDebugDraw::getOrCreateDebugDrawPipeline(
     ego::GraphicDevice& _graphicDevice,
     ego::render::RenderPipelineStateCache& _pipelineStateCache,
-    const RasterizationMaterialRenderPassInfoReference& _materialInfo,
+    const RasterizationMaterialRenderPassInfoPointer& _materialInfo,
     const ego::gpu::InputLayoutDesc& _inputLayoutDesc,
     ego::gpu::PrimitiveTopology _topology) const
 {

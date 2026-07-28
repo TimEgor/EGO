@@ -29,7 +29,7 @@ bool ego::PluginController::init()
 {
     std::lock_guard lock(m_mutex);
 
-    m_loader = new PluginLoader();
+    m_loader = MakeIntrusive<PluginLoader>();
     EGO_CHECK_INITIALIZATION(m_loader);
 
     return true;
@@ -50,7 +50,7 @@ void ego::PluginController::release()
 
 ego::FileName ego::PluginController::selectPluginModule(const char* _pluginTypeName)
 {
-    PluginLoaderReference loader;
+    PluginLoaderPointer loader;
     {
         std::lock_guard lock(m_mutex);
         EGO_ASSERT(m_loader);

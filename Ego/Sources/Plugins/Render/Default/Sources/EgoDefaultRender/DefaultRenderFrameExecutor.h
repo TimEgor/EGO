@@ -14,10 +14,10 @@ namespace ego::render
     public:
         DefaultRenderFrameExecutor() = default;
 
-        bool init(GraphicDevice& _graphicDevice, const gpu::CommandQueueReference& _commandQueue);
+        bool init(GraphicDevice& _graphicDevice, const gpu::CommandQueuePointer& _commandQueue);
         void release();
         void wait();
-        void submitCommandLists(const std::vector<RenderGraphicCommandList>& _commandLists, std::vector<gpu::GraphicObjectReference>&& _frameResources);
+        void submitCommandLists(const std::vector<RenderGraphicCommandList>& _commandLists, std::vector<gpu::GraphicObjectPointer>&& _frameResources);
 
         bool isValid() const;
 
@@ -26,7 +26,7 @@ namespace ego::render
 
         RenderCommandQueue m_commandQueue = nullptr;
         RenderFence m_frameFence = nullptr;
-        std::vector<gpu::GraphicObjectReference> m_frameResources;
+        std::vector<gpu::GraphicObjectPointer> m_frameResources;
         gpu::Fence::FenceValue m_frameFenceValue = 0;
     };
 } // namespace ego::render

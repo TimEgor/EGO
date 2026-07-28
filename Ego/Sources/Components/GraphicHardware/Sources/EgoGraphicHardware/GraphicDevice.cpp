@@ -5,7 +5,7 @@ ego::gpu::GpuBufferTicket ego::GraphicDevice::createAndUploadBuffer(
     const gpu::InitialGraphicResourceData& _initialData,
     const gpu::GpuOperationOptions& _options)
 {
-    gpu::BufferReference buffer = createBuffer(_desc);
+    gpu::BufferPointer buffer = createBuffer(_desc);
     if (!buffer)
     {
         return gpu::GpuBufferTicket();
@@ -16,7 +16,7 @@ ego::gpu::GpuBufferTicket ego::GraphicDevice::createAndUploadBuffer(
         return gpu::GpuBufferTicket{buffer, nullptr};
     }
 
-    gpu::GpuTaskReference readyTask = uploadBuffer(buffer, _initialData, _options);
+    gpu::GpuTaskPointer readyTask = uploadBuffer(buffer, _initialData, _options);
     if (!readyTask)
     {
         return gpu::GpuBufferTicket();
@@ -30,7 +30,7 @@ ego::gpu::GpuTexture2DTicket ego::GraphicDevice::createAndUploadTexture2D(
     const gpu::InitialGraphicResourceData& _initialData,
     const gpu::GpuOperationOptions& _options)
 {
-    gpu::Texture2DReference texture = createTexture2D(_desc);
+    gpu::Texture2DPointer texture = createTexture2D(_desc);
     if (!texture)
     {
         return gpu::GpuTexture2DTicket();
@@ -41,7 +41,7 @@ ego::gpu::GpuTexture2DTicket ego::GraphicDevice::createAndUploadTexture2D(
         return gpu::GpuTexture2DTicket{texture, nullptr};
     }
 
-    gpu::GpuTaskReference readyTask = uploadTexture2D(texture, _initialData, _options);
+    gpu::GpuTaskPointer readyTask = uploadTexture2D(texture, _initialData, _options);
     if (!readyTask)
     {
         return gpu::GpuTexture2DTicket();

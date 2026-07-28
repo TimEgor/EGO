@@ -6,7 +6,7 @@
 
 bool ego::EventSubsystem::init()
 {
-    m_eventController = new EventController();
+    m_eventController = MakePointer<EventController>();
     EGO_CHECK_INITIALIZATION(m_eventController && m_eventController->init());
 
     return true;

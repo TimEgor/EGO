@@ -6,8 +6,8 @@
 ego::InputDeviceProvider::DeviceCollection ego::win32::Win32InputDeviceProvider::createDevices()
 {
     DeviceCollection devices;
-    devices.push_back(new Win32KeyboardInputDevice());
-    devices.push_back(new Win32MouseInputDevice());
+    devices.push_back(MakePointer<Win32KeyboardInputDevice>());
+    devices.push_back(MakePointer<Win32MouseInputDevice>());
 
     return devices;
 }

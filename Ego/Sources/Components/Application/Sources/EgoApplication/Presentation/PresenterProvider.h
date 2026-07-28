@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EgoCore/Platform/Surface/PlatformSurface.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
 #include "EgoGraphicHardware/Presentation/GraphicPresenter.h"

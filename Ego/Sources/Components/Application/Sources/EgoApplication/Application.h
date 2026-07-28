@@ -3,7 +3,7 @@
 #include "EgoCore/Event/EventController.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 
 #include "EgoPlugin/Catalog/PluginCatalog.h"

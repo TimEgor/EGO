@@ -11,7 +11,7 @@ namespace ego::gpu
     public:
         ShaderResource() = default;
 
-        ShaderReference getShader() const;
+        ShaderPointer getShader() const;
 
         virtual ShaderStage getShaderStage() const = 0;
 
@@ -21,9 +21,9 @@ namespace ego::gpu
         bool onLoad(FileContent&& _content, ResourceLoadingContext& _loadingContext) override;
         void onUnload() override;
 
-        virtual ShaderReference createShader(const ShaderCodeReference& _code) = 0;
+        virtual ShaderPointer createShader(const ShaderCodePointer& _code) = 0;
 
-        ShaderReference m_shader = nullptr;
+        ShaderPointer m_shader = nullptr;
     };
 
     EGO_POINTER(ShaderResource);
@@ -33,13 +33,13 @@ namespace ego::gpu
     public:
         VertexShaderResource() = default;
 
-        VertexShaderReference getVertexShader() const;
+        VertexShaderPointer getVertexShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(VertexShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(VertexShaderResource);
@@ -49,13 +49,13 @@ namespace ego::gpu
     public:
         PixelShaderResource() = default;
 
-        PixelShaderReference getPixelShader() const;
+        PixelShaderPointer getPixelShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(PixelShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(PixelShaderResource);
@@ -65,13 +65,13 @@ namespace ego::gpu
     public:
         ComputeShaderResource() = default;
 
-        ComputeShaderReference getComputeShader() const;
+        ComputeShaderPointer getComputeShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(ComputeShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(ComputeShaderResource);
@@ -81,13 +81,13 @@ namespace ego::gpu
     public:
         RayGenerationShaderResource() = default;
 
-        RayGenerationShaderReference getRayGenerationShader() const;
+        RayGenerationShaderPointer getRayGenerationShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(RayGenerationShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(RayGenerationShaderResource);
@@ -97,13 +97,13 @@ namespace ego::gpu
     public:
         MissShaderResource() = default;
 
-        MissShaderReference getMissShader() const;
+        MissShaderPointer getMissShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(MissShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(MissShaderResource);
@@ -113,13 +113,13 @@ namespace ego::gpu
     public:
         ClosestHitShaderResource() = default;
 
-        ClosestHitShaderReference getClosestHitShader() const;
+        ClosestHitShaderPointer getClosestHitShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(ClosestHitShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(ClosestHitShaderResource);
@@ -129,13 +129,13 @@ namespace ego::gpu
     public:
         AnyHitShaderResource() = default;
 
-        AnyHitShaderReference getAnyHitShader() const;
+        AnyHitShaderPointer getAnyHitShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(AnyHitShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(AnyHitShaderResource);
@@ -145,13 +145,13 @@ namespace ego::gpu
     public:
         IntersectionShaderResource() = default;
 
-        IntersectionShaderReference getIntersectionShader() const;
+        IntersectionShaderPointer getIntersectionShader() const;
         ShaderStage getShaderStage() const override;
 
         EGO_RESOURCE(IntersectionShaderResource, ShaderResource);
 
     protected:
-        ShaderReference createShader(const ShaderCodeReference& _code) override;
+        ShaderPointer createShader(const ShaderCodePointer& _code) override;
     };
 
     EGO_POINTER(IntersectionShaderResource);

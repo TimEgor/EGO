@@ -61,12 +61,12 @@ namespace ego::render
         bool loadRayTracingPass(const XmlNode& _passNode, const std::string& _passName, ResourceLoadingContext& _loadingContext);
 
         bool buildMaterial();
-        bool addRasterizationPassToTemplate(const RasterizationPassData& _passData, const MaterialTemplateReference& _materialTemplate);
-        bool addRayTracingPassToTemplate(const RayTracingPassData& _passData, const MaterialTemplateReference& _materialTemplate);
+        bool addRasterizationPassToTemplate(const RasterizationPassData& _passData, const MaterialTemplatePointer& _materialTemplate);
+        bool addRayTracingPassToTemplate(const RayTracingPassData& _passData, const MaterialTemplatePointer& _materialTemplate);
         bool addPassToTemplate(
             const std::string& _passName,
-            const MaterialRenderPassInfoReference& _passInfo,
-            const MaterialTemplateReference& _materialTemplate);
+            const MaterialRenderPassInfoPointer& _passInfo,
+            const MaterialTemplatePointer& _materialTemplate);
 
         bool readPassName(const XmlNode& _passNode, std::string& _name);
         bool readPassType(const XmlNode& _passNode, const std::string& _passName, std::string& _type);

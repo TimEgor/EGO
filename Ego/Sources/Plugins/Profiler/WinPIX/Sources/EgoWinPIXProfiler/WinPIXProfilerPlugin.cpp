@@ -15,5 +15,5 @@ ego::winpix::WinPIXProfilerPlugin::WinPIXProfilerPlugin(const PluginModulePointe
 
 ego::profile::ProfilerPointer ego::winpix::WinPIXProfilerPlugin::createProfiler()
 {
-    return profile::ProfilerPointer(new WinPIXProfiler());
+    return MakePointer<WinPIXProfiler>();
 }

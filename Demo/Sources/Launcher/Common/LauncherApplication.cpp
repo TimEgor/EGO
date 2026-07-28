@@ -58,7 +58,7 @@ bool ego::demo::launcher::LauncherApplication::initApplication(void* _nativeInst
 {
     EGO_CHECK_RETURN_FALSE(!m_application);
 
-    m_application = new application::Application();
+    m_application = MakePointer<application::Application>();
     EGO_CHECK_RETURN_FALSE(m_application);
 
     application::Application::InitData applicationInitData;
@@ -99,7 +99,7 @@ bool ego::demo::launcher::LauncherApplication::initEngine(const CommandLineOptio
     guiOptions.m_isEnabled = true;
     guiOptions.m_pluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
 
-    m_engine = new engine::Engine();
+    m_engine = MakePointer<engine::Engine>();
     EGO_CHECK_RETURN_FALSE(m_engine);
     EGO_CHECK_RETURN_FALSE(m_engine->init());
 
@@ -185,7 +185,7 @@ bool ego::demo::launcher::LauncherApplication::loadProject(const FileName& _proj
         return true;
     }
 
-    _project = new engine::Project();
+    _project = MakePointer<engine::Project>();
     EGO_CHECK_RETURN_FALSE(_project);
     EGO_CHECK_RETURN_FALSE(engine::ProjectReader::ReadFromFile(_projectFileName, *_project));
 

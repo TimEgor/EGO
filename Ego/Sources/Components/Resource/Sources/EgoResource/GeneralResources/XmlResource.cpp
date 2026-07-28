@@ -35,7 +35,7 @@ bool ego::XmlResource::onLoad(FileContent&& _content, ResourceLoadingContext&)
         return false;
     }
 
-    SharedPointer<XmlDocument> document(new XmlDocument());
+    SharedPointer<XmlDocument> document = MakePointer<XmlDocument>();
     if (!document->loadFromBuffer(_content.data(), _content.size()))
     {
         m_document.reset();

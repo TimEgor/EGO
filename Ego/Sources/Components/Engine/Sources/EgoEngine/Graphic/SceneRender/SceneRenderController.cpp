@@ -63,7 +63,7 @@ bool ego::engine::SceneRenderController::prepare(const render::RenderPrepareCont
     return m_isFramePrepared;
 }
 
-void ego::engine::SceneRenderController::render(const gpu::TextureViewReference& _targetView)
+void ego::engine::SceneRenderController::render(const gpu::TextureViewPointer& _targetView)
 {
     if (!m_render || !m_isFramePrepared || !_targetView)
     {

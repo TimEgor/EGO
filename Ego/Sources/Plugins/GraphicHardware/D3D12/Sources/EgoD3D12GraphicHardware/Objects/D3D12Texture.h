@@ -24,7 +24,7 @@ namespace ego::gpu::d3d12
     {
     public:
         D3D12TextureView(
-            const TextureReference& _texture,
+            const TexturePointer& _texture,
             const TextureViewDesc& _desc,
             D3D12DescriptorIndex _descriptorIndex,
             D3D12DescriptorAllocatorPointer& _allocator);

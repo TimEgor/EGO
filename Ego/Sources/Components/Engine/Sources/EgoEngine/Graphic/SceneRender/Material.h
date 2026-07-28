@@ -4,17 +4,17 @@
 
 namespace ego::render
 {
-    class Material final : public STDDestroyMTCountable
+    class Material final : public MTCountable
     {
     public:
-        explicit Material(const MaterialTemplateReference& _materialTemplate);
+        explicit Material(const MaterialTemplatePointer& _materialTemplate);
 
-        const MaterialTemplateReference& getMaterialTemplate() const;
+        const MaterialTemplatePointer& getMaterialTemplate() const;
 
     private:
-        const MaterialTemplateReference m_materialTemplate = nullptr;
+        const MaterialTemplatePointer m_materialTemplate = nullptr;
     };
 
-    EGO_REFERENCE(Material);
-    EGO_NAMED_HANDLER(MaterialReference, Material);
+    EGO_INTRUSIVE_POINTER(Material);
+    EGO_NAMED_HANDLER(MaterialPointer, Material);
 } // namespace ego::render

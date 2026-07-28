@@ -15,5 +15,5 @@ ego::demo::TestDemoPlugin::TestDemoPlugin(const PluginModulePointer& _module, Pl
 
 ego::engine::EngineLogicPointer ego::demo::TestDemoPlugin::createEngineLogic()
 {
-    return ego::engine::EngineLogicPointer(new TestDemo());
+    return MakePointer<TestDemo>();
 }

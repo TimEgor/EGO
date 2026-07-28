@@ -62,5 +62,5 @@ namespace ego::gpu
         SamplerDesc m_desc;
     };
 
-    EGO_REFERENCE(Sampler);
+    EGO_INTRUSIVE_POINTER(Sampler);
 } // namespace ego::gpu

@@ -109,13 +109,13 @@ bool ego::gui::default_gui_render::DefaultGuiRender::prepare(GuiRenderData&& _re
 
     clearResources();
 
-    for (const gpu::TextureViewReference& textureView : _renderData.m_resourceTextureViews)
+    for (const gpu::TextureViewPointer& textureView : _renderData.m_resourceTextureViews)
     {
         EGO_CHECK_RETURN_FALSE(textureView && textureView->getViewType() == gpu::GraphicResourceViewType::ShaderResource);
         EGO_CHECK_RETURN_FALSE(textureView->getDesc().m_dimension == gpu::TextureViewDimension::D2);
         EGO_CHECK_RETURN_FALSE(textureView->getBindlessIndex() != gpu::InvalidBindlessIndex);
 
-        const gpu::GraphicResourceReference& textureResource = textureView->getResource();
+        const gpu::GraphicResourcePointer& textureResource = textureView->getResource();
         EGO_CHECK_RETURN_FALSE(textureResource && rtti::IsObjectBasedOn<gpu::Texture2D>(*textureResource));
     }
 
@@ -164,8 +164,8 @@ bool ego::gui::default_gui_render::DefaultGuiRender::render(const TargetCollecti
     bool renderResult = true;
     for (size_t targetIndex = 0; targetIndex < m_targetViews.size(); ++targetIndex)
     {
-        const gpu::TextureViewReference& targetView = m_targetViews[targetIndex];
-        const gpu::Texture2DReference targetTexture = resolveTargetTexture(targetView);
+        const gpu::TextureViewPointer& targetView = m_targetViews[targetIndex];
+        const gpu::Texture2DPointer targetTexture = resolveTargetTexture(targetView);
         if (!targetTexture)
         {
             renderResult = false;
@@ -286,7 +286,7 @@ bool ego::gui::default_gui_render::DefaultGuiRender::prepareBuffer(
     const gpu::InitialGraphicResourceData& _initialData,
     uint32_t _stride,
     gpu::GraphicResourceUsage _usage,
-    gpu::BufferReference& _buffer)
+    gpu::BufferPointer& _buffer)
 {
     if (!_initialData.isValid())
     {
@@ -311,8 +311,8 @@ bool ego::gui::default_gui_render::DefaultGuiRender::prepareBuffer(
 }
 
 bool ego::gui::default_gui_render::DefaultGuiRender::renderViewport(
-    const gpu::TextureViewReference& _targetView,
-    const gpu::Texture2DReference& _targetTexture,
+    const gpu::TextureViewPointer& _targetView,
+    const gpu::Texture2DPointer& _targetTexture,
     const ViewportResources& _resources)
 {
     if (_resources.m_drawData.isEmpty())
@@ -389,7 +389,7 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
         GuiRootConstants guiConstants;
         guiConstants.m_viewportSize = viewportSize;
 
-        const gpu::SamplerReference& sampler = command.m_textureFilteringMode == TextureFilteringMode::Nearest ? m_nearestSampler : m_linearSampler;
+        const gpu::SamplerPointer& sampler = command.m_textureFilteringMode == TextureFilteringMode::Nearest ? m_nearestSampler : m_linearSampler;
         if (command.m_textureIndex != gpu::InvalidBindlessIndex && sampler)
         {
             guiConstants.m_textureIndex = command.m_textureIndex;
@@ -404,7 +404,7 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
     return true;
 }
 
-ego::gpu::Texture2DReference ego::gui::default_gui_render::DefaultGuiRender::resolveTargetTexture(const gpu::TextureViewReference& _targetView) const
+ego::gpu::Texture2DPointer ego::gui::default_gui_render::DefaultGuiRender::resolveTargetTexture(const gpu::TextureViewPointer& _targetView) const
 {
     if (!_targetView || _targetView->getViewType() != gpu::GraphicResourceViewType::RenderTarget ||
         _targetView->getDesc().m_dimension != gpu::TextureViewDimension::D2)
@@ -412,21 +412,21 @@ ego::gpu::Texture2DReference ego::gui::default_gui_render::DefaultGuiRender::res
         return nullptr;
     }
 
-    const gpu::GraphicResourceReference& targetResource = _targetView->getResource();
+    const gpu::GraphicResourcePointer& targetResource = _targetView->getResource();
     if (!targetResource || !rtti::IsObjectBasedOn<gpu::Texture2D>(*targetResource))
     {
         return nullptr;
     }
 
-    return gpu::Texture2DReference(targetResource.getObjectCast<gpu::Texture2D>());
+    return gpu::Texture2DPointer(targetResource.getObjectCast<gpu::Texture2D>());
 }
 
 void ego::gui::default_gui_render::DefaultGuiRender::transitionTextureViews() const
 {
-    for (const gpu::TextureViewReference& textureView : m_textureViews)
+    for (const gpu::TextureViewPointer& textureView : m_textureViews)
     {
-        const gpu::GraphicResourceReference& textureResource = textureView->getResource();
-        const gpu::Texture2DReference texture(textureResource.getObjectCast<gpu::Texture2D>());
+        const gpu::GraphicResourcePointer& textureResource = textureView->getResource();
+        const gpu::Texture2DPointer texture(textureResource.getObjectCast<gpu::Texture2D>());
         if (texture->getState() != gpu::GraphicResourceState::ShaderRead)
         {
             m_commandList->resourceBarrier(texture, gpu::GraphicResourceState::ShaderRead);

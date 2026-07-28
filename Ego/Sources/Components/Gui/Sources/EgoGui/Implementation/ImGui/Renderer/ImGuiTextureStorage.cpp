@@ -36,7 +36,7 @@ bool ego::gui::ImGuiTextureStorage::synchronize(ImTextureData& _textureData)
     return false;
 }
 
-ego::gpu::TextureViewReference ego::gui::ImGuiTextureStorage::getTextureView(ImTextureData& _textureData) const
+ego::gpu::TextureViewPointer ego::gui::ImGuiTextureStorage::getTextureView(ImTextureData& _textureData) const
 {
     const TextureCollection::const_iterator textureIt = m_textures.find(&_textureData);
     if (textureIt == m_textures.end())
@@ -70,7 +70,7 @@ bool ego::gui::ImGuiTextureStorage::createTexture(ImTextureData& _textureData)
         destroyTexture(_textureData);
     }
 
-    const gpu::TextureViewReference textureView = createTextureResource(_textureData);
+    const gpu::TextureViewPointer textureView = createTextureResource(_textureData);
     EGO_CHECK_RETURN_FALSE(textureView);
 
     const std::pair<TextureCollection::iterator, bool> insertResult = m_textures.emplace(&_textureData, textureView);
@@ -93,7 +93,7 @@ bool ego::gui::ImGuiTextureStorage::replaceTexture(ImTextureData& _textureData)
         return createTexture(_textureData);
     }
 
-    const gpu::TextureViewReference textureView = createTextureResource(_textureData);
+    const gpu::TextureViewPointer textureView = createTextureResource(_textureData);
     EGO_CHECK_RETURN_FALSE(textureView);
     textureIt->second = textureView;
 
@@ -115,7 +115,7 @@ void ego::gui::ImGuiTextureStorage::destroyTexture(ImTextureData& _textureData)
     _textureData.SetStatus(ImTextureStatus_Destroyed);
 }
 
-ego::gpu::TextureViewReference ego::gui::ImGuiTextureStorage::createTextureResource(ImTextureData& _textureData) const
+ego::gpu::TextureViewPointer ego::gui::ImGuiTextureStorage::createTextureResource(ImTextureData& _textureData) const
 {
     EGO_CHECK_RETURN_NULL(_textureData.Width > 0 && _textureData.Height > 0);
     EGO_CHECK_RETURN_NULL(_textureData.Pixels);
@@ -154,7 +154,7 @@ ego::gpu::TextureViewReference ego::gui::ImGuiTextureStorage::createTextureResou
     textureViewDesc.m_dimension = gpu::TextureViewDimension::D2;
     textureViewDesc.m_format = format;
 
-    const gpu::TextureViewReference textureView = gpu::GetGraphicDevice().createTextureView(textureTicket.m_resource, textureViewDesc);
+    const gpu::TextureViewPointer textureView = gpu::GetGraphicDevice().createTextureView(textureTicket.m_resource, textureViewDesc);
     EGO_CHECK_RETURN_NULL(textureView);
     EGO_CHECK_RETURN_NULL(textureView->getBindlessIndex() != gpu::InvalidBindlessIndex);
 

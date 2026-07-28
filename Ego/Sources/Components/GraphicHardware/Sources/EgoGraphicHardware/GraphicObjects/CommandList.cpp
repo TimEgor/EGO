@@ -2,12 +2,12 @@
 
 #include <algorithm>
 
-const std::vector<ego::gpu::GpuTaskReference>& ego::gpu::CommandList::getGpuWaits() const
+const std::vector<ego::gpu::GpuTaskPointer>& ego::gpu::CommandList::getGpuWaits() const
 {
     return m_gpuWaits;
 }
 
-void ego::gpu::CommandList::addGpuWait(const GpuTaskReference& _task)
+void ego::gpu::CommandList::addGpuWait(const GpuTaskPointer& _task)
 {
     if (!_task || _task->isComplete())
     {
@@ -20,7 +20,7 @@ void ego::gpu::CommandList::addGpuWait(const GpuTaskReference& _task)
     }
 }
 
-void ego::gpu::CommandList::addResourceGpuWait(const GraphicResourceReference& _resource)
+void ego::gpu::CommandList::addResourceGpuWait(const GraphicResourcePointer& _resource)
 {
     if (_resource)
     {

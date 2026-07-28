@@ -11,20 +11,20 @@
 namespace ego::gpu
 {
     class GeometryAccelerationStructure;
-    EGO_REFERENCE(GeometryAccelerationStructure);
+    EGO_INTRUSIVE_POINTER(GeometryAccelerationStructure);
 
     class InstanceAccelerationStructure;
-    EGO_REFERENCE(InstanceAccelerationStructure);
+    EGO_INTRUSIVE_POINTER(InstanceAccelerationStructure);
 
     struct GeometryAccelerationStructureDesc final
     {
-        BufferReference m_vertexBuffer = nullptr;
+        BufferPointer m_vertexBuffer = nullptr;
         uint64_t m_vertexOffset = 0;
         uint32_t m_vertexStride = 0;
         uint32_t m_vertexCount = 0;
         GraphicResourceFormat m_vertexFormat = GraphicResourceFormat::R32G32B32SFloat;
 
-        BufferReference m_indexBuffer = nullptr;
+        BufferPointer m_indexBuffer = nullptr;
         uint64_t m_indexOffset = 0;
         uint32_t m_indexCount = 0;
         GraphicResourceFormat m_indexFormat = GraphicResourceFormat::Undefined;
@@ -37,7 +37,7 @@ namespace ego::gpu
 
     struct InstanceGeometryAccelerationStructureBuildDesc final
     {
-        GeometryAccelerationStructureReference m_geometry = nullptr;
+        GeometryAccelerationStructurePointer m_geometry = nullptr;
         FloatMatrix4x4 m_transform = FloatMatrix4x4Identity;
         uint32_t m_instanceId = 0;
         uint32_t m_instanceMask = 0xff;
@@ -52,12 +52,12 @@ namespace ego::gpu
     class AccelerationStructure : public GraphicResource
     {
     public:
-        virtual const BufferReference& getBuffer() const = 0;
+        virtual const BufferPointer& getBuffer() const = 0;
 
         EGO_GRAPHIC_RESOURCE(AccelerationStructure, GraphicResource);
     };
 
-    EGO_REFERENCE(AccelerationStructure);
+    EGO_INTRUSIVE_POINTER(AccelerationStructure);
 
     class GeometryAccelerationStructure : public AccelerationStructure
     {
@@ -78,10 +78,10 @@ namespace ego::gpu
     class AccelerationStructureView : public ResourceView
     {
     public:
-        AccelerationStructureView(const InstanceAccelerationStructureReference& _accelerationStructure);
+        AccelerationStructureView(const InstanceAccelerationStructurePointer& _accelerationStructure);
 
         GraphicResourceViewType getViewType() const override;
     };
 
-    EGO_REFERENCE(AccelerationStructureView);
+    EGO_INTRUSIVE_POINTER(AccelerationStructureView);
 } // namespace ego::gpu

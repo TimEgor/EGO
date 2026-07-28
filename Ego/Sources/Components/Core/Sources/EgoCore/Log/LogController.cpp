@@ -186,5 +186,5 @@ const char* ego::log::LoggerController::GetLogCategoryName(LogCategory _category
 
 ego::log::LoggerPointer ego::log::LoggerController::CreateDefaultLogger()
 {
-    return new DefaultLogger();
+    return MakePointer<DefaultLogger>();
 }

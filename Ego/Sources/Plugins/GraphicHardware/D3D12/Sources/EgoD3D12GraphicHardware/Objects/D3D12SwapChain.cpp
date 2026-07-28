@@ -11,8 +11,8 @@
 ego::gpu::d3d12::D3D12SwapChain::D3D12SwapChain(
     const SwapChainDesc& _desc,
     Microsoft::WRL::ComPtr<IDXGISwapChain3>&& _swapChain,
-    std::vector<Texture2DReference>&& _targetTextures,
-    const CommandQueueReference& _presentationQueue)
+    std::vector<Texture2DPointer>&& _targetTextures,
+    const CommandQueuePointer& _presentationQueue)
     : SwapChain(_desc),
       m_swapChain(std::move(_swapChain)),
       m_targetTextures(std::move(_targetTextures)),
@@ -37,17 +37,17 @@ void ego::gpu::d3d12::D3D12SwapChain::setName(const char* _name)
     m_swapChain->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(nameLength), _name);
 }
 
-ego::gpu::Texture2DReference ego::gpu::d3d12::D3D12SwapChain::getTargetTexture()
+ego::gpu::Texture2DPointer ego::gpu::d3d12::D3D12SwapChain::getTargetTexture()
 {
     if (!m_swapChain || m_targetTextures.empty())
     {
-        return Texture2DReference();
+        return Texture2DPointer();
     }
 
     const UINT bufferIndex = m_swapChain->GetCurrentBackBufferIndex();
     if (bufferIndex >= m_targetTextures.size())
     {
-        return Texture2DReference();
+        return Texture2DPointer();
     }
 
     return m_targetTextures[bufferIndex];
@@ -108,7 +108,7 @@ bool ego::gpu::d3d12::D3D12SwapChain::createTargetTextures(const Texture2DSize& 
     textureDesc.m_samples.m_quality = 0;
     textureDesc.m_format = desc.m_format;
 
-    std::vector<Texture2DReference> targetTextures;
+    std::vector<Texture2DPointer> targetTextures;
     targetTextures.reserve(desc.m_bufferCount);
     for (uint32_t bufferIndex = 0; bufferIndex < desc.m_bufferCount; ++bufferIndex)
     {
@@ -118,7 +118,9 @@ bool ego::gpu::d3d12::D3D12SwapChain::createTargetTextures(const Texture2DSize& 
             return false;
         }
 
-        Texture2DReference targetTexture = new D3D12Texture2D(textureDesc, std::move(resource));
+        Texture2DPointer targetTexture = MakeIntrusive<D3D12Texture2D>(
+            textureDesc,
+            std::move(resource));
         targetTexture->setState(GraphicResourceState::Present);
         targetTextures.push_back(targetTexture);
     }

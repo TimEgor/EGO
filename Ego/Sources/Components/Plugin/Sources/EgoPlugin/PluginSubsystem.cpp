@@ -10,7 +10,7 @@ bool ego::PluginSubsystem::init()
 {
     m_pluginCatalog.clear();
 
-    m_pluginController = new PluginController();
+    m_pluginController = MakePointer<PluginController>();
     EGO_CHECK_INITIALIZATION(m_pluginController && m_pluginController->init());
 
     return true;

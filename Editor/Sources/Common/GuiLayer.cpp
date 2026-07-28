@@ -11,7 +11,7 @@ namespace
     constexpr float ConsoleHeightRatio = 0.25f;
 } // namespace
 
-void ego::editor::GuiLayer::setSceneTexture(const gpu::TextureViewReference& _sceneTexture)
+void ego::editor::GuiLayer::setSceneTexture(const gpu::TextureViewPointer& _sceneTexture)
 {
     m_sceneTexture = _sceneTexture;
 }

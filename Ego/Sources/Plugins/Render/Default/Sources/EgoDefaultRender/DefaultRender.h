@@ -29,7 +29,7 @@ namespace ego::render
         void clearResources() override;
 
         bool prepare(const RenderPrepareContext& _context) override;
-        void render(const gpu::TextureViewReference& _targetView) override;
+        void render(const gpu::TextureViewPointer& _targetView) override;
         void wait() override;
 
         using Render::drawPoint;
@@ -49,8 +49,8 @@ namespace ego::render
     private:
         bool initPassGraph(GraphicDevice& _graphicDevice);
         void releasePassGraph();
-        gpu::Texture2DReference resolvePresentationTargetTexture(const gpu::TextureViewReference& _targetView) const;
-        void copyResultToTarget(const RenderGraphicCommandList& _commandList, const gpu::Texture2DReference& _targetTexture);
+        gpu::Texture2DPointer resolvePresentationTargetTexture(const gpu::TextureViewPointer& _targetView) const;
+        void copyResultToTarget(const RenderGraphicCommandList& _commandList, const gpu::Texture2DPointer& _targetTexture);
         void handlePrepareFailure();
 
         DefaultRenderFileSystems m_fileSystems;

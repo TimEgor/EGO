@@ -88,7 +88,7 @@ void ego::gui::ImGuiRendererAdapter::beginFrame()
     m_frameTextures.reset();
 }
 
-ego::gui::GuiFrameTextureID ego::gui::ImGuiRendererAdapter::bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode)
+ego::gui::GuiFrameTextureID ego::gui::ImGuiRendererAdapter::bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode)
 {
     EGO_CHECK_RETURN_VALUE(m_isInitialized, InvalidGuiFrameTextureID);
 
@@ -128,7 +128,7 @@ bool ego::gui::ImGuiRendererAdapter::bindImGuiTextures(const ImDrawData& _drawDa
 
         EGO_CHECK_RETURN_FALSE(textureData->Status == ImTextureStatus_OK);
 
-        const gpu::TextureViewReference textureView = m_userData.m_textureStorage.getTextureView(*textureData);
+        const gpu::TextureViewPointer textureView = m_userData.m_textureStorage.getTextureView(*textureData);
         EGO_CHECK_RETURN_FALSE(textureView);
 
         const GuiFrameTextureID textureID = m_frameTextures.bind(textureView, GetSamplingMode(*textureData));
@@ -291,7 +291,7 @@ bool ego::gui::ImGuiRendererAdapter::appendCommand(
         const GuiRenderData::TextureViewCollection::const_iterator resourceIt = std::find_if(
             _renderData.m_resourceTextureViews.cbegin(),
             _renderData.m_resourceTextureViews.cend(),
-            [&texture](const gpu::TextureViewReference& _resourceTextureView)
+            [&texture](const gpu::TextureViewPointer& _resourceTextureView)
             {
                 return _resourceTextureView.getObject() == texture.m_textureView.getObject();
             });

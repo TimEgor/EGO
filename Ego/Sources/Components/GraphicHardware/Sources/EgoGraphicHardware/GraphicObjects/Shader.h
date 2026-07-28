@@ -37,7 +37,7 @@ namespace ego::gpu
 
     using ShaderStageFlags = uint32_t;
 
-    class ShaderCode final : public STDDestroyMTCountable
+    class ShaderCode final : public MTCountable
     {
     public:
         ShaderCode(const void* _code, uint32_t _codeSize);
@@ -51,118 +51,118 @@ namespace ego::gpu
         uint32_t m_codeSize = 0;
     };
 
-    EGO_REFERENCE(ShaderCode);
+    EGO_INTRUSIVE_POINTER(ShaderCode);
 
     class Shader : public GraphicResource
     {
     public:
-        Shader(const ShaderCodeReference& _code);
+        Shader(const ShaderCodePointer& _code);
 
-        ShaderCodeReference getCode() const;
+        ShaderCodePointer getCode() const;
 
         virtual ShaderStage getShaderType() const = 0;
 
         EGO_GRAPHIC_RESOURCE(Shader, GraphicResource);
 
     protected:
-        ShaderCodeReference m_code;
+        ShaderCodePointer m_code;
     };
 
-    EGO_REFERENCE(Shader);
+    EGO_INTRUSIVE_POINTER(Shader);
 
     class VertexShader : public Shader
     {
     public:
-        VertexShader(const ShaderCodeReference& _code);
+        VertexShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(VertexShader, Shader);
     };
 
-    EGO_REFERENCE(VertexShader);
+    EGO_INTRUSIVE_POINTER(VertexShader);
 
     class PixelShader : public Shader
     {
     public:
-        PixelShader(const ShaderCodeReference& _code);
+        PixelShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(PixelShader, Shader);
     };
 
-    EGO_REFERENCE(PixelShader);
+    EGO_INTRUSIVE_POINTER(PixelShader);
 
     class ComputeShader : public Shader
     {
     public:
-        ComputeShader(const ShaderCodeReference& _code);
+        ComputeShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(ComputeShader, Shader);
     };
 
-    EGO_REFERENCE(ComputeShader);
+    EGO_INTRUSIVE_POINTER(ComputeShader);
 
     class RayGenerationShader : public Shader
     {
     public:
-        RayGenerationShader(const ShaderCodeReference& _code);
+        RayGenerationShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(RayGenerationShader, Shader);
     };
 
-    EGO_REFERENCE(RayGenerationShader);
+    EGO_INTRUSIVE_POINTER(RayGenerationShader);
 
     class MissShader : public Shader
     {
     public:
-        MissShader(const ShaderCodeReference& _code);
+        MissShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(MissShader, Shader);
     };
 
-    EGO_REFERENCE(MissShader);
+    EGO_INTRUSIVE_POINTER(MissShader);
 
     class ClosestHitShader : public Shader
     {
     public:
-        ClosestHitShader(const ShaderCodeReference& _code);
+        ClosestHitShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(ClosestHitShader, Shader);
     };
 
-    EGO_REFERENCE(ClosestHitShader);
+    EGO_INTRUSIVE_POINTER(ClosestHitShader);
 
     class AnyHitShader : public Shader
     {
     public:
-        AnyHitShader(const ShaderCodeReference& _code);
+        AnyHitShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(AnyHitShader, Shader);
     };
 
-    EGO_REFERENCE(AnyHitShader);
+    EGO_INTRUSIVE_POINTER(AnyHitShader);
 
     class IntersectionShader : public Shader
     {
     public:
-        IntersectionShader(const ShaderCodeReference& _code);
+        IntersectionShader(const ShaderCodePointer& _code);
 
         ShaderStage getShaderType() const override;
 
         EGO_GRAPHIC_RESOURCE(IntersectionShader, Shader);
     };
 
-    EGO_REFERENCE(IntersectionShader);
+    EGO_INTRUSIVE_POINTER(IntersectionShader);
 } // namespace ego::gpu

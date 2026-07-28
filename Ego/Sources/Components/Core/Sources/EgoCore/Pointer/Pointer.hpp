@@ -596,3 +596,15 @@ ego::WeakPointer<T> ego::EnableSharedFromThis<T>::weakFromThis()
 {
     return m_weakThis;
 }
+
+template <typename T, typename... TArguments>
+ego::SharedPointer<T> ego::MakePointer(TArguments&&... _arguments)
+{
+    return SharedPointer<T>(new T(std::forward<TArguments>(_arguments)...));
+}
+
+template <typename T, typename TDeleter, typename... TArguments>
+ego::SharedPointer<T> ego::MakePointerWithDeleter(TDeleter&& _deleter, TArguments&&... _arguments)
+{
+    return SharedPointer<T>(new T(std::forward<TArguments>(_arguments)...), std::forward<TDeleter>(_deleter));
+}

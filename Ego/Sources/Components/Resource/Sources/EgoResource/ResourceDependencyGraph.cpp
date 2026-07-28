@@ -134,7 +134,7 @@ ego::ResourcePointer ego::ResourceDependencyGraph::getPendingResource(const Pend
 void ego::ResourceDependencyGraph::collectResourceLoadingJobs(
     const ResourcePointer& _resource,
     const LoadingJobResolver& _loadingJobResolver,
-    std::vector<JobReference>& _jobs) const
+    std::vector<JobPointer>& _jobs) const
 {
     std::unordered_set<const Resource*> checkedResources;
     collectResourceLoadingJobs(_resource, _loadingJobResolver, checkedResources, _jobs);
@@ -235,14 +235,14 @@ void ego::ResourceDependencyGraph::collectResourceLoadingJobs(
     const ResourcePointer& _resource,
     const LoadingJobResolver& _loadingJobResolver,
     std::unordered_set<const Resource*>& _checkedResources,
-    std::vector<JobReference>& _jobs) const
+    std::vector<JobPointer>& _jobs) const
 {
     if (!_resource || !_resource->isLoading() || !_checkedResources.insert(_resource.get()).second)
     {
         return;
     }
 
-    const JobReference loadingJob = _loadingJobResolver ? _loadingJobResolver(_resource) : JobReference();
+    const JobPointer loadingJob = _loadingJobResolver ? _loadingJobResolver(_resource) : JobPointer();
     if (loadingJob && loadingJob->getState() != JobState::Undefined && !loadingJob->isFinished())
     {
         _jobs.push_back(loadingJob);

@@ -48,7 +48,7 @@ bool ego::ResourceController::init(uint32_t _threadCount, const char* _jobThread
         threadCount = 1;
     }
 
-    m_jobController = new JobController();
+    m_jobController = MakePointer<JobController>();
     EGO_CHECK_INITIALIZATION(m_jobController && m_jobController->init(threadCount, _jobThreadName));
 
     m_isInitialized = true;
@@ -199,7 +199,7 @@ ego::ResourceLoadingOperationPointer ego::ResourceController::loadResourceAsync(
     {
         ResourceWeakPointer resourceWeakPointer = resource;
 
-        const JobReference loadingJob = CreateLambdaJob(
+        const JobPointer loadingJob = CreateLambdaJob(
             [this, resourceWeakPointer, path = _path]()
             {
                 ResourcePointer resource = resourceWeakPointer.lock();
@@ -214,7 +214,7 @@ ego::ResourceLoadingOperationPointer ego::ResourceController::loadResourceAsync(
         m_jobController->addJob(loadingJob);
     }
 
-    return new ResourceLoadingOperation(weakFromThis(), resource);
+    return MakePointer<ResourceLoadingOperation>(weakFromThis(), resource);
 }
 
 bool ego::ResourceController::readResourceContent(const ResourcePointer& _resource, const FileName& _path, ResourceLoadingContext& _loadingContext, FileContent& _content)
@@ -408,7 +408,7 @@ void ego::ResourceController::schedulePendingLoadingCompletion(const ResourceDep
         return;
     }
 
-    const JobReference completionJob = CreateLambdaJob(
+    const JobPointer completionJob = CreateLambdaJob(
         [this, _pendingLoading]()
         {
             completePendingLoading(_pendingLoading);
@@ -452,7 +452,7 @@ bool ego::ResourceController::waitResourceLoading(const ResourcePointer& _resour
 {
     while (_resource && _resource->isLoading())
     {
-        std::vector<JobReference> loadingJobs;
+        std::vector<JobPointer> loadingJobs;
         m_dependencyGraph.collectResourceLoadingJobs(
             _resource,
             [this](const ResourcePointer& _loadingResource)
@@ -472,9 +472,9 @@ bool ego::ResourceController::waitResourceLoading(const ResourcePointer& _resour
     return _resource && _resource->isLoaded();
 }
 
-void ego::ResourceController::waitLoadingJobs(const std::vector<JobReference>& _jobs)
+void ego::ResourceController::waitLoadingJobs(const std::vector<JobPointer>& _jobs)
 {
-    for (const JobReference& job : _jobs)
+    for (const JobPointer& job : _jobs)
     {
         if (job && !job->isFinished())
         {
@@ -487,7 +487,7 @@ void ego::ResourceController::waitAllLoadingJobs()
 {
     while (true)
     {
-        std::vector<JobReference> loadingJobs;
+        std::vector<JobPointer> loadingJobs;
         m_resourceRegistry.collectLoadingJobs(loadingJobs);
 
         if (loadingJobs.empty())

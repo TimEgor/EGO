@@ -15,16 +15,16 @@ namespace ego
         void release() override;
 
         bool prepare() override;
-        gpu::Texture2DReference getTargetTexture() override;
+        gpu::Texture2DPointer getTargetTexture() override;
         bool shouldClearTarget() const override;
         gpu::GraphicResourceState getPresentationState() const override;
-        const gpu::TextureViewReference& getTextureView() const;
+        const gpu::TextureViewPointer& getTextureView() const;
 
         void present() override;
 
     private:
-        gpu::Texture2DReference m_targetTexture = nullptr;
-        gpu::TextureViewReference m_textureView = nullptr;
+        gpu::Texture2DPointer m_targetTexture = nullptr;
+        gpu::TextureViewPointer m_textureView = nullptr;
     };
 
     EGO_POINTER(TextureGraphicPresenter);

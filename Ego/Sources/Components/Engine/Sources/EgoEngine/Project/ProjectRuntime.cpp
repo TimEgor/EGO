@@ -167,7 +167,8 @@ void ego::engine::ProjectRuntime::releaseAssetFileSystems()
 
 ego::FileSystemPointer ego::engine::ProjectRuntime::createAssetFileSystem(const FileSystemPointer& _sourceFileSystem, const FileName& _rootPath) const
 {
-    RootedFileSystemPointer fileSystem = new RootedFileSystem(_sourceFileSystem, _rootPath);
+    RootedFileSystemPointer fileSystem =
+        MakePointer<RootedFileSystem>(_sourceFileSystem, _rootPath);
     return fileSystem && fileSystem->init() ? fileSystem : nullptr;
 }
 

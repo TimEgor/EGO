@@ -24,7 +24,7 @@ namespace ego::gui
     protected:
         GuiLayer() = default;
 
-        GuiFrameTextureID bindTexture(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode = TextureSamplingMode::Color) const;
+        GuiFrameTextureID bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode = TextureSamplingMode::Color) const;
 
         virtual void drawGui() = 0;
 

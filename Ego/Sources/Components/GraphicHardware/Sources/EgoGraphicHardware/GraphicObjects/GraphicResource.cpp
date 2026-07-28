@@ -26,12 +26,12 @@ void ego::gpu::GraphicResource::waitGpuReady() const
     }
 }
 
-const ego::gpu::GpuTaskReference& ego::gpu::GraphicResource::getLastWriteTask() const
+const ego::gpu::GpuTaskPointer& ego::gpu::GraphicResource::getLastWriteTask() const
 {
     return m_lastWriteTask;
 }
 
-void ego::gpu::GraphicResource::setLastWriteTask(const GpuTaskReference& _task)
+void ego::gpu::GraphicResource::setLastWriteTask(const GpuTaskPointer& _task)
 {
     m_lastWriteTask = _task;
 }

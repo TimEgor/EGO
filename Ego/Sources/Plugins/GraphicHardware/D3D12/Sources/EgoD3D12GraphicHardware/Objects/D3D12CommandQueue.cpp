@@ -22,17 +22,17 @@ void ego::gpu::d3d12::D3D12CommandQueue::setName(const char* _name)
     SetD3D12ObjectName(m_queue.Get(), _name);
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::execute(const CommandListReference& _commandList)
+void ego::gpu::d3d12::D3D12CommandQueue::execute(const CommandListPointer& _commandList)
 {
-    execute(std::vector<CommandListReference>{_commandList});
+    execute(std::vector<CommandListPointer>{_commandList});
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListReference>& _commandLists)
+void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListPointer>& _commandLists)
 {
     std::vector<ID3D12CommandList*> nativeCommandLists;
     nativeCommandLists.reserve(_commandLists.size());
 
-    for (const CommandListReference& commandList : _commandLists)
+    for (const CommandListPointer& commandList : _commandLists)
     {
         ID3D12GraphicsCommandList* nativeCommandList = commandList ? commandList->getNativeHandle<ID3D12GraphicsCommandList>() : nullptr;
         EGO_ASSERT_MESSAGE(nativeCommandList, "CommandList must be created by D3D12 device");
@@ -44,14 +44,14 @@ void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListRe
 
     if (!nativeCommandLists.empty())
     {
-        for (const CommandListReference& commandList : _commandLists)
+        for (const CommandListPointer& commandList : _commandLists)
         {
             if (!commandList)
             {
                 continue;
             }
 
-            for (const GpuTaskReference& gpuTask : commandList->getGpuWaits())
+            for (const GpuTaskPointer& gpuTask : commandList->getGpuWaits())
             {
                 if (gpuTask)
                 {
@@ -64,7 +64,7 @@ void ego::gpu::d3d12::D3D12CommandQueue::execute(const std::vector<CommandListRe
     }
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::signal(const FenceReference& _fence, Fence::FenceValue _value)
+void ego::gpu::d3d12::D3D12CommandQueue::signal(const FencePointer& _fence, Fence::FenceValue _value)
 {
     ID3D12Fence* nativeFence = _fence ? _fence->getNativeHandle<ID3D12Fence>() : nullptr;
     EGO_ASSERT_MESSAGE(nativeFence, "Fence must be created by D3D12 device");
@@ -74,7 +74,7 @@ void ego::gpu::d3d12::D3D12CommandQueue::signal(const FenceReference& _fence, Fe
     }
 }
 
-void ego::gpu::d3d12::D3D12CommandQueue::wait(const FenceReference& _fence, Fence::FenceValue _value)
+void ego::gpu::d3d12::D3D12CommandQueue::wait(const FencePointer& _fence, Fence::FenceValue _value)
 {
     ID3D12Fence* nativeFence = _fence ? _fence->getNativeHandle<ID3D12Fence>() : nullptr;
     EGO_ASSERT_MESSAGE(nativeFence, "Fence must be created by D3D12 device");

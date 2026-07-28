@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoGui/GuiLayer.h"
 #include "EgoGui/Rendering/GuiRenderData.h"

@@ -9,7 +9,7 @@ void ego::gui::ImGuiFrameTextures::reset()
     m_textures.clear();
 }
 
-ego::gui::GuiFrameTextureID ego::gui::ImGuiFrameTextures::bind(const gpu::TextureViewReference& _textureView, TextureSamplingMode _samplingMode)
+ego::gui::GuiFrameTextureID ego::gui::ImGuiFrameTextures::bind(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode)
 {
     EGO_ASSERT(IsTextureViewValid(_textureView));
     if (!IsTextureViewValid(_textureView))
@@ -45,7 +45,7 @@ bool ego::gui::ImGuiFrameTextures::resolve(GuiFrameTextureID _textureID, Texture
     return true;
 }
 
-bool ego::gui::ImGuiFrameTextures::IsTextureViewValid(const gpu::TextureViewReference& _textureView)
+bool ego::gui::ImGuiFrameTextures::IsTextureViewValid(const gpu::TextureViewPointer& _textureView)
 {
     return _textureView && _textureView->getViewType() == gpu::GraphicResourceViewType::ShaderResource &&
            _textureView->getDesc().m_dimension == gpu::TextureViewDimension::D2 && _textureView->getBindlessIndex() != gpu::InvalidBindlessIndex;

@@ -263,7 +263,7 @@ ego::SharedPointer<ego::win32::Win32PlatformSurface> ego::win32::Win32PlatformSu
     Win32PlatformSurfaceController& _surfaceController,
     HINSTANCE _instance)
 {
-    SharedPointer<Win32PlatformSurface> surface = new Win32PlatformSurface();
+    SharedPointer<Win32PlatformSurface> surface = MakePointer<Win32PlatformSurface>();
     EGO_CHECK_RETURN_NULL(surface && surface->init(_desc, _surfaceController, _instance));
 
     return surface;

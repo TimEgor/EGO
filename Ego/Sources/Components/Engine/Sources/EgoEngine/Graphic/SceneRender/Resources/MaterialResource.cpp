@@ -244,7 +244,7 @@ bool ego::render::MaterialResource::buildMaterial()
 {
     m_material = nullptr;
 
-    const MaterialTemplateReference materialTemplate(new MaterialTemplate());
+    const MaterialTemplatePointer materialTemplate = MakeIntrusive<MaterialTemplate>();
     if (!materialTemplate)
     {
         setLoadingError("Failed to create material template.");
@@ -267,7 +267,7 @@ bool ego::render::MaterialResource::buildMaterial()
         }
     }
 
-    m_material = MaterialReference(new Material(materialTemplate));
+    m_material = MakeIntrusive<Material>(materialTemplate);
     if (!m_material)
     {
         setLoadingError("Failed to create material.");
@@ -279,7 +279,7 @@ bool ego::render::MaterialResource::buildMaterial()
 
 bool ego::render::MaterialResource::addRasterizationPassToTemplate(
     const RasterizationPassData& _passData,
-    const MaterialTemplateReference& _materialTemplate)
+    const MaterialTemplatePointer& _materialTemplate)
 {
     if (!_passData.m_vertexShaderResource || !_passData.m_vertexShaderResource->isLoaded())
     {
@@ -301,7 +301,8 @@ bool ego::render::MaterialResource::addRasterizationPassToTemplate(
         return false;
     }
 
-    const RasterizationMaterialRenderPassInfoReference passInfo(new RasterizationMaterialRenderPassInfo(vertexShader, pixelShader));
+    const RasterizationMaterialRenderPassInfoPointer passInfo =
+        MakeIntrusive<RasterizationMaterialRenderPassInfo>(vertexShader, pixelShader);
     if (!passInfo)
     {
         setLoadingError("Failed to create material pass '" + _passData.m_name + "' rasterization info.");
@@ -313,7 +314,7 @@ bool ego::render::MaterialResource::addRasterizationPassToTemplate(
 
 bool ego::render::MaterialResource::addRayTracingPassToTemplate(
     const RayTracingPassData& _passData,
-    const MaterialTemplateReference& _materialTemplate)
+    const MaterialTemplatePointer& _materialTemplate)
 {
     if (!_passData.m_closestHitShaderResource || !_passData.m_closestHitShaderResource->isLoaded())
     {
@@ -361,7 +362,8 @@ bool ego::render::MaterialResource::addRayTracingPassToTemplate(
         }
     }
 
-    const RayTracingMaterialRenderPassInfoReference passInfo(new RayTracingMaterialRenderPassInfo(hitGroup));
+    const RayTracingMaterialRenderPassInfoPointer passInfo =
+        MakeIntrusive<RayTracingMaterialRenderPassInfo>(hitGroup);
     if (!passInfo)
     {
         setLoadingError("Failed to create material pass '" + _passData.m_name + "' ray tracing info.");
@@ -373,8 +375,8 @@ bool ego::render::MaterialResource::addRayTracingPassToTemplate(
 
 bool ego::render::MaterialResource::addPassToTemplate(
     const std::string& _passName,
-    const MaterialRenderPassInfoReference& _passInfo,
-    const MaterialTemplateReference& _materialTemplate)
+    const MaterialRenderPassInfoPointer& _passInfo,
+    const MaterialTemplatePointer& _materialTemplate)
 {
     if (_materialTemplate->hasRenderPassInfo(_passName))
     {
@@ -464,7 +466,7 @@ void ego::render::MaterialResource::clearPassData()
 
 ego::render::RenderMaterial ego::render::CreateMaterialHandler(const MaterialResourcePointer& _resource)
 {
-    return MakeHandler<MaterialReference>(
+    return MakeHandler<MaterialPointer>(
         _resource,
         [](const MaterialResourcePointer& _storedResource) -> RenderMaterial
         {

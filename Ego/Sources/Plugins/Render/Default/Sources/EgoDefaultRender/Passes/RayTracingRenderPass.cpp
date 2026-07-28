@@ -57,26 +57,26 @@ namespace ego::render
         return configResource && configResource->isLoaded() && ParseRayTracingRenderPassShaderConfig(configResource->getRootNode(), _config);
     }
 
-    static RayTracingMaterialRenderPassInfoReference GetRayTracingMaterialInfo(const DefaultRenderItem& _item)
+    static RayTracingMaterialRenderPassInfoPointer GetRayTracingMaterialInfo(const DefaultRenderItem& _item)
     {
         if (!_item.m_material)
         {
             return nullptr;
         }
 
-        const MaterialTemplateReference& materialTemplate = _item.m_material->getMaterialTemplate();
+        const MaterialTemplatePointer& materialTemplate = _item.m_material->getMaterialTemplate();
         if (!materialTemplate)
         {
             return nullptr;
         }
 
-        const MaterialRenderPassInfoReference passInfo = materialTemplate->getRenderPassInfo(RayTracingMaterialPassName);
+        const MaterialRenderPassInfoPointer passInfo = materialTemplate->getRenderPassInfo(RayTracingMaterialPassName);
         if (!passInfo || !rtti::IsObjectBasedOn<RayTracingMaterialRenderPassInfo>(*passInfo))
         {
             return nullptr;
         }
 
-        return RayTracingMaterialRenderPassInfoReference(passInfo.getObjectCast<RayTracingMaterialRenderPassInfo>());
+        return RayTracingMaterialRenderPassInfoPointer(passInfo.getObjectCast<RayTracingMaterialRenderPassInfo>());
     }
 
 } // namespace ego::render
@@ -160,7 +160,7 @@ bool ego::render::RayTracingRenderPass::prepare(RenderPassPrepareContext& _conte
 
     for (const DefaultRenderItem& item : renderItems)
     {
-        const RayTracingMaterialRenderPassInfoReference materialInfo = GetRayTracingMaterialInfo(item);
+        const RayTracingMaterialRenderPassInfoPointer materialInfo = GetRayTracingMaterialInfo(item);
         const RayTracingMaterialHitGroup* hitGroup = materialInfo ? &materialInfo->getHitGroup() : nullptr;
         if (!item.m_mesh || !hitGroup)
         {
@@ -276,7 +276,7 @@ bool ego::render::RayTracingRenderPass::buildHitGroupTable(const DefaultRenderSc
 
     for (const DefaultRenderItem& item : _renderItems)
     {
-        const RayTracingMaterialRenderPassInfoReference materialInfo = GetRayTracingMaterialInfo(item);
+        const RayTracingMaterialRenderPassInfoPointer materialInfo = GetRayTracingMaterialInfo(item);
         const RayTracingMaterialHitGroup* hitGroup = materialInfo ? &materialInfo->getHitGroup() : nullptr;
         if (!item.m_mesh || !hitGroup)
         {
@@ -382,9 +382,9 @@ ego::render::RenderRayTracingPipeline ego::render::RayTracingRenderPass::getOrCr
 
 ego::render::RayTracingRenderPass::RayTracingHitGroupKey ego::render::RayTracingRenderPass::MakeHitGroupKey(const RayTracingMaterialHitGroup& _hitGroup)
 {
-    const gpu::ClosestHitShaderReference closestHitShader = _hitGroup.m_closestHitShader ? _hitGroup.m_closestHitShader.getObject() : nullptr;
-    const gpu::AnyHitShaderReference anyHitShader = _hitGroup.m_anyHitShader ? _hitGroup.m_anyHitShader.getObject() : nullptr;
-    const gpu::IntersectionShaderReference intersectionShader = _hitGroup.m_intersectionShader ? _hitGroup.m_intersectionShader.getObject() : nullptr;
+    const gpu::ClosestHitShaderPointer closestHitShader = _hitGroup.m_closestHitShader ? _hitGroup.m_closestHitShader.getObject() : nullptr;
+    const gpu::AnyHitShaderPointer anyHitShader = _hitGroup.m_anyHitShader ? _hitGroup.m_anyHitShader.getObject() : nullptr;
+    const gpu::IntersectionShaderPointer intersectionShader = _hitGroup.m_intersectionShader ? _hitGroup.m_intersectionShader.getObject() : nullptr;
 
     RayTracingHitGroupKey key;
     key.m_type = _hitGroup.m_intersectionShader ? gpu::RayTracingHitGroupType::ProceduralPrimitive : gpu::RayTracingHitGroupType::Triangles;

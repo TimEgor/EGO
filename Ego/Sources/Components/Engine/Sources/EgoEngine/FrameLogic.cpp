@@ -237,7 +237,7 @@ ego::JobDescriptorID ego::engine::FrameLogic::getPrepareRenderEndJobID() const
     return m_prepareRenderJobs.m_endJobID;
 }
 
-ego::JobGraphReference ego::engine::FrameLogic::createJobGraph() const
+ego::JobGraphPointer ego::engine::FrameLogic::createJobGraph() const
 {
     EGO_CHECK_RETURN_NULL(m_isInitialized);
 

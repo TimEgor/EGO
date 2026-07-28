@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Reference/Pointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 #include "Component.h"
 #include "Entity.h"

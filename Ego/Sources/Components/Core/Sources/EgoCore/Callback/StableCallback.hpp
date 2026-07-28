@@ -15,13 +15,13 @@ void ego::StableCallback<TArguments...>::set(Function _function)
         return;
     }
 
-    m_state = new State(std::move(_function));
+    m_state = MakeIntrusive<State>(std::move(_function));
 }
 
 template <typename... TArguments>
 void ego::StableCallback<TArguments...>::invoke(TArguments... _arguments) const
 {
-    const StateReference state = m_state;
+    const StatePointer state = m_state;
     if (state)
     {
         state->m_function(std::forward<TArguments>(_arguments)...);

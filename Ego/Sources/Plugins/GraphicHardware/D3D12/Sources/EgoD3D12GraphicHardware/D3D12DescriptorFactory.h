@@ -24,10 +24,10 @@ namespace ego::gpu::d3d12
         bool init(ID3D12Device5* _device);
         void release();
 
-        SamplerReference createSampler(const SamplerDesc& _desc) const;
-        BufferViewReference createBufferView(const BufferReference& _buffer, const BufferViewDesc& _desc) const;
-        TextureViewReference createTextureView(const TextureReference& _texture, const TextureViewDesc& _desc) const;
-        AccelerationStructureViewReference createAccelerationStructureView(const InstanceAccelerationStructureReference& _accelerationStructure) const;
+        SamplerPointer createSampler(const SamplerDesc& _desc) const;
+        BufferViewPointer createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc) const;
+        TextureViewPointer createTextureView(const TexturePointer& _texture, const TextureViewDesc& _desc) const;
+        AccelerationStructureViewPointer createAccelerationStructureView(const InstanceAccelerationStructurePointer& _accelerationStructure) const;
 
         ID3D12DescriptorHeap* getViewDescriptorHeap() const;
         ID3D12DescriptorHeap* getSamplerDescriptorHeap() const;
