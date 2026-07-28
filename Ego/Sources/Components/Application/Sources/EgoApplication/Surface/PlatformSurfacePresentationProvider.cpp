@@ -188,12 +188,6 @@ bool ego::application::PlatformSurfacePresentationProvider::registerSurfaceEvent
         &PlatformSurfacePresentationProvider::handleSurfaceCloseRequested);
     EGO_CHECK_RETURN_CALL_FALSE(callbackIDs.m_closeRequested != InvalidInstancedEventCallbackID, unregisterSurfaceEvents(_presentation));
 
-    callbackIDs.m_destroying = eventController->addInstanceEventCallback<PlatformSurfaceDestroyingEvent>(
-        eventIDs.m_destroying,
-        *this,
-        &PlatformSurfacePresentationProvider::handleSurfaceDestroying);
-    EGO_CHECK_RETURN_CALL_FALSE(callbackIDs.m_destroying != InvalidInstancedEventCallbackID, unregisterSurfaceEvents(_presentation));
-
     callbackIDs.m_sizeChanged = eventController->addInstanceEventCallback<PlatformSurfaceSizeChangedEvent>(
         eventIDs.m_sizeChanged,
         *this,
@@ -216,7 +210,6 @@ void ego::application::PlatformSurfacePresentationProvider::unregisterSurfaceEve
     if (eventController)
     {
         eventController->removeInstancedEventDispatcher(callbackIDs.m_sizeChanged);
-        eventController->removeInstancedEventDispatcher(callbackIDs.m_destroying);
         eventController->removeInstancedEventDispatcher(callbackIDs.m_closeRequested);
     }
 
@@ -307,25 +300,6 @@ void ego::application::PlatformSurfacePresentationProvider::handleSurfaceCloseRe
     }
 
     _event.handle();
-}
-
-void ego::application::PlatformSurfacePresentationProvider::handleSurfaceDestroying(const PlatformSurfaceDestroyingEvent& _event)
-{
-    const PresentationCollection::iterator presentationIt = findPresentation(_event.m_surface);
-    if (presentationIt == m_presentations.end())
-    {
-        return;
-    }
-
-    PresentationEntry presentation = std::move(*presentationIt);
-    m_presentations.erase(presentationIt);
-
-    if (m_mainSurface.get() == presentation.m_surface.get())
-    {
-        m_mainSurface = nullptr;
-    }
-
-    releasePresentation(presentation, false);
 }
 
 void ego::application::PlatformSurfacePresentationProvider::handleSurfaceSizeChanged(const PlatformSurfaceSizeChangedEvent& _event)

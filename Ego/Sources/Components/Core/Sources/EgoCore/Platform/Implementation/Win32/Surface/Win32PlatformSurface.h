@@ -32,7 +32,7 @@ namespace ego::win32
             static const WindowData* GetWindowData(HWND _handle);
 
             static bool OnWindowCloseRequested(Win32PlatformSurface& _surface);
-            static void OnWindowDestroying(Win32PlatformSurface& _surface);
+            static void OnWindowDestroyed(Win32PlatformSurface& _surface);
 
             static void OnWindowActivate(Win32PlatformSurface& _surface, bool _isActive);
             static void OnWindowSizeUpdate(Win32PlatformSurface& _surface);
@@ -75,7 +75,7 @@ namespace ego::win32
         void invalidate();
 
         bool onWindowCloseRequested();
-        void onWindowDestroying();
+        void onWindowDestroyed();
 
         void onWindowActivate(bool _isActive);
         void onWindowSizeUpdate();

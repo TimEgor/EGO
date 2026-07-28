@@ -49,7 +49,6 @@ namespace ego::demo::launcher
 
         void parseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options) const;
         bool fillEngineSessionInitData(const CommandLineOptions& _options, engine::EngineSession::InitData& _sessionInitData);
-        bool loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const;
         bool loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const;
         static application::PresentationDesc CreateMainPresentationDesc();
         FileName selectProjectFile() const;

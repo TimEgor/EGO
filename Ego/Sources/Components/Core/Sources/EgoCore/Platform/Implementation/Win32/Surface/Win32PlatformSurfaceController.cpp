@@ -153,11 +153,6 @@ void ego::win32::Win32PlatformSurfaceController::processEvents()
     }
 }
 
-HINSTANCE ego::win32::Win32PlatformSurfaceController::getInstanceHandle() const
-{
-    return m_instance;
-}
-
 ego::win32::Win32PlatformSurfacePointer ego::win32::Win32PlatformSurfaceController::findWindow(HWND _handle) const
 {
     EGO_CHECK_RETURN_NULL(_handle);
@@ -219,8 +214,8 @@ bool ego::win32::Win32PlatformSurfaceController::processWindowMessage(
 
     case WM_DESTROY:
     {
-        onWindowDestroying(_window);
-        SurfaceAccessor::OnWindowDestroying(*_window);
+        onWindowDestroyed(_window);
+        SurfaceAccessor::OnWindowDestroyed(*_window);
         _result = 0;
 
         return true;
@@ -299,7 +294,7 @@ bool ego::win32::Win32PlatformSurfaceController::processWindowMessage(
     return false;
 }
 
-void ego::win32::Win32PlatformSurfaceController::onWindowDestroying(const Win32PlatformSurfacePointer& _window)
+void ego::win32::Win32PlatformSurfaceController::onWindowDestroyed(const Win32PlatformSurfacePointer& _window)
 {
     if (_window && _window->getNativeHandle() == m_pointerCaptureHandle)
     {

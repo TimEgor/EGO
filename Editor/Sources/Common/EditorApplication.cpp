@@ -2,9 +2,6 @@
 
 #include "EgoCore/Math/Color.h"
 #include "EgoCore/Parsers/ArgParser/Parser.h"
-#include "EgoCore/Platform/FileSystem/FileSystem.h"
-#include "EgoCore/Platform/Platform.h"
-#include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
@@ -16,7 +13,6 @@
 
 namespace
 {
-    constexpr const char* DefaultGuiFontPath = "C:/Windows/Fonts/segoeui.ttf";
     constexpr ego::gpu::Texture2DSize SceneTextureSize(900, 600);
 } // namespace
 
@@ -112,7 +108,6 @@ bool ego::editor::EditorApplication::initEngine(const CommandLineOptions& _optio
     editorInitData.m_sceneRender.m_isEnabled = false;
     editorInitData.m_gui.m_isEnabled = true;
     editorInitData.m_gui.m_pluginModuleName = m_guiRenderPluginModuleName;
-    EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(editorInitData.m_gui.m_fontAtlasDesc));
     EGO_CHECK_RETURN_FALSE(createPresentedSession("EgoEditor", SurfaceSize(1100, 700), editorInitData, m_editorSession));
 
     EGO_CHECK_RETURN_FALSE(initScene());
@@ -292,118 +287,43 @@ void ego::editor::EditorApplication::drawSceneEditor()
 bool ego::editor::EditorApplication::initEditorUi()
 {
     EGO_CHECK_RETURN_FALSE(m_editorSession.m_engineSession && m_sceneSession.m_engineSession);
-    EGO_CHECK_RETURN_FALSE(m_editorViewport.isExpired() && m_editorPanels.empty() && m_editorWindows.empty());
+    EGO_CHECK_RETURN_FALSE(m_editorLayerID == gui::InvalidGuiLayerID);
+    EGO_CHECK_RETURN_FALSE(m_sceneSession.m_graphicPresenter);
 
     const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession->getGuiControllerPointer();
-    const gui::ViewportPointer viewport = guiController ? guiController->getPrimaryViewport() : nullptr;
-    EGO_CHECK_RETURN_FALSE(viewport);
-    guiController->setMultiViewportEnabled(true);
-    EGO_CHECK_RETURN_FALSE(guiController->isMultiViewportEnabled());
-    EGO_CHECK_RETURN_FALSE(viewport->setDockingEnabled(true));
+    EGO_CHECK_RETURN_FALSE(guiController);
 
-    const gui::ImagePointer sceneImage = gui::Image::Create(m_sceneSession.m_graphicPresenter->getTextureView());
-    const gui::VerticalPanelPointer hierarchyPanel = gui::VerticalPanel::Create(
-        {
-            gui::Text::Create("Scene"),
-            gui::Text::Create("  Camera"),
-        });
-    const gui::VerticalPanelPointer inspectorPanel = gui::VerticalPanel::Create(
-        {
-            gui::Text::Create("Selection: Camera"),
-            gui::Text::Create("Component: CameraComponent"),
-        });
-    const gui::VerticalPanelPointer consolePanel = gui::VerticalPanel::Create(
-        {
-            gui::Text::Create("EgoEditor is ready."),
-            gui::Text::Create("The scene session is always active."),
-            gui::Text::Create("Static editor test primitives are rendered every frame."),
-        });
+    const gpu::TextureViewReference sceneTexture = m_sceneSession.m_graphicPresenter->getTextureView();
+    if (!sceneTexture)
+    {
+        return false;
+    }
 
-    const gui::WindowPointer sceneWindow = gui::Window::Create(
-        {
-            .m_title = "Scene",
-            .m_bounds = gui::Rect(230.0f, 20.0f, 620.0f, 480.0f),
-            .m_content = sceneImage,
-        });
-    const gui::WindowPointer hierarchyWindow = gui::Window::Create(
-        {
-            .m_title = "Hierarchy",
-            .m_bounds = gui::Rect(15.0f, 20.0f, 200.0f, 480.0f),
-            .m_content = hierarchyPanel,
-        });
-    const gui::WindowPointer inspectorWindow = gui::Window::Create(
-        {
-            .m_title = "Inspector",
-            .m_bounds = gui::Rect(865.0f, 20.0f, 220.0f, 480.0f),
-            .m_content = inspectorPanel,
-        });
-    const gui::WindowPointer consoleWindow = gui::Window::Create(
-        {
-            .m_title = "Console",
-            .m_bounds = gui::Rect(230.0f, 515.0f, 620.0f, 170.0f),
-            .m_content = consolePanel,
-        });
+    m_guiLayer.setSceneTexture(sceneTexture);
+    m_editorLayerID = guiController->registerLayer(m_guiLayer);
+    if (m_editorLayerID == gui::InvalidGuiLayerID)
+    {
+        m_guiLayer.reset();
 
-    EGO_CHECK_RETURN_FALSE(
-        sceneImage && hierarchyPanel && inspectorPanel && consolePanel && sceneWindow && hierarchyWindow && inspectorWindow && consoleWindow);
-
-    m_editorViewport = viewport;
-    m_editorPanels = {hierarchyPanel, inspectorPanel, consolePanel};
-    m_editorWindows = {sceneWindow, hierarchyWindow, inspectorWindow, consoleWindow};
-
-    const gui::DockingSpaceID defaultSpaceID = viewport->getDefaultDockingSpaceID();
-    EGO_CHECK_RETURN_FALSE(defaultSpaceID != gui::InvalidDockingSpaceID);
-
-    EGO_CHECK_RETURN_FALSE(viewport->addWindow(sceneWindow));
-    EGO_CHECK_RETURN_FALSE(viewport->moveWindow(sceneWindow, {.m_spaceID = defaultSpaceID}));
-
-    EGO_CHECK_RETURN_FALSE(viewport->addWindow(hierarchyWindow));
-    EGO_CHECK_RETURN_FALSE(
-        viewport->moveWindow(hierarchyWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Left, .m_splitRatio = 0.22f}));
-
-    EGO_CHECK_RETURN_FALSE(viewport->addWindow(inspectorWindow));
-    EGO_CHECK_RETURN_FALSE(
-        viewport->moveWindow(inspectorWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Right, .m_splitRatio = 0.28f}));
-
-    EGO_CHECK_RETURN_FALSE(viewport->addWindow(consoleWindow));
-    EGO_CHECK_RETURN_FALSE(
-        viewport->moveWindow(consoleWindow, {.m_spaceID = defaultSpaceID, .m_placement = gui::DockingPlacement::Bottom, .m_splitRatio = 0.25f}));
+        return false;
+    }
 
     return true;
 }
 
 void ego::editor::EditorApplication::releaseEditorUi()
 {
-    for (const gui::VerticalPanelPointer& panel : m_editorPanels)
-    {
-        if (panel)
-        {
-            panel->clearChildren();
-        }
-    }
-
-    for (const gui::WindowPointer& window : m_editorWindows)
-    {
-        if (window)
-        {
-            window->setContent(nullptr);
-        }
-    }
-
     const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession ? m_editorSession.m_engineSession->getGuiControllerPointer() : nullptr;
-    const gui::ViewportPointer primaryViewport = m_editorViewport.lock();
-    for (const gui::WindowPointer& window : m_editorWindows)
+    if (guiController)
     {
-        const gui::ViewportPointer viewport = guiController ? guiController->findViewport(window) : primaryViewport;
-        if (viewport)
+        if (m_editorLayerID != gui::InvalidGuiLayerID)
         {
-            viewport->removeWindow(window);
+            guiController->unregisterLayer(m_editorLayerID);
         }
     }
 
-    m_editorWindows.clear();
-    m_editorPanels.clear();
-    m_editorViewport.reset();
+    m_guiLayer.reset();
+    m_editorLayerID = gui::InvalidGuiLayerID;
 }
 
 bool ego::editor::EditorApplication::runMainLoop()
@@ -426,13 +346,6 @@ bool ego::editor::EditorApplication::runMainLoop()
     }
 
     return true;
-}
-
-bool ego::editor::EditorApplication::loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const
-{
-    const PlatformPointer platform = GetPlatformPointer();
-    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
-    return fileSystem && fileSystem->readFile(DefaultGuiFontPath, _fontAtlasDesc.m_fontData);
 }
 
 void ego::editor::EditorApplication::ParseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options)

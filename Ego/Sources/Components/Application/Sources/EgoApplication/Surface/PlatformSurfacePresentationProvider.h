@@ -40,7 +40,6 @@ namespace ego::application
         struct SurfaceEventCallbackIDs final
         {
             InstancedEventCallbackID m_closeRequested = InvalidInstancedEventCallbackID;
-            InstancedEventCallbackID m_destroying = InvalidInstancedEventCallbackID;
             InstancedEventCallbackID m_sizeChanged = InvalidInstancedEventCallbackID;
         };
 
@@ -66,7 +65,6 @@ namespace ego::application
         SurfaceGraphicPresenterPointer createGraphicPresenter(const PlatformSurface& _surface) const;
 
         void handleSurfaceCloseRequested(const PlatformSurfaceCloseRequestedEvent& _event);
-        void handleSurfaceDestroying(const PlatformSurfaceDestroyingEvent& _event);
         void handleSurfaceSizeChanged(const PlatformSurfaceSizeChangedEvent& _event);
 
         static EventControllerPointer GetEventControllerPointer();

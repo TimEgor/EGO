@@ -58,9 +58,9 @@ namespace
         return static_cast<ego::InputDeviceKey>(_key);
     }
 
-    ego::gui::Position GetMousePosition(const ego::InputDevice& _device)
+    ego::FloatVector2 GetMousePosition(const ego::InputDevice& _device)
     {
-        return ego::gui::Position(_device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)), _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)));
+        return ego::FloatVector2(_device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisX)), _device.getValue(ToInputDeviceKey(ego::MouseInputKey::AxisY)));
     }
 
     bool HasMousePositionChanged(const ego::InputDevice& _device)
@@ -162,6 +162,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     if (!isSecondary)
     {
         m_primaryViewportID = _request.m_id;
+        setFocusedViewport(_request.m_id);
     }
 
     return true;
@@ -193,6 +194,12 @@ void ego::application::ApplicationGuiViewportProvider::destroyViewport(gui::View
     m_viewports.erase(viewportIt);
 }
 
+ego::gui::ViewportState ego::application::ApplicationGuiViewportProvider::getViewportState(gui::ViewportID _viewportID) const
+{
+    const ViewportPointer viewport = findViewport(_viewportID);
+    return viewport ? viewport->getState() : gui::ViewportState();
+}
+
 ego::gui::ViewportUpdate ego::application::ApplicationGuiViewportProvider::pollViewport(gui::ViewportID _viewportID)
 {
     if (_viewportID == m_primaryViewportID)
@@ -213,11 +220,17 @@ bool ego::application::ApplicationGuiViewportProvider::showViewport(gui::Viewpor
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
+    EGO_CHECK_RETURN_FALSE(viewport->show(_activate));
 
-    return viewport->show(_activate);
+    if (_activate)
+    {
+        setFocusedViewport(_viewportID);
+    }
+
+    return true;
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setViewportPosition(gui::ViewportID _viewportID, gui::Position& _position)
+bool ego::application::ApplicationGuiViewportProvider::setViewportPosition(gui::ViewportID _viewportID, FloatVector2& _position)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
@@ -225,7 +238,7 @@ bool ego::application::ApplicationGuiViewportProvider::setViewportPosition(gui::
     return viewport->setPosition(_position);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setViewportSize(gui::ViewportID _viewportID, gui::Size& _size)
+bool ego::application::ApplicationGuiViewportProvider::setViewportSize(gui::ViewportID _viewportID, FloatVector2& _size)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
@@ -282,7 +295,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseChangedEvent(c
         return;
     }
 
-    const gui::Position position = GetMousePosition(*_event.m_device);
+    const FloatVector2 position = GetMousePosition(*_event.m_device);
     const gui::ViewportID viewportID = findPointerInputViewport(position);
     updatePointerViewport(viewportID, position);
 
@@ -302,7 +315,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseWheelEvent(con
         return;
     }
 
-    const gui::Position position = GetMousePosition(*_event.m_device);
+    const FloatVector2 position = GetMousePosition(*_event.m_device);
     const gui::ViewportID viewportID = findPointerInputViewport(position);
     updatePointerViewport(viewportID, position);
 
@@ -338,7 +351,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseButtonEvent(co
         return;
     }
 
-    const gui::Position position = GetMousePosition(*_event.m_device);
+    const FloatVector2 position = GetMousePosition(*_event.m_device);
     const gui::ViewportID viewportID = findPointerInputViewport(position);
     updatePointerViewport(viewportID, position);
 
@@ -358,6 +371,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseButtonEvent(co
     const bool inputEnqueued = viewport->enqueueMouseButtonInput(std::move(event));
     if (_action == InputButtonAction::Pressed && inputEnqueued && !hadPressedMouseButtons)
     {
+        setFocusedViewport(viewportID);
         setPointerCapture(viewport);
     }
     else if (_action == InputButtonAction::Released && !viewport->hasPressedMouseButtons())
@@ -366,7 +380,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseButtonEvent(co
     }
 }
 
-ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findViewportAtScreenPosition(const gui::Position& _position) const
+ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findViewportAtScreenPosition(const FloatVector2& _position) const
 {
     const SurfacePoint position(ToSurfacePointValue(_position.m_x), ToSurfacePointValue(_position.m_y));
     const PlatformPointer platform = GetPlatformPointer();
@@ -466,7 +480,7 @@ ego::application::ApplicationGuiViewportProvider::ViewportPointer ego::applicati
     return viewportIt != m_viewports.end() ? viewportIt->second : nullptr;
 }
 
-ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findPointerInputViewport(const gui::Position& _position) const
+ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findPointerInputViewport(const FloatVector2& _position) const
 {
     for (const ViewportMap::value_type& viewportEntry : m_viewports)
     {
@@ -503,7 +517,18 @@ void ego::application::ApplicationGuiViewportProvider::clearPointerCapture(const
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::updatePointerViewport(gui::ViewportID _viewportID, const gui::Position& _position)
+void ego::application::ApplicationGuiViewportProvider::setFocusedViewport(gui::ViewportID _viewportID)
+{
+    for (ViewportMap::value_type& viewportEntry : m_viewports)
+    {
+        if (viewportEntry.second)
+        {
+            viewportEntry.second->setFocused(viewportEntry.first == _viewportID);
+        }
+    }
+}
+
+void ego::application::ApplicationGuiViewportProvider::updatePointerViewport(gui::ViewportID _viewportID, const FloatVector2& _position)
 {
     if (m_pointerViewportID == _viewportID)
     {

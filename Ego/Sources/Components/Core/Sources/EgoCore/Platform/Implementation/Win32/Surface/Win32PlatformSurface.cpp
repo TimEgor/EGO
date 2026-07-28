@@ -284,9 +284,9 @@ bool ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowClo
     return _surface.onWindowCloseRequested();
 }
 
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowDestroying(Win32PlatformSurface& _surface)
+void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowDestroyed(Win32PlatformSurface& _surface)
 {
-    _surface.onWindowDestroying();
+    _surface.onWindowDestroyed();
 }
 
 void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowActivate(Win32PlatformSurface& _surface, bool _isActive)
@@ -579,9 +579,8 @@ bool ego::win32::Win32PlatformSurface::onWindowCloseRequested()
     return notifyCloseRequested();
 }
 
-void ego::win32::Win32PlatformSurface::onWindowDestroying()
+void ego::win32::Win32PlatformSurface::onWindowDestroyed()
 {
-    notifyDestroying();
     invalidate();
 }
 

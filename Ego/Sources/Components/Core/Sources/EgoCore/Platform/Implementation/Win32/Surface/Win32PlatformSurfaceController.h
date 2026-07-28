@@ -27,8 +27,6 @@ namespace ego::win32
         PlatformSurfacePointer getPointerCapture() const override;
         void processEvents() override;
 
-        HINSTANCE getInstanceHandle() const;
-
         EGO_RTTI_VIRTUAL(Win32PlatformSurfaceController, PlatformSurfaceController);
 
     private:
@@ -36,7 +34,7 @@ namespace ego::win32
         Win32PlatformSurfacePointer findWindow(HWND _handle) const;
         bool processWindowMessage(const Win32PlatformSurfacePointer& _window, UINT _msg, WPARAM _wParam, LPARAM _lParam, LRESULT& _result);
 
-        void onWindowDestroying(const Win32PlatformSurfacePointer& _window);
+        void onWindowDestroyed(const Win32PlatformSurfacePointer& _window);
         bool onWindowPointerCaptureLost(const Win32PlatformSurfacePointer& _window);
 
         static LRESULT CALLBACK WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam);

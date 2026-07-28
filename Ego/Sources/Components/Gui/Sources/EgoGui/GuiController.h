@@ -1,35 +1,28 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Reference/Pointer.h"
 
-#include "EgoGui/Rendering/FontAtlas.h"
+#include "EgoGui/GuiLayer.h"
 #include "EgoGui/Rendering/GuiRenderData.h"
-#include "EgoGui/Theme/Theme.h"
-#include "EgoGui/Viewport/ViewportTypes.h"
 
 namespace ego::gui
 {
-    class Viewport;
-    class ViewportManager;
+    class GuiBackend;
     class ViewportProvider;
-    class Window;
-
-    EGO_POINTER(Viewport);
     EGO_POINTER(ViewportProvider);
-    EGO_POINTER(Window);
 
     class GuiController final : public NonCopyable
     {
     public:
         struct InitData final
         {
-            FontAtlasDesc m_fontAtlasDesc;
-            Theme m_theme = Theme::GetDefault();
             ViewportProviderPointer m_viewportProvider = nullptr;
-            bool m_enableMultiViewport = false;
+            bool m_enableMultiViewport = true;
         };
 
         GuiController();
@@ -38,43 +31,38 @@ namespace ego::gui
         bool init(const InitData& _initData);
         void release();
 
-        void update();
-        GuiRenderData buildFrame();
+        void update(float _deltaTime);
+        GuiRenderData takeRenderData();
+
+        GuiLayerID registerLayer(GuiLayer& _layer);
+        bool unregisterLayer(GuiLayerID _layerID);
 
         bool isInitialized() const;
 
-        ViewportPointer createViewport(const ViewportDesc& _desc);
-        bool destroyViewport(const ViewportPointer& _viewport);
-
-        ViewportPointer getPrimaryViewport() const;
-        ViewportPointer findViewport(const WindowPointer& _window) const;
-
-        void setMultiViewportEnabled(bool _isEnabled);
-        bool isMultiViewportEnabled() const;
-
-        void setTheme(const Theme& _theme);
-        ThemePointer getTheme() const;
-
     private:
-        class VisualOperationScope final : public NonCopyable
+        struct LayerRecord final
         {
-        public:
-            explicit VisualOperationScope(GuiController& _controller);
-            ~VisualOperationScope() override;
-
-        private:
-            GuiController& m_controller;
+            GuiLayerID m_id = InvalidGuiLayerID;
+            std::reference_wrapper<GuiLayer> m_layer;
         };
 
-        void releaseState();
-        bool ensureVisualOperationInactive() const;
-        void applyTheme(ThemePointer _theme);
+        using LayerCollection = std::vector<LayerRecord>;
+        using LayerIterator = LayerCollection::iterator;
 
-        std::unique_ptr<ViewportManager> m_viewportManager;
-        FontAtlasPointer m_fontAtlas = nullptr;
-        ThemePointer m_theme = nullptr;
-        bool m_isVisualOperationActive = false;
-        bool m_isInitialized = false;
+        bool drawLayers();
+
+        LayerIterator findLayer(GuiLayer& _layer);
+        LayerIterator findLayer(GuiLayerID _layerID);
+        GuiLayerID allocateLayerID();
+
+        std::unique_ptr<GuiBackend> m_backend;
+
+        LayerCollection m_layers;
+        GuiRenderData m_pendingFrame;
+
+        GuiLayerID m_nextLayerID = 1;
+
+        bool m_isFrameActive = false;
     };
 
     EGO_POINTER(GuiController);

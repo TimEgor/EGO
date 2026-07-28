@@ -20,11 +20,6 @@ bool ego::PlatformSurfaceCloseRequestedEvent::isHandled() const
     return m_isHandled;
 }
 
-ego::PlatformSurfaceDestroyingEvent::PlatformSurfaceDestroyingEvent(PlatformSurface& _surface)
-    : PlatformSurfaceEvent(_surface)
-{
-}
-
 ego::PlatformSurfaceActivationEvent::PlatformSurfaceActivationEvent(PlatformSurface& _surface, bool _isActive)
     : PlatformSurfaceEvent(_surface),
       m_isActive(_isActive)

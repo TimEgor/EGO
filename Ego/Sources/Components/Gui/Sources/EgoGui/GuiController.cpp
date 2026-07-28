@@ -1,29 +1,16 @@
 #include "EgoGui/GuiController.h"
 
+#include <algorithm>
+#include <memory>
 #include <utility>
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoGui/Layout/Layout.h"
-#include "EgoGui/Viewport/ViewportManager.h"
-
-ego::gui::GuiController::VisualOperationScope::VisualOperationScope(GuiController& _controller)
-    : m_controller(_controller)
-{
-    EGO_ASSERT(!m_controller.m_isVisualOperationActive);
-    m_controller.m_isVisualOperationActive = true;
-}
-
-ego::gui::GuiController::VisualOperationScope::~VisualOperationScope()
-{
-    EGO_ASSERT(m_controller.m_isVisualOperationActive);
-    m_controller.m_isVisualOperationActive = false;
-}
+#include "EgoGui/Implementation/GuiBackendFactory.h"
 
 ego::gui::GuiController::GuiController()
-    : m_viewportManager(std::make_unique<ViewportManager>()),
-      m_theme(SharedPointer<Theme>(new Theme(Theme::GetDefault())))
+    : m_backend(CreateGuiBackend())
 {
 }
 
@@ -34,139 +21,161 @@ ego::gui::GuiController::~GuiController()
 
 bool ego::gui::GuiController::init(const InitData& _initData)
 {
-    EGO_CHECK_RETURN_FALSE(ensureVisualOperationInactive());
+    EGO_CHECK_RETURN_FALSE(m_backend && !m_backend->isInitialized());
 
-    const InitData initData = _initData;
-    release();
-
-    EGO_CHECK_RETURN_FALSE(initData.m_viewportProvider);
-
-    setTheme(initData.m_theme);
-
-    if (!initData.m_fontAtlasDesc.m_fontData.empty())
-    {
-        m_fontAtlas = FontAtlasPointer(new FontAtlas());
-        EGO_CHECK_RETURN_CALL_FALSE(m_fontAtlas && m_fontAtlas->init(initData.m_fontAtlasDesc), release());
-    }
-
-    EGO_CHECK_RETURN_CALL_FALSE(m_viewportManager->init(initData.m_viewportProvider, initData.m_enableMultiViewport), release());
-
-    m_isInitialized = true;
-    return true;
+    return m_backend->init(_initData.m_viewportProvider, _initData.m_enableMultiViewport);
 }
 
 void ego::gui::GuiController::release()
 {
-    if (!ensureVisualOperationInactive())
+    EGO_ASSERT(!m_isFrameActive);
+    if (m_isFrameActive || (m_backend && !m_backend->release()))
     {
         return;
     }
 
-    releaseState();
+    EGO_ASSERT(m_layers.empty());
+    m_layers.clear();
+    m_pendingFrame = GuiRenderData();
+    m_nextLayerID = 1;
 }
 
-void ego::gui::GuiController::releaseState()
+void ego::gui::GuiController::update(float _deltaTime)
 {
-    m_viewportManager->release();
-    m_fontAtlas = nullptr;
-    m_isInitialized = false;
-}
+    EGO_CHECK_RETURN(isInitialized() && !m_isFrameActive);
 
-ego::gui::ViewportPointer ego::gui::GuiController::createViewport(const ViewportDesc& _desc)
-{
-    if (!m_isInitialized || !ensureVisualOperationInactive())
+    m_isFrameActive = true;
+
+    if (!m_backend->beginFrame(_deltaTime))
     {
-        return nullptr;
-    }
+        m_isFrameActive = false;
 
-    return m_viewportManager->createViewport(_desc);
-}
-
-bool ego::gui::GuiController::destroyViewport(const ViewportPointer& _viewport)
-{
-    return m_isInitialized && ensureVisualOperationInactive() && m_viewportManager->destroyViewport(_viewport);
-}
-
-ego::gui::ViewportPointer ego::gui::GuiController::getPrimaryViewport() const
-{
-    return m_viewportManager->getPrimaryViewport();
-}
-
-ego::gui::ViewportPointer ego::gui::GuiController::findViewport(const WindowPointer& _window) const
-{
-    return m_viewportManager->findViewport(_window);
-}
-
-void ego::gui::GuiController::setMultiViewportEnabled(bool _isEnabled)
-{
-    if (!m_isInitialized || !ensureVisualOperationInactive())
-    {
         return;
     }
 
-    m_viewportManager->setMultiViewportEnabled(_isEnabled);
-}
-
-bool ego::gui::GuiController::isMultiViewportEnabled() const
-{
-    return m_viewportManager->isMultiViewportEnabled();
-}
-
-void ego::gui::GuiController::setTheme(const Theme& _theme)
-{
-    applyTheme(SharedPointer<Theme>(new Theme(_theme)));
-}
-
-ego::gui::ThemePointer ego::gui::GuiController::getTheme() const
-{
-    return m_theme;
-}
-
-void ego::gui::GuiController::update()
-{
-    if (!m_isInitialized || !ensureVisualOperationInactive())
+    if (!drawLayers())
     {
+        m_backend->cancelFrame();
+        m_isFrameActive = false;
+
         return;
     }
 
-    const ThemePointer theme = m_theme;
-    const VisualOperationScope visualOperation(*this);
-    const LayoutContext layoutContext{m_fontAtlas, theme};
-
-    if (!m_viewportManager->update(layoutContext))
+    GuiRenderData frame;
+    if (m_backend->endFrame(frame))
     {
-        releaseState();
+        m_pendingFrame = std::move(frame);
     }
+
+    m_isFrameActive = false;
 }
 
-ego::gui::GuiRenderData ego::gui::GuiController::buildFrame()
+ego::gui::GuiRenderData ego::gui::GuiController::takeRenderData()
 {
-    if (!m_isInitialized || !ensureVisualOperationInactive())
+    EGO_ASSERT(!m_isFrameActive);
+
+    GuiRenderData renderData = std::move(m_pendingFrame);
+    m_pendingFrame = GuiRenderData();
+
+    return renderData;
+}
+
+ego::gui::GuiLayerID ego::gui::GuiController::registerLayer(GuiLayer& _layer)
+{
+    if (!isInitialized() || m_isFrameActive)
     {
-        return GuiRenderData();
+        return InvalidGuiLayerID;
     }
 
-    const VisualOperationScope visualOperation(*this);
-    const LayoutContext layoutContext{m_fontAtlas, m_theme};
+    const LayerIterator existingLayer = findLayer(_layer);
+    if (existingLayer != m_layers.end())
+    {
+        return existingLayer->m_id;
+    }
 
-    return m_viewportManager->buildFrame(layoutContext);
+    const GuiLayerID layerID = allocateLayerID();
+    if (layerID == InvalidGuiLayerID)
+    {
+        return InvalidGuiLayerID;
+    }
+
+    m_layers.push_back({.m_id = layerID, .m_layer = _layer});
+
+    return layerID;
+}
+
+bool ego::gui::GuiController::unregisterLayer(GuiLayerID _layerID)
+{
+    if (_layerID == InvalidGuiLayerID || m_isFrameActive)
+    {
+        return false;
+    }
+
+    const LayerIterator layer = findLayer(_layerID);
+    if (layer == m_layers.end())
+    {
+        return false;
+    }
+
+    m_layers.erase(layer);
+
+    return true;
 }
 
 bool ego::gui::GuiController::isInitialized() const
 {
-    return m_isInitialized;
+    return m_backend && m_backend->isInitialized();
 }
 
-bool ego::gui::GuiController::ensureVisualOperationInactive() const
+bool ego::gui::GuiController::drawLayers()
 {
-    const bool isInactive = !m_isVisualOperationActive;
-    EGO_ASSERT_MESSAGE(isInactive, "Public visual operations cannot reenter an active update or frame build.");
+    for (LayerRecord& layerRecord : m_layers)
+    {
+        if (!layerRecord.m_layer.get().draw(*m_backend))
+        {
+            return false;
+        }
+    }
 
-    return isInactive;
+    return true;
 }
 
-void ego::gui::GuiController::applyTheme(ThemePointer _theme)
+ego::gui::GuiController::LayerIterator ego::gui::GuiController::findLayer(GuiLayer& _layer)
 {
-    m_theme = std::move(_theme);
-    m_viewportManager->invalidateLayouts();
+    return std::ranges::find_if(
+        m_layers,
+        [&_layer](const LayerRecord& _record)
+        {
+            return std::addressof(_record.m_layer.get()) == std::addressof(_layer);
+        });
+}
+
+ego::gui::GuiController::LayerIterator ego::gui::GuiController::findLayer(GuiLayerID _layerID)
+{
+    return std::ranges::find_if(
+        m_layers,
+        [_layerID](const LayerRecord& _record)
+        {
+            return _record.m_id == _layerID;
+        });
+}
+
+ego::gui::GuiLayerID ego::gui::GuiController::allocateLayerID()
+{
+    const GuiLayerID firstCandidate = m_nextLayerID;
+    do
+    {
+        const GuiLayerID candidate = m_nextLayerID++;
+        if (m_nextLayerID == InvalidGuiLayerID)
+        {
+            m_nextLayerID = 1;
+        }
+
+        if (candidate != InvalidGuiLayerID && findLayer(candidate) == m_layers.end())
+        {
+            return candidate;
+        }
+    } while (m_nextLayerID != firstCandidate);
+
+    return InvalidGuiLayerID;
 }

@@ -11,7 +11,6 @@ namespace ego
     struct PlatformSurfaceEventIDs final
     {
         InstancedEventID m_closeRequested = InvalidInstancedEventID;
-        InstancedEventID m_destroying = InvalidInstancedEventID;
         InstancedEventID m_activation = InvalidInstancedEventID;
         InstancedEventID m_pointerCaptureLost = InvalidInstancedEventID;
         InstancedEventID m_sizeChanged = InvalidInstancedEventID;
@@ -39,13 +38,6 @@ namespace ego
 
     private:
         mutable bool m_isHandled = false;
-    };
-
-    struct PlatformSurfaceDestroyingEvent final : public PlatformSurfaceEvent
-    {
-        explicit PlatformSurfaceDestroyingEvent(PlatformSurface& _surface);
-
-        EGO_EVENT(PlatformSurfaceDestroyingEvent, PlatformSurfaceEvent);
     };
 
     struct PlatformSurfaceActivationEvent final : public PlatformSurfaceEvent

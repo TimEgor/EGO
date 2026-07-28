@@ -63,7 +63,7 @@ bool ego::gui::default_gui_render::DefaultGuiRender::init()
     ResourceController& resourceController = GetResourceSubsystem().getResourceController();
     EGO_CHECK_INITIALIZATION(initShaders(resourceController));
 
-    EGO_CHECK_INITIALIZATION(initDefaultSampler());
+    EGO_CHECK_INITIALIZATION(initSamplers());
     EGO_CHECK_INITIALIZATION(initBindingLayout());
     EGO_CHECK_INITIALIZATION(initPipeline());
 
@@ -78,7 +78,8 @@ void ego::gui::default_gui_render::DefaultGuiRender::release()
 
     m_pipeline = nullptr;
     m_bindingLayout = nullptr;
-    m_defaultSampler = nullptr;
+    m_nearestSampler = nullptr;
+    m_linearSampler = nullptr;
     m_pixelShader = nullptr;
     m_vertexShader = nullptr;
 
@@ -130,6 +131,8 @@ bool ego::gui::default_gui_render::DefaultGuiRender::prepare(GuiRenderData&& _re
         {
             EGO_CHECK_RETURN_FALSE(resources.m_drawData.m_viewportSize.m_x > 0.0f);
             EGO_CHECK_RETURN_FALSE(resources.m_drawData.m_viewportSize.m_y > 0.0f);
+            EGO_CHECK_RETURN_FALSE(resources.m_drawData.m_framebufferScale.m_x > 0.0f);
+            EGO_CHECK_RETURN_FALSE(resources.m_drawData.m_framebufferScale.m_y > 0.0f);
         }
         EGO_CHECK_RETURN_FALSE(prepareBuffers(resources));
 
@@ -198,19 +201,28 @@ bool ego::gui::default_gui_render::DefaultGuiRender::initShaders(ResourceControl
     return true;
 }
 
-bool ego::gui::default_gui_render::DefaultGuiRender::initDefaultSampler()
+bool ego::gui::default_gui_render::DefaultGuiRender::initSamplers()
 {
-    gpu::SamplerDesc samplerDesc;
-    samplerDesc.m_minFilter = gpu::SamplerFilter::Linear;
-    samplerDesc.m_magFilter = gpu::SamplerFilter::Linear;
-    samplerDesc.m_mipFilter = gpu::SamplerFilter::Nearest;
-    samplerDesc.m_addressU = gpu::SamplerAddressMode::ClampToEdge;
-    samplerDesc.m_addressV = gpu::SamplerAddressMode::ClampToEdge;
-    samplerDesc.m_addressW = gpu::SamplerAddressMode::ClampToEdge;
+    gpu::SamplerDesc linearSamplerDesc;
+    linearSamplerDesc.m_minFilter = gpu::SamplerFilter::Linear;
+    linearSamplerDesc.m_magFilter = gpu::SamplerFilter::Linear;
+    linearSamplerDesc.m_mipFilter = gpu::SamplerFilter::Linear;
+    linearSamplerDesc.m_addressU = gpu::SamplerAddressMode::ClampToEdge;
+    linearSamplerDesc.m_addressV = gpu::SamplerAddressMode::ClampToEdge;
+    linearSamplerDesc.m_addressW = gpu::SamplerAddressMode::ClampToEdge;
 
-    m_defaultSampler = gpu::GetGraphicDevice().createSampler(samplerDesc);
-    EGO_CHECK_RETURN_FALSE(m_defaultSampler);
-    EGO_CHECK_RETURN_FALSE(m_defaultSampler->getBindlessIndex() != gpu::InvalidBindlessIndex);
+    m_linearSampler = gpu::GetGraphicDevice().createSampler(linearSamplerDesc);
+    EGO_CHECK_RETURN_FALSE(m_linearSampler);
+    EGO_CHECK_RETURN_FALSE(m_linearSampler->getBindlessIndex() != gpu::InvalidBindlessIndex);
+
+    gpu::SamplerDesc nearestSamplerDesc = linearSamplerDesc;
+    nearestSamplerDesc.m_minFilter = gpu::SamplerFilter::Nearest;
+    nearestSamplerDesc.m_magFilter = gpu::SamplerFilter::Nearest;
+    nearestSamplerDesc.m_mipFilter = gpu::SamplerFilter::Nearest;
+
+    m_nearestSampler = gpu::GetGraphicDevice().createSampler(nearestSamplerDesc);
+    EGO_CHECK_RETURN_FALSE(m_nearestSampler);
+    EGO_CHECK_RETURN_FALSE(m_nearestSampler->getBindlessIndex() != gpu::InvalidBindlessIndex);
 
     return true;
 }
@@ -311,6 +323,11 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderViewport(
     const gpu::Texture2DDesc& targetDesc = _targetTexture->getDesc();
     EGO_CHECK_RETURN_FALSE(targetDesc.m_size.m_x > 0 && targetDesc.m_size.m_y > 0);
 
+    const gpu::TextureViewDesc& targetViewDesc = _targetView->getDesc();
+    const gpu::GraphicResourceFormat targetFormat =
+        targetViewDesc.m_format == gpu::GraphicResourceFormat::Undefined ? targetDesc.m_format : targetViewDesc.m_format;
+    EGO_CHECK_RETURN_FALSE(targetFormat == DefaultGuiRenderTargetFormat);
+
     if (_targetTexture->getState() != gpu::GraphicResourceState::RenderTarget)
     {
         m_commandList->resourceBarrier(_targetTexture, gpu::GraphicResourceState::RenderTarget);
@@ -324,9 +341,13 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderViewport(
     renderingDesc.m_renderArea = targetDesc.m_size;
 
     m_commandList->beginRendering(renderingDesc);
+
+    const FloatVector2& viewportSize = _resources.m_drawData.m_viewportSize;
+    const FloatVector2& framebufferScale = _resources.m_drawData.m_framebufferScale;
+
     gpu::ViewportDesc viewportDesc;
-    viewportDesc.m_width = static_cast<float>(targetDesc.m_size.m_x);
-    viewportDesc.m_height = static_cast<float>(targetDesc.m_size.m_y);
+    viewportDesc.m_width = viewportSize.m_x * framebufferScale.m_x;
+    viewportDesc.m_height = viewportSize.m_y * framebufferScale.m_y;
     viewportDesc.m_minDepth = 0.0f;
     viewportDesc.m_maxDepth = 1.0f;
     m_commandList->setViewport(viewportDesc);
@@ -340,11 +361,11 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
 {
     EGO_CHECK_RETURN_FALSE(m_pipeline && _resources.m_vertexBuffer && _resources.m_indexBuffer);
 
-    const Size& viewportSize = _resources.m_drawData.m_viewportSize;
+    const FloatVector2& viewportSize = _resources.m_drawData.m_viewportSize;
     EGO_CHECK_RETURN_FALSE(viewportSize.m_x > 0.0f && viewportSize.m_y > 0.0f);
 
-    const float framebufferScaleX = static_cast<float>(_targetSize.m_x) / viewportSize.m_x;
-    const float framebufferScaleY = static_cast<float>(_targetSize.m_y) / viewportSize.m_y;
+    const FloatVector2& framebufferScale = _resources.m_drawData.m_framebufferScale;
+    EGO_CHECK_RETURN_FALSE(framebufferScale.m_x > 0.0f && framebufferScale.m_y > 0.0f);
 
     m_commandList->setPipeline(m_pipeline);
     m_commandList->setVertexBuffer(0, _resources.m_vertexBuffer, sizeof(Vertex), 0);
@@ -353,10 +374,10 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
     for (const DrawCommand& command : _resources.m_drawData.m_commands)
     {
         gpu::ScissorRectDesc scissorRect;
-        scissorRect.m_left = static_cast<int32_t>((std::max)(0.0f, command.m_clipRect.getLeft() * framebufferScaleX));
-        scissorRect.m_top = static_cast<int32_t>((std::max)(0.0f, command.m_clipRect.getTop() * framebufferScaleY));
-        scissorRect.m_right = static_cast<int32_t>((std::min)(static_cast<float>(_targetSize.m_x), command.m_clipRect.getRight() * framebufferScaleX));
-        scissorRect.m_bottom = static_cast<int32_t>((std::min)(static_cast<float>(_targetSize.m_y), command.m_clipRect.getBottom() * framebufferScaleY));
+        scissorRect.m_left = static_cast<int32_t>((std::max)(0.0f, command.m_clipRect.m_x * framebufferScale.m_x));
+        scissorRect.m_top = static_cast<int32_t>((std::max)(0.0f, command.m_clipRect.m_y * framebufferScale.m_y));
+        scissorRect.m_right = static_cast<int32_t>((std::min)(static_cast<float>(_targetSize.m_x), command.m_clipRect.m_z * framebufferScale.m_x));
+        scissorRect.m_bottom = static_cast<int32_t>((std::min)(static_cast<float>(_targetSize.m_y), command.m_clipRect.m_w * framebufferScale.m_y));
 
         if (scissorRect.m_right <= scissorRect.m_left || scissorRect.m_bottom <= scissorRect.m_top)
         {
@@ -368,10 +389,11 @@ bool ego::gui::default_gui_render::DefaultGuiRender::renderDrawData(const gpu::T
         GuiRootConstants guiConstants;
         guiConstants.m_viewportSize = viewportSize;
 
-        if (command.m_textureIndex != gpu::InvalidBindlessIndex && m_defaultSampler)
+        const gpu::SamplerReference& sampler = command.m_textureFilteringMode == TextureFilteringMode::Nearest ? m_nearestSampler : m_linearSampler;
+        if (command.m_textureIndex != gpu::InvalidBindlessIndex && sampler)
         {
             guiConstants.m_textureIndex = command.m_textureIndex;
-            guiConstants.m_samplerIndex = m_defaultSampler->getBindlessIndex();
+            guiConstants.m_samplerIndex = sampler->getBindlessIndex();
             guiConstants.m_textureSamplingMode = static_cast<uint32_t>(command.m_textureSamplingMode);
         }
 

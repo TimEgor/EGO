@@ -12,8 +12,6 @@
 #include "EgoJob/JobGraph.h"
 
 #include "EgoGui/GuiController.h"
-#include "EgoGui/Rendering/FontAtlas.h"
-#include "EgoGui/Theme/Theme.h"
 
 #include "EgoApplication/Presentation/PresenterProvider.h"
 
@@ -59,8 +57,6 @@ namespace ego::engine
         struct GuiOptions final
         {
             FileName m_pluginModuleName;
-            gui::FontAtlasDesc m_fontAtlasDesc;
-            gui::Theme m_theme;
             bool m_isEnabled = false;
         };
 
@@ -100,7 +96,7 @@ namespace ego::engine
         PluginControllerPointer getPluginControllerPointer() const;
         ResourceControllerPointer getResourceControllerPointer() const;
 
-        bool initGuiController(const GuiOptions& _guiOptions, const application::Presentation& _mainPresentation);
+        bool initGuiController(const application::Presentation& _mainPresentation);
         bool initGraphicFrameController(const InitData& _initData);
         bool initFrameLogic();
 

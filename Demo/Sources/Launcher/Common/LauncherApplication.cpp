@@ -1,18 +1,12 @@
 #include "LauncherApplication.h"
 
 #include "EgoCore/Parsers/ArgParser/Parser.h"
-#include "EgoCore/Platform/FileSystem/FileSystem.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoEngine/Project/ProjectReader.h"
-
-namespace
-{
-    constexpr const char* DefaultGuiFontPath = "C:/Windows/Fonts/segoeui.ttf";
-} // namespace
 
 ego::demo::launcher::LauncherApplication::~LauncherApplication()
 {
@@ -104,7 +98,6 @@ bool ego::demo::launcher::LauncherApplication::initEngine(const CommandLineOptio
     engine::EngineSession::GuiOptions& guiOptions = sessionInitData.m_gui;
     guiOptions.m_isEnabled = true;
     guiOptions.m_pluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
-    EGO_CHECK_RETURN_FALSE(loadDefaultGuiFont(guiOptions.m_fontAtlasDesc));
 
     m_engine = new engine::Engine();
     EGO_CHECK_RETURN_FALSE(m_engine);
@@ -182,13 +175,6 @@ bool ego::demo::launcher::LauncherApplication::fillEngineSessionInitData(const C
     EGO_CHECK_RETURN_FALSE(loadProject(projectFileName, _sessionInitData.m_project));
     _sessionInitData.m_sceneRender.m_pluginModuleName = FileName(_options.m_renderPluginModuleName);
     return true;
-}
-
-bool ego::demo::launcher::LauncherApplication::loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const
-{
-    const PlatformPointer platform = GetPlatformPointer();
-    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
-    return fileSystem && fileSystem->readFile(DefaultGuiFontPath, _fontAtlasDesc.m_fontData);
 }
 
 bool ego::demo::launcher::LauncherApplication::loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const

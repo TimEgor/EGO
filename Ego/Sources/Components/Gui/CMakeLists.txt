@@ -7,7 +7,7 @@ ego_add_component(
     ALIAS Ego::Gui
 )
 
-ego_require_third_party(Stb)
+ego_require_third_party(DearImGui)
 
 target_link_libraries(
     EgoGui
@@ -15,6 +15,5 @@ target_link_libraries(
             Ego::Core
             Ego::GraphicHardware
             Ego::Plugin
-        PRIVATE
-            Ego::ThirdParty::Stb
+            Ego::ThirdParty::DearImGui
 )

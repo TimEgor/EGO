@@ -45,12 +45,16 @@ namespace ego::gui::default_gui_render
         };
 
         bool initShaders(ResourceController& _resourceController);
-        bool initDefaultSampler();
+        bool initSamplers();
         bool initBindingLayout();
         bool initPipeline();
 
         bool prepareBuffers(ViewportResources& _resources);
-        bool prepareBuffer(const gpu::InitialGraphicResourceData& _initialData, uint32_t _stride, gpu::GraphicResourceUsage _usage, gpu::BufferReference& _buffer);
+        bool prepareBuffer(
+            const gpu::InitialGraphicResourceData& _initialData,
+            uint32_t _stride,
+            gpu::GraphicResourceUsage _usage,
+            gpu::BufferReference& _buffer);
 
         bool renderViewport(const gpu::TextureViewReference& _targetView, const gpu::Texture2DReference& _targetTexture, const ViewportResources& _resources);
         bool renderDrawData(const gpu::Texture2DSize& _targetSize, const ViewportResources& _resources) const;
@@ -71,7 +75,8 @@ namespace ego::gui::default_gui_render
 
         gpu::VertexShaderReference m_vertexShader = nullptr;
         gpu::PixelShaderReference m_pixelShader = nullptr;
-        gpu::SamplerReference m_defaultSampler = nullptr;
+        gpu::SamplerReference m_linearSampler = nullptr;
+        gpu::SamplerReference m_nearestSampler = nullptr;
         gpu::BindingLayoutReference m_bindingLayout = nullptr;
         gpu::GraphicPipelineReference m_pipeline = nullptr;
 

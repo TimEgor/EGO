@@ -26,7 +26,8 @@ float4 PSMain(PSInput input)
             return input.Color * textureColor;
         }
 
-        return float4(input.Color.rgb, input.Color.a * textureColor.r);
+        const float textureAlpha = TextureSamplingMode == 2 ? textureColor.a : textureColor.r;
+        return float4(input.Color.rgb, input.Color.a * textureAlpha);
     }
 
     return input.Color;

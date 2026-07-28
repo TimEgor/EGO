@@ -124,7 +124,7 @@ void ego::engine::GraphicFrameController::prepareGuiFrame(gui::GuiRenderData&& _
     for (gui::ViewportRenderData& viewportRenderData : _guiRenderData.m_viewports)
     {
         const GraphicPresenterPointer graphicPresenter = viewportRenderData.m_graphicPresenter;
-        const gui::Size& viewportSize = viewportRenderData.m_drawData.m_viewportSize;
+        const FloatVector2& viewportSize = viewportRenderData.m_drawData.m_viewportSize;
         const gpu::Texture2DReference targetTexture = m_framePresenterController.getTargetTexture(graphicPresenter);
         if (!targetTexture || viewportSize.m_x <= 0.0f || viewportSize.m_y <= 0.0f)
         {

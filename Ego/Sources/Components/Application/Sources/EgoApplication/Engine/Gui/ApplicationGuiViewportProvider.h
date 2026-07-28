@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "EgoCore/Event/EventController.h"
+#include "EgoCore/Math/Vector.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 
 #include "EgoGui/Viewport/ViewportProvider.h"
@@ -32,12 +33,12 @@ namespace ego::application
 
         bool createViewport(const gui::ViewportCreateRequest& _request) override;
         void destroyViewport(gui::ViewportID _viewportID) override;
+        gui::ViewportState getViewportState(gui::ViewportID _viewportID) const override;
         gui::ViewportUpdate pollViewport(gui::ViewportID _viewportID) override;
         bool showViewport(gui::ViewportID _viewportID, bool _activate) override;
-        bool setViewportPosition(gui::ViewportID _viewportID, gui::Position& _position) override;
-        bool setViewportSize(gui::ViewportID _viewportID, gui::Size& _size) override;
+        bool setViewportPosition(gui::ViewportID _viewportID, FloatVector2& _position) override;
+        bool setViewportSize(gui::ViewportID _viewportID, FloatVector2& _size) override;
         bool setViewportInputPassthrough(gui::ViewportID _viewportID, bool _isEnabled) override;
-        gui::ViewportID findViewportAtScreenPosition(const gui::Position& _position) const override;
 
     private:
         struct CallbackIDs final
@@ -65,10 +66,12 @@ namespace ego::application
         void releaseSurfaces(SurfaceCollection& _surfaces);
         void releaseViewport(ViewportPointer& _viewport);
         ViewportPointer findViewport(gui::ViewportID _viewportID) const;
-        gui::ViewportID findPointerInputViewport(const gui::Position& _position) const;
+        gui::ViewportID findViewportAtScreenPosition(const FloatVector2& _position) const;
+        gui::ViewportID findPointerInputViewport(const FloatVector2& _position) const;
         bool setPointerCapture(const ViewportPointer& _viewport);
         void clearPointerCapture(const ViewportPointer& _viewport);
-        void updatePointerViewport(gui::ViewportID _viewportID, const gui::Position& _position);
+        void setFocusedViewport(gui::ViewportID _viewportID);
+        void updatePointerViewport(gui::ViewportID _viewportID, const FloatVector2& _position);
 
         static EventControllerPointer GetEventControllerPointer();
         static PresenterProviderPointer GetPresenterProvider();

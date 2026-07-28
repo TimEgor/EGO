@@ -64,7 +64,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 
     if (_initData.m_gui.m_isEnabled)
     {
-        EGO_CHECK_INITIALIZATION(initGuiController(_initData.m_gui, mainPresentation));
+        EGO_CHECK_INITIALIZATION(initGuiController(mainPresentation));
     }
     EGO_CHECK_INITIALIZATION(initGraphicFrameController(_initData));
 
@@ -125,7 +125,7 @@ bool ego::engine::EngineSession::tick()
 
     if (m_guiController)
     {
-        m_guiController->update();
+        m_guiController->update(getDeltaTime());
     }
 
     JobGraphReference frameLogicJobGraph = getFrameLogicJobGraph();
@@ -181,7 +181,7 @@ ego::JobGraphReference ego::engine::EngineSession::getFrameLogicJobGraph()
     return m_frameLogic.createJobGraph();
 }
 
-bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions, const application::Presentation& _mainPresentation)
+bool ego::engine::EngineSession::initGuiController(const application::Presentation& _mainPresentation)
 {
     EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider && !m_guiController);
 
@@ -193,8 +193,6 @@ bool ego::engine::EngineSession::initGuiController(const GuiOptions& _guiOptions
 
     gui::GuiController::InitData guiInitData;
     guiInitData.m_viewportProvider = m_guiViewportProvider;
-    guiInitData.m_fontAtlasDesc = _guiOptions.m_fontAtlasDesc;
-    guiInitData.m_theme = _guiOptions.m_theme;
     EGO_CHECK_RETURN_FALSE(m_guiController->init(guiInitData));
 
     return true;
@@ -352,7 +350,7 @@ void ego::engine::EngineSession::prepareGraphicFrame()
     sceneRenderData.m_graphicPresenter = m_scenePresenter;
     if (m_guiController)
     {
-        guiRenderData = m_guiController->buildFrame();
+        guiRenderData = m_guiController->takeRenderData();
     }
 
     sceneRenderData.m_activeLevel = m_levelController ? m_levelController->getActiveLevel() : nullptr;

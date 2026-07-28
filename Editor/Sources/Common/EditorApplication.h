@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
@@ -17,6 +16,8 @@
 #include "EgoEngine/Level/Level.h"
 
 #include "EgoApplication/Application.h"
+
+#include "GuiLayer.h"
 
 namespace ego::editor
 {
@@ -81,8 +82,6 @@ namespace ego::editor
 
         bool runMainLoop();
 
-        bool loadDefaultGuiFont(gui::FontAtlasDesc& _fontAtlasDesc) const;
-
         static void ParseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options);
         static bool IsSurfaceValid(const PlatformSurfacePointer& _surface);
 
@@ -98,8 +97,7 @@ namespace ego::editor
         FileName m_renderPluginModuleName;
         FileName m_guiRenderPluginModuleName;
 
-        gui::ViewportWeakPointer m_editorViewport;
-        std::vector<gui::VerticalPanelPointer> m_editorPanels;
-        std::vector<gui::WindowPointer> m_editorWindows;
+        GuiLayer m_guiLayer;
+        gui::GuiLayerID m_editorLayerID = gui::InvalidGuiLayerID;
     };
 } // namespace ego::editor

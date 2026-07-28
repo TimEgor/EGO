@@ -16,7 +16,6 @@ const ego::PlatformSurfaceEventIDs& ego::PlatformSurface::getEventIDs() const
 bool ego::PlatformSurface::initEvents()
 {
     EGO_CHECK_RETURN_FALSE(m_eventIDs.m_closeRequested == InvalidInstancedEventID);
-    EGO_CHECK_RETURN_FALSE(m_eventIDs.m_destroying == InvalidInstancedEventID);
     EGO_CHECK_RETURN_FALSE(m_eventIDs.m_activation == InvalidInstancedEventID);
     EGO_CHECK_RETURN_FALSE(m_eventIDs.m_pointerCaptureLost == InvalidInstancedEventID);
     EGO_CHECK_RETURN_FALSE(m_eventIDs.m_sizeChanged == InvalidInstancedEventID);
@@ -29,9 +28,6 @@ bool ego::PlatformSurface::initEvents()
 
     m_eventIDs.m_closeRequested = eventController->registerInstancedEvent<PlatformSurfaceCloseRequestedEvent>();
     EGO_CHECK_RETURN_CALL_FALSE(m_eventIDs.m_closeRequested != InvalidInstancedEventID, releaseEvents());
-
-    m_eventIDs.m_destroying = eventController->registerInstancedEvent<PlatformSurfaceDestroyingEvent>();
-    EGO_CHECK_RETURN_CALL_FALSE(m_eventIDs.m_destroying != InvalidInstancedEventID, releaseEvents());
 
     m_eventIDs.m_activation = eventController->registerInstancedEvent<PlatformSurfaceActivationEvent>();
     EGO_CHECK_RETURN_CALL_FALSE(m_eventIDs.m_activation != InvalidInstancedEventID, releaseEvents());
@@ -62,7 +58,6 @@ void ego::PlatformSurface::releaseEvents()
         eventController->unregisterInstancedEvent(m_eventIDs.m_sizeChanged);
         eventController->unregisterInstancedEvent(m_eventIDs.m_pointerCaptureLost);
         eventController->unregisterInstancedEvent(m_eventIDs.m_activation);
-        eventController->unregisterInstancedEvent(m_eventIDs.m_destroying);
         eventController->unregisterInstancedEvent(m_eventIDs.m_closeRequested);
     }
 
@@ -79,16 +74,6 @@ bool ego::PlatformSurface::notifyCloseRequested()
     EGO_CHECK_RETURN_FALSE(eventController->emitInstancedEvent(m_eventIDs.m_closeRequested, event));
 
     return event.isHandled();
-}
-
-void ego::PlatformSurface::notifyDestroying()
-{
-    const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
-    const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
-    EGO_CHECK_RETURN(eventController && m_eventIDs.m_destroying != InvalidInstancedEventID);
-
-    const PlatformSurfaceDestroyingEvent event(*this);
-    eventController->emitInstancedEvent(m_eventIDs.m_destroying, event);
 }
 
 void ego::PlatformSurface::notifyActivation(bool _isActive)

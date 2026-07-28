@@ -3,7 +3,6 @@
 #include <cmath>
 #include <iterator>
 #include <limits>
-#include <memory>
 #include <utility>
 
 #include "EgoCore/Event/EventSubsystem.h"
@@ -17,10 +16,13 @@ namespace
     constexpr uint8_t RightControlModifierMask = 1u << 3;
     constexpr uint8_t LeftAltModifierMask = 1u << 4;
     constexpr uint8_t RightAltModifierMask = 1u << 5;
+    constexpr uint8_t LeftSuperModifierMask = 1u << 6;
+    constexpr uint8_t RightSuperModifierMask = 1u << 7;
 
     constexpr uint8_t ShiftModifierMask = LeftShiftModifierMask | RightShiftModifierMask;
     constexpr uint8_t ControlModifierMask = LeftControlModifierMask | RightControlModifierMask;
     constexpr uint8_t AltModifierMask = LeftAltModifierMask | RightAltModifierMask;
+    constexpr uint8_t SuperModifierMask = LeftSuperModifierMask | RightSuperModifierMask;
 
     uint16_t ToSurfaceSizeValue(float _value)
     {
@@ -74,6 +76,10 @@ namespace
             return LeftAltModifierMask;
         case ego::KeyboardInputKey::RightAlt:
             return RightAltModifierMask;
+        case ego::KeyboardInputKey::LeftSystem:
+            return LeftSuperModifierMask;
+        case ego::KeyboardInputKey::RightSystem:
+            return RightSuperModifierMask;
         default:
             return 0;
         }
@@ -116,13 +122,15 @@ void ego::application::ApplicationGuiViewport::release()
 
     m_presentation = Presentation();
     m_status = gui::ViewportUpdateStatus::CloseRequested;
-    m_position = gui::PositionZero;
-    m_size = gui::SizeZero;
-    m_requestedPosition = gui::PositionZero;
-    m_requestedSize = gui::SizeZero;
+    m_position = FloatVector2Zero;
+    m_size = FloatVector2Zero;
+    m_requestedPosition = FloatVector2Zero;
+    m_requestedSize = FloatVector2Zero;
     m_input.clear();
     m_hasPositionRequest = false;
     m_hasSizeRequest = false;
+    m_isFocused = false;
+    m_isInputPassthroughEnabled = false;
     resetInput();
 }
 
@@ -140,12 +148,6 @@ bool ego::application::ApplicationGuiViewport::registerSurfaceEvents()
         *this,
         &ApplicationGuiViewport::handleSurfaceCloseRequested);
     EGO_CHECK_RETURN_CALL_FALSE(m_surfaceEventCallbackIDs.m_closeRequested != InvalidInstancedEventCallbackID, unregisterSurfaceEvents());
-
-    m_surfaceEventCallbackIDs.m_destroying = eventController->addInstanceEventCallback<PlatformSurfaceDestroyingEvent>(
-        eventIDs.m_destroying,
-        *this,
-        &ApplicationGuiViewport::handleSurfaceDestroying);
-    EGO_CHECK_RETURN_CALL_FALSE(m_surfaceEventCallbackIDs.m_destroying != InvalidInstancedEventCallbackID, unregisterSurfaceEvents());
 
     m_surfaceEventCallbackIDs.m_activation = eventController->addInstanceEventCallback<PlatformSurfaceActivationEvent>(
         eventIDs.m_activation,
@@ -187,25 +189,41 @@ void ego::application::ApplicationGuiViewport::unregisterSurfaceEvents()
         eventController->removeInstancedEventDispatcher(m_surfaceEventCallbackIDs.m_keyboardInput);
         eventController->removeInstancedEventDispatcher(m_surfaceEventCallbackIDs.m_pointerCaptureLost);
         eventController->removeInstancedEventDispatcher(m_surfaceEventCallbackIDs.m_activation);
-        eventController->removeInstancedEventDispatcher(m_surfaceEventCallbackIDs.m_destroying);
         eventController->removeInstancedEventDispatcher(m_surfaceEventCallbackIDs.m_closeRequested);
     }
 
     m_surfaceEventCallbackIDs = SurfaceEventCallbackIDs();
 }
 
+ego::gui::ViewportState ego::application::ApplicationGuiViewport::getState() const
+{
+    gui::ViewportState state;
+    state.m_status = m_status;
+    state.m_position = m_position;
+    state.m_size = m_size;
+    state.m_graphicPresenter = m_presentation.m_graphicPresenter;
+    state.m_isFocused = m_isFocused;
+    state.m_isInputPassthroughEnabled = m_isInputPassthroughEnabled;
+
+    return state;
+}
+
 ego::gui::ViewportUpdate ego::application::ApplicationGuiViewport::poll()
 {
-    const gui::Position previousPosition = m_position;
-    const gui::Size previousSize = m_size;
+    const FloatVector2 previousPosition = m_position;
+    const FloatVector2 previousSize = m_size;
     updateBounds();
 
+    if (m_status == gui::ViewportUpdateStatus::Alive && !m_presentation.m_graphicPresenter)
+    {
+        m_status = gui::ViewportUpdateStatus::Lost;
+    }
+
     gui::ViewportUpdate update;
-    update.m_position = m_position;
-    update.m_size = m_size;
-    update.m_positionChanged = !gui::AreEqual(previousPosition, m_position);
-    update.m_sizeChanged = !gui::AreEqual(previousSize, m_size);
-    if (m_hasPositionRequest && gui::AreEqual(m_position, m_requestedPosition))
+    update.m_state = getState();
+    update.m_positionChanged = !AreEqual(previousPosition, m_position);
+    update.m_sizeChanged = !AreEqual(previousSize, m_size);
+    if (m_hasPositionRequest && AreEqual(m_position, m_requestedPosition))
     {
         update.m_positionChanged = false;
         m_hasPositionRequest = false;
@@ -215,7 +233,7 @@ ego::gui::ViewportUpdate ego::application::ApplicationGuiViewport::poll()
         m_hasPositionRequest = false;
     }
 
-    if (m_hasSizeRequest && gui::AreEqual(m_size, m_requestedSize))
+    if (m_hasSizeRequest && AreEqual(m_size, m_requestedSize))
     {
         update.m_sizeChanged = false;
         m_hasSizeRequest = false;
@@ -223,14 +241,6 @@ ego::gui::ViewportUpdate ego::application::ApplicationGuiViewport::poll()
     else if (m_hasSizeRequest && update.m_sizeChanged)
     {
         m_hasSizeRequest = false;
-    }
-
-    update.m_status = m_status;
-    update.m_graphicPresenter = m_presentation.m_graphicPresenter;
-    if (update.m_status == gui::ViewportUpdateStatus::Alive && !update.m_graphicPresenter)
-    {
-        update.m_status = gui::ViewportUpdateStatus::Lost;
-        m_status = update.m_status;
     }
 
     update.m_input.insert(update.m_input.end(), std::make_move_iterator(m_input.begin()), std::make_move_iterator(m_input.end()));
@@ -244,7 +254,7 @@ bool ego::application::ApplicationGuiViewport::show(bool _activate)
     return m_presentation.m_surface && m_presentation.m_surface->show(_activate);
 }
 
-bool ego::application::ApplicationGuiViewport::setPosition(gui::Position& _position)
+bool ego::application::ApplicationGuiViewport::setPosition(FloatVector2& _position)
 {
     EGO_CHECK_RETURN_FALSE(m_presentation.m_surface);
 
@@ -254,14 +264,15 @@ bool ego::application::ApplicationGuiViewport::setPosition(gui::Position& _posit
         return false;
     }
 
-    m_requestedPosition = gui::Position(static_cast<float>(position.m_x), static_cast<float>(position.m_y));
-    m_hasPositionRequest = !gui::AreEqual(m_position, m_requestedPosition);
+    m_requestedPosition = FloatVector2(static_cast<float>(position.m_x), static_cast<float>(position.m_y));
+    m_hasPositionRequest = !AreEqual(m_position, m_requestedPosition);
+    m_position = m_requestedPosition;
     _position = m_requestedPosition;
 
     return true;
 }
 
-bool ego::application::ApplicationGuiViewport::setSize(gui::Size& _size)
+bool ego::application::ApplicationGuiViewport::setSize(FloatVector2& _size)
 {
     EGO_CHECK_RETURN_FALSE(m_presentation.m_surface);
 
@@ -272,8 +283,9 @@ bool ego::application::ApplicationGuiViewport::setSize(gui::Size& _size)
         return false;
     }
 
-    m_requestedSize = gui::Size(static_cast<float>(size.m_x), static_cast<float>(size.m_y));
-    m_hasSizeRequest = !gui::AreEqual(m_size, m_requestedSize);
+    m_requestedSize = FloatVector2(static_cast<float>(size.m_x), static_cast<float>(size.m_y));
+    m_hasSizeRequest = !AreEqual(m_size, m_requestedSize);
+    m_size = m_requestedSize;
     _size = m_requestedSize;
 
     return true;
@@ -281,7 +293,17 @@ bool ego::application::ApplicationGuiViewport::setSize(gui::Size& _size)
 
 bool ego::application::ApplicationGuiViewport::setInputPassthrough(bool _isEnabled)
 {
-    return m_presentation.m_surface && m_presentation.m_surface->setInputPassthrough(_isEnabled);
+    EGO_CHECK_RETURN_FALSE(m_presentation.m_surface);
+    EGO_CHECK_RETURN_FALSE(m_presentation.m_surface->setInputPassthrough(_isEnabled));
+
+    m_isInputPassthroughEnabled = _isEnabled;
+
+    return true;
+}
+
+void ego::application::ApplicationGuiViewport::setFocused(bool _isFocused)
+{
+    m_isFocused = _isFocused;
 }
 
 const ego::application::Presentation& ego::application::ApplicationGuiViewport::getPresentation() const
@@ -299,25 +321,18 @@ void ego::application::ApplicationGuiViewport::handleSurfaceCloseRequested(const
     _event.handle();
 }
 
-void ego::application::ApplicationGuiViewport::handleSurfaceDestroying(const PlatformSurfaceDestroyingEvent& _event)
-{
-    EGO_CHECK_RETURN(m_presentation.m_surface && &_event.m_surface == m_presentation.m_surface.get());
-
-    m_status = gui::ViewportUpdateStatus::Lost;
-    resetInput();
-}
-
 void ego::application::ApplicationGuiViewport::handleSurfaceActivation(const PlatformSurfaceActivationEvent& _event)
 {
     EGO_CHECK_RETURN(m_presentation.m_surface && &_event.m_surface == m_presentation.m_surface.get());
 
+    setFocused(_event.m_isActive);
     if (_event.m_isActive)
     {
         return;
     }
 
     resetInput();
-    m_input.push_back(std::make_unique<gui::ViewportDeactivatedEvent>());
+    m_input.push_back(gui::InputEventOwner(new gui::ViewportDeactivatedEvent()));
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfacePointerCaptureLost(const PlatformSurfacePointerCaptureLostEvent& _event)
@@ -325,7 +340,7 @@ void ego::application::ApplicationGuiViewport::handleSurfacePointerCaptureLost(c
     EGO_CHECK_RETURN(m_presentation.m_surface && &_event.m_surface == m_presentation.m_surface.get());
 
     m_pressedMouseButtons = 0;
-    m_input.push_back(std::make_unique<gui::PointerCaptureLostEvent>());
+    m_input.push_back(gui::InputEventOwner(new gui::PointerCaptureLostEvent()));
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfaceKeyboardInput(const PlatformSurfaceKeyboardInputEvent& _event)
@@ -342,7 +357,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceKeyboardInput(const 
     event.m_key = _event.m_input.m_key;
     event.m_action = _event.m_input.m_action;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(std::make_unique<gui::KeyEvent>(event));
+    m_input.push_back(gui::InputEventOwner(new gui::KeyEvent(event)));
 }
 
 void ego::application::ApplicationGuiViewport::handleSurfaceTextInput(const PlatformSurfaceTextInputEvent& _event)
@@ -353,7 +368,7 @@ void ego::application::ApplicationGuiViewport::handleSurfaceTextInput(const Plat
     gui::TextInputEvent event;
     event.m_codepoint = _event.m_input.m_codepoint;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(std::make_unique<gui::TextInputEvent>(event));
+    m_input.push_back(gui::InputEventOwner(new gui::TextInputEvent(event)));
 }
 
 void ego::application::ApplicationGuiViewport::updateBounds()
@@ -366,11 +381,11 @@ void ego::application::ApplicationGuiViewport::updateBounds()
     SurfacePoint surfacePosition;
     if (m_presentation.m_surface->mapToScreen(DefaultSurfacePoint, surfacePosition))
     {
-        m_position = gui::Position(static_cast<float>(surfacePosition.m_x), static_cast<float>(surfacePosition.m_y));
+        m_position = FloatVector2(static_cast<float>(surfacePosition.m_x), static_cast<float>(surfacePosition.m_y));
     }
 
     const SurfaceSize& surfaceSize = m_presentation.m_surface->getSize();
-    m_size = gui::Size(static_cast<float>(surfaceSize.m_x), static_cast<float>(surfaceSize.m_y));
+    m_size = FloatVector2(static_cast<float>(surfaceSize.m_x), static_cast<float>(surfaceSize.m_y));
 }
 
 void ego::application::ApplicationGuiViewport::resetInput()
@@ -402,16 +417,17 @@ void ego::application::ApplicationGuiViewport::updateModifiers(const SurfaceKeyb
     m_modifiers.m_shift = (m_pressedKeyboardModifiers & ShiftModifierMask) != 0;
     m_modifiers.m_control = (m_pressedKeyboardModifiers & ControlModifierMask) != 0;
     m_modifiers.m_alt = (m_pressedKeyboardModifiers & AltModifierMask) != 0;
+    m_modifiers.m_super = (m_pressedKeyboardModifiers & SuperModifierMask) != 0;
 }
 
-bool ego::application::ApplicationGuiViewport::enqueuePointerExit(const gui::Position& _screenPosition)
+bool ego::application::ApplicationGuiViewport::enqueuePointerExit(const FloatVector2& _screenPosition)
 {
     if (!m_isPointerInsideSurface)
     {
         return false;
     }
 
-    gui::Position position = _screenPosition;
+    FloatVector2 position = _screenPosition;
     bool isInsideSurface = false;
     EGO_CHECK_RETURN_FALSE(convertPointerPosition(position, isInsideSurface));
 
@@ -421,7 +437,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerExit(const gui::Pos
     event.m_position = position;
     event.m_screenPosition = _screenPosition;
     event.m_modifiers = m_modifiers;
-    m_input.push_back(std::make_unique<gui::PointerExitEvent>(event));
+    m_input.push_back(gui::InputEventOwner(new gui::PointerExitEvent(event)));
 
     return true;
 }
@@ -464,12 +480,12 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::PointerM
         pointerExitEvent.m_position = _event.m_position;
         pointerExitEvent.m_screenPosition = _event.m_screenPosition;
         pointerExitEvent.m_modifiers = m_modifiers;
-        m_input.push_back(std::make_unique<gui::PointerExitEvent>(pointerExitEvent));
+        m_input.push_back(gui::InputEventOwner(new gui::PointerExitEvent(pointerExitEvent)));
         return true;
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(std::make_unique<gui::PointerMoveEvent>(std::move(_event)));
+    m_input.push_back(gui::InputEventOwner(new gui::PointerMoveEvent(std::move(_event))));
     return true;
 }
 
@@ -484,7 +500,7 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::MouseBut
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(std::make_unique<gui::MouseButtonEvent>(std::move(_event)));
+    m_input.push_back(gui::InputEventOwner(new gui::MouseButtonEvent(std::move(_event))));
     return true;
 }
 
@@ -499,11 +515,11 @@ bool ego::application::ApplicationGuiViewport::enqueuePointerInput(gui::MouseWhe
     }
 
     _event.m_modifiers = m_modifiers;
-    m_input.push_back(std::make_unique<gui::MouseWheelEvent>(std::move(_event)));
+    m_input.push_back(gui::InputEventOwner(new gui::MouseWheelEvent(std::move(_event))));
     return true;
 }
 
-bool ego::application::ApplicationGuiViewport::preparePointerInput(gui::Position& _position, bool& _emitPointerExit)
+bool ego::application::ApplicationGuiViewport::preparePointerInput(FloatVector2& _position, bool& _emitPointerExit)
 {
     _emitPointerExit = false;
     if (m_status != gui::ViewportUpdateStatus::Alive || !m_presentation.m_surface)
@@ -535,7 +551,7 @@ bool ego::application::ApplicationGuiViewport::hasPressedMouseButtons() const
     return m_pressedMouseButtons != 0;
 }
 
-bool ego::application::ApplicationGuiViewport::convertPointerPosition(gui::Position& _position, bool& _isInsideSurface) const
+bool ego::application::ApplicationGuiViewport::convertPointerPosition(FloatVector2& _position, bool& _isInsideSurface) const
 {
     EGO_CHECK_RETURN_FALSE(m_presentation.m_surface);
 
@@ -543,12 +559,17 @@ bool ego::application::ApplicationGuiViewport::convertPointerPosition(gui::Posit
     SurfacePoint localPoint;
     EGO_CHECK_RETURN_FALSE(m_presentation.m_surface->mapFromScreen(screenPoint, localPoint));
 
-    _position = gui::Position(static_cast<float>(localPoint.m_x), static_cast<float>(localPoint.m_y));
+    _position = FloatVector2(static_cast<float>(localPoint.m_x), static_cast<float>(localPoint.m_y));
 
     const SurfaceSize& surfaceSize = m_presentation.m_surface->getSize();
     _isInsideSurface = localPoint.m_x >= 0 && localPoint.m_y >= 0 && localPoint.m_x < static_cast<int32_t>(surfaceSize.m_x) &&
                        localPoint.m_y < static_cast<int32_t>(surfaceSize.m_y);
     return true;
+}
+
+bool ego::application::ApplicationGuiViewport::AreEqual(const FloatVector2& _first, const FloatVector2& _second)
+{
+    return _first.m_x == _second.m_x && _first.m_y == _second.m_y;
 }
 
 ego::EventControllerPointer ego::application::ApplicationGuiViewport::GetEventControllerPointer()

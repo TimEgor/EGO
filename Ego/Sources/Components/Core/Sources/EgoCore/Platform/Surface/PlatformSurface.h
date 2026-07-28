@@ -40,7 +40,6 @@ namespace ego
         void releaseEvents();
 
         bool notifyCloseRequested();
-        void notifyDestroying();
         void notifyActivation(bool _isActive);
         void notifyPointerCaptureLost();
         void notifySizeChanged(const SurfaceSize& _previousSize);

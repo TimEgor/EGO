@@ -4,8 +4,9 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include "Subsystem.h"
 #include "EgoCore/Patterns/Singleton.h"
+
+#include "Subsystem.h"
 
 namespace ego::subsystem
 {

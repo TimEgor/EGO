@@ -4,3 +4,6 @@
 [submodule "ThirtParty/entt"]
 	path = ThirtParty/entt
 	url = https://github.com/skypjack/entt
+[submodule "ThirtParty/imgui"]
+	path = ThirtParty/imgui
+	url = https://github.com/ocornut/imgui.git

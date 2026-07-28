@@ -4,31 +4,33 @@
 #include <vector>
 
 #include "EgoCore/Math/Color.h"
+#include "EgoCore/Math/Vector.h"
 
 #include "EgoGraphicHardware/GraphicObjects/GraphicObject.h"
 
-#include "EgoGui/Core/Geometry.h"
+#include "GuiTexture.h"
 
 namespace ego::gui
 {
-    enum class TextureSamplingMode : uint32_t
+    enum class TextureFilteringMode : uint32_t
     {
-        Alpha,
-        Color
+        Linear,
+        Nearest
     };
 
     struct Vertex final
     {
-        Position m_position = PositionZero;
+        FloatVector2 m_position = FloatVector2Zero;
         FloatVector2 m_uv = FloatVector2Zero;
         NormalizedColorRGBA m_color = NormalizedColorRGBA(NormalizedColorWhite);
     };
 
     struct DrawCommand final
     {
-        Rect m_clipRect;
+        FloatVector4 m_clipRect = FloatVector4Zero;
         uint32_t m_textureIndex = gpu::InvalidBindlessIndex;
         TextureSamplingMode m_textureSamplingMode = TextureSamplingMode::Alpha;
+        TextureFilteringMode m_textureFilteringMode = TextureFilteringMode::Linear;
         uint32_t m_firstIndex = 0;
         uint32_t m_indexCount = 0;
         int32_t m_vertexOffset = 0;
@@ -40,12 +42,12 @@ namespace ego::gui
         using IndexCollection = std::vector<uint32_t>;
         using CommandCollection = std::vector<DrawCommand>;
 
-        Size m_viewportSize = SizeZero;
+        FloatVector2 m_viewportSize = FloatVector2Zero;
+        FloatVector2 m_framebufferScale = FloatVector2One;
         VertexCollection m_vertices;
         IndexCollection m_indices;
         CommandCollection m_commands;
 
-        void clear();
         bool isEmpty() const;
     };
 } // namespace ego::gui

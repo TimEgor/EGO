@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "EgoCore/Math/Vector.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Platform/Input/InputTypes.h"
 
@@ -20,15 +21,17 @@ namespace ego::application
         bool init(const Presentation& _presentation);
         void release();
 
+        gui::ViewportState getState() const;
         gui::ViewportUpdate poll();
         bool show(bool _activate);
-        bool setPosition(gui::Position& _position);
-        bool setSize(gui::Size& _size);
+        bool setPosition(FloatVector2& _position);
+        bool setSize(FloatVector2& _size);
         bool setInputPassthrough(bool _isEnabled);
+        void setFocused(bool _isFocused);
 
         const Presentation& getPresentation() const;
 
-        bool enqueuePointerExit(const gui::Position& _screenPosition);
+        bool enqueuePointerExit(const FloatVector2& _screenPosition);
         bool enqueueMouseButtonInput(gui::MouseButtonEvent _event);
         bool enqueuePointerInput(gui::PointerMoveEvent _event);
         bool enqueuePointerInput(gui::MouseWheelEvent _event);
@@ -38,7 +41,6 @@ namespace ego::application
         struct SurfaceEventCallbackIDs final
         {
             InstancedEventCallbackID m_closeRequested = InvalidInstancedEventCallbackID;
-            InstancedEventCallbackID m_destroying = InvalidInstancedEventCallbackID;
             InstancedEventCallbackID m_activation = InvalidInstancedEventCallbackID;
             InstancedEventCallbackID m_pointerCaptureLost = InvalidInstancedEventCallbackID;
             InstancedEventCallbackID m_keyboardInput = InvalidInstancedEventCallbackID;
@@ -49,7 +51,6 @@ namespace ego::application
         void unregisterSurfaceEvents();
 
         void handleSurfaceCloseRequested(const PlatformSurfaceCloseRequestedEvent& _event);
-        void handleSurfaceDestroying(const PlatformSurfaceDestroyingEvent& _event);
         void handleSurfaceActivation(const PlatformSurfaceActivationEvent& _event);
         void handleSurfacePointerCaptureLost(const PlatformSurfacePointerCaptureLostEvent& _event);
         void handleSurfaceKeyboardInput(const PlatformSurfaceKeyboardInputEvent& _event);
@@ -59,17 +60,18 @@ namespace ego::application
         void resetInput();
         void updateModifiers(const SurfaceKeyboardInput& _input);
         bool enqueuePointerInput(gui::MouseButtonEvent _event);
-        bool preparePointerInput(gui::Position& _position, bool& _emitPointerExit);
-        bool convertPointerPosition(gui::Position& _position, bool& _isInsideSurface) const;
+        bool preparePointerInput(FloatVector2& _position, bool& _emitPointerExit);
+        bool convertPointerPosition(FloatVector2& _position, bool& _isInsideSurface) const;
 
+        static bool AreEqual(const FloatVector2& _first, const FloatVector2& _second);
         static EventControllerPointer GetEventControllerPointer();
 
         Presentation m_presentation;
         gui::ViewportUpdateStatus m_status = gui::ViewportUpdateStatus::CloseRequested;
-        gui::Position m_position = gui::PositionZero;
-        gui::Size m_size = gui::SizeZero;
-        gui::Position m_requestedPosition = gui::PositionZero;
-        gui::Size m_requestedSize = gui::SizeZero;
+        FloatVector2 m_position = FloatVector2Zero;
+        FloatVector2 m_size = FloatVector2Zero;
+        FloatVector2 m_requestedPosition = FloatVector2Zero;
+        FloatVector2 m_requestedSize = FloatVector2Zero;
         gui::InputEventCollection m_input;
         gui::InputModifiers m_modifiers;
         SurfaceEventCallbackIDs m_surfaceEventCallbackIDs;
@@ -78,5 +80,7 @@ namespace ego::application
         bool m_isPointerInsideSurface = false;
         bool m_hasPositionRequest = false;
         bool m_hasSizeRequest = false;
+        bool m_isFocused = false;
+        bool m_isInputPassthroughEnabled = false;
     };
 } // namespace ego::application
