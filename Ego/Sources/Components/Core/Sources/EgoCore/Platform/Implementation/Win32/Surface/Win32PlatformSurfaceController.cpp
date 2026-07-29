@@ -3,11 +3,9 @@
 #include <cstring>
 
 #include "EgoCore/Assert/Assert.h"
-#include "EgoCore/Platform/Implementation/Win32/Input/Win32MouseInputDevice.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "Win32PlatformSurface.h"
-#include "Win32SurfaceUtils.h"
 
 namespace
 {
@@ -179,154 +177,17 @@ ego::win32::Win32PlatformSurfacePointer ego::win32::Win32PlatformSurfaceControll
     return windowData ? windowData->m_surface.lock() : nullptr;
 }
 
-bool ego::win32::Win32PlatformSurfaceController::processWindowMessage(
-    const Win32PlatformSurfacePointer& _window,
-    UINT _msg,
-    WPARAM _wParam,
-    LPARAM _lParam,
-    LRESULT& _result)
+void ego::win32::Win32PlatformSurfaceController::onSurfaceDestroyed(const Win32PlatformSurface& _surface)
 {
-    if (!_window || !_window->isValid())
-    {
-        return false;
-    }
-
-    switch (_msg)
-    {
-    case WM_NCCALCSIZE:
-    {
-        if (!SurfaceAccessor::HasFrame(*_window))
-        {
-            _result = 0;
-
-            return true;
-        }
-
-        break;
-    }
-
-    case WM_NCHITTEST:
-    {
-        if (_window->isInputTransparent())
-        {
-            _result = HTTRANSPARENT;
-
-            return true;
-        }
-
-        if (!SurfaceAccessor::HasFrame(*_window) && Win32SurfaceUtils::HitTest(*_window, _lParam, _result))
-        {
-            return true;
-        }
-
-        break;
-    }
-
-    case WM_CLOSE:
-    {
-        if (SurfaceAccessor::OnWindowCloseRequested(*_window))
-        {
-            _result = 0;
-
-            return true;
-        }
-
-        break;
-    }
-
-    case WM_DESTROY:
-    {
-        onWindowDestroyed(_window);
-        SurfaceAccessor::OnWindowDestroyed(*_window);
-        _result = 0;
-
-        return true;
-    }
-
-    case WM_SIZE:
-    {
-        SurfaceAccessor::OnWindowSizeUpdate(*_window);
-        break;
-    }
-
-    case WM_ACTIVATE:
-    {
-        SurfaceAccessor::OnWindowActivate(*_window, LOWORD(_wParam) != WA_INACTIVE);
-        break;
-    }
-
-    case WM_CAPTURECHANGED:
-    case WM_CANCELMODE:
-    {
-        if (onWindowPointerCaptureLost(_window))
-        {
-            SurfaceAccessor::OnWindowPointerCaptureLost(*_window);
-        }
-
-        break;
-    }
-
-    case WM_MOUSEWHEEL:
-    {
-        const InputDeviceKeyValue wheelDelta = static_cast<InputDeviceKeyValue>(GET_WHEEL_DELTA_WPARAM(_wParam)) / WHEEL_DELTA;
-        Win32MouseInputDevice::AddWheelDelta(wheelDelta);
-        _result = 0;
-
-        return true;
-    }
-
-    case WM_KEYDOWN:
-    case WM_SYSKEYDOWN:
-    {
-        SurfaceAccessor::OnWindowKeyboardInput(*_window, InputButtonAction::Pressed, _wParam, _lParam);
-        break;
-    }
-
-    case WM_KEYUP:
-    case WM_SYSKEYUP:
-    {
-        SurfaceAccessor::OnWindowKeyboardInput(*_window, InputButtonAction::Released, _wParam, _lParam);
-        break;
-    }
-
-    case WM_CHAR:
-    case WM_SYSCHAR:
-    {
-        SurfaceAccessor::OnWindowTextInput(*_window, static_cast<SurfaceTextCodepoint>(_wParam));
-        _result = 0;
-
-        return true;
-    }
-
-    case WM_UNICHAR:
-    {
-        if (_wParam == UNICODE_NOCHAR)
-        {
-            _result = TRUE;
-            return true;
-        }
-
-        SurfaceAccessor::OnWindowTextInput(*_window, static_cast<SurfaceTextCodepoint>(_wParam));
-        _result = 0;
-
-        return true;
-    }
-    }
-
-    return false;
-}
-
-void ego::win32::Win32PlatformSurfaceController::onWindowDestroyed(const Win32PlatformSurfacePointer& _window)
-{
-    if (_window && _window->getNativeHandle() == m_pointerCaptureHandle)
+    if (_surface.getNativeHandle() == m_pointerCaptureHandle)
     {
         releasePointer();
     }
 }
 
-bool ego::win32::Win32PlatformSurfaceController::onWindowPointerCaptureLost(const Win32PlatformSurfacePointer& _window)
+bool ego::win32::Win32PlatformSurfaceController::onSurfacePointerCaptureLost(const Win32PlatformSurface& _surface)
 {
-    if (m_isUpdatingPointerCapture || !_window || _window->getNativeHandle() != m_pointerCaptureHandle)
+    if (m_isUpdatingPointerCapture || _surface.getNativeHandle() != m_pointerCaptureHandle)
     {
         return false;
     }
@@ -376,8 +237,18 @@ LRESULT ego::win32::Win32PlatformSurfaceController::WndProc(HWND _hwnd, UINT _ms
 
         if (controller && win32Surface)
         {
+            bool notifyPointerCaptureLost = false;
+            if (_msg == WM_DESTROY)
+            {
+                controller->onSurfaceDestroyed(*win32Surface);
+            }
+            else if (_msg == WM_CAPTURECHANGED || _msg == WM_CANCELMODE)
+            {
+                notifyPointerCaptureLost = controller->onSurfacePointerCaptureLost(*win32Surface);
+            }
+
             LRESULT result = 0;
-            if (controller->processWindowMessage(win32Surface, _msg, _wParam, _lParam, result))
+            if (SurfaceAccessor::ProcessWindowMessage(*win32Surface, _msg, _wParam, _lParam, notifyPointerCaptureLost, result))
             {
                 return result;
             }

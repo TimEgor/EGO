@@ -3,11 +3,13 @@
 #include <cstdint>
 
 #include "EgoCore/Assert/Assert.h"
+#include "EgoCore/Platform/Implementation/Win32/Input/Win32MouseInputDevice.h"
 #include "EgoCore/UtilsMacros.h"
 #include "Win32PlatformSurfaceController.h"
 #include "Win32SurfaceUtils.h"
 
 #include <dwmapi.h>
+#include <Windowsx.h>
 
 ego::SharedPointer<ego::win32::Win32PlatformSurface> ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::Create(
     const PlatformSurfaceDesc& _desc,
@@ -30,48 +32,15 @@ const ego::win32::Win32PlatformSurface::WindowData* ego::win32::Win32PlatformSur
     return Win32PlatformSurface::GetWindowData(_handle);
 }
 
-bool ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::HasFrame(const Win32PlatformSurface& _surface)
-{
-    return _surface.m_hasFrame;
-}
-
-bool ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowCloseRequested(Win32PlatformSurface& _surface)
-{
-    return _surface.onWindowCloseRequested();
-}
-
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowDestroyed(Win32PlatformSurface& _surface)
-{
-    _surface.onWindowDestroyed();
-}
-
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowActivate(Win32PlatformSurface& _surface, bool _isActive)
-{
-    _surface.onWindowActivate(_isActive);
-}
-
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowSizeUpdate(Win32PlatformSurface& _surface)
-{
-    _surface.onWindowSizeUpdate();
-}
-
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowPointerCaptureLost(Win32PlatformSurface& _surface)
-{
-    _surface.onWindowPointerCaptureLost();
-}
-
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowKeyboardInput(
+bool ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::ProcessWindowMessage(
     Win32PlatformSurface& _surface,
-    InputButtonAction _action,
+    UINT _msg,
     WPARAM _wParam,
-    LPARAM _lParam)
+    LPARAM _lParam,
+    bool _notifyPointerCaptureLost,
+    LRESULT& _result)
 {
-    _surface.onWindowKeyboardInput(_action, _wParam, _lParam);
-}
-
-void ego::win32::Win32PlatformSurface::Win32PlatformSurfaceAccessor::OnWindowTextInput(Win32PlatformSurface& _surface, SurfaceTextCodepoint _codepoint)
-{
-    _surface.onWindowTextInput(_codepoint);
+    return _surface.processWindowMessage(_msg, _wParam, _lParam, _notifyPointerCaptureLost, _result);
 }
 
 ego::win32::Win32PlatformSurface::~Win32PlatformSurface()
@@ -426,6 +395,171 @@ bool ego::win32::Win32PlatformSurface::setCaptionArea(const SurfacePoint& _posit
     return true;
 }
 
+bool ego::win32::Win32PlatformSurface::processWindowMessage(UINT _msg, WPARAM _wParam, LPARAM _lParam, bool _notifyPointerCaptureLost, LRESULT& _result)
+{
+    if (!isValid())
+    {
+        return false;
+    }
+
+    switch (_msg)
+    {
+    case WM_NCCALCSIZE:
+    {
+        if (!m_hasFrame)
+        {
+            if (_wParam)
+            {
+                adjustMaximizedClientRect(_lParam);
+            }
+
+            _result = 0;
+
+            return true;
+        }
+
+        break;
+    }
+
+    case WM_NCHITTEST:
+    {
+        if (m_isInputTransparent)
+        {
+            _result = HTTRANSPARENT;
+
+            return true;
+        }
+
+        if (!m_hasFrame)
+        {
+            _result = resolveHitTest(_lParam);
+
+            return true;
+        }
+
+        break;
+    }
+
+    case WM_CLOSE:
+    {
+        if (onWindowCloseRequested())
+        {
+            _result = 0;
+
+            return true;
+        }
+
+        break;
+    }
+
+    case WM_DESTROY:
+    {
+        onWindowDestroyed();
+        _result = 0;
+
+        return true;
+    }
+
+    case WM_SIZE:
+    {
+        onWindowSizeUpdate();
+        break;
+    }
+
+    case WM_ACTIVATE:
+    {
+        onWindowActivate(LOWORD(_wParam) != WA_INACTIVE);
+        break;
+    }
+
+    case WM_CAPTURECHANGED:
+    case WM_CANCELMODE:
+    {
+        if (_notifyPointerCaptureLost)
+        {
+            onWindowPointerCaptureLost();
+        }
+
+        break;
+    }
+
+    case WM_MOUSEWHEEL:
+    {
+        const InputDeviceKeyValue wheelDelta = static_cast<InputDeviceKeyValue>(GET_WHEEL_DELTA_WPARAM(_wParam)) / WHEEL_DELTA;
+        Win32MouseInputDevice::AddWheelDelta(wheelDelta);
+        _result = 0;
+
+        return true;
+    }
+
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    {
+        onWindowKeyboardInput(InputButtonAction::Pressed, _wParam, _lParam);
+        break;
+    }
+
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+    {
+        onWindowKeyboardInput(InputButtonAction::Released, _wParam, _lParam);
+        break;
+    }
+
+    case WM_CHAR:
+    case WM_SYSCHAR:
+    {
+        onWindowTextInput(static_cast<SurfaceTextCodepoint>(_wParam));
+        _result = 0;
+
+        return true;
+    }
+
+    case WM_UNICHAR:
+    {
+        if (_wParam == UNICODE_NOCHAR)
+        {
+            _result = TRUE;
+
+            return true;
+        }
+
+        onWindowTextInput(static_cast<SurfaceTextCodepoint>(_wParam));
+        _result = 0;
+
+        return true;
+    }
+    }
+
+    return false;
+}
+
+void ego::win32::Win32PlatformSurface::adjustMaximizedClientRect(LPARAM _lParam) const
+{
+    EGO_ASSERT(m_handle);
+
+    if (!_lParam || !IsZoomed(m_handle))
+    {
+        return;
+    }
+
+    const HMONITOR monitor = MonitorFromWindow(m_handle, MONITOR_DEFAULTTONEAREST);
+    if (!monitor)
+    {
+        return;
+    }
+
+    MONITORINFO monitorInfo{};
+    monitorInfo.cbSize = sizeof(monitorInfo);
+    if (!GetMonitorInfo(monitor, &monitorInfo))
+    {
+        return;
+    }
+
+    NCCALCSIZE_PARAMS& params = *reinterpret_cast<NCCALCSIZE_PARAMS*>(_lParam);
+    params.rgrc[0] = monitorInfo.rcWork;
+}
+
 bool ego::win32::Win32PlatformSurface::onWindowCloseRequested()
 {
     return notifyCloseRequested();
@@ -470,6 +604,63 @@ void ego::win32::Win32PlatformSurface::onWindowTextInput(SurfaceTextCodepoint _c
     inputData.m_codepoint = _codepoint;
 
     notifyTextInput(inputData);
+}
+
+LRESULT ego::win32::Win32PlatformSurface::resolveHitTest(LPARAM _lParam) const
+{
+    EGO_ASSERT(m_handle);
+
+    const SurfacePoint screenPoint(GET_X_LPARAM(_lParam), GET_Y_LPARAM(_lParam));
+    if (!IsZoomed(m_handle))
+    {
+        const LRESULT resizeResult = resolveResizeHitTest(screenPoint);
+        if (resizeResult != HTCLIENT)
+        {
+            return resizeResult;
+        }
+    }
+
+    SurfacePoint point;
+    if (!mapFromScreen(screenPoint, point))
+    {
+        return HTCLIENT;
+    }
+
+    return isCaptionPoint(point) ? HTCAPTION : HTCLIENT;
+}
+
+LRESULT ego::win32::Win32PlatformSurface::resolveResizeHitTest(const SurfacePoint& _screenPoint) const
+{
+    RECT windowRect;
+    if (!GetWindowRect(m_handle, &windowRect))
+    {
+        return HTCLIENT;
+    }
+
+    const UINT dpi = GetDpiForWindow(m_handle);
+    const int borderWidth = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+    const int borderHeight = GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+
+    const int horizontalIndex =
+        static_cast<int>(_screenPoint.m_x >= windowRect.left + borderWidth) + static_cast<int>(_screenPoint.m_x >= windowRect.right - borderWidth);
+    const int verticalIndex =
+        static_cast<int>(_screenPoint.m_y >= windowRect.top + borderHeight) + static_cast<int>(_screenPoint.m_y >= windowRect.bottom - borderHeight);
+
+    static constexpr LRESULT TopBorderResults[] = {HTTOPLEFT, HTTOP, HTTOPRIGHT};
+    static constexpr LRESULT SideBorderResults[] = {HTLEFT, HTCLIENT, HTRIGHT};
+    static constexpr LRESULT BottomBorderResults[] = {HTBOTTOMLEFT, HTBOTTOM, HTBOTTOMRIGHT};
+    static constexpr const LRESULT* BorderResults[] = {TopBorderResults, SideBorderResults, BottomBorderResults};
+
+    return BorderResults[verticalIndex][horizontalIndex];
+}
+
+bool ego::win32::Win32PlatformSurface::isCaptionPoint(const SurfacePoint& _point) const
+{
+    const int64_t right = static_cast<int64_t>(m_captionPosition.m_x) + m_captionSize.m_x;
+    const int64_t bottom = static_cast<int64_t>(m_captionPosition.m_y) + m_captionSize.m_y;
+
+    return _point.m_x >= m_captionPosition.m_x && _point.m_y >= m_captionPosition.m_y && static_cast<int64_t>(_point.m_x) < right &&
+           static_cast<int64_t>(_point.m_y) < bottom;
 }
 
 void ego::win32::Win32PlatformSurface::updateSizes()

@@ -31,10 +31,9 @@ namespace ego::win32
     private:
         bool initWindowClass();
         Win32PlatformSurfacePointer findWindow(HWND _handle) const;
-        bool processWindowMessage(const Win32PlatformSurfacePointer& _window, UINT _msg, WPARAM _wParam, LPARAM _lParam, LRESULT& _result);
 
-        void onWindowDestroyed(const Win32PlatformSurfacePointer& _window);
-        bool onWindowPointerCaptureLost(const Win32PlatformSurfacePointer& _window);
+        void onSurfaceDestroyed(const Win32PlatformSurface& _surface);
+        bool onSurfacePointerCaptureLost(const Win32PlatformSurface& _surface);
 
         static LRESULT CALLBACK WndProc(HWND _hwnd, UINT _msg, WPARAM _wParam, LPARAM _lParam);
 

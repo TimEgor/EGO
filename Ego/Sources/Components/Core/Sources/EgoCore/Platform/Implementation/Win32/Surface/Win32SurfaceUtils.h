@@ -8,15 +8,12 @@
 
 namespace ego::win32
 {
-    class Win32PlatformSurface;
-
     class Win32SurfaceUtils final : public NonInstanceable
     {
     public:
         static uint16_t ToExtent(int64_t _value);
         static KeyboardInputKey ToKeyboardKey(WPARAM _key, LPARAM _lParam);
         static bool IsRepeatedKey(LPARAM _lParam);
-        static bool HitTest(const Win32PlatformSurface& _surface, LPARAM _lParam, LRESULT& _result);
 
     private:
         static KeyboardInputKey OffsetKeyboardKey(KeyboardInputKey _firstKey, WPARAM _offset);

@@ -2,12 +2,6 @@
 
 #include <limits>
 
-#include "EgoCore/Assert/Assert.h"
-
-#include "Win32PlatformSurface.h"
-
-#include <Windowsx.h>
-
 uint16_t ego::win32::Win32SurfaceUtils::ToExtent(int64_t _value)
 {
     if (_value <= 0)
@@ -226,45 +220,6 @@ ego::KeyboardInputKey ego::win32::Win32SurfaceUtils::ToKeyboardKey(WPARAM _key, 
 bool ego::win32::Win32SurfaceUtils::IsRepeatedKey(LPARAM _lParam)
 {
     return (_lParam & KeyRepeatMask) != 0;
-}
-
-bool ego::win32::Win32SurfaceUtils::HitTest(const Win32PlatformSurface& _surface, LPARAM _lParam, LRESULT& _result)
-{
-    EGO_CHECK_RETURN_FALSE(_surface.m_handle);
-
-    constexpr LRESULT resizeResults[3][3] = {{HTTOPLEFT, HTTOP, HTTOPRIGHT}, {HTLEFT, HTCLIENT, HTRIGHT}, {HTBOTTOMLEFT, HTBOTTOM, HTBOTTOMRIGHT}};
-
-    const SurfacePoint screenPoint(GET_X_LPARAM(_lParam), GET_Y_LPARAM(_lParam));
-    if (!IsZoomed(_surface.m_handle))
-    {
-        RECT windowRect;
-        if (GetWindowRect(_surface.m_handle, &windowRect))
-        {
-            const UINT dpi = GetDpiForWindow(_surface.m_handle);
-            const int borderWidth = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-            const int borderHeight = GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-
-            const int column = screenPoint.m_x < windowRect.left + borderWidth ? 0 : screenPoint.m_x >= windowRect.right - borderWidth ? 2 : 1;
-            const int row = screenPoint.m_y < windowRect.top + borderHeight ? 0 : screenPoint.m_y >= windowRect.bottom - borderHeight ? 2 : 1;
-            if (row != 1 || column != 1)
-            {
-                _result = resizeResults[row][column];
-
-                return true;
-            }
-        }
-    }
-
-    SurfacePoint point;
-    EGO_CHECK_RETURN_FALSE(_surface.mapFromScreen(screenPoint, point));
-
-    const int64_t right = static_cast<int64_t>(_surface.m_captionPosition.m_x) + _surface.m_captionSize.m_x;
-    const int64_t bottom = static_cast<int64_t>(_surface.m_captionPosition.m_y) + _surface.m_captionSize.m_y;
-    const bool isCaption = point.m_x >= _surface.m_captionPosition.m_x && point.m_y >= _surface.m_captionPosition.m_y &&
-                           static_cast<int64_t>(point.m_x) < right && static_cast<int64_t>(point.m_y) < bottom;
-    _result = isCaption ? HTCAPTION : HTCLIENT;
-
-    return true;
 }
 
 ego::KeyboardInputKey ego::win32::Win32SurfaceUtils::OffsetKeyboardKey(KeyboardInputKey _firstKey, WPARAM _offset)

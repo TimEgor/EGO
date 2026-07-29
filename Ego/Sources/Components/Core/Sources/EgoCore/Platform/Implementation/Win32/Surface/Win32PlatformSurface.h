@@ -7,7 +7,6 @@
 namespace ego::win32
 {
     class Win32PlatformSurfaceController;
-    class Win32SurfaceUtils;
 
     class Win32PlatformSurface final : public PlatformSurface, public EnableSharedFromThis<Win32PlatformSurface>
     {
@@ -29,17 +28,13 @@ namespace ego::win32
             static void Release(Win32PlatformSurface& _surface);
 
             static const WindowData* GetWindowData(HWND _handle);
-            static bool HasFrame(const Win32PlatformSurface& _surface);
-
-            static bool OnWindowCloseRequested(Win32PlatformSurface& _surface);
-            static void OnWindowDestroyed(Win32PlatformSurface& _surface);
-
-            static void OnWindowActivate(Win32PlatformSurface& _surface, bool _isActive);
-            static void OnWindowSizeUpdate(Win32PlatformSurface& _surface);
-
-            static void OnWindowPointerCaptureLost(Win32PlatformSurface& _surface);
-            static void OnWindowKeyboardInput(Win32PlatformSurface& _surface, InputButtonAction _action, WPARAM _wParam, LPARAM _lParam);
-            static void OnWindowTextInput(Win32PlatformSurface& _surface, SurfaceTextCodepoint _codepoint);
+            static bool ProcessWindowMessage(
+                Win32PlatformSurface& _surface,
+                UINT _msg,
+                WPARAM _wParam,
+                LPARAM _lParam,
+                bool _notifyPointerCaptureLost,
+                LRESULT& _result);
         };
 
         Win32PlatformSurface() = default;
@@ -78,11 +73,12 @@ namespace ego::win32
         EGO_RTTI_VIRTUAL(Win32PlatformSurface, PlatformSurface);
 
     private:
-        friend class Win32SurfaceUtils;
-
         bool init(const PlatformSurfaceDesc& _desc, Win32PlatformSurfaceController& _surfaceController, HINSTANCE _instance);
         void release();
         void invalidate();
+
+        bool processWindowMessage(UINT _msg, WPARAM _wParam, LPARAM _lParam, bool _notifyPointerCaptureLost, LRESULT& _result);
+        void adjustMaximizedClientRect(LPARAM _lParam) const;
 
         bool onWindowCloseRequested();
         void onWindowDestroyed();
@@ -93,6 +89,10 @@ namespace ego::win32
         void onWindowPointerCaptureLost();
         void onWindowKeyboardInput(InputButtonAction _action, WPARAM _wParam, LPARAM _lParam);
         void onWindowTextInput(SurfaceTextCodepoint _codepoint);
+
+        LRESULT resolveHitTest(LPARAM _lParam) const;
+        LRESULT resolveResizeHitTest(const SurfacePoint& _screenPoint) const;
+        bool isCaptionPoint(const SurfacePoint& _point) const;
 
         void updateSizes();
 
