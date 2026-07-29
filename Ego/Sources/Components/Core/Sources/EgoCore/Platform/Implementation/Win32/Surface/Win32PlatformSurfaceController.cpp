@@ -7,6 +7,7 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "Win32PlatformSurface.h"
+#include "Win32SurfaceUtils.h"
 
 namespace
 {
@@ -44,7 +45,7 @@ void ego::win32::Win32PlatformSurfaceController::release()
         return;
     }
 
-    setPointerCapture(nullptr);
+    releasePointer();
     UnregisterClass(EGO_WIN32_WINDOW_CLASS_NAME, m_instance);
 
     m_isInitialized = false;
@@ -87,7 +88,7 @@ ego::PlatformSurfacePointer ego::win32::Win32PlatformSurfaceController::findSurf
                 return nullptr;
             }
 
-            if (!window->isInputPassthrough())
+            if (!window->isInputTransparent())
             {
                 return window;
             }
@@ -99,14 +100,12 @@ ego::PlatformSurfacePointer ego::win32::Win32PlatformSurfaceController::findSurf
     return nullptr;
 }
 
-bool ego::win32::Win32PlatformSurfaceController::setPointerCapture(const PlatformSurfacePointer& _surface)
+bool ego::win32::Win32PlatformSurfaceController::capturePointer(const PlatformSurfacePointer& _surface)
 {
-    HWND targetHandle = nullptr;
-    if (_surface)
-    {
-        targetHandle = static_cast<HWND>(_surface->getNativeHandle());
-        EGO_CHECK_RETURN_FALSE(targetHandle && findWindow(targetHandle).get() == _surface.get());
-    }
+    EGO_CHECK_RETURN_FALSE(_surface);
+
+    const HWND targetHandle = static_cast<HWND>(_surface->getNativeHandle());
+    EGO_CHECK_RETURN_FALSE(targetHandle && findWindow(targetHandle).get() == _surface.get());
 
     const HWND captureHandle = GetCapture();
     if (captureHandle == targetHandle)
@@ -115,25 +114,31 @@ bool ego::win32::Win32PlatformSurfaceController::setPointerCapture(const Platfor
         return true;
     }
 
-    if (!targetHandle && !findWindow(captureHandle))
+    m_isUpdatingPointerCapture = true;
+    SetCapture(targetHandle);
+    m_isUpdatingPointerCapture = false;
+
+    const bool isUpdated = GetCapture() == targetHandle;
+    m_pointerCaptureHandle = isUpdated ? targetHandle : nullptr;
+
+    return isUpdated;
+}
+
+bool ego::win32::Win32PlatformSurfaceController::releasePointer()
+{
+    const HWND captureHandle = GetCapture();
+    if (!captureHandle || !findWindow(captureHandle))
     {
         m_pointerCaptureHandle = nullptr;
         return true;
     }
 
     m_isUpdatingPointerCapture = true;
-    if (targetHandle)
-    {
-        SetCapture(targetHandle);
-    }
-    else
-    {
-        ReleaseCapture();
-    }
+    ReleaseCapture();
     m_isUpdatingPointerCapture = false;
 
-    const bool isUpdated = GetCapture() == targetHandle;
-    m_pointerCaptureHandle = isUpdated ? targetHandle : nullptr;
+    const bool isUpdated = GetCapture() == nullptr;
+    m_pointerCaptureHandle = nullptr;
 
     return isUpdated;
 }
@@ -188,9 +193,9 @@ bool ego::win32::Win32PlatformSurfaceController::processWindowMessage(
 
     switch (_msg)
     {
-    case WM_CLOSE:
+    case WM_NCCALCSIZE:
     {
-        if (SurfaceAccessor::OnWindowCloseRequested(*_window))
+        if (!SurfaceAccessor::HasFrame(*_window))
         {
             _result = 0;
 
@@ -202,9 +207,26 @@ bool ego::win32::Win32PlatformSurfaceController::processWindowMessage(
 
     case WM_NCHITTEST:
     {
-        if (_window->isInputPassthrough())
+        if (_window->isInputTransparent())
         {
             _result = HTTRANSPARENT;
+
+            return true;
+        }
+
+        if (!SurfaceAccessor::HasFrame(*_window) && Win32SurfaceUtils::HitTest(*_window, _lParam, _result))
+        {
+            return true;
+        }
+
+        break;
+    }
+
+    case WM_CLOSE:
+    {
+        if (SurfaceAccessor::OnWindowCloseRequested(*_window))
+        {
+            _result = 0;
 
             return true;
         }
@@ -298,7 +320,7 @@ void ego::win32::Win32PlatformSurfaceController::onWindowDestroyed(const Win32Pl
 {
     if (_window && _window->getNativeHandle() == m_pointerCaptureHandle)
     {
-        setPointerCapture(nullptr);
+        releasePointer();
     }
 }
 

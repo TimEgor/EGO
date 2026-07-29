@@ -4,6 +4,7 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoResource/ResourceController.h"
+#include "EgoResource/ResourceSubsystem.h"
 
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
@@ -19,18 +20,22 @@ namespace
     const ego::ComputeVector3 SecondTrianglePosition(0.60f, 0.0f, 0.0f);
 } // namespace
 
-bool ego::demo::TestDemo::init(const InitData& _initData)
+bool ego::demo::TestDemo::init(const engine::EngineSessionWeakPointer& _engineSession)
 {
-    EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
-    EGO_CHECK_INITIALIZATION(_initData.m_resourceController);
+    EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(!m_resourceController);
 
-    m_engineSession = _initData.m_engineSession;
-    m_resourceController = _initData.m_resourceController;
+    m_engineSession = _engineSession;
 
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     EGO_CHECK_INITIALIZATION(engineSession);
+
+    const ResourceSubsystemPointer resourceSubsystem = GetResourceSubsystemPointer();
+    EGO_CHECK_INITIALIZATION(resourceSubsystem);
+
+    m_resourceController = resourceSubsystem->getResourceControllerPointer();
+    EGO_CHECK_INITIALIZATION(m_resourceController);
 
     m_triangleMesh = m_resourceController->load<render::MeshResource>("TestTriangle.mesh.xml");
     EGO_CHECK_INITIALIZATION(m_triangleMesh && m_triangleMesh->isLoaded());

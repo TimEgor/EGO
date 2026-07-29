@@ -22,12 +22,12 @@ namespace
     constexpr ego::NormalizedColorRGB White = ego::NormalizedColorWhite;
 } // namespace
 
-bool ego::demo::DebugDrawDemo::init(const InitData& _initData)
+bool ego::demo::DebugDrawDemo::init(const engine::EngineSessionWeakPointer& _engineSession)
 {
-    EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
 
-    m_engineSession = _initData.m_engineSession;
+    m_engineSession = _engineSession;
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     EGO_CHECK_INITIALIZATION(engineSession);
 

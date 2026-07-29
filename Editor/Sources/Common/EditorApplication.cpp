@@ -11,6 +11,8 @@
 
 #include "EgoApplication/Presentation/PresenterProvider.h"
 
+#include "EditorGuiStyle.h"
+
 namespace
 {
     constexpr ego::gpu::Texture2DSize SceneTextureSize(900, 600);
@@ -141,6 +143,7 @@ bool ego::editor::EditorApplication::createPresentedSession(
     application::PresentationDesc presentationDesc;
     presentationDesc.m_name = _name;
     presentationDesc.m_size = _size;
+    presentationDesc.m_hasFrame = false;
     const application::Presentation presentation = presenterProvider->createPresentation(presentationDesc);
     if (!presentation.m_surface || !presentation.m_graphicPresenter || !IsSurfaceValid(presentation.m_surface))
     {
@@ -293,12 +296,16 @@ bool ego::editor::EditorApplication::initEditorUi()
     const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession->getGuiControllerPointer();
     EGO_CHECK_RETURN_FALSE(guiController);
 
+    const gui::GuiStylePointer editorStyle = MakePointer<EditorGuiStyle>();
+    EGO_CHECK_RETURN_FALSE(editorStyle && guiController->setStyle(editorStyle));
+
     const gpu::TextureViewPointer sceneTexture = m_sceneSession.m_graphicPresenter->getTextureView();
     if (!sceneTexture)
     {
         return false;
     }
 
+    m_guiLayer.setSurface(m_editorSession.m_surface);
     m_guiLayer.setSceneTexture(sceneTexture);
     m_editorLayerID = guiController->registerLayer(m_guiLayer);
     if (m_editorLayerID == gui::InvalidGuiLayerID)

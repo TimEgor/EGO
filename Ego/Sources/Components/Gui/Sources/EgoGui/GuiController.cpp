@@ -40,29 +40,28 @@ void ego::gui::GuiController::release()
     m_nextLayerID = 1;
 }
 
+bool ego::gui::GuiController::setStyle(const GuiStylePointer& _style)
+{
+    EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive && _style);
+
+    return m_backend->setStyle(_style);
+}
+
 void ego::gui::GuiController::update(float _deltaTime)
 {
     EGO_CHECK_RETURN(isInitialized() && !m_isFrameActive);
 
     m_isFrameActive = true;
 
-    if (!m_backend->beginFrame(_deltaTime))
-    {
-        m_isFrameActive = false;
-
-        return;
-    }
-
-    if (!drawLayers())
-    {
-        m_backend->cancelFrame();
-        m_isFrameActive = false;
-
-        return;
-    }
-
     GuiRenderData frame;
-    if (m_backend->endFrame(frame))
+    const bool isFrameBuilt = m_backend->update(
+        _deltaTime,
+        [this]()
+        {
+            return drawLayers();
+        },
+        frame);
+    if (isFrameBuilt)
     {
         m_pendingFrame = std::move(frame);
     }

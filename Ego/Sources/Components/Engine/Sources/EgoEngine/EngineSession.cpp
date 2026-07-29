@@ -10,9 +10,6 @@
 #include "EgoPlugin/PluginController.h"
 #include "EgoPlugin/PluginSubsystem.h"
 
-#include "EgoResource/ResourceController.h"
-#include "EgoResource/ResourceSubsystem.h"
-
 #include "EgoJob/JobController.h"
 #include "EgoJob/JobDescriptor.h"
 
@@ -108,12 +105,6 @@ ego::PluginControllerPointer ego::engine::EngineSession::getPluginControllerPoin
     return pluginSubsystem ? pluginSubsystem->getPluginControllerPointer() : nullptr;
 }
 
-ego::ResourceControllerPointer ego::engine::EngineSession::getResourceControllerPointer() const
-{
-    const ResourceSubsystemPointer resourceSubsystem = subsystem::FindSubsystem<ResourceSubsystem>();
-    return resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
-}
-
 bool ego::engine::EngineSession::tick()
 {
     EGO_CHECK_RETURN_FALSE(m_id != InvalidEngineSessionID);
@@ -185,8 +176,7 @@ bool ego::engine::EngineSession::initGuiController(const application::Presentati
 {
     EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider && !m_guiController);
 
-    m_guiViewportProvider =
-        MakePointer<application::ApplicationGuiViewportProvider>();
+    m_guiViewportProvider = MakePointer<application::ApplicationGuiViewportProvider>();
     EGO_CHECK_RETURN_FALSE(m_guiViewportProvider && m_guiViewportProvider->init(_mainPresentation));
 
     m_guiController = MakePointer<gui::GuiController>();
@@ -269,10 +259,7 @@ bool ego::engine::EngineSession::initEngineLogic()
     EngineLogicPointer engineLogic = engineLogicPlugin->createEngineLogic();
     EGO_CHECK_RETURN_FALSE(engineLogic);
 
-    EngineLogic::InitData initData;
-    initData.m_engineSession = weakFromThis();
-    initData.m_resourceController = getResourceControllerPointer();
-    if (!engineLogic->init(initData))
+    if (!engineLogic->init(weakFromThis()))
     {
         engineLogic->release();
         return false;

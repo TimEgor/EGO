@@ -7,10 +7,9 @@
 namespace ego::win32
 {
     class Win32PlatformSurfaceController;
+    class Win32SurfaceUtils;
 
-    class Win32PlatformSurface final :
-        public PlatformSurface,
-        public EnableSharedFromThis<Win32PlatformSurface>
+    class Win32PlatformSurface final : public PlatformSurface, public EnableSharedFromThis<Win32PlatformSurface>
     {
     public:
         struct WindowData final
@@ -30,6 +29,7 @@ namespace ego::win32
             static void Release(Win32PlatformSurface& _surface);
 
             static const WindowData* GetWindowData(HWND _handle);
+            static bool HasFrame(const Win32PlatformSurface& _surface);
 
             static bool OnWindowCloseRequested(Win32PlatformSurface& _surface);
             static void OnWindowDestroyed(Win32PlatformSurface& _surface);
@@ -52,6 +52,11 @@ namespace ego::win32
         void hide() override;
         bool isShown() const override;
 
+        bool minimize() override;
+        bool maximize() override;
+        bool restore() override;
+        PlatformSurfaceWindowState getWindowState() const override;
+
         bool mapFromScreen(const SurfacePoint& _screenPoint, SurfacePoint& _surfacePoint) const override;
         bool mapToScreen(const SurfacePoint& _surfacePoint, SurfacePoint& _screenPoint) const override;
 
@@ -61,15 +66,20 @@ namespace ego::win32
         bool setSize(const SurfaceSize& _size) override;
         const SurfaceSize& getSize() const override;
 
-        bool setInputPassthrough(bool _isEnabled) override;
-        bool isInputPassthrough() const;
+        bool setInputTransparent(bool _isTransparent) override;
+        bool isInputTransparent() const override;
 
-        bool setPointerCapture(bool _isCaptured) override;
+        bool capturePointer() override;
+        bool releasePointer() override;
         bool hasPointerCapture() const override;
+
+        bool setCaptionArea(const SurfacePoint& _position, const SurfaceSize& _size) override;
 
         EGO_RTTI_VIRTUAL(Win32PlatformSurface, PlatformSurface);
 
     private:
+        friend class Win32SurfaceUtils;
+
         bool init(const PlatformSurfaceDesc& _desc, Win32PlatformSurfaceController& _surfaceController, HINSTANCE _instance);
         void release();
         void invalidate();
@@ -91,12 +101,15 @@ namespace ego::win32
 
         static WindowData* GetWindowData(HWND _handle);
 
+        SurfacePoint m_captionPosition = DefaultSurfacePoint;
+        SurfaceSize m_captionSize = DefaultSurfaceSize;
         SurfaceSize m_surfaceSize = DefaultSurfaceSize;
 
         HWND m_handle = nullptr;
 
+        bool m_hasFrame = true;
         bool m_isShown = false;
-        bool m_isInputPassthrough = false;
+        bool m_isInputTransparent = false;
     };
 
     EGO_POINTER(Win32PlatformSurface);

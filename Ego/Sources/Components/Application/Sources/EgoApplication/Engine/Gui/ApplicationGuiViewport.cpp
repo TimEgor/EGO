@@ -117,7 +117,7 @@ void ego::application::ApplicationGuiViewport::release()
     if (m_presentation.m_surface)
     {
         unregisterSurfaceEvents();
-        m_presentation.m_surface->setInputPassthrough(false);
+        m_presentation.m_surface->setInputTransparent(false);
     }
 
     m_presentation = Presentation();
@@ -130,7 +130,7 @@ void ego::application::ApplicationGuiViewport::release()
     m_hasPositionRequest = false;
     m_hasSizeRequest = false;
     m_isFocused = false;
-    m_isInputPassthroughEnabled = false;
+    m_isInputTransparent = false;
     resetInput();
 }
 
@@ -203,7 +203,7 @@ ego::gui::ViewportState ego::application::ApplicationGuiViewport::getState() con
     state.m_size = m_size;
     state.m_graphicPresenter = m_presentation.m_graphicPresenter;
     state.m_isFocused = m_isFocused;
-    state.m_isInputPassthroughEnabled = m_isInputPassthroughEnabled;
+    state.m_isInputTransparent = m_isInputTransparent;
 
     return state;
 }
@@ -291,12 +291,12 @@ bool ego::application::ApplicationGuiViewport::setSize(FloatVector2& _size)
     return true;
 }
 
-bool ego::application::ApplicationGuiViewport::setInputPassthrough(bool _isEnabled)
+bool ego::application::ApplicationGuiViewport::setInputTransparent(bool _isTransparent)
 {
     EGO_CHECK_RETURN_FALSE(m_presentation.m_surface);
-    EGO_CHECK_RETURN_FALSE(m_presentation.m_surface->setInputPassthrough(_isEnabled));
+    EGO_CHECK_RETURN_FALSE(m_presentation.m_surface->setInputTransparent(_isTransparent));
 
-    m_isInputPassthroughEnabled = _isEnabled;
+    m_isInputTransparent = _isTransparent;
 
     return true;
 }

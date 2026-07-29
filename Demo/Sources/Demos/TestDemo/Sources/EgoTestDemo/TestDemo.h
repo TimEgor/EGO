@@ -7,6 +7,12 @@
 #include "EgoEngine/Level/Level.h"
 #include "EgoEngine/Project/EngineLogic.h"
 
+namespace ego
+{
+    class ResourceController;
+    EGO_POINTER(ResourceController);
+} // namespace ego
+
 namespace ego::demo
 {
     class TestDemo final : public engine::EngineLogic
@@ -14,7 +20,7 @@ namespace ego::demo
     public:
         TestDemo() = default;
 
-        bool init(const InitData& _initData) override;
+        bool init(const engine::EngineSessionWeakPointer& _engineSession) override;
         void update(float _deltaTime) override;
         void release() override;
 

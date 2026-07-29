@@ -18,6 +18,13 @@ namespace ego
     inline constexpr int32_t AutomaticSurfacePositionCoordinate = (std::numeric_limits<int32_t>::min)();
     inline constexpr SurfacePoint AutomaticSurfacePosition = SurfacePoint(AutomaticSurfacePositionCoordinate, AutomaticSurfacePositionCoordinate);
 
+    enum class PlatformSurfaceWindowState
+    {
+        Normal,
+        Minimized,
+        Maximized
+    };
+
     struct SurfaceKeyboardInput final
     {
         KeyboardInputKey m_key = KeyboardInputKey::Undefined;

@@ -24,11 +24,9 @@ namespace ego
 {
     class JobController;
     class PluginController;
-    class ResourceController;
 
     EGO_POINTER(JobController);
     EGO_POINTER(PluginController);
-    EGO_POINTER(ResourceController);
 } // namespace ego
 
 namespace ego::render
@@ -94,7 +92,6 @@ namespace ego::engine
 
     private:
         PluginControllerPointer getPluginControllerPointer() const;
-        ResourceControllerPointer getResourceControllerPointer() const;
 
         bool initGuiController(const application::Presentation& _mainPresentation);
         bool initGraphicFrameController(const InitData& _initData);

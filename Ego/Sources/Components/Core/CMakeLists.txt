@@ -22,6 +22,7 @@ if (WIN32)
         EgoCore
             PRIVATE
                 Comdlg32
+                Dwmapi
                 Gdi32
                 User32
     )

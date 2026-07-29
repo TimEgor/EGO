@@ -22,6 +22,11 @@ namespace ego
         virtual void hide() = 0;
         virtual bool isShown() const = 0;
 
+        virtual bool minimize() = 0;
+        virtual bool maximize() = 0;
+        virtual bool restore() = 0;
+        virtual PlatformSurfaceWindowState getWindowState() const = 0;
+
         virtual bool mapFromScreen(const SurfacePoint& _screenPoint, SurfacePoint& _surfacePoint) const = 0;
         virtual bool mapToScreen(const SurfacePoint& _surfacePoint, SurfacePoint& _screenPoint) const = 0;
         virtual bool setPosition(const SurfacePoint& _position) = 0;
@@ -29,9 +34,13 @@ namespace ego
         virtual bool setSize(const SurfaceSize& _size) = 0;
         virtual const SurfaceSize& getSize() const = 0;
 
-        virtual bool setInputPassthrough(bool _isEnabled) = 0;
-        virtual bool setPointerCapture(bool _isCaptured) = 0;
+        virtual bool setInputTransparent(bool _isTransparent) = 0;
+        virtual bool isInputTransparent() const = 0;
+        virtual bool capturePointer() = 0;
+        virtual bool releasePointer() = 0;
         virtual bool hasPointerCapture() const = 0;
+
+        virtual bool setCaptionArea(const SurfacePoint& _position, const SurfaceSize& _size) = 0;
 
         EGO_RTTI_VIRTUAL_BASE(PlatformSurface);
 

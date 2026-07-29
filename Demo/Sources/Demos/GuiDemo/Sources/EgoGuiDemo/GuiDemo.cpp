@@ -16,14 +16,14 @@ namespace
     constexpr auto TriangleBottomRight = ego::FloatVector3(0.6f, -0.5f, 0.0f);
 } // namespace
 
-bool ego::demo::GuiDemo::init(const InitData& _initData)
+bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSession)
 {
-    EGO_CHECK_INITIALIZATION(!_initData.m_engineSession.isExpired());
+    EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(!m_level);
     EGO_CHECK_INITIALIZATION(m_guiLayerID == gui::InvalidGuiLayerID);
 
-    m_engineSession = _initData.m_engineSession;
+    m_engineSession = _engineSession;
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     EGO_CHECK_INITIALIZATION(engineSession);
 

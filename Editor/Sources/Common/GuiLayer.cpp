@@ -6,10 +6,14 @@
 namespace
 {
     constexpr const char* EditorDockSpaceName = "EditorDockSpace";
-    constexpr float HierarchyWidthRatio = 0.2f;
-    constexpr float InspectorWidthRatio = 0.22f;
-    constexpr float ConsoleHeightRatio = 0.25f;
+    constexpr float SceneInspectorWidthRatio = 0.2f;
+    constexpr float EntityInspectorWidthRatio = 0.22f;
 } // namespace
+
+void ego::editor::GuiLayer::setSurface(const PlatformSurfacePointer& _surface)
+{
+    m_surface = _surface;
+}
 
 void ego::editor::GuiLayer::setSceneTexture(const gpu::TextureViewPointer& _sceneTexture)
 {
@@ -18,11 +22,11 @@ void ego::editor::GuiLayer::setSceneTexture(const gpu::TextureViewPointer& _scen
 
 void ego::editor::GuiLayer::reset()
 {
+    m_surface = nullptr;
     m_sceneTexture = nullptr;
-    m_showSceneWindow = true;
-    m_showHierarchyWindow = true;
-    m_showInspectorWindow = true;
-    m_showConsoleWindow = true;
+    m_showViewport = true;
+    m_showSceneInspector = true;
+    m_showEntityInspector = true;
     m_isDefaultLayoutInitialized = false;
 }
 
@@ -35,15 +39,13 @@ void ego::editor::GuiLayer::initializeDefaultLayout()
     ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
     ImGui::DockBuilderSetNodeSize(dockSpaceID, mainViewport->WorkSize);
 
-    ImGuiID sceneNodeID = dockSpaceID;
-    const ImGuiID hierarchyNodeID = ImGui::DockBuilderSplitNode(sceneNodeID, ImGuiDir_Left, HierarchyWidthRatio, nullptr, &sceneNodeID);
-    const ImGuiID inspectorNodeID = ImGui::DockBuilderSplitNode(sceneNodeID, ImGuiDir_Right, InspectorWidthRatio, nullptr, &sceneNodeID);
-    const ImGuiID consoleNodeID = ImGui::DockBuilderSplitNode(sceneNodeID, ImGuiDir_Down, ConsoleHeightRatio, nullptr, &sceneNodeID);
+    ImGuiID viewportNodeID = dockSpaceID;
+    const ImGuiID sceneInspectorNodeID = ImGui::DockBuilderSplitNode(viewportNodeID, ImGuiDir_Left, SceneInspectorWidthRatio, nullptr, &viewportNodeID);
+    const ImGuiID entityInspectorNodeID = ImGui::DockBuilderSplitNode(viewportNodeID, ImGuiDir_Right, EntityInspectorWidthRatio, nullptr, &viewportNodeID);
 
-    ImGui::DockBuilderDockWindow("Scene", sceneNodeID);
-    ImGui::DockBuilderDockWindow("Hierarchy", hierarchyNodeID);
-    ImGui::DockBuilderDockWindow("Inspector", inspectorNodeID);
-    ImGui::DockBuilderDockWindow("Console", consoleNodeID);
+    ImGui::DockBuilderDockWindow("Viewport", viewportNodeID);
+    ImGui::DockBuilderDockWindow("Scene Inspector", sceneInspectorNodeID);
+    ImGui::DockBuilderDockWindow("Entity Inspector", entityInspectorNodeID);
     ImGui::DockBuilderFinish(dockSpaceID);
 
     m_isDefaultLayoutInitialized = true;
@@ -51,18 +53,9 @@ void ego::editor::GuiLayer::initializeDefaultLayout()
 
 void ego::editor::GuiLayer::drawGui()
 {
-    if (ImGui::BeginMainMenuBar())
+    if (m_surface)
     {
-        if (ImGui::BeginMenu("Window"))
-        {
-            ImGui::MenuItem("Scene", nullptr, &m_showSceneWindow);
-            ImGui::MenuItem("Hierarchy", nullptr, &m_showHierarchyWindow);
-            ImGui::MenuItem("Inspector", nullptr, &m_showInspectorWindow);
-            ImGui::MenuItem("Console", nullptr, &m_showConsoleWindow);
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMainMenuBar();
+        m_titleBar.draw(*m_surface, m_showViewport, m_showSceneInspector, m_showEntityInspector);
     }
 
     if (!m_isDefaultLayoutInitialized)
@@ -73,9 +66,10 @@ void ego::editor::GuiLayer::drawGui()
     const ImGuiID dockSpaceID = ImHashStr(EditorDockSpaceName);
     ImGui::DockSpaceOverViewport(dockSpaceID);
 
-    if (m_showSceneWindow)
+    if (m_showViewport)
     {
-        if (ImGui::Begin("Scene", &m_showSceneWindow))
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        if (ImGui::Begin("Viewport", &m_showViewport))
         {
             const ImVec2 availableSize = ImGui::GetContentRegionAvail();
             if (m_sceneTexture && availableSize.x > 0.0f && availableSize.y > 0.0f)
@@ -89,40 +83,34 @@ void ego::editor::GuiLayer::drawGui()
         }
 
         ImGui::End();
+        ImGui::PopStyleVar();
     }
 
-    if (m_showHierarchyWindow)
+    if (m_showSceneInspector)
     {
-        if (ImGui::Begin("Hierarchy", &m_showHierarchyWindow))
+        if (ImGui::Begin("Scene Inspector", &m_showSceneInspector))
         {
-            ImGui::BulletText("Scene");
-            ImGui::Indent();
-            ImGui::BulletText("Camera");
-            ImGui::Unindent();
+            const ImGuiTreeNodeFlags sceneFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+            if (ImGui::TreeNodeEx("Scene", sceneFlags))
+            {
+                const ImGuiTreeNodeFlags cameraFlags =
+                    ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAvailWidth;
+                ImGui::TreeNodeEx("Camera", cameraFlags);
+                ImGui::TreePop();
+            }
         }
 
         ImGui::End();
     }
 
-    if (m_showInspectorWindow)
+    if (m_showEntityInspector)
     {
-        if (ImGui::Begin("Inspector", &m_showInspectorWindow))
+        if (ImGui::Begin("Entity Inspector", &m_showEntityInspector))
         {
-            ImGui::TextUnformatted("Selection: Camera");
-            ImGui::Separator();
-            ImGui::TextUnformatted("Component: CameraComponent");
-        }
-
-        ImGui::End();
-    }
-
-    if (m_showConsoleWindow)
-    {
-        if (ImGui::Begin("Console", &m_showConsoleWindow))
-        {
-            ImGui::TextUnformatted("EgoEditor is ready.");
-            ImGui::TextUnformatted("The scene session is always active.");
-            ImGui::TextUnformatted("Static editor test primitives are rendered every frame.");
+            ImGui::TextDisabled("Selection");
+            ImGui::SameLine();
+            ImGui::TextUnformatted("Camera");
+            ImGui::SeparatorText("Camera Component");
         }
 
         ImGui::End();

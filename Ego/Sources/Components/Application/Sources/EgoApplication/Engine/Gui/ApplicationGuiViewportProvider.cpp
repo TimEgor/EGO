@@ -246,12 +246,12 @@ bool ego::application::ApplicationGuiViewportProvider::setViewportSize(gui::View
     return viewport->setSize(_size);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setViewportInputPassthrough(gui::ViewportID _viewportID, bool _isEnabled)
+bool ego::application::ApplicationGuiViewportProvider::setViewportInputTransparent(gui::ViewportID _viewportID, bool _isTransparent)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
 
-    return viewport->setInputPassthrough(_isEnabled);
+    return viewport->setInputTransparent(_isTransparent);
 }
 
 bool ego::application::ApplicationGuiViewportProvider::registerInputEvents()
@@ -372,11 +372,11 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseButtonEvent(co
     if (_action == InputButtonAction::Pressed && inputEnqueued && !hadPressedMouseButtons)
     {
         setFocusedViewport(viewportID);
-        setPointerCapture(viewport);
+        capturePointer(viewport);
     }
     else if (_action == InputButtonAction::Released && !viewport->hasPressedMouseButtons())
     {
-        clearPointerCapture(viewport);
+        releasePointer(viewport);
     }
 }
 
@@ -410,12 +410,12 @@ void ego::application::ApplicationGuiViewportProvider::retireViewport(ViewportPo
         return;
     }
 
-    clearPointerCapture(_viewport);
+    releasePointer(_viewport);
 
     const PlatformSurfacePointer surface = _viewport->getPresentation().m_surface;
     if (surface)
     {
-        surface->setInputPassthrough(false);
+        surface->setInputTransparent(false);
         surface->hide();
     }
 
@@ -455,7 +455,7 @@ void ego::application::ApplicationGuiViewportProvider::releaseViewport(ViewportP
         return;
     }
 
-    clearPointerCapture(_viewport);
+    releasePointer(_viewport);
 
     const PlatformSurfacePointer surface = _viewport->getPresentation().m_surface;
     _viewport->release();
@@ -495,15 +495,15 @@ ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findPoint
     return findViewportAtScreenPosition(_position);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setPointerCapture(const ViewportPointer& _viewport)
+bool ego::application::ApplicationGuiViewportProvider::capturePointer(const ViewportPointer& _viewport)
 {
     EGO_CHECK_RETURN_FALSE(_viewport);
 
     const PlatformSurfacePointer surface = _viewport->getPresentation().m_surface;
-    return surface && surface->setPointerCapture(true);
+    return surface && surface->capturePointer();
 }
 
-void ego::application::ApplicationGuiViewportProvider::clearPointerCapture(const ViewportPointer& _viewport)
+void ego::application::ApplicationGuiViewportProvider::releasePointer(const ViewportPointer& _viewport)
 {
     if (!_viewport)
     {
@@ -513,7 +513,7 @@ void ego::application::ApplicationGuiViewportProvider::clearPointerCapture(const
     const PlatformSurfacePointer surface = _viewport->getPresentation().m_surface;
     if (surface && surface->hasPointerCapture())
     {
-        surface->setPointerCapture(false);
+        surface->releasePointer();
     }
 }
 

@@ -38,7 +38,7 @@ namespace ego::application
         bool showViewport(gui::ViewportID _viewportID, bool _activate) override;
         bool setViewportPosition(gui::ViewportID _viewportID, FloatVector2& _position) override;
         bool setViewportSize(gui::ViewportID _viewportID, FloatVector2& _size) override;
-        bool setViewportInputPassthrough(gui::ViewportID _viewportID, bool _isEnabled) override;
+        bool setViewportInputTransparent(gui::ViewportID _viewportID, bool _isTransparent) override;
 
     private:
         struct CallbackIDs final
@@ -68,8 +68,8 @@ namespace ego::application
         ViewportPointer findViewport(gui::ViewportID _viewportID) const;
         gui::ViewportID findViewportAtScreenPosition(const FloatVector2& _position) const;
         gui::ViewportID findPointerInputViewport(const FloatVector2& _position) const;
-        bool setPointerCapture(const ViewportPointer& _viewport);
-        void clearPointerCapture(const ViewportPointer& _viewport);
+        bool capturePointer(const ViewportPointer& _viewport);
+        void releasePointer(const ViewportPointer& _viewport);
         void setFocusedViewport(gui::ViewportID _viewportID);
         void updatePointerViewport(gui::ViewportID _viewportID, const FloatVector2& _position);
 

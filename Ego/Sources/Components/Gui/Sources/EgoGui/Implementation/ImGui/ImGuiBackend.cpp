@@ -26,8 +26,8 @@ bool ego::gui::ImGuiBackend::init(const ViewportProviderPointer& _viewportProvid
 
     bool adaptersInitialized = false;
     {
-        const ImGuiContextScope contextScope(m_context);
-        adaptersInitialized = contextScope.isActive() && m_rendererAdapter.init() && m_platformAdapter.init(_viewportProvider);
+        const ImGuiContextScope contextScope(*m_context);
+        adaptersInitialized = m_rendererAdapter.init() && m_platformAdapter.init(_viewportProvider);
     }
     EGO_CHECK_INITIALIZATION(adaptersInitialized);
 
@@ -49,73 +49,38 @@ bool ego::gui::ImGuiBackend::release()
     return true;
 }
 
-bool ego::gui::ImGuiBackend::beginFrame(float _deltaTime)
+bool ego::gui::ImGuiBackend::setStyle(const GuiStylePointer& _style)
 {
-    EGO_CHECK_RETURN_FALSE(m_isInitialized && !m_isFrameActive);
-    EGO_CHECK_RETURN_FALSE(InitializeImGuiModuleRuntime());
+    EGO_CHECK_RETURN_FALSE(m_isInitialized && !m_isFrameActive && _style);
 
-    m_previousContext = ImGui::GetCurrentContext();
-    ImGui::SetCurrentContext(m_context);
-
-    if (!m_platformAdapter.beginFrame())
-    {
-        restorePreviousContext();
-
-        return false;
-    }
-
-    static constexpr float DefaultDeltaTime = 1.0f / 60.0f;
-
-    ImGuiIO& io = ImGui::GetIO();
-    io.DeltaTime = std::isfinite(_deltaTime) && _deltaTime > 0.0f ? _deltaTime : DefaultDeltaTime;
-
-    m_rendererAdapter.beginFrame();
-    ImGui::NewFrame();
-    m_isFrameActive = true;
+    m_style = _style;
+    m_styleContext = nullptr;
+    m_appliedStyleChangeID = InvalidGuiStyleChangeID;
 
     return true;
 }
 
-bool ego::gui::ImGuiBackend::endFrame(GuiRenderData& _renderData)
+bool ego::gui::ImGuiBackend::update(float _deltaTime, const DrawFunction& _drawFunction, GuiRenderData& _renderData)
 {
-    EGO_CHECK_RETURN_FALSE(m_isFrameActive);
+    EGO_CHECK_RETURN_FALSE(m_isInitialized && m_context && !m_isFrameActive && _drawFunction);
 
-    EGO_ASSERT(ImGui::GetCurrentContext() == m_context);
-    if (ImGui::GetCurrentContext() != m_context)
+    const ImGuiContextScope contextScope(*m_context);
+
+    applyStyle();
+
+    if (!beginFrame(_deltaTime))
     {
-        m_isFrameActive = false;
-        restorePreviousContext();
+        return false;
+    }
+
+    if (!_drawFunction())
+    {
+        cancelFrame();
 
         return false;
     }
 
-    ImGui::Render();
-
-    GuiRenderData renderData;
-    const bool frameBuilt = m_platformAdapter.endFrame() && m_rendererAdapter.buildRenderData(m_platformAdapter, renderData);
-    if (frameBuilt)
-    {
-        _renderData = std::move(renderData);
-    }
-
-    m_isFrameActive = false;
-    restorePreviousContext();
-
-    return frameBuilt;
-}
-
-void ego::gui::ImGuiBackend::cancelFrame()
-{
-    EGO_CHECK_RETURN(m_isFrameActive);
-
-    EGO_ASSERT(ImGui::GetCurrentContext() == m_context);
-    if (ImGui::GetCurrentContext() == m_context)
-    {
-        ImGui::EndFrame();
-    }
-
-    m_isFrameActive = false;
-    restorePreviousContext();
+    return endFrame(_renderData);
 }
 
 ego::gui::GuiFrameTextureID ego::gui::ImGuiBackend::bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode)
@@ -132,15 +97,12 @@ bool ego::gui::ImGuiBackend::isInitialized() const
 
 bool ego::gui::ImGuiBackend::initializeContext(bool _enableMultiViewport)
 {
-    EGO_CHECK_RETURN_FALSE(InitializeImGuiModuleRuntime());
-
     ImGuiContext* previousContext = ImGui::GetCurrentContext();
     m_context = ImGui::CreateContext();
     ImGui::SetCurrentContext(previousContext);
     EGO_CHECK_RETURN_FALSE(m_context);
 
-    const ImGuiContextScope contextScope(m_context);
-    EGO_CHECK_RETURN_FALSE(contextScope.isActive());
+    const ImGuiContextScope contextScope(*m_context);
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -165,13 +127,7 @@ bool ego::gui::ImGuiBackend::releaseContext()
     }
 
     {
-        const ImGuiContextScope contextScope(m_context);
-        EGO_ASSERT_MESSAGE(contextScope.isActive(), "GUI backend must be released on its runtime thread.");
-        if (!contextScope.isActive())
-        {
-            return false;
-        }
-
+        const ImGuiContextScope contextScope(*m_context);
         m_platformAdapter.release();
         m_rendererAdapter.release();
     }
@@ -184,13 +140,89 @@ bool ego::gui::ImGuiBackend::releaseContext()
 
 void ego::gui::ImGuiBackend::resetState()
 {
-    EGO_ASSERT(!m_context && !m_previousContext && !m_isFrameActive);
+    EGO_ASSERT(!m_context && !m_isFrameActive);
 
+    m_style = nullptr;
+    m_styleContext = nullptr;
+    m_appliedStyleChangeID = InvalidGuiStyleChangeID;
     m_isInitialized = false;
 }
 
-void ego::gui::ImGuiBackend::restorePreviousContext()
+bool ego::gui::ImGuiBackend::beginFrame(float _deltaTime)
 {
-    ImGui::SetCurrentContext(m_previousContext);
-    m_previousContext = nullptr;
+    EGO_CHECK_RETURN_FALSE(m_isInitialized && !m_isFrameActive);
+
+    EGO_ASSERT(ImGui::GetCurrentContext() == m_context);
+    if (ImGui::GetCurrentContext() != m_context || !m_platformAdapter.beginFrame())
+    {
+        return false;
+    }
+
+    static constexpr float DefaultDeltaTime = 1.0f / 60.0f;
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.DeltaTime = std::isfinite(_deltaTime) && _deltaTime > 0.0f ? _deltaTime : DefaultDeltaTime;
+
+    m_rendererAdapter.beginFrame();
+    ImGui::NewFrame();
+    m_isFrameActive = true;
+
+    return true;
+}
+
+bool ego::gui::ImGuiBackend::endFrame(GuiRenderData& _renderData)
+{
+    EGO_CHECK_RETURN_FALSE(m_isFrameActive);
+
+    EGO_ASSERT(ImGui::GetCurrentContext() == m_context);
+    if (ImGui::GetCurrentContext() != m_context)
+    {
+        m_isFrameActive = false;
+
+        return false;
+    }
+
+    ImGui::Render();
+
+    GuiRenderData renderData;
+    const bool frameBuilt = m_platformAdapter.endFrame() && m_rendererAdapter.buildRenderData(m_platformAdapter, renderData);
+    if (frameBuilt)
+    {
+        _renderData = std::move(renderData);
+    }
+
+    m_isFrameActive = false;
+
+    return frameBuilt;
+}
+
+void ego::gui::ImGuiBackend::cancelFrame()
+{
+    EGO_CHECK_RETURN(m_isFrameActive);
+
+    EGO_ASSERT(ImGui::GetCurrentContext() == m_context);
+    if (ImGui::GetCurrentContext() == m_context)
+    {
+        ImGui::EndFrame();
+    }
+
+    m_isFrameActive = false;
+}
+
+void ego::gui::ImGuiBackend::applyStyle()
+{
+    if (!m_style)
+    {
+        return;
+    }
+
+    ImGuiContext* currentContext = ImGui::GetCurrentContext();
+    if (m_styleContext == currentContext && m_appliedStyleChangeID == m_style->getChangeID())
+    {
+        return;
+    }
+
+    m_style->apply();
+    m_styleContext = currentContext;
+    m_appliedStyleChangeID = m_style->getChangeID();
 }

@@ -28,7 +28,7 @@ namespace ego::gui
         FloatVector2 m_size = FloatVector2Zero;
         GraphicPresenterPointer m_graphicPresenter = nullptr;
         bool m_isFocused = false;
-        bool m_isInputPassthroughEnabled = false;
+        bool m_isInputTransparent = false;
     };
 
     struct ViewportUpdate final
@@ -52,7 +52,7 @@ namespace ego::gui
         virtual bool showViewport(ViewportID _viewportID, bool _activate) = 0;
         virtual bool setViewportPosition(ViewportID _viewportID, FloatVector2& _position) = 0;
         virtual bool setViewportSize(ViewportID _viewportID, FloatVector2& _size) = 0;
-        virtual bool setViewportInputPassthrough(ViewportID _viewportID, bool _isEnabled) = 0;
+        virtual bool setViewportInputTransparent(ViewportID _viewportID, bool _isTransparent) = 0;
     };
 
     EGO_POINTER(ViewportProvider);

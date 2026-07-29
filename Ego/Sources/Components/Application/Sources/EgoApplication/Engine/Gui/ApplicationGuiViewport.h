@@ -26,7 +26,7 @@ namespace ego::application
         bool show(bool _activate);
         bool setPosition(FloatVector2& _position);
         bool setSize(FloatVector2& _size);
-        bool setInputPassthrough(bool _isEnabled);
+        bool setInputTransparent(bool _isTransparent);
         void setFocused(bool _isFocused);
 
         const Presentation& getPresentation() const;
@@ -81,6 +81,6 @@ namespace ego::application
         bool m_hasPositionRequest = false;
         bool m_hasSizeRequest = false;
         bool m_isFocused = false;
-        bool m_isInputPassthroughEnabled = false;
+        bool m_isInputTransparent = false;
     };
 } // namespace ego::application

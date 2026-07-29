@@ -9,9 +9,7 @@
 
 namespace ego::win32
 {
-    class Win32PlatformSurfaceController final
-        : public PlatformSurfaceController,
-          public EnableSharedFromThis<Win32PlatformSurfaceController>
+    class Win32PlatformSurfaceController final : public PlatformSurfaceController, public EnableSharedFromThis<Win32PlatformSurfaceController>
     {
     public:
         explicit Win32PlatformSurfaceController(HINSTANCE _instance);
@@ -23,7 +21,8 @@ namespace ego::win32
         PlatformSurfacePointer createSurface(const PlatformSurfaceDesc& _desc) override;
         bool destroySurface(const PlatformSurfacePointer& _surface) override;
         PlatformSurfacePointer findSurfaceAtPoint(const SurfacePoint& _point) const override;
-        bool setPointerCapture(const PlatformSurfacePointer& _surface) override;
+        bool capturePointer(const PlatformSurfacePointer& _surface) override;
+        bool releasePointer() override;
         PlatformSurfacePointer getPointerCapture() const override;
         void processEvents() override;
 

@@ -11,7 +11,7 @@
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
-#include "EgoApplication/ApplicationEvents.h"
+#include "EgoApplication/ApplicationSubsystem.h"
 
 ego::application::PlatformSurfacePresentationProvider::~PlatformSurfacePresentationProvider()
 {
@@ -23,12 +23,9 @@ bool ego::application::PlatformSurfacePresentationProvider::init(const InitData&
     EGO_CHECK_INITIALIZATION(!m_isInitialized && m_presentations.empty() && !m_mainSurface);
 
     const PlatformPointer platform = GetPlatformPointer();
-    const EventControllerPointer eventController = GetEventControllerPointer();
-    EGO_CHECK_INITIALIZATION(platform && eventController);
+    EGO_CHECK_INITIALIZATION(platform);
 
     m_swapChainDesc = _initData.m_swapChainDesc;
-
-    EGO_CHECK_RETURN_CALL_FALSE(registerApplicationEvents(), release());
 
     m_isInitialized = true;
 
@@ -38,7 +35,6 @@ bool ego::application::PlatformSurfacePresentationProvider::init(const InitData&
 void ego::application::PlatformSurfacePresentationProvider::release()
 {
     releasePresentations();
-    unregisterApplicationEvents();
 
     m_swapChainDesc = gpu::SwapChainDesc();
     m_isInitialized = false;
@@ -141,35 +137,6 @@ ego::PlatformSurfaceController& ego::application::PlatformSurfacePresentationPro
     EGO_ASSERT(platform);
 
     return platform->getSurfaceController();
-}
-
-bool ego::application::PlatformSurfacePresentationProvider::registerApplicationEvents()
-{
-    EGO_CHECK_RETURN_FALSE(!m_areApplicationEventsRegistered);
-
-    const EventControllerPointer eventController = GetEventControllerPointer();
-    EGO_CHECK_RETURN_FALSE(eventController);
-    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<ApplicationQuitRequestedEvent>());
-
-    m_areApplicationEventsRegistered = true;
-
-    return true;
-}
-
-void ego::application::PlatformSurfacePresentationProvider::unregisterApplicationEvents()
-{
-    if (!m_areApplicationEventsRegistered)
-    {
-        return;
-    }
-
-    const EventControllerPointer eventController = GetEventControllerPointer();
-    if (eventController)
-    {
-        eventController->unregisterEvent<ApplicationQuitRequestedEvent>();
-    }
-
-    m_areApplicationEventsRegistered = false;
 }
 
 bool ego::application::PlatformSurfacePresentationProvider::registerSurfaceEvents(PresentationEntry& _presentation)
@@ -281,8 +248,7 @@ ego::application::SurfaceGraphicPresenterPointer ego::application::PlatformSurfa
     const gpu::CommandQueuePointer presentationQueue = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicCommandQueue() : nullptr;
     EGO_CHECK_RETURN_NULL(graphicDevice && presentationQueue);
 
-    SurfaceGraphicPresenterPointer graphicPresenter =
-        MakePointer<SurfaceGraphicPresenter>();
+    SurfaceGraphicPresenterPointer graphicPresenter = MakePointer<SurfaceGraphicPresenter>();
     if (!graphicPresenter || !graphicPresenter->init(*graphicDevice, _surface, m_swapChainDesc, presentationQueue))
     {
         EGO_SAFE_RESET_POINTER_WITH_RELEASING(graphicPresenter);
@@ -297,7 +263,7 @@ void ego::application::PlatformSurfacePresentationProvider::handleSurfaceCloseRe
 {
     if (m_mainSurface.get() == &_event.m_surface)
     {
-        emitApplicationQuitRequested();
+        GetApplication().requestExit();
     }
 
     _event.handle();
@@ -327,13 +293,4 @@ ego::EventControllerPointer ego::application::PlatformSurfacePresentationProvide
     const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
 
     return eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
-}
-
-void ego::application::PlatformSurfacePresentationProvider::emitApplicationQuitRequested() const
-{
-    const EventControllerPointer eventController = GetEventControllerPointer();
-    EGO_CHECK_RETURN(eventController);
-
-    const ApplicationQuitRequestedEvent event;
-    eventController->emitEvent(event);
 }

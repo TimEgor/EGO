@@ -523,12 +523,12 @@ void ego::gui::ImGuiPlatformAdapter::PlatformUpdateWindow(ImGuiViewport* _viewpo
         return;
     }
 
-    const bool isInputPassthroughEnabled = (_viewport->Flags & ImGuiViewportFlags_NoInputs) != 0;
+    const bool isInputTransparent = (_viewport->Flags & ImGuiViewportFlags_NoInputs) != 0;
     const ViewportState state = adapter->m_provider->getViewportState(data->m_viewportID);
-    if (state.m_isInputPassthroughEnabled == isInputPassthroughEnabled)
+    if (state.m_isInputTransparent == isInputTransparent)
     {
         return;
     }
 
-    adapter->m_provider->setViewportInputPassthrough(data->m_viewportID, isInputPassthroughEnabled);
+    adapter->m_provider->setViewportInputTransparent(data->m_viewportID, isInputTransparent);
 }

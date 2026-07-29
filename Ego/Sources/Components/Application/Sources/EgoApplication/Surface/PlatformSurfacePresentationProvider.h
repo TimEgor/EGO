@@ -13,9 +13,7 @@
 
 namespace ego::application
 {
-    class PlatformSurfacePresentationProvider final :
-        public PresenterProvider,
-        public NonCopyable
+    class PlatformSurfacePresentationProvider final : public PresenterProvider, public NonCopyable
     {
     public:
         struct InitData final
@@ -53,8 +51,6 @@ namespace ego::application
         using PresentationCollection = std::vector<PresentationEntry>;
 
         PlatformSurfaceController& getSurfaceController() const;
-        bool registerApplicationEvents();
-        void unregisterApplicationEvents();
         bool registerSurfaceEvents(PresentationEntry& _presentation);
         void unregisterSurfaceEvents(PresentationEntry& _presentation);
 
@@ -69,12 +65,9 @@ namespace ego::application
 
         static EventControllerPointer GetEventControllerPointer();
 
-        void emitApplicationQuitRequested() const;
-
         gpu::SwapChainDesc m_swapChainDesc;
         PresentationCollection m_presentations;
         PlatformSurfacePointer m_mainSurface = nullptr;
-        bool m_areApplicationEventsRegistered = false;
         bool m_isInitialized = false;
     };
 

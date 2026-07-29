@@ -13,7 +13,8 @@ namespace ego
         virtual PlatformSurfacePointer createSurface(const PlatformSurfaceDesc& _desc) = 0;
         virtual bool destroySurface(const PlatformSurfacePointer& _surface) = 0;
         virtual PlatformSurfacePointer findSurfaceAtPoint(const SurfacePoint& _point) const = 0;
-        virtual bool setPointerCapture(const PlatformSurfacePointer& _surface) = 0;
+        virtual bool capturePointer(const PlatformSurfacePointer& _surface) = 0;
+        virtual bool releasePointer() = 0;
         virtual PlatformSurfacePointer getPointerCapture() const = 0;
         virtual void processEvents() = 0;
 

@@ -130,6 +130,15 @@ bool ego::application::Application::initEventSubsystem()
     EGO_CHECK_RETURN_FALSE(m_eventSubsystem);
     EGO_CHECK_RETURN_FALSE(m_eventSubsystem->init());
 
+    const EventControllerPointer eventController = m_eventSubsystem->getEventControllerPointer();
+    EGO_CHECK_RETURN_FALSE(eventController);
+    EGO_CHECK_RETURN_FALSE(eventController->registerEvent<ApplicationQuitRequestedEvent>());
+
+    m_applicationQuitRequestedEventCallbackID = eventController->addEventCallback<ApplicationQuitRequestedEvent>(*this, &Application::handleQuitRequested);
+    EGO_CHECK_RETURN_CALL_FALSE(
+        m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID,
+        eventController->unregisterEvent<ApplicationQuitRequestedEvent>());
+
     return registerSubsystem(m_eventSubsystem);
 }
 
@@ -240,6 +249,18 @@ void ego::application::Application::releasePlatformSubsystem()
 
 void ego::application::Application::releaseEventSubsystem()
 {
+    if (m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID)
+    {
+        const EventControllerPointer eventController = m_eventSubsystem ? m_eventSubsystem->getEventControllerPointer() : nullptr;
+        if (eventController)
+        {
+            eventController->removeEventCallback(m_applicationQuitRequestedEventCallbackID);
+            eventController->unregisterEvent<ApplicationQuitRequestedEvent>();
+        }
+
+        m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
+    }
+
     releaseSubsystem(m_eventSubsystem);
     m_eventSubsystem = nullptr;
 }
@@ -263,8 +284,7 @@ bool ego::application::Application::initInputController()
     InputDeviceController& platformInputDeviceController = platform->getInputDeviceController();
     EGO_CHECK_RETURN_FALSE(platformInputDeviceController.isInitialized());
 
-    m_platformInputKeyProvider =
-        MakePointer<ApplicationInputKeyProvider>(platformInputDeviceController);
+    m_platformInputKeyProvider = MakePointer<ApplicationInputKeyProvider>(platformInputDeviceController);
     EGO_CHECK_RETURN_FALSE(m_platformInputKeyProvider);
 
     return m_inputController->registerKeyProvider(m_platformInputKeyProvider);
@@ -397,41 +417,21 @@ bool ego::application::Application::registerGraphicResourceProvider()
 bool ego::application::Application::initWindowing()
 {
     EGO_CHECK_RETURN_FALSE(!m_presenterProvider);
-    EGO_CHECK_RETURN_FALSE(m_applicationQuitRequestedEventCallbackID == InvalidEventCallbackID);
-
-    const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
-    const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
-    EGO_CHECK_RETURN_FALSE(eventController);
 
     PlatformSurfacePresentationProvider::InitData presentationInitData;
     presentationInitData.m_swapChainDesc.m_format = gpu::GraphicResourceFormat::R8G8B8A8UNorm;
     presentationInitData.m_swapChainDesc.m_bufferCount = 2;
 
-    PlatformSurfacePresentationProviderPointer presenterProvider =
-        MakePointer<PlatformSurfacePresentationProvider>();
+    PlatformSurfacePresentationProviderPointer presenterProvider = MakePointer<PlatformSurfacePresentationProvider>();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
     EGO_CHECK_RETURN_FALSE(presenterProvider->init(presentationInitData));
     m_presenterProvider = presenterProvider;
 
-    m_applicationQuitRequestedEventCallbackID = eventController->addEventCallback<ApplicationQuitRequestedEvent>(*this, &Application::handleQuitRequested);
-
-    return m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID;
+    return true;
 }
 
 void ego::application::Application::releaseWindowing()
 {
-    if (m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID)
-    {
-        const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
-        const EventControllerPointer eventController = eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
-        if (eventController)
-        {
-            eventController->removeEventCallback(m_applicationQuitRequestedEventCallbackID);
-        }
-
-        m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
-    }
-
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_presenterProvider);
 }
 

@@ -12,7 +12,7 @@ namespace ego::demo
     public:
         DebugDrawDemo() = default;
 
-        bool init(const InitData& _initData) override;
+        bool init(const engine::EngineSessionWeakPointer& _engineSession) override;
         void update(float _deltaTime) override;
         void release() override;
 

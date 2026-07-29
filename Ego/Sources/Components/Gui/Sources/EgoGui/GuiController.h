@@ -8,6 +8,7 @@
 #include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoGui/GuiLayer.h"
+#include "EgoGui/GuiStyle.h"
 #include "EgoGui/Rendering/GuiRenderData.h"
 
 namespace ego::gui
@@ -30,6 +31,8 @@ namespace ego::gui
 
         bool init(const InitData& _initData);
         void release();
+
+        bool setStyle(const GuiStylePointer& _style);
 
         void update(float _deltaTime);
         GuiRenderData takeRenderData();

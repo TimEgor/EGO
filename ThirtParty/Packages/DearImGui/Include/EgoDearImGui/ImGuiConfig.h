@@ -1,8 +1,7 @@
 #pragma once
 
-#define EGO_IMGUI_CONFIG_ABI "EgoDearImGui.Static.NoWin32.NoShell.NoDefaultAllocators.NoObsolete.v1"
+#define EGO_IMGUI_CONFIG_ABI "EgoDearImGui.Static.NoWin32.NoShell.NoObsolete.v1"
 
 #define IMGUI_DISABLE_WIN32_FUNCTIONS
 #define IMGUI_DISABLE_DEFAULT_SHELL_FUNCTIONS
-#define IMGUI_DISABLE_DEFAULT_ALLOCATORS
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
