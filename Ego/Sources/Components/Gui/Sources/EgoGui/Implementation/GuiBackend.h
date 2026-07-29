@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Platform/FileSystem/FileSystem.h"
 
 #include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
@@ -23,7 +24,8 @@ namespace ego::gui
         virtual bool init(const ViewportProviderPointer& _viewportProvider, bool _enableMultiViewport) = 0;
         virtual bool release() = 0;
 
-        virtual bool setStyle(const GuiStylePointer& _style) = 0;
+        virtual bool setFont(const FileContent& _content, float _size) = 0;
+        virtual bool setStyle(const GuiStyle& _style) = 0;
         virtual bool update(float _deltaTime, const DrawFunction& _drawFunction, GuiRenderData& _renderData) = 0;
 
         virtual GuiFrameTextureID bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode) = 0;

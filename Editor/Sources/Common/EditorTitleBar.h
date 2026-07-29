@@ -29,7 +29,7 @@ namespace ego::editor
         void drawSystemButtons(PlatformSurface& _surface, TitleBarLayout& _layout) const;
         void drawTitle(const TitleBarLayout& _layout) const;
         void updateCaptionArea(PlatformSurface& _surface, const TitleBarLayout& _layout) const;
-        void drawIcon(float _titleBarHeight) const;
+        void drawIcon(float _titleBarHeight, float _dpiScale) const;
         bool drawSystemButton(SystemButton _button, float _positionX, const TitleBarLayout& _layout, bool _isWindowMaximized) const;
         static const char* GetSystemButtonID(SystemButton _button);
         static SystemButtonLayout CreateSystemButtonLayout(float _positionX, const TitleBarLayout& _titleBarLayout);

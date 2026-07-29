@@ -1,8 +1,17 @@
 #include "EditorApplication.h"
 
+#include <string>
+
 #include "EgoCore/Math/Color.h"
 #include "EgoCore/Parsers/ArgParser/Parser.h"
+#include "EgoCore/Parsers/XmlParser/XmlNode.h"
+#include "EgoCore/Platform/FileSystem/RootedFileSystem.h"
+#include "EgoCore/Platform/Platform.h"
+#include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
+
+#include "EgoResource/ResourceController.h"
+#include "EgoResource/ResourceSubsystem.h"
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
@@ -15,6 +24,7 @@
 
 namespace
 {
+    constexpr auto EditorConfigFileName = "Editor.xml";
     constexpr ego::gpu::Texture2DSize SceneTextureSize(900, 600);
 } // namespace
 
@@ -27,16 +37,29 @@ bool ego::editor::EditorApplication::init(void* _nativeInstanceHandle, int _argC
 {
     release();
 
-    CommandLineOptions options;
-    ParseCommandLine(_argCount, _argValues, options);
-
-    if (!initApplication(_nativeInstanceHandle, options))
+    XmlDocument config;
+    if (!loadConfig(config))
     {
         release();
         return false;
     }
 
-    if (!initEngine(options))
+    CommandLineOptions options;
+    ParseCommandLine(_argCount, _argValues, options);
+
+    if (!initApplication(_nativeInstanceHandle, options, config))
+    {
+        release();
+        return false;
+    }
+
+    if (!initEditorAssets(config))
+    {
+        release();
+        return false;
+    }
+
+    if (!initEngine(options, config))
     {
         release();
         return false;
@@ -48,6 +71,7 @@ bool ego::editor::EditorApplication::init(void* _nativeInstanceHandle, int _argC
 void ego::editor::EditorApplication::release()
 {
     releaseEngine();
+    releaseEditorAssets();
     releaseApplication();
 
     m_renderPluginModuleName.clear();
@@ -67,18 +91,24 @@ int ego::editor::EditorApplication::run()
     return exitCode;
 }
 
-bool ego::editor::EditorApplication::initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options)
+bool ego::editor::EditorApplication::initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options, const XmlDocument& _config)
 {
     EGO_CHECK_RETURN_FALSE(!m_application);
+
+    const XmlNode rootNode = _config.getRootNode();
+    EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
+
+    const XmlNode applicationNode = rootNode.getChild("Application");
+    EGO_CHECK_RETURN_FALSE(applicationNode);
 
     m_application = new application::Application();
     EGO_CHECK_RETURN_FALSE(m_application);
 
     application::Application::InitData initData;
     initData.m_nativeInstanceHandle = _nativeInstanceHandle;
-    initData.m_pluginDirectory = FileName(_options.m_pluginDirectoryPath);
-    initData.m_profilerPluginModuleName = FileName(_options.m_profilerPluginName);
-    initData.m_graphicHardwarePluginModuleName = FileName(_options.m_graphicHardwarePluginModuleName);
+    initData.m_pluginDirectory = ResolveOption(_options.m_pluginDirectoryPath, applicationNode, "PluginDirectory");
+    initData.m_profilerPluginModuleName = ResolveOption(_options.m_profilerPluginName, applicationNode, "ProfilerPlugin");
+    initData.m_graphicHardwarePluginModuleName = ResolveOption(_options.m_graphicHardwarePluginModuleName, applicationNode, "GraphicHardwarePlugin");
     initData.m_enableGraphicHardware = true;
     EGO_CHECK_RETURN_FALSE(m_application->init(initData));
 
@@ -90,14 +120,96 @@ void ego::editor::EditorApplication::releaseApplication()
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_application);
 }
 
-bool ego::editor::EditorApplication::initEngine(const CommandLineOptions& _options)
+bool ego::editor::EditorApplication::loadConfig(XmlDocument& _config) const
+{
+    return _config.loadFromFile(FileName(EditorConfigFileName));
+}
+
+bool ego::editor::EditorApplication::readDefaultFont(const XmlDocument& _config, FileName& _path, float& _size) const
+{
+    const XmlNode rootNode = _config.getRootNode();
+    EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
+
+    const XmlNode engineNode = rootNode.getChild("Engine");
+    EGO_CHECK_RETURN_FALSE(engineNode);
+
+    const XmlNode fontNode = engineNode.getChild("DefaultFont");
+    EGO_CHECK_RETURN_FALSE(fontNode);
+
+    const std::string fontPath = fontNode.getChildValueOr<std::string>("Path", std::string());
+    const float fontSize = fontNode.getChildValueOr<float>("Size", 0.0f);
+    EGO_CHECK_RETURN_FALSE(!fontPath.empty() && fontSize > 0.0f);
+
+    _path = FileName(fontPath);
+    _size = fontSize;
+
+    return static_cast<bool>(_path);
+}
+
+bool ego::editor::EditorApplication::initEditorAssets(const XmlDocument& _config)
+{
+    EGO_CHECK_RETURN_FALSE(!m_editorAssetsFileSystem);
+
+    const XmlNode rootNode = _config.getRootNode();
+    EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
+
+    const XmlNode engineNode = rootNode.getChild("Engine");
+    EGO_CHECK_RETURN_FALSE(engineNode);
+
+    const std::string assetsDirectory = engineNode.getChildValueOr<std::string>("AssetsDir", std::string());
+    EGO_CHECK_RETURN_FALSE(!assetsDirectory.empty());
+
+    const PlatformPointer platform = GetPlatformPointer();
+    const FileSystemPointer sourceFileSystem = platform ? platform->getFileSystem() : nullptr;
+    EGO_CHECK_RETURN_FALSE(sourceFileSystem);
+
+    RootedFileSystemPointer assetsFileSystem = MakePointer<RootedFileSystem>(sourceFileSystem, FileName(assetsDirectory));
+    EGO_CHECK_RETURN_FALSE(assetsFileSystem && assetsFileSystem->init());
+
+    const ResourceSubsystemPointer resourceSubsystem = GetResourceSubsystemPointer();
+    const ResourceControllerPointer resourceController = resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(resourceController);
+
+    resourceController->addFileSystem(assetsFileSystem);
+    m_editorAssetsFileSystem = assetsFileSystem;
+
+    return true;
+}
+
+void ego::editor::EditorApplication::releaseEditorAssets()
+{
+    if (!m_editorAssetsFileSystem)
+    {
+        return;
+    }
+
+    const ResourceSubsystemPointer resourceSubsystem = GetResourceSubsystemPointer();
+    const ResourceControllerPointer resourceController = resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
+    if (resourceController)
+    {
+        resourceController->removeFileSystem(m_editorAssetsFileSystem);
+    }
+
+    m_editorAssetsFileSystem->release();
+    m_editorAssetsFileSystem = nullptr;
+}
+
+bool ego::editor::EditorApplication::initEngine(const CommandLineOptions& _options, const XmlDocument& _config)
 {
     EGO_CHECK_RETURN_FALSE(m_application);
+    EGO_CHECK_RETURN_FALSE(_config.getRootNode());
     EGO_CHECK_RETURN_FALSE(!m_engine);
     EGO_CHECK_RETURN_FALSE(!m_editorSession.m_engineSession && !m_sceneSession.m_engineSession);
 
-    m_renderPluginModuleName = FileName(_options.m_renderPluginModuleName);
-    m_guiRenderPluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
+    const XmlNode engineNode = _config.getRootNode().getChild("Engine");
+    EGO_CHECK_RETURN_FALSE(engineNode);
+
+    FileName defaultFontPath;
+    float defaultFontSize = 0.0f;
+    EGO_CHECK_RETURN_FALSE(readDefaultFont(_config, defaultFontPath, defaultFontSize));
+
+    m_renderPluginModuleName = ResolveOption(_options.m_renderPluginModuleName, engineNode, "RenderPlugin");
+    m_guiRenderPluginModuleName = ResolveOption(_options.m_guiRenderPluginModuleName, engineNode, "GuiRenderPlugin");
 
     m_engine = new engine::Engine();
     EGO_CHECK_RETURN_FALSE(m_engine && m_engine->init());
@@ -113,7 +225,7 @@ bool ego::editor::EditorApplication::initEngine(const CommandLineOptions& _optio
     EGO_CHECK_RETURN_FALSE(createPresentedSession("EgoEditor", SurfaceSize(1100, 700), editorInitData, m_editorSession));
 
     EGO_CHECK_RETURN_FALSE(initScene());
-    EGO_CHECK_RETURN_FALSE(initEditorUi());
+    EGO_CHECK_RETURN_FALSE(initEditorUi(defaultFontPath, defaultFontSize));
 
     m_editorSession.m_surface->show();
     return true;
@@ -287,17 +399,20 @@ void ego::editor::EditorApplication::drawSceneEditor()
     render.drawPoint(bottomRight, NormalizedColorWhite);
 }
 
-bool ego::editor::EditorApplication::initEditorUi()
+bool ego::editor::EditorApplication::initEditorUi(const FileName& _fontPath, float _fontSize)
 {
     EGO_CHECK_RETURN_FALSE(m_editorSession.m_engineSession && m_sceneSession.m_engineSession);
     EGO_CHECK_RETURN_FALSE(m_editorLayerID == gui::InvalidGuiLayerID);
     EGO_CHECK_RETURN_FALSE(m_sceneSession.m_graphicPresenter);
+    EGO_CHECK_RETURN_FALSE(_fontPath);
 
     const gui::GuiControllerPointer guiController = m_editorSession.m_engineSession->getGuiControllerPointer();
     EGO_CHECK_RETURN_FALSE(guiController);
 
-    const gui::GuiStylePointer editorStyle = MakePointer<EditorGuiStyle>();
-    EGO_CHECK_RETURN_FALSE(editorStyle && guiController->setStyle(editorStyle));
+    EGO_CHECK_RETURN_FALSE(guiController->setFont(_fontPath, _fontSize));
+
+    const gui::GuiStyle editorStyle = CreateEditorGuiStyle();
+    EGO_CHECK_RETURN_FALSE(guiController->setStyle(editorStyle));
 
     const gpu::TextureViewPointer sceneTexture = m_sceneSession.m_graphicPresenter->getTextureView();
     if (!sceneTexture)
@@ -355,16 +470,38 @@ bool ego::editor::EditorApplication::runMainLoop()
     return true;
 }
 
+ego::FileName ego::editor::EditorApplication::ResolveOption(const FileName& _option, const XmlNode& _configNode, const char* _configName)
+{
+    if (_option)
+    {
+        return _option;
+    }
+
+    return FileName(_configNode.getChildValueOr<std::string>(_configName, std::string()));
+}
+
 void ego::editor::EditorApplication::ParseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options)
 {
+    std::string pluginDirectoryPath;
+    std::string profilerPluginName;
+    std::string renderPluginModuleName;
+    std::string guiRenderPluginModuleName;
+    std::string graphicHardwarePluginModuleName;
+
     ArgParser argParser;
-    argParser.addOptionValue("--pluginDirectory", _options.m_pluginDirectoryPath);
-    argParser.addOptionValue("--profiler", _options.m_profilerPluginName);
-    argParser.addOptionValue("--render", _options.m_renderPluginModuleName);
-    argParser.addOptionValue("--guiRender", _options.m_guiRenderPluginModuleName);
-    argParser.addOptionValue("--graphicHardware", _options.m_graphicHardwarePluginModuleName);
+    argParser.addOptionValue("--pluginDirectory", pluginDirectoryPath);
+    argParser.addOptionValue("--profiler", profilerPluginName);
+    argParser.addOptionValue("--render", renderPluginModuleName);
+    argParser.addOptionValue("--guiRender", guiRenderPluginModuleName);
+    argParser.addOptionValue("--graphicHardware", graphicHardwarePluginModuleName);
 
     argParser.parse(_argCount, _argValues);
+
+    _options.m_pluginDirectoryPath = pluginDirectoryPath;
+    _options.m_profilerPluginName = profilerPluginName;
+    _options.m_renderPluginModuleName = renderPluginModuleName;
+    _options.m_guiRenderPluginModuleName = guiRenderPluginModuleName;
+    _options.m_graphicHardwarePluginModuleName = graphicHardwarePluginModuleName;
 }
 
 bool ego::editor::EditorApplication::IsSurfaceValid(const PlatformSurfacePointer& _surface)

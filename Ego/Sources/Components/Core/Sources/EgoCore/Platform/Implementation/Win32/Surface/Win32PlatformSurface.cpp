@@ -1,6 +1,8 @@
 #include "Win32PlatformSurface.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <limits>
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Platform/Implementation/Win32/Input/Win32MouseInputDevice.h"
@@ -674,8 +676,10 @@ void ego::win32::Win32PlatformSurface::updateSizes()
     const int64_t clientWidth = static_cast<int64_t>(clientRect.right) - clientRect.left;
     const int64_t clientHeight = static_cast<int64_t>(clientRect.bottom) - clientRect.top;
 
-    m_surfaceSize.m_x = Win32SurfaceUtils::ToExtent(clientWidth);
-    m_surfaceSize.m_y = Win32SurfaceUtils::ToExtent(clientHeight);
+    constexpr int64_t MinimumExtent = 0;
+    constexpr int64_t MaximumExtent = static_cast<int64_t>((std::numeric_limits<uint16_t>::max)());
+    m_surfaceSize.m_x = static_cast<uint16_t>(std::clamp(clientWidth, MinimumExtent, MaximumExtent));
+    m_surfaceSize.m_y = static_cast<uint16_t>(std::clamp(clientHeight, MinimumExtent, MaximumExtent));
 }
 
 void ego::win32::Win32PlatformSurface::setWindowData(Win32PlatformSurfaceController& _surfaceController)

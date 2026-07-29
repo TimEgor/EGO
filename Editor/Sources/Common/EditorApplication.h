@@ -3,6 +3,7 @@
 #include <string>
 
 #include "EgoCore/FileName/FileName.h"
+#include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 
 #include "EgoECS/Entity.h"
@@ -18,6 +19,13 @@
 #include "EgoApplication/Application.h"
 
 #include "GuiLayer.h"
+
+namespace ego
+{
+    class FileSystem;
+
+    EGO_POINTER(FileSystem);
+} // namespace ego
 
 namespace ego::editor
 {
@@ -39,11 +47,11 @@ namespace ego::editor
     private:
         struct CommandLineOptions final
         {
-            std::string m_pluginDirectoryPath;
-            std::string m_profilerPluginName;
-            std::string m_renderPluginModuleName;
-            std::string m_guiRenderPluginModuleName;
-            std::string m_graphicHardwarePluginModuleName;
+            FileName m_pluginDirectoryPath;
+            FileName m_profilerPluginName;
+            FileName m_renderPluginModuleName;
+            FileName m_guiRenderPluginModuleName;
+            FileName m_graphicHardwarePluginModuleName;
         };
 
         struct PresentedSession final
@@ -58,10 +66,15 @@ namespace ego::editor
             TextureGraphicPresenterPointer m_graphicPresenter = nullptr;
         };
 
-        bool initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options);
+        bool initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options, const XmlDocument& _config);
         void releaseApplication();
 
-        bool initEngine(const CommandLineOptions& _options);
+        bool loadConfig(XmlDocument& _config) const;
+        bool readDefaultFont(const XmlDocument& _config, FileName& _path, float& _size) const;
+        bool initEditorAssets(const XmlDocument& _config);
+        void releaseEditorAssets();
+
+        bool initEngine(const CommandLineOptions& _options, const XmlDocument& _config);
         void releaseEngine();
 
         bool createPresentedSession(
@@ -77,11 +90,12 @@ namespace ego::editor
         void releaseScene();
         void drawSceneEditor();
 
-        bool initEditorUi();
+        bool initEditorUi(const FileName& _fontPath, float _fontSize);
         void releaseEditorUi();
 
         bool runMainLoop();
 
+        static FileName ResolveOption(const FileName& _option, const XmlNode& _configNode, const char* _configName);
         static void ParseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options);
         static bool IsSurfaceValid(const PlatformSurfacePointer& _surface);
 
@@ -96,6 +110,8 @@ namespace ego::editor
 
         FileName m_renderPluginModuleName;
         FileName m_guiRenderPluginModuleName;
+
+        FileSystemPointer m_editorAssetsFileSystem = nullptr;
 
         GuiLayer m_guiLayer;
         gui::GuiLayerID m_editorLayerID = gui::InvalidGuiLayerID;

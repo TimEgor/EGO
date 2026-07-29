@@ -16,4 +16,6 @@ target_link_libraries(
             Ego::GraphicHardware
             Ego::Plugin
             Ego::ThirdParty::DearImGui
+        PRIVATE
+            Ego::Resource
 )

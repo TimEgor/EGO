@@ -19,7 +19,8 @@ namespace ego::gui
         bool init(const ViewportProviderPointer& _viewportProvider, bool _enableMultiViewport) override;
         bool release() override;
 
-        bool setStyle(const GuiStylePointer& _style) override;
+        bool setFont(const FileContent& _content, float _size) override;
+        bool setStyle(const GuiStyle& _style) override;
         bool update(float _deltaTime, const DrawFunction& _drawFunction, GuiRenderData& _renderData) override;
 
         GuiFrameTextureID bindTexture(const gpu::TextureViewPointer& _textureView, TextureSamplingMode _samplingMode) override;
@@ -36,15 +37,10 @@ namespace ego::gui
         bool endFrame(GuiRenderData& _renderData);
         void cancelFrame();
 
-        void applyStyle();
-
         ImGuiRendererAdapter m_rendererAdapter;
         ImGuiPlatformAdapter m_platformAdapter;
 
-        GuiStylePointer m_style = nullptr;
         ImGuiContext* m_context = nullptr;
-        ImGuiContext* m_styleContext = nullptr;
-        GuiStyleChangeID m_appliedStyleChangeID = InvalidGuiStyleChangeID;
 
         bool m_isFrameActive = false;
         bool m_isInitialized = false;

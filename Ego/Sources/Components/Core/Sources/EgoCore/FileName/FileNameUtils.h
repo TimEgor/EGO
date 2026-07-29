@@ -6,6 +6,8 @@
 
 namespace ego::file_name_utils
 {
+    FileName CombinePath(const FileName& _basePath, const FileName& _path);
+
     void GetFileName(const FileName& _path, FileName& _resultName);
     FileName GetFileName(const FileName& _path);
 

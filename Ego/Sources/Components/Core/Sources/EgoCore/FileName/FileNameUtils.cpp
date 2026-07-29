@@ -2,6 +2,12 @@
 
 #include <filesystem>
 
+ego::FileName ego::file_name_utils::CombinePath(const FileName& _basePath, const FileName& _path)
+{
+    const std::filesystem::path combinedPath = std::filesystem::path(_basePath.c_str()) / _path.c_str();
+    return combinedPath.lexically_normal().string();
+}
+
 void ego::file_name_utils::GetFileName(const FileName& _path, FileName& _resultName)
 {
     const std::filesystem::path tmpPath(_path.c_str());

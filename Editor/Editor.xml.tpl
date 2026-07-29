@@ -1,0 +1,16 @@
+<Editor>
+    <Application>
+        <PluginDirectory>@TPL_EDITOR_PLUGIN_DIRECTORY@</PluginDirectory>
+        <ProfilerPlugin>@TPL_EDITOR_PROFILER_PLUGIN@</ProfilerPlugin>
+        <GraphicHardwarePlugin>@TPL_EDITOR_GRAPHIC_HARDWARE_PLUGIN@</GraphicHardwarePlugin>
+    </Application>
+    <Engine>
+        <RenderPlugin>@TPL_EDITOR_RENDER_PLUGIN@</RenderPlugin>
+        <GuiRenderPlugin>@TPL_EDITOR_GUI_RENDER_PLUGIN@</GuiRenderPlugin>
+        <AssetsDir>@TPL_EDITOR_ASSETS_DIR@</AssetsDir>
+        <DefaultFont>
+            <Path>Fonts/Roboto-Medium.ttf</Path>
+            <Size>14</Size>
+        </DefaultFont>
+    </Engine>
+</Editor>

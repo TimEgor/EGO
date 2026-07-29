@@ -4,9 +4,5 @@
 
 namespace ego::editor
 {
-    class EditorGuiStyle final : public gui::GuiStyle
-    {
-    public:
-        void apply() override;
-    };
+    gui::GuiStyle CreateEditorGuiStyle();
 } // namespace ego::editor

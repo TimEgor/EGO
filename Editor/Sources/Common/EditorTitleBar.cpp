@@ -1,6 +1,7 @@
 #include "EditorTitleBar.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 
@@ -20,6 +21,7 @@ namespace
     constexpr float SystemButtonIconHalfSize = 5.0f;
     constexpr float SystemButtonIconLineThickness = 1.0f;
     constexpr float RestoredWindowIconOffset = 2.0f;
+    constexpr float LogoHeightRatio = 0.65f;
 
     constexpr ImU32 CloseButtonHighlightColor = IM_COL32(196, 43, 28, 255);
 } // namespace
@@ -61,7 +63,7 @@ void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, bool& _showVie
         layout.m_viewportPosition = mainViewport.Pos;
         layout.m_dpiScale = mainViewport.DpiScale;
 
-        drawIcon(layout.m_size.y);
+        drawIcon(layout.m_size.y, layout.m_dpiScale);
         drawWindowMenu(_showViewport, _showSceneInspector, _showEntityInspector, layout);
         drawSystemButtons(_surface, layout);
         drawTitle(layout);
@@ -145,10 +147,14 @@ void ego::editor::EditorTitleBar::updateCaptionArea(PlatformSurface& _surface, c
     EGO_ASSERT(_surface.setCaptionArea(position, size));
 }
 
-void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight) const
+void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight, float _dpiScale) const
 {
-    const float logoHeight = _titleBarHeight * 0.55f;
-    const float stroke = logoHeight / 5.0f;
+    EGO_ASSERT(_dpiScale > 0.0f);
+
+    const float maximumStrokePixels = (std::max)(1.0f, std::floor(_titleBarHeight * _dpiScale / 5.0f));
+    const float strokePixels = std::clamp(std::round(_titleBarHeight * LogoHeightRatio * _dpiScale / 5.0f), 1.0f, maximumStrokePixels);
+    const float stroke = strokePixels / _dpiScale;
+    const float logoHeight = stroke * 5.0f;
     const float glyphWidth = stroke * 5.0f;
     const float glyphSpacing = stroke;
     const float logoWidth = glyphWidth * 3.0f + glyphSpacing * 2.0f;
@@ -156,7 +162,12 @@ void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight) const
     ImGui::Dummy(ImVec2(logoWidth, ImGui::GetTextLineHeight()));
 
     const ImVec2 itemMin = ImGui::GetItemRectMin();
-    const float logoMinY = ImGui::GetWindowPos().y + (_titleBarHeight - logoHeight) * 0.5f;
+    const auto alignToPhysicalPixel = [_dpiScale](float _coordinate)
+    {
+        return std::round(_coordinate * _dpiScale) / _dpiScale;
+    };
+    const float logoMinX = alignToPhysicalPixel(itemMin.x);
+    const float logoMinY = alignToPhysicalPixel(ImGui::GetWindowPos().y + (_titleBarHeight - logoHeight) * 0.5f);
     const ImU32 color = ImGui::GetColorU32(ImGuiCol_Text);
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -169,7 +180,7 @@ void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight) const
         drawList->AddRectFilled(ImVec2(_positionX, _positionY), ImVec2(_positionX + stroke, _positionY + _length), color);
     };
 
-    const float eMinX = itemMin.x;
+    const float eMinX = logoMinX;
     drawHorizontalLine(eMinX, logoMinY, glyphWidth);
     drawHorizontalLine(eMinX, logoMinY + stroke * 2.0f, glyphWidth);
     drawHorizontalLine(eMinX, logoMinY + stroke * 4.0f, glyphWidth);
@@ -226,10 +237,10 @@ ego::editor::EditorTitleBar::SystemButtonLayout ego::editor::EditorTitleBar::Cre
     SystemButtonLayout layout;
     layout.m_position = ImVec2(_positionX, _titleBarLayout.m_position.y);
     layout.m_size = ImVec2(_titleBarLayout.m_systemButtonWidth, _titleBarLayout.m_size.y);
-    layout.m_center = ImVec2(layout.m_position.x + layout.m_size.x * 0.5f, layout.m_position.y + layout.m_size.y * 0.5f);
-    layout.m_iconHalfSize = SystemButtonIconHalfSize * _titleBarLayout.m_dpiScale;
-    layout.m_lineThickness = SystemButtonIconLineThickness * _titleBarLayout.m_dpiScale;
-    layout.m_restoredWindowIconOffset = RestoredWindowIconOffset * _titleBarLayout.m_dpiScale;
+    layout.m_center = ImVec2(std::round(layout.m_position.x + layout.m_size.x * 0.5f), std::round(layout.m_position.y + layout.m_size.y * 0.5f));
+    layout.m_iconHalfSize = std::round(SystemButtonIconHalfSize * _titleBarLayout.m_dpiScale);
+    layout.m_lineThickness = (std::max)(1.0f, std::round(SystemButtonIconLineThickness * _titleBarLayout.m_dpiScale));
+    layout.m_restoredWindowIconOffset = std::round(RestoredWindowIconOffset * _titleBarLayout.m_dpiScale);
 
     return layout;
 }
@@ -251,62 +262,67 @@ void ego::editor::EditorTitleBar::drawSystemButtonIcon(SystemButton _button, con
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     const ImU32 iconColor = ImGui::GetColorU32(ImGuiCol_Text);
+    const auto drawRectangleOutline = [drawList, iconColor, lineThickness = _layout.m_lineThickness](const ImVec2& _minimum, const ImVec2& _maximum)
+    {
+        drawList->AddRectFilled(_minimum, ImVec2(_maximum.x, _minimum.y + lineThickness), iconColor);
+        drawList->AddRectFilled(ImVec2(_minimum.x, _minimum.y + lineThickness), ImVec2(_minimum.x + lineThickness, _maximum.y - lineThickness), iconColor);
+        drawList->AddRectFilled(ImVec2(_maximum.x - lineThickness, _minimum.y + lineThickness), ImVec2(_maximum.x, _maximum.y - lineThickness), iconColor);
+        drawList->AddRectFilled(ImVec2(_minimum.x, _maximum.y - lineThickness), _maximum, iconColor);
+    };
+
     switch (_button)
     {
     case SystemButton::Minimize:
-        drawList->AddLine(
-            ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize * 0.5f),
-            ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize * 0.5f),
-            iconColor,
-            _layout.m_lineThickness);
+    {
+        const float lineMinY = std::round(_layout.m_center.y + _layout.m_iconHalfSize * 0.5f - _layout.m_lineThickness * 0.5f);
+        drawList->AddRectFilled(
+            ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, lineMinY),
+            ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, lineMinY + _layout.m_lineThickness),
+            iconColor);
         break;
+    }
 
     case SystemButton::Maximize:
         if (_isWindowMaximized)
         {
-            drawList->AddRect(
+            drawRectangleOutline(
                 ImVec2(
                     _layout.m_center.x - _layout.m_iconHalfSize + _layout.m_restoredWindowIconOffset,
                     _layout.m_center.y - _layout.m_iconHalfSize - _layout.m_restoredWindowIconOffset),
                 ImVec2(
                     _layout.m_center.x + _layout.m_iconHalfSize + _layout.m_restoredWindowIconOffset,
-                    _layout.m_center.y + _layout.m_iconHalfSize - _layout.m_restoredWindowIconOffset),
-                iconColor,
-                0.0f,
-                _layout.m_lineThickness);
-            drawList->AddRect(
+                    _layout.m_center.y + _layout.m_iconHalfSize - _layout.m_restoredWindowIconOffset));
+            drawRectangleOutline(
                 ImVec2(
                     _layout.m_center.x - _layout.m_iconHalfSize - _layout.m_restoredWindowIconOffset,
                     _layout.m_center.y - _layout.m_iconHalfSize + _layout.m_restoredWindowIconOffset),
                 ImVec2(
                     _layout.m_center.x + _layout.m_iconHalfSize - _layout.m_restoredWindowIconOffset,
-                    _layout.m_center.y + _layout.m_iconHalfSize + _layout.m_restoredWindowIconOffset),
-                iconColor,
-                0.0f,
-                _layout.m_lineThickness);
+                    _layout.m_center.y + _layout.m_iconHalfSize + _layout.m_restoredWindowIconOffset));
         }
         else
         {
-            drawList->AddRect(
+            drawRectangleOutline(
                 ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, _layout.m_center.y - _layout.m_iconHalfSize),
-                ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize),
-                iconColor,
-                0.0f,
-                _layout.m_lineThickness);
+                ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize));
         }
         break;
 
     case SystemButton::Close:
-        drawList->AddLine(
-            ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, _layout.m_center.y - _layout.m_iconHalfSize),
-            ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize),
-            iconColor,
-            _layout.m_lineThickness);
-        drawList->AddLine(
-            ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, _layout.m_center.y - _layout.m_iconHalfSize),
-            ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize),
-            iconColor,
-            _layout.m_lineThickness);
+    {
+        const float iconMinX = _layout.m_center.x - _layout.m_iconHalfSize;
+        const float iconMinY = _layout.m_center.y - _layout.m_iconHalfSize;
+        const float iconMaxY = _layout.m_center.y + _layout.m_iconHalfSize;
+        const float iconSize = _layout.m_iconHalfSize * 2.0f;
+        for (float offset = 0.0f; offset < iconSize; offset += _layout.m_lineThickness)
+        {
+            const float pixelSize = (std::min)(_layout.m_lineThickness, iconSize - offset);
+            const float pixelMinX = iconMinX + offset;
+            drawList->AddRectFilled(ImVec2(pixelMinX, iconMinY + offset), ImVec2(pixelMinX + pixelSize, iconMinY + offset + pixelSize), iconColor);
+            drawList->AddRectFilled(ImVec2(pixelMinX, iconMaxY - offset - pixelSize), ImVec2(pixelMinX + pixelSize, iconMaxY - offset), iconColor);
+        }
+
         break;
+    }
     }
 }

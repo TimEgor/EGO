@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Pointer/Pointer.h"
 
@@ -32,7 +33,8 @@ namespace ego::gui
         bool init(const InitData& _initData);
         void release();
 
-        bool setStyle(const GuiStylePointer& _style);
+        bool setFont(const FileName& _path, float _size);
+        bool setStyle(const GuiStyle& _style);
 
         void update(float _deltaTime);
         GuiRenderData takeRenderData();

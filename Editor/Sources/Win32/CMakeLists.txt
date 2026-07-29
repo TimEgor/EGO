@@ -21,11 +21,10 @@ ego_setup_target_common(
     "Editor"
 )
 
+include(${CMAKE_CURRENT_LIST_DIR}/../../ConfigEditor.cmake)
+ego_editor_config(EgoEditorWin32)
+
 ego_install_target(
     EgoEditorWin32
     "Editor"
-)
-
-ego_setup_launch_args(
-    EgoEditorWin32
 )

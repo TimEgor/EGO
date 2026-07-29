@@ -7,6 +7,10 @@
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
+#include "EgoResource/GeneralResources/BinaryResource.h"
+#include "EgoResource/ResourceController.h"
+#include "EgoResource/ResourceSubsystem.h"
+
 #include "EgoGui/Implementation/GuiBackendFactory.h"
 
 ego::gui::GuiController::GuiController()
@@ -40,9 +44,23 @@ void ego::gui::GuiController::release()
     m_nextLayerID = 1;
 }
 
-bool ego::gui::GuiController::setStyle(const GuiStylePointer& _style)
+bool ego::gui::GuiController::setFont(const FileName& _path, float _size)
 {
-    EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive && _style);
+    EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive && _path);
+
+    const ResourceSubsystemPointer resourceSubsystem = GetResourceSubsystemPointer();
+    const ResourceControllerPointer resourceController = resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(resourceController);
+
+    const BinaryResourcePointer fontResource = resourceController->load<BinaryResource>(_path);
+    EGO_CHECK_RETURN_FALSE(fontResource && fontResource->isLoaded());
+
+    return m_backend->setFont(fontResource->getContent(), _size);
+}
+
+bool ego::gui::GuiController::setStyle(const GuiStyle& _style)
+{
+    EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive);
 
     return m_backend->setStyle(_style);
 }

@@ -1,19 +1,5 @@
 #include "Win32SurfaceUtils.h"
 
-#include <limits>
-
-uint16_t ego::win32::Win32SurfaceUtils::ToExtent(int64_t _value)
-{
-    if (_value <= 0)
-    {
-        return 0;
-    }
-
-    const int64_t maximumExtent = static_cast<int64_t>((std::numeric_limits<uint16_t>::max)());
-
-    return _value < maximumExtent ? static_cast<uint16_t>(_value) : (std::numeric_limits<uint16_t>::max)();
-}
-
 ego::KeyboardInputKey ego::win32::Win32SurfaceUtils::ToKeyboardKey(WPARAM _key, LPARAM _lParam)
 {
     if (_key >= '0' && _key <= '9')
