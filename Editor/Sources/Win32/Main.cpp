@@ -1,4 +1,4 @@
-#include "EditorApplication.h"
+#include "EditorApplication/EditorApplication.h"
 
 #include <Windows.h>
 

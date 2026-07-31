@@ -9,10 +9,12 @@ namespace ego
 
 namespace ego::editor
 {
+    class GuiWindowController;
+
     class EditorTitleBar final : public NonCopyable
     {
     public:
-        void draw(PlatformSurface& _surface, bool& _showViewport, bool& _showSceneInspector, bool& _showEntityInspector);
+        void draw(PlatformSurface& _surface, GuiWindowController& _windowController);
 
     private:
         enum class SystemButton
@@ -25,7 +27,6 @@ namespace ego::editor
         struct TitleBarLayout;
         struct SystemButtonLayout;
 
-        void drawWindowMenu(bool& _showViewport, bool& _showSceneInspector, bool& _showEntityInspector, TitleBarLayout& _layout) const;
         void drawSystemButtons(PlatformSurface& _surface, TitleBarLayout& _layout) const;
         void drawTitle(const TitleBarLayout& _layout) const;
         void updateCaptionArea(PlatformSurface& _surface, const TitleBarLayout& _layout) const;

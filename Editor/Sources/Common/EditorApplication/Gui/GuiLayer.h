@@ -6,6 +6,7 @@
 #include "EgoGui/Rendering/GuiTexture.h"
 
 #include "EditorTitleBar.h"
+#include "GuiWindowController.h"
 
 namespace ego::editor
 {
@@ -17,15 +18,12 @@ namespace ego::editor
         void reset();
 
     private:
-        void initializeDefaultLayout();
         void drawGui() override;
+
+        EditorTitleBar m_titleBar;
+        GuiWindowController m_windowController;
 
         PlatformSurfacePointer m_surface = nullptr;
         gpu::TextureViewPointer m_sceneTexture = nullptr;
-        EditorTitleBar m_titleBar;
-        bool m_showViewport = true;
-        bool m_showSceneInspector = true;
-        bool m_showEntityInspector = true;
-        bool m_isDefaultLayoutInitialized = false;
     };
 } // namespace ego::editor

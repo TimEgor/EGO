@@ -10,6 +10,8 @@
 
 #include "EgoApplication/ApplicationSubsystem.h"
 
+#include "GuiWindowController.h"
+
 #include <imgui.h>
 
 namespace
@@ -31,8 +33,7 @@ struct ego::editor::EditorTitleBar::TitleBarLayout final
     ImVec2 m_position;
     ImVec2 m_size;
     ImVec2 m_viewportPosition;
-    ImVec2 m_windowMenuMin;
-    ImVec2 m_windowMenuMax;
+    float m_windowMenuMaxX = 0.0f;
     float m_dpiScale = 1.0f;
     float m_systemButtonWidth = 0.0f;
     float m_systemButtonsMinX = 0.0f;
@@ -48,7 +49,7 @@ struct ego::editor::EditorTitleBar::SystemButtonLayout final
     float m_restoredWindowIconOffset = 0.0f;
 };
 
-void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, bool& _showViewport, bool& _showSceneInspector, bool& _showEntityInspector)
+void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, GuiWindowController& _windowController)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(TitleBarHorizontalPadding, TitleBarVerticalPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(TitleBarHorizontalPadding, 0.0f));
@@ -64,8 +65,11 @@ void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, bool& _showVie
         layout.m_dpiScale = mainViewport.DpiScale;
 
         drawIcon(layout.m_size.y, layout.m_dpiScale);
-        drawWindowMenu(_showViewport, _showSceneInspector, _showEntityInspector, layout);
+
+        layout.m_windowMenuMaxX = _windowController.drawWindowMenu();
+
         drawSystemButtons(_surface, layout);
+
         drawTitle(layout);
         updateCaptionArea(_surface, layout);
 
@@ -73,20 +77,6 @@ void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, bool& _showVie
     }
 
     ImGui::PopStyleVar(2);
-}
-
-void ego::editor::EditorTitleBar::drawWindowMenu(bool& _showViewport, bool& _showSceneInspector, bool& _showEntityInspector, TitleBarLayout& _layout) const
-{
-    const bool isWindowMenuOpen = ImGui::BeginMenu("Window");
-    _layout.m_windowMenuMin = ImGui::GetItemRectMin();
-    _layout.m_windowMenuMax = ImGui::GetItemRectMax();
-    if (isWindowMenuOpen)
-    {
-        ImGui::MenuItem("Viewport", nullptr, &_showViewport);
-        ImGui::MenuItem("Scene Inspector", nullptr, &_showSceneInspector);
-        ImGui::MenuItem("Entity Inspector", nullptr, &_showEntityInspector);
-        ImGui::EndMenu();
-    }
 }
 
 void ego::editor::EditorTitleBar::drawSystemButtons(PlatformSurface& _surface, TitleBarLayout& _layout) const
@@ -122,7 +112,7 @@ void ego::editor::EditorTitleBar::drawSystemButtons(PlatformSurface& _surface, T
 void ego::editor::EditorTitleBar::drawTitle(const TitleBarLayout& _layout) const
 {
     const ImVec2 titleSize = ImGui::CalcTextSize(EditorTitle);
-    const float minimumTitleX = _layout.m_windowMenuMax.x + TitleBarHorizontalPadding * _layout.m_dpiScale;
+    const float minimumTitleX = _layout.m_windowMenuMaxX + TitleBarHorizontalPadding * _layout.m_dpiScale;
     const float maximumTitleX = _layout.m_systemButtonsMinX - titleSize.x - TitleBarHorizontalPadding * _layout.m_dpiScale;
     const float centeredTitleX = _layout.m_position.x + (_layout.m_size.x - titleSize.x) * 0.5f;
     if (minimumTitleX <= maximumTitleX)
@@ -139,10 +129,10 @@ void ego::editor::EditorTitleBar::updateCaptionArea(PlatformSurface& _surface, c
     constexpr float maximumExtent = static_cast<float>((std::numeric_limits<uint16_t>::max)());
 
     const SurfacePoint position(
-        static_cast<int32_t>(_layout.m_windowMenuMax.x - _layout.m_viewportPosition.x),
+        static_cast<int32_t>(_layout.m_windowMenuMaxX - _layout.m_viewportPosition.x),
         static_cast<int32_t>(_layout.m_position.y - _layout.m_viewportPosition.y));
     const SurfaceSize size(
-        static_cast<uint16_t>(std::clamp(_layout.m_systemButtonsMinX - _layout.m_windowMenuMax.x, 0.0f, maximumExtent)),
+        static_cast<uint16_t>(std::clamp(_layout.m_systemButtonsMinX - _layout.m_windowMenuMaxX, 0.0f, maximumExtent)),
         static_cast<uint16_t>(std::clamp(_layout.m_size.y, 0.0f, maximumExtent)));
     EGO_ASSERT(_surface.setCaptionArea(position, size));
 }
