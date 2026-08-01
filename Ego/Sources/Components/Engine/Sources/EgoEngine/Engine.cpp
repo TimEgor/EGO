@@ -13,13 +13,11 @@ ego::engine::Engine::~Engine()
 
 bool ego::engine::Engine::init()
 {
-    EGO_CHECK_RETURN_FALSE(!m_isInitialized);
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(m_sessions.empty());
 
     EGO_CHECK_INITIALIZATION(initJobController());
 
-    m_isInitialized = true;
     return true;
 }
 
@@ -38,17 +36,10 @@ void ego::engine::Engine::release()
     releaseJobController();
 
     m_nextSessionID = 1;
-    m_isInitialized = false;
-}
-
-bool ego::engine::Engine::isInitialized() const
-{
-    return m_isInitialized;
 }
 
 ego::engine::EngineSessionPointer ego::engine::Engine::createSession(const EngineSession::InitData& _initData)
 {
-    EGO_CHECK_RETURN_NULL(m_isInitialized);
     EGO_CHECK_RETURN_NULL(m_jobController);
 
     const EngineSessionID sessionID = allocateSessionID();
@@ -59,6 +50,7 @@ ego::engine::EngineSessionPointer ego::engine::Engine::createSession(const Engin
     EGO_CHECK_RETURN_NULL(session->init(m_jobController, sessionID, _initData));
 
     m_sessions.push_back(session);
+
     return session;
 }
 
@@ -79,6 +71,7 @@ bool ego::engine::Engine::destroySession(EngineSessionID _sessionID)
     const EngineSessionPointer session = *sessionIt;
     m_sessions.erase(sessionIt);
     session->release();
+
     return true;
 }
 
@@ -102,7 +95,7 @@ const ego::engine::Engine::SessionCollection& ego::engine::Engine::getSessions()
 
 bool ego::engine::Engine::tick()
 {
-    EGO_CHECK_RETURN_FALSE(m_isInitialized);
+    EGO_CHECK_RETURN_FALSE(m_jobController);
 
     for (const EngineSessionPointer& session : m_sessions)
     {
@@ -123,6 +116,7 @@ bool ego::engine::Engine::initJobController()
     }
 
     m_jobController = MakePointer<JobController>();
+
     return m_jobController && m_jobController->init(threadCount, "EgoJob");
 }
 

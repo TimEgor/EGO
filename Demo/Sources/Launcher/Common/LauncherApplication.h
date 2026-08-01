@@ -4,12 +4,12 @@
 
 #include "EgoCore/Patterns/NonCopyable.h"
 
-#include "EgoEngine/Engine.h"
-#include "EgoEngine/EngineSession.h"
-#include "EgoEngine/Project/Project.h"
-
-#include "EgoApplication/Application.h"
+#include "EgoApplication/ApplicationSubsystem.h"
 #include "EgoApplication/Presentation/PresenterProvider.h"
+
+#include "EgoEngine/EngineSession.h"
+#include "EgoEngine/EngineSubsystem.h"
+#include "EgoEngine/Project/Project.h"
 
 namespace ego::demo::launcher
 {
@@ -39,11 +39,11 @@ namespace ego::demo::launcher
             std::string m_projectFilePath;
         };
 
-        bool initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options);
-        void releaseApplication();
+        bool initApplicationSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options);
+        void releaseApplicationSubsystem();
 
-        bool initEngine(const CommandLineOptions& _options);
-        void releaseEngine();
+        bool initEngineSubsystem(const CommandLineOptions& _options);
+        void releaseEngineSubsystem();
 
         bool runMainLoop();
 
@@ -53,9 +53,8 @@ namespace ego::demo::launcher
         static application::PresentationDesc CreateMainPresentationDesc();
         FileName selectProjectFile() const;
 
-        application::ApplicationPointer m_application = nullptr;
-
-        engine::EnginePointer m_engine = nullptr;
+        application::ApplicationSubsystemPointer m_applicationSubsystem = nullptr;
+        engine::EngineSubsystemPointer m_engineSubsystem = nullptr;
         engine::EngineSessionPointer m_engineSession = nullptr;
 
         PlatformSurfacePointer m_mainSurface = nullptr;

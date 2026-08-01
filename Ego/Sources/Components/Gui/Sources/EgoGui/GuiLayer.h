@@ -1,16 +1,11 @@
 #pragma once
 
-#include <cstdint>
-
 #include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
 #include "EgoGui/Rendering/GuiTexture.h"
 
 namespace ego::gui
 {
-    using GuiLayerID = uint64_t;
-    inline constexpr GuiLayerID InvalidGuiLayerID = 0;
-
     class GuiBackend;
     class GuiController;
 

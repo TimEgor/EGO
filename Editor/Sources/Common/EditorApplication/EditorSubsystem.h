@@ -12,20 +12,14 @@ namespace ego::editor
         EditorSubsystem() = default;
         ~EditorSubsystem() override = default;
 
-        bool init(const application::ApplicationPointer& _application, const engine::EnginePointer& _engine, const XmlDocument& _config);
-        void release() override;
-
-        void update();
-
-        bool isInitialized() const;
-        bool isSurfaceValid() const;
-
         EditorController& getEditorController();
         const EditorController& getEditorController() const;
 
         EGO_SUBSYSTEM(EditorSubsystem, subsystem::Subsystem);
 
     private:
+        void release() override;
+
         EditorController m_editorController;
     };
 

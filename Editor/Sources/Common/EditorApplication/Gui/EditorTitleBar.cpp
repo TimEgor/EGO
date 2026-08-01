@@ -10,7 +10,7 @@
 
 #include "EgoApplication/ApplicationSubsystem.h"
 
-#include "GuiWindowController.h"
+#include "Menu/GuiMenuController.h"
 
 #include <imgui.h>
 
@@ -33,7 +33,7 @@ struct ego::editor::EditorTitleBar::TitleBarLayout final
     ImVec2 m_position;
     ImVec2 m_size;
     ImVec2 m_viewportPosition;
-    float m_windowMenuMaxX = 0.0f;
+    float m_menuMaxX = 0.0f;
     float m_dpiScale = 1.0f;
     float m_systemButtonWidth = 0.0f;
     float m_systemButtonsMinX = 0.0f;
@@ -49,7 +49,7 @@ struct ego::editor::EditorTitleBar::SystemButtonLayout final
     float m_restoredWindowIconOffset = 0.0f;
 };
 
-void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, GuiWindowController& _windowController)
+void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, GuiMenuController& _menuController)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(TitleBarHorizontalPadding, TitleBarVerticalPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(TitleBarHorizontalPadding, 0.0f));
@@ -66,7 +66,7 @@ void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, GuiWindowContr
 
         drawIcon(layout.m_size.y, layout.m_dpiScale);
 
-        layout.m_windowMenuMaxX = _windowController.drawWindowMenu();
+        layout.m_menuMaxX = _menuController.draw();
 
         drawSystemButtons(_surface, layout);
 
@@ -112,7 +112,7 @@ void ego::editor::EditorTitleBar::drawSystemButtons(PlatformSurface& _surface, T
 void ego::editor::EditorTitleBar::drawTitle(const TitleBarLayout& _layout) const
 {
     const ImVec2 titleSize = ImGui::CalcTextSize(EditorTitle);
-    const float minimumTitleX = _layout.m_windowMenuMaxX + TitleBarHorizontalPadding * _layout.m_dpiScale;
+    const float minimumTitleX = _layout.m_menuMaxX + TitleBarHorizontalPadding * _layout.m_dpiScale;
     const float maximumTitleX = _layout.m_systemButtonsMinX - titleSize.x - TitleBarHorizontalPadding * _layout.m_dpiScale;
     const float centeredTitleX = _layout.m_position.x + (_layout.m_size.x - titleSize.x) * 0.5f;
     if (minimumTitleX <= maximumTitleX)
@@ -129,10 +129,10 @@ void ego::editor::EditorTitleBar::updateCaptionArea(PlatformSurface& _surface, c
     constexpr float maximumExtent = static_cast<float>((std::numeric_limits<uint16_t>::max)());
 
     const SurfacePoint position(
-        static_cast<int32_t>(_layout.m_windowMenuMaxX - _layout.m_viewportPosition.x),
+        static_cast<int32_t>(_layout.m_menuMaxX - _layout.m_viewportPosition.x),
         static_cast<int32_t>(_layout.m_position.y - _layout.m_viewportPosition.y));
     const SurfaceSize size(
-        static_cast<uint16_t>(std::clamp(_layout.m_systemButtonsMinX - _layout.m_windowMenuMaxX, 0.0f, maximumExtent)),
+        static_cast<uint16_t>(std::clamp(_layout.m_systemButtonsMinX - _layout.m_menuMaxX, 0.0f, maximumExtent)),
         static_cast<uint16_t>(std::clamp(_layout.m_size.y, 0.0f, maximumExtent)));
     EGO_ASSERT(_surface.setCaptionArea(position, size));
 }
@@ -269,6 +269,7 @@ void ego::editor::EditorTitleBar::drawSystemButtonIcon(SystemButton _button, con
             ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, lineMinY),
             ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, lineMinY + _layout.m_lineThickness),
             iconColor);
+
         break;
     }
 
@@ -296,6 +297,7 @@ void ego::editor::EditorTitleBar::drawSystemButtonIcon(SystemButton _button, con
                 ImVec2(_layout.m_center.x - _layout.m_iconHalfSize, _layout.m_center.y - _layout.m_iconHalfSize),
                 ImVec2(_layout.m_center.x + _layout.m_iconHalfSize, _layout.m_center.y + _layout.m_iconHalfSize));
         }
+
         break;
 
     case SystemButton::Close:

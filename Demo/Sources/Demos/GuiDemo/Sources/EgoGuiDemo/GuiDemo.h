@@ -21,7 +21,6 @@ namespace ego::demo
         LevelPointer m_level = nullptr;
         ecs::Entity m_cameraEntity;
         GuiLayer m_guiLayer;
-        gui::GuiLayerID m_guiLayerID = gui::InvalidGuiLayerID;
     };
 
     EGO_POINTER(GuiDemo);

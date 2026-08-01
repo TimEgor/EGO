@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -119,18 +118,6 @@ namespace ego
 
     template <typename T1, typename T2>
     bool operator!=(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2);
-
-    template <typename T1, typename T2>
-    bool operator<(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2);
-
-    template <typename T1, typename T2>
-    bool operator>(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2);
-
-    template <typename T1, typename T2>
-    bool operator<=(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2);
-
-    template <typename T1, typename T2>
-    bool operator>=(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2);
 } // namespace ego
 
 #define EGO_INTRUSIVE_POINTER_DECLARATION(_TYPE, _NAME, _POSTFIX) using _NAME##_POSTFIX = ego::IntrusivePointer<_TYPE>;

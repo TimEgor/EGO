@@ -4,9 +4,9 @@
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 
-#include "EgoEngine/Engine.h"
+#include "EgoApplication/ApplicationSubsystem.h"
 
-#include "EgoApplication/Application.h"
+#include "EgoEngine/EngineSubsystem.h"
 
 #include "EditorSubsystem.h"
 
@@ -33,13 +33,13 @@ namespace ego::editor
             FileName m_graphicHardwarePluginModuleName;
         };
 
-        bool initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options, const XmlDocument& _config);
-        void releaseApplication();
+        bool initApplicationSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options, const XmlDocument& _config);
+        void releaseApplicationSubsystem();
 
         bool loadConfig(XmlDocument& _config) const;
 
-        bool initEngine();
-        void releaseEngine();
+        bool initEngineSubsystem();
+        void releaseEngineSubsystem();
 
         bool initEditorSubsystem(const XmlDocument& _config);
         void releaseEditorSubsystem();
@@ -49,8 +49,8 @@ namespace ego::editor
         static FileName ResolveOption(const FileName& _option, const XmlNode& _configNode, const char* _configName);
         static void ParseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options);
 
-        application::ApplicationPointer m_application = nullptr;
-        engine::EnginePointer m_engine = nullptr;
+        application::ApplicationSubsystemPointer m_applicationSubsystem = nullptr;
+        engine::EngineSubsystemPointer m_engineSubsystem = nullptr;
 
         EditorSubsystemPointer m_editorSubsystem = nullptr;
     };

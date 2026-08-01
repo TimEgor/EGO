@@ -41,7 +41,6 @@ void ego::gui::GuiController::release()
     EGO_ASSERT(m_layers.empty());
     m_layers.clear();
     m_pendingFrame = GuiRenderData();
-    m_nextLayerID = 1;
 }
 
 bool ego::gui::GuiController::setFont(const FileName& _path, float _size)
@@ -97,42 +96,27 @@ ego::gui::GuiRenderData ego::gui::GuiController::takeRenderData()
     return renderData;
 }
 
-ego::gui::GuiLayerID ego::gui::GuiController::registerLayer(GuiLayer& _layer)
+bool ego::gui::GuiController::registerLayer(GuiLayer& _layer)
 {
-    if (!isInitialized() || m_isFrameActive)
-    {
-        return InvalidGuiLayerID;
-    }
+    EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive);
 
     const LayerIterator existingLayer = findLayer(_layer);
     if (existingLayer != m_layers.end())
     {
-        return existingLayer->m_id;
+        return true;
     }
 
-    const GuiLayerID layerID = allocateLayerID();
-    if (layerID == InvalidGuiLayerID)
-    {
-        return InvalidGuiLayerID;
-    }
+    m_layers.push_back({.m_layer = _layer});
 
-    m_layers.push_back({.m_id = layerID, .m_layer = _layer});
-
-    return layerID;
+    return true;
 }
 
-bool ego::gui::GuiController::unregisterLayer(GuiLayerID _layerID)
+bool ego::gui::GuiController::unregisterLayer(GuiLayer& _layer)
 {
-    if (_layerID == InvalidGuiLayerID || m_isFrameActive)
-    {
-        return false;
-    }
+    EGO_CHECK_RETURN_FALSE(!m_isFrameActive);
 
-    const LayerIterator layer = findLayer(_layerID);
-    if (layer == m_layers.end())
-    {
-        return false;
-    }
+    const LayerIterator layer = findLayer(_layer);
+    EGO_CHECK_RETURN_FALSE(layer != m_layers.end());
 
     m_layers.erase(layer);
 
@@ -165,34 +149,4 @@ ego::gui::GuiController::LayerIterator ego::gui::GuiController::findLayer(GuiLay
         {
             return std::addressof(_record.m_layer.get()) == std::addressof(_layer);
         });
-}
-
-ego::gui::GuiController::LayerIterator ego::gui::GuiController::findLayer(GuiLayerID _layerID)
-{
-    return std::ranges::find_if(
-        m_layers,
-        [_layerID](const LayerRecord& _record)
-        {
-            return _record.m_id == _layerID;
-        });
-}
-
-ego::gui::GuiLayerID ego::gui::GuiController::allocateLayerID()
-{
-    const GuiLayerID firstCandidate = m_nextLayerID;
-    do
-    {
-        const GuiLayerID candidate = m_nextLayerID++;
-        if (m_nextLayerID == InvalidGuiLayerID)
-        {
-            m_nextLayerID = 1;
-        }
-
-        if (candidate != InvalidGuiLayerID && findLayer(candidate) == m_layers.end())
-        {
-            return candidate;
-        }
-    } while (m_nextLayerID != firstCandidate);
-
-    return InvalidGuiLayerID;
 }

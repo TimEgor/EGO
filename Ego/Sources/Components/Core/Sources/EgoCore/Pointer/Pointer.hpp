@@ -272,6 +272,18 @@ void ego::SharedPointer<T>::swap(SharedPointer& _pointer)
     std::swap(m_controlBlock, _pointer.m_controlBlock);
 }
 
+template <typename T1, typename T2>
+bool ego::operator==(const SharedPointer<T1>& _pointer1, const SharedPointer<T2>& _pointer2)
+{
+    return _pointer1.getObject() == _pointer2.getObject();
+}
+
+template <typename T1, typename T2>
+bool ego::operator!=(const SharedPointer<T1>& _pointer1, const SharedPointer<T2>& _pointer2)
+{
+    return !(_pointer1 == _pointer2);
+}
+
 template <typename T>
 void ego::SharedPointer<T>::incrementSharedCount()
 {
@@ -554,6 +566,18 @@ void ego::WeakPointer<T>::releaseWeakCount()
 
     m_object = nullptr;
     m_controlBlock = nullptr;
+}
+
+template <typename T1, typename T2>
+bool ego::operator==(const WeakPointer<T1>& _pointer1, const WeakPointer<T2>& _pointer2)
+{
+    return _pointer1.m_object == _pointer2.m_object;
+}
+
+template <typename T1, typename T2>
+bool ego::operator!=(const WeakPointer<T1>& _pointer1, const WeakPointer<T2>& _pointer2)
+{
+    return !(_pointer1 == _pointer2);
 }
 
 template <typename T>

@@ -32,9 +32,10 @@ ego::application::Application::~Application()
     release();
 }
 
-bool ego::application::Application::init(const InitData& _initData)
+bool ego::application::Application::init(const InitData& _initData, const ApplicationSubsystemPointer& _applicationSubsystem)
 {
     EGO_CHECK_RETURN_FALSE(!m_subsystemRegistry);
+    EGO_CHECK_RETURN_FALSE(_applicationSubsystem);
 
     m_isExitRequested = false;
 
@@ -44,7 +45,7 @@ bool ego::application::Application::init(const InitData& _initData)
     EGO_CHECK_INITIALIZATION(initPlatformSubsystem(_initData.m_nativeInstanceHandle));
     EGO_CHECK_INITIALIZATION(initPluginSubsystem(_initData.m_pluginDirectory));
     EGO_CHECK_INITIALIZATION(initApplicationProfiler(_initData.m_profilerPluginModuleName));
-    EGO_CHECK_INITIALIZATION(initApplicationSubsystem());
+    EGO_CHECK_INITIALIZATION(registerSubsystem(_applicationSubsystem));
 
     if (_initData.m_enableGraphicHardware)
     {
@@ -68,7 +69,6 @@ void ego::application::Application::release()
     releaseInputController();
     releaseResourceSubsystem();
     releaseGraphicHardwareSubsystem();
-    releaseApplicationSubsystem();
     releaseApplicationProfiler();
     releasePluginSubsystem();
     releasePlatformSubsystem();
@@ -173,15 +173,6 @@ bool ego::application::Application::initApplicationProfiler(const FileName& _plu
     return m_applicationProfiler->init(_pluginModuleName);
 }
 
-bool ego::application::Application::initApplicationSubsystem()
-{
-    m_applicationSubsystem = MakePointer<ApplicationSubsystem>();
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem->init(sharedFromThis()));
-
-    return registerSubsystem(m_applicationSubsystem);
-}
-
 bool ego::application::Application::initGraphicHardwareSubsystem(const FileName& _pluginModuleName)
 {
     m_graphicHardwareSubsystem = MakePointer<gpu::GraphicHardwareSubsystem>();
@@ -221,12 +212,6 @@ void ego::application::Application::releaseGraphicHardwareSubsystem()
 {
     releaseSubsystem(m_graphicHardwareSubsystem);
     m_graphicHardwareSubsystem = nullptr;
-}
-
-void ego::application::Application::releaseApplicationSubsystem()
-{
-    releaseSubsystem(m_applicationSubsystem);
-    m_applicationSubsystem = nullptr;
 }
 
 void ego::application::Application::releaseApplicationProfiler()
@@ -311,6 +296,7 @@ bool ego::application::Application::initSubsystemRegistry()
     if (!subsystem::SubsystemLocator::GetInstance().bind(m_subsystemRegistry))
     {
         m_subsystemRegistry = nullptr;
+
         return false;
     }
 

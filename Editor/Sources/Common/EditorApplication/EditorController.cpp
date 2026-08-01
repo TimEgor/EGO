@@ -3,83 +3,84 @@
 #include <string>
 
 #include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Math/Color.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/Platform/FileSystem/RootedFileSystem.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoECS/Entity.h"
-
 #include "EgoResource/ResourceController.h"
 #include "EgoResource/ResourceSubsystem.h"
 
-#include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
-
-#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
-#include "EgoEngine/Graphic/SceneRender/Render.h"
-
+#include "EgoApplication/ApplicationSubsystem.h"
 #include "EgoApplication/Presentation/PresenterProvider.h"
 
-namespace
-{
-    constexpr ego::gpu::Texture2DSize SimulationTextureSize(900, 600);
-} // namespace
+#include "EgoEngine/EngineSubsystem.h"
 
 ego::editor::EditorController::~EditorController()
 {
     release();
 }
 
-bool ego::editor::EditorController::init(const application::ApplicationPointer& _application, const engine::EnginePointer& _engine, const XmlDocument& _config)
+bool ego::editor::EditorController::init(const XmlDocument& _config)
 {
     release();
 
-    EGO_CHECK_RETURN_FALSE(_application && _engine);
+    const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
+    EGO_CHECK_INITIALIZATION(applicationSubsystem && applicationSubsystem->getApplicationPointer());
 
-    m_application = _application;
-    m_engine = _engine;
+    const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
+    EGO_CHECK_INITIALIZATION(engineSubsystem && engineSubsystem->getEnginePointer());
 
-    if (!initEditorAssets(_config) || !initProjectContext(_config) || !initEditorContext(_config))
-    {
-        release();
-        return false;
-    }
+    EGO_CHECK_INITIALIZATION(initEditorAssets(_config));
+    EGO_CHECK_INITIALIZATION(initEditorContext(_config));
+    EGO_CHECK_INITIALIZATION(m_projectController.init(_config));
 
-    m_editorContext.m_surface->show();
+    m_editorContext.m_mainSurface->show();
+
     return true;
 }
 
 void ego::editor::EditorController::release()
 {
+    m_projectController.release();
     releaseEditorContext();
-    releaseProjectContext();
     releaseEditorAssets();
-
-    m_engine = nullptr;
-    m_application = nullptr;
 }
 
-void ego::editor::EditorController::update()
+bool ego::editor::EditorController::isMainSurfaceValid() const
 {
-    drawProjectContext();
+    return m_editorContext.m_mainSurface && m_editorContext.m_mainSurface->isValid();
 }
 
-bool ego::editor::EditorController::isInitialized() const
+ego::engine::EngineSessionPointer ego::editor::EditorController::getEditorEngineSessionPointer() const
 {
-    return m_application && m_engine && m_editorContext.m_engineSession && m_editorContext.m_surface && m_projectContext.m_simulationSession &&
-           m_projectContext.m_simulationGraphicPresenter && m_projectContext.m_simulationLevel && m_editorGuiController.isInitialized();
+    return m_editorContext.m_engineSession;
 }
 
-bool ego::editor::EditorController::isSurfaceValid() const
+ego::editor::EditorGuiController& ego::editor::EditorController::getEditorGuiController()
 {
-    return m_editorContext.m_surface && m_editorContext.m_surface->isValid();
+    return m_editorGuiController;
 }
 
-ego::gui::GuiControllerPointer ego::editor::EditorController::getGuiControllerPointer() const
+const ego::editor::EditorGuiController& ego::editor::EditorController::getEditorGuiController() const
 {
-    return m_editorContext.m_engineSession ? m_editorContext.m_engineSession->getGuiControllerPointer() : nullptr;
+    return m_editorGuiController;
+}
+
+ego::editor::EditorProjectController& ego::editor::EditorController::getProjectController()
+{
+    return m_projectController;
+}
+
+const ego::editor::EditorProjectController& ego::editor::EditorController::getProjectController() const
+{
+    return m_projectController;
+}
+
+ego::PlatformSurfacePointer ego::editor::EditorController::getMainSurfacePointer() const
+{
+    return m_editorContext.m_mainSurface;
 }
 
 bool ego::editor::EditorController::initEditorAssets(const XmlDocument& _config)
@@ -114,10 +115,7 @@ bool ego::editor::EditorController::initEditorAssets(const XmlDocument& _config)
 
 void ego::editor::EditorController::releaseEditorAssets()
 {
-    if (!m_editorAssetsFileSystem)
-    {
-        return;
-    }
+    EGO_CHECK_RETURN(m_editorAssetsFileSystem);
 
     const ResourceSubsystemPointer resourceSubsystem = GetResourceSubsystemPointer();
     const ResourceControllerPointer resourceController = resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
@@ -132,9 +130,15 @@ void ego::editor::EditorController::releaseEditorAssets()
 
 bool ego::editor::EditorController::initEditorContext(const XmlDocument& _config)
 {
-    EGO_CHECK_RETURN_FALSE(m_application && m_engine);
-    EGO_CHECK_RETURN_FALSE(!m_editorContext.m_engineSession && !m_editorContext.m_surface);
-    EGO_CHECK_RETURN_FALSE(m_projectContext.m_simulationGraphicPresenter);
+    EGO_CHECK_RETURN_FALSE(!m_editorContext.m_engineSession && !m_editorContext.m_mainSurface);
+
+    const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
+    const application::ApplicationPointer application = applicationSubsystem ? applicationSubsystem->getApplicationPointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(application);
+
+    const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
+    const engine::EnginePointer engine = engineSubsystem ? engineSubsystem->getEnginePointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(engine);
 
     const XmlNode rootNode = _config.getRootNode();
     EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
@@ -142,7 +146,7 @@ bool ego::editor::EditorController::initEditorContext(const XmlDocument& _config
     const XmlNode engineNode = rootNode.getChild("Engine");
     EGO_CHECK_RETURN_FALSE(engineNode);
 
-    const application::PresenterProviderPointer presenterProvider = m_application->getPresenterProviderPointer();
+    const application::PresenterProviderPointer presenterProvider = application->getPresenterProviderPointer();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
 
     application::PresentationDesc presentationDesc;
@@ -164,127 +168,40 @@ bool ego::editor::EditorController::initEditorContext(const XmlDocument& _config
     sessionInitData.m_mainPresentation = presentation;
     sessionInitData.m_sceneRender.m_isEnabled = false;
     sessionInitData.m_gui.m_isEnabled = true;
-    sessionInitData.m_gui.m_pluginModuleName = FileName(engineNode.getChildValueOr<std::string>("GuiRenderPlugin", std::string()));
+    sessionInitData.m_gui.m_pluginModuleName = FileName(engineNode.getChildValueOr<std::string>("EditorRenderPlugin", std::string()));
 
-    const engine::EngineSessionPointer engineSession = m_engine->createSession(sessionInitData);
+    const engine::EngineSessionPointer engineSession = engine->createSession(sessionInitData);
     if (!engineSession)
     {
         presenterProvider->destroyPresentation(presentation.m_surface);
+
         return false;
     }
 
     m_editorContext.m_engineSession = engineSession;
-    m_editorContext.m_surface = presentation.m_surface;
+    m_editorContext.m_mainSurface = presentation.m_surface;
 
-    return m_editorGuiController.init(_config, m_editorContext.m_surface, m_projectContext.m_simulationGraphicPresenter);
+    return m_editorGuiController.init(_config);
 }
 
 void ego::editor::EditorController::releaseEditorContext()
 {
     m_editorGuiController.release();
 
-    if (m_engine && m_editorContext.m_engineSession)
+    const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
+    const engine::EnginePointer engine = engineSubsystem ? engineSubsystem->getEnginePointer() : nullptr;
+    if (engine && m_editorContext.m_engineSession)
     {
-        m_engine->destroySession(m_editorContext.m_engineSession->getID());
+        engine->destroySession(m_editorContext.m_engineSession->getID());
     }
     m_editorContext.m_engineSession = nullptr;
 
-    const application::PresenterProviderPointer presenterProvider = m_application ? m_application->getPresenterProviderPointer() : nullptr;
-    if (presenterProvider && m_editorContext.m_surface)
+    const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
+    const application::ApplicationPointer application = applicationSubsystem ? applicationSubsystem->getApplicationPointer() : nullptr;
+    const application::PresenterProviderPointer presenterProvider = application ? application->getPresenterProviderPointer() : nullptr;
+    if (presenterProvider && m_editorContext.m_mainSurface)
     {
-        presenterProvider->destroyPresentation(m_editorContext.m_surface);
+        presenterProvider->destroyPresentation(m_editorContext.m_mainSurface);
     }
-    m_editorContext.m_surface = nullptr;
-}
-
-bool ego::editor::EditorController::initProjectContext(const XmlDocument& _config)
-{
-    EGO_CHECK_RETURN_FALSE(m_engine);
-    EGO_CHECK_RETURN_FALSE(!m_projectContext.m_simulationSession && !m_projectContext.m_simulationGraphicPresenter && !m_projectContext.m_simulationLevel);
-
-    const XmlNode rootNode = _config.getRootNode();
-    EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
-
-    const XmlNode engineNode = rootNode.getChild("Engine");
-    EGO_CHECK_RETURN_FALSE(engineNode);
-
-    TextureGraphicPresenterPointer graphicPresenter = new TextureGraphicPresenter();
-    if (!graphicPresenter || !graphicPresenter->init(gpu::GetGraphicDevice(), SimulationTextureSize, gpu::GraphicResourceFormat::R8G8B8A8UNorm))
-    {
-        EGO_SAFE_RESET_POINTER_WITH_RELEASING(graphicPresenter);
-        return false;
-    }
-
-    engine::EngineSession::InitData sessionInitData;
-    sessionInitData.m_mainPresentation.m_graphicPresenter = graphicPresenter;
-    sessionInitData.m_sceneRender.m_pluginModuleName = FileName(engineNode.getChildValueOr<std::string>("RenderPlugin", std::string()));
-
-    const engine::EngineSessionPointer engineSession = m_engine->createSession(sessionInitData);
-    if (!engineSession)
-    {
-        graphicPresenter->release();
-        graphicPresenter = nullptr;
-        return false;
-    }
-
-    m_projectContext.m_simulationSession = engineSession;
-    m_projectContext.m_simulationGraphicPresenter = graphicPresenter;
-
-    LevelController& levelController = engineSession->getLevelController();
-    m_projectContext.m_simulationLevel = levelController.createLevel();
-    EGO_CHECK_RETURN_FALSE(m_projectContext.m_simulationLevel);
-    EGO_CHECK_RETURN_FALSE(levelController.setActiveLevel(m_projectContext.m_simulationLevel->getID()));
-
-    const ecs::Entity cameraEntity = m_projectContext.m_simulationLevel->createNode();
-    EGO_CHECK_RETURN_FALSE(cameraEntity);
-    EGO_CHECK_RETURN_FALSE(m_projectContext.m_simulationLevel->addOrReplaceComponent<render::CameraComponent>(cameraEntity));
-
-    engineSession->setRenderCameraEntity(cameraEntity);
-    return true;
-}
-
-void ego::editor::EditorController::releaseProjectContext()
-{
-    if (m_projectContext.m_simulationSession && m_projectContext.m_simulationLevel)
-    {
-        LevelController& levelController = m_projectContext.m_simulationSession->getLevelController();
-        const LevelPointer activeLevel = levelController.getActiveLevel();
-        if (activeLevel && activeLevel->getID() == m_projectContext.m_simulationLevel->getID())
-        {
-            levelController.clearActiveLevel();
-        }
-
-        m_projectContext.m_simulationSession->clearRenderCameraEntity();
-    }
-    m_projectContext.m_simulationLevel = nullptr;
-
-    if (m_engine && m_projectContext.m_simulationSession)
-    {
-        m_engine->destroySession(m_projectContext.m_simulationSession->getID());
-    }
-    m_projectContext.m_simulationSession = nullptr;
-
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_projectContext.m_simulationGraphicPresenter);
-}
-
-void ego::editor::EditorController::drawProjectContext()
-{
-    if (!m_projectContext.m_simulationSession || !m_projectContext.m_simulationLevel)
-    {
-        return;
-    }
-
-    render::Render& render = m_projectContext.m_simulationSession->getRender();
-
-    const FloatVector3 top(0.0f, 0.6f, 0.0f);
-    const FloatVector3 bottomLeft(-0.6f, -0.5f, 0.0f);
-    const FloatVector3 bottomRight(0.6f, -0.5f, 0.0f);
-
-    render.drawLine(top, bottomLeft, NormalizedColorRed);
-    render.drawLine(bottomLeft, bottomRight, NormalizedColorGreen);
-    render.drawLine(bottomRight, top, NormalizedColorBlue);
-
-    render.drawPoint(top, NormalizedColorWhite);
-    render.drawPoint(bottomLeft, NormalizedColorWhite);
-    render.drawPoint(bottomRight, NormalizedColorWhite);
+    m_editorContext.m_mainSurface = nullptr;
 }

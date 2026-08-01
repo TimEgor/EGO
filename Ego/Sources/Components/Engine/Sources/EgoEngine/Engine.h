@@ -27,8 +27,6 @@ namespace ego::engine
         bool init();
         void release();
 
-        bool isInitialized() const;
-
         EngineSessionPointer createSession(const EngineSession::InitData& _initData);
         bool destroySession(EngineSessionID _sessionID);
 
@@ -46,7 +44,6 @@ namespace ego::engine
         JobControllerPointer m_jobController = nullptr;
         SessionCollection m_sessions;
         EngineSessionID m_nextSessionID = 1;
-        bool m_isInitialized = false;
     };
 
     EGO_POINTER(Engine);

@@ -42,13 +42,12 @@ namespace ego::application
     struct ApplicationQuitRequestedEvent;
 
     EGO_POINTER(Application);
-    EGO_WEAK_POINTER(Application);
     EGO_POINTER(ApplicationInputKeyProvider);
     EGO_POINTER(ApplicationSubsystem);
     EGO_POINTER(ApplicationProfiler);
     EGO_POINTER(PresenterProvider);
 
-    class Application final : public NonCopyable, public EnableSharedFromThis<Application>
+    class Application final : public NonCopyable
     {
     public:
         struct InitData final
@@ -64,7 +63,7 @@ namespace ego::application
         Application();
         ~Application() override;
 
-        bool init(const InitData& _initData);
+        bool init(const InitData& _initData, const ApplicationSubsystemPointer& _applicationSubsystem);
         void release();
 
         const PresenterProviderPointer& getPresenterProviderPointer() const;
@@ -82,13 +81,11 @@ namespace ego::application
         bool initPlatformSubsystem(void* _nativeInstanceHandle);
         bool initPluginSubsystem(const FileName& _pluginDirectory);
         bool initApplicationProfiler(const FileName& _pluginModuleName);
-        bool initApplicationSubsystem();
         bool initGraphicHardwareSubsystem(const FileName& _pluginModuleName);
         bool initResourceSubsystem();
 
         void releaseResourceSubsystem();
         void releaseGraphicHardwareSubsystem();
-        void releaseApplicationSubsystem();
         void releaseApplicationProfiler();
         void releasePluginSubsystem();
         void releasePlatformSubsystem();
@@ -113,7 +110,6 @@ namespace ego::application
         void handleQuitRequested(const ApplicationQuitRequestedEvent& _event);
 
         subsystem::SubsystemRegistryPointer m_subsystemRegistry = nullptr;
-        ApplicationSubsystemPointer m_applicationSubsystem = nullptr;
         DiagnosticSubsystemPointer m_diagnosticSubsystem = nullptr;
         PlatformSubsystemPointer m_platformSubsystem = nullptr;
         PluginSubsystemPointer m_pluginSubsystem = nullptr;

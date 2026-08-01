@@ -75,11 +75,7 @@ void ego::demo::TestDemo::update(float _deltaTime)
         m_triangleRotationAngle -= FullRotation;
     }
 
-    if (!setTriangleTransform(m_firstTriangleEntity, FirstTrianglePosition, m_triangleRotationAngle))
-    {
-        return;
-    }
-
+    setTriangleTransform(m_firstTriangleEntity, FirstTrianglePosition, m_triangleRotationAngle);
     setTriangleTransform(m_secondTriangleEntity, SecondTrianglePosition, -m_triangleRotationAngle);
 }
 

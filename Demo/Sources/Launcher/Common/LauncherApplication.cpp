@@ -20,15 +20,17 @@ bool ego::demo::launcher::LauncherApplication::init(void* _nativeInstanceHandle,
     CommandLineOptions commandLineOptions;
     parseCommandLine(_argCount, _argValues, commandLineOptions);
 
-    if (!initApplication(_nativeInstanceHandle, commandLineOptions))
+    if (!initApplicationSubsystem(_nativeInstanceHandle, commandLineOptions))
     {
         release();
+
         return false;
     }
 
-    if (!initEngine(commandLineOptions))
+    if (!initEngineSubsystem(commandLineOptions))
     {
         release();
+
         return false;
     }
 
@@ -37,13 +39,15 @@ bool ego::demo::launcher::LauncherApplication::init(void* _nativeInstanceHandle,
 
 void ego::demo::launcher::LauncherApplication::release()
 {
-    releaseEngine();
-    releaseApplication();
+    releaseEngineSubsystem();
+    releaseApplicationSubsystem();
 }
 
 int ego::demo::launcher::LauncherApplication::run()
 {
-    if (!m_application || !m_engine || !m_engineSession)
+    const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
+    const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
+    if (!application || !engine || !m_engineSession)
     {
         return InitializationFailedExitCode;
     }
@@ -54,12 +58,12 @@ int ego::demo::launcher::LauncherApplication::run()
     return exitCode;
 }
 
-bool ego::demo::launcher::LauncherApplication::initApplication(void* _nativeInstanceHandle, const CommandLineOptions& _options)
+bool ego::demo::launcher::LauncherApplication::initApplicationSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options)
 {
-    EGO_CHECK_RETURN_FALSE(!m_application);
+    EGO_CHECK_RETURN_FALSE(!m_applicationSubsystem);
 
-    m_application = MakePointer<application::Application>();
-    EGO_CHECK_RETURN_FALSE(m_application);
+    m_applicationSubsystem = MakePointer<application::ApplicationSubsystem>();
+    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
 
     application::Application::InitData applicationInitData;
     applicationInitData.m_nativeInstanceHandle = _nativeInstanceHandle;
@@ -67,23 +71,32 @@ bool ego::demo::launcher::LauncherApplication::initApplication(void* _nativeInst
     applicationInitData.m_profilerPluginModuleName = FileName(_options.m_profilerPluginName);
     applicationInitData.m_graphicHardwarePluginModuleName = FileName(_options.m_graphicHardwarePluginModuleName);
     applicationInitData.m_enableGraphicHardware = true;
-    EGO_CHECK_RETURN_FALSE(m_application->init(applicationInitData));
+    EGO_CHECK_RETURN_CALL_FALSE(m_applicationSubsystem->init(applicationInitData), releaseApplicationSubsystem());
 
     return true;
 }
 
-void ego::demo::launcher::LauncherApplication::releaseApplication()
+void ego::demo::launcher::LauncherApplication::releaseApplicationSubsystem()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_application);
+    EGO_CHECK_RETURN(m_applicationSubsystem);
+
+    const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
+    if (subsystemRegistry && subsystemRegistry->findSubsystem(m_applicationSubsystem->getType()).get() == m_applicationSubsystem.get())
+    {
+        subsystemRegistry->unregisterSubsystem(m_applicationSubsystem);
+    }
+
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationSubsystem);
 }
 
-bool ego::demo::launcher::LauncherApplication::initEngine(const CommandLineOptions& _options)
+bool ego::demo::launcher::LauncherApplication::initEngineSubsystem(const CommandLineOptions& _options)
 {
-    EGO_CHECK_RETURN_FALSE(m_application);
-    EGO_CHECK_RETURN_FALSE(!m_engine);
+    const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(application);
+    EGO_CHECK_RETURN_FALSE(!m_engineSubsystem);
     EGO_CHECK_RETURN_FALSE(!m_engineSession);
 
-    const application::PresenterProviderPointer presenterProvider = m_application->getPresenterProviderPointer();
+    const application::PresenterProviderPointer presenterProvider = application->getPresenterProviderPointer();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
 
     const application::Presentation mainPresentation = presenterProvider->createPresentation(CreateMainPresentationDesc());
@@ -99,11 +112,17 @@ bool ego::demo::launcher::LauncherApplication::initEngine(const CommandLineOptio
     guiOptions.m_isEnabled = true;
     guiOptions.m_pluginModuleName = FileName(_options.m_guiRenderPluginModuleName);
 
-    m_engine = MakePointer<engine::Engine>();
-    EGO_CHECK_RETURN_FALSE(m_engine);
-    EGO_CHECK_RETURN_FALSE(m_engine->init());
+    m_engineSubsystem = MakePointer<engine::EngineSubsystem>();
+    EGO_CHECK_RETURN_FALSE(m_engineSubsystem);
+    EGO_CHECK_RETURN_CALL_FALSE(m_engineSubsystem->init(), releaseEngineSubsystem());
 
-    m_engineSession = m_engine->createSession(sessionInitData);
+    const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
+    EGO_CHECK_RETURN_CALL_FALSE(subsystemRegistry && subsystemRegistry->registerSubsystem(m_engineSubsystem), releaseEngineSubsystem());
+
+    const engine::EnginePointer engine = m_engineSubsystem->getEnginePointer();
+    EGO_CHECK_RETURN_FALSE(engine);
+
+    m_engineSession = engine->createSession(sessionInitData);
     EGO_CHECK_RETURN_FALSE(m_engineSession);
 
     EGO_CHECK_RETURN_FALSE(mainPresentation.m_surface->show());
@@ -111,41 +130,54 @@ bool ego::demo::launcher::LauncherApplication::initEngine(const CommandLineOptio
     return true;
 }
 
-void ego::demo::launcher::LauncherApplication::releaseEngine()
+void ego::demo::launcher::LauncherApplication::releaseEngineSubsystem()
 {
-    if (m_engine && m_engineSession)
+    const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
+    if (engine && m_engineSession)
     {
-        m_engine->destroySession(m_engineSession->getID());
+        engine->destroySession(m_engineSession->getID());
     }
-    m_engineSession = nullptr;
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engine);
 
-    const application::PresenterProviderPointer presenterProvider = m_application ? m_application->getPresenterProviderPointer() : nullptr;
+    m_engineSession = nullptr;
+
+    const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
+    if (subsystemRegistry && m_engineSubsystem && subsystemRegistry->findSubsystem(m_engineSubsystem->getType()).get() == m_engineSubsystem.get())
+    {
+        subsystemRegistry->unregisterSubsystem(m_engineSubsystem);
+    }
+
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engineSubsystem);
+
+    const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
+    const application::PresenterProviderPointer presenterProvider = application ? application->getPresenterProviderPointer() : nullptr;
     if (presenterProvider && m_mainSurface)
     {
         presenterProvider->destroyPresentation(m_mainSurface);
     }
+
     m_mainSurface = nullptr;
 }
 
 bool ego::demo::launcher::LauncherApplication::runMainLoop()
 {
-    EGO_CHECK_RETURN_FALSE(m_application);
-    EGO_CHECK_RETURN_FALSE(m_engine);
+    const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
+    const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(application);
+    EGO_CHECK_RETURN_FALSE(engine);
     EGO_CHECK_RETURN_FALSE(m_engineSession);
 
-    while (!m_application->isExitRequested())
+    while (!application->isExitRequested())
     {
-        m_application->processWindowEvents();
+        application->processWindowEvents();
         const PlatformSurfacePointer mainSurface = m_mainSurface;
-        if (m_application->isExitRequested() || !mainSurface || !mainSurface->isValid())
+        if (application->isExitRequested() || !mainSurface || !mainSurface->isValid())
         {
             break;
         }
 
-        m_application->updateInputDevices();
+        application->updateInputDevices();
 
-        EGO_CHECK_RETURN_FALSE(m_engine->tick());
+        EGO_CHECK_RETURN_FALSE(engine->tick());
     }
 
     return true;
@@ -174,6 +206,7 @@ bool ego::demo::launcher::LauncherApplication::fillEngineSessionInitData(const C
 
     EGO_CHECK_RETURN_FALSE(loadProject(projectFileName, _sessionInitData.m_project));
     _sessionInitData.m_sceneRender.m_pluginModuleName = FileName(_options.m_renderPluginModuleName);
+
     return true;
 }
 
@@ -212,5 +245,6 @@ ego::FileName ego::demo::launcher::LauncherApplication::selectProjectFile() cons
     params.m_filterCount = sizeof(filters) / sizeof(filters[0]);
 
     const PlatformSubsystemPointer platformSubsystem = subsystem::FindSubsystem<PlatformSubsystem>();
+
     return platformSubsystem ? platformSubsystem->getPlatform().selectOpenFile(params) : FileName();
 }

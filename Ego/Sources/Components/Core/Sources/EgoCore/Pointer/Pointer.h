@@ -95,7 +95,7 @@ namespace ego
         template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
         SharedPointer& operator=(SharedPointer<U>&& _pointer) noexcept;
 
-        explicit operator bool() const;
+        operator bool() const;
 
         T* get() const;
         T* getObject() const;
@@ -126,6 +126,12 @@ namespace ego
         ControlBlockBase* m_controlBlock = nullptr;
     };
 
+    template <typename T1, typename T2>
+    bool operator==(const SharedPointer<T1>& _pointer1, const SharedPointer<T2>& _pointer2);
+
+    template <typename T1, typename T2>
+    bool operator!=(const SharedPointer<T1>& _pointer1, const SharedPointer<T2>& _pointer2);
+
     template <typename T>
     class WeakPointer
     {
@@ -134,6 +140,12 @@ namespace ego
 
         template <typename U>
         friend class EnableSharedFromThis;
+
+        template <typename T1, typename T2>
+        friend bool operator==(const WeakPointer<T1>& _pointer1, const WeakPointer<T2>& _pointer2);
+
+        template <typename T1, typename T2>
+        friend bool operator!=(const WeakPointer<T1>& _pointer1, const WeakPointer<T2>& _pointer2);
 
     public:
         WeakPointer();
@@ -182,6 +194,12 @@ namespace ego
         T* m_object = nullptr;
         ControlBlockBase* m_controlBlock = nullptr;
     };
+
+    template <typename T1, typename T2>
+    bool operator==(const WeakPointer<T1>& _pointer1, const WeakPointer<T2>& _pointer2);
+
+    template <typename T1, typename T2>
+    bool operator!=(const WeakPointer<T1>& _pointer1, const WeakPointer<T2>& _pointer2);
 
     template <typename T>
     class EnableSharedFromThis

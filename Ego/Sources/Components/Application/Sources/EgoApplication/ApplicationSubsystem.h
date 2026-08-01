@@ -6,13 +6,15 @@
 
 namespace ego::application
 {
-    class ApplicationSubsystem final : public subsystem::Subsystem
+    class ApplicationSubsystem final
+        : public subsystem::Subsystem,
+          public EnableSharedFromThis<ApplicationSubsystem>
     {
     public:
         ApplicationSubsystem() = default;
         ~ApplicationSubsystem() override = default;
 
-        bool init(const ApplicationPointer& _application);
+        bool init(const Application::InitData& _initData);
         void release() override;
 
         ApplicationPointer getApplicationPointer() const;
@@ -21,7 +23,7 @@ namespace ego::application
         EGO_SUBSYSTEM(ApplicationSubsystem, subsystem::Subsystem);
 
     private:
-        ApplicationWeakPointer m_application;
+        ApplicationPointer m_application = nullptr;
     };
 
     ApplicationSubsystemPointer GetApplicationSubsystemPointer();

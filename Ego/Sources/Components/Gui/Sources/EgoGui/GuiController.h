@@ -39,15 +39,14 @@ namespace ego::gui
         void update(float _deltaTime);
         GuiRenderData takeRenderData();
 
-        GuiLayerID registerLayer(GuiLayer& _layer);
-        bool unregisterLayer(GuiLayerID _layerID);
+        bool registerLayer(GuiLayer& _layer);
+        bool unregisterLayer(GuiLayer& _layer);
 
         bool isInitialized() const;
 
     private:
         struct LayerRecord final
         {
-            GuiLayerID m_id = InvalidGuiLayerID;
             std::reference_wrapper<GuiLayer> m_layer;
         };
 
@@ -57,15 +56,11 @@ namespace ego::gui
         bool drawLayers();
 
         LayerIterator findLayer(GuiLayer& _layer);
-        LayerIterator findLayer(GuiLayerID _layerID);
-        GuiLayerID allocateLayerID();
 
         std::unique_ptr<GuiBackend> m_backend;
 
         LayerCollection m_layers;
         GuiRenderData m_pendingFrame;
-
-        GuiLayerID m_nextLayerID = 1;
 
         bool m_isFrameActive = false;
     };

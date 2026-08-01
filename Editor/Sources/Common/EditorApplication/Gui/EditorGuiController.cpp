@@ -14,38 +14,32 @@ ego::editor::EditorGuiController::~EditorGuiController()
     release();
 }
 
-bool ego::editor::EditorGuiController::init(
-    const XmlDocument& _config,
-    const PlatformSurfacePointer& _surface,
-    const TextureGraphicPresenterPointer& _simulationGraphicPresenter)
+bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
 {
     release();
 
-    EGO_CHECK_RETURN_FALSE(_surface && _simulationGraphicPresenter);
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_INITIALIZATION(editorSubsystem);
+
+    const PlatformSurfacePointer mainSurface = editorSubsystem->getEditorController().getMainSurfacePointer();
+    EGO_CHECK_INITIALIZATION(mainSurface);
 
     const gui::GuiControllerPointer guiController = GetGuiControllerPointer();
-    EGO_CHECK_RETURN_FALSE(guiController);
+    EGO_CHECK_INITIALIZATION(guiController);
 
     FileName defaultFontPath;
     float defaultFontSize = 0.0f;
-    EGO_CHECK_RETURN_FALSE(readDefaultFont(_config, defaultFontPath, defaultFontSize));
+    EGO_CHECK_INITIALIZATION(readDefaultFont(_config, defaultFontPath, defaultFontSize));
 
-    EGO_CHECK_RETURN_FALSE(guiController->setFont(defaultFontPath, defaultFontSize));
+    EGO_CHECK_INITIALIZATION(guiController->setFont(defaultFontPath, defaultFontSize));
 
     const gui::GuiStyle editorStyle = CreateEditorGuiStyle();
-    EGO_CHECK_RETURN_FALSE(guiController->setStyle(editorStyle));
+    EGO_CHECK_INITIALIZATION(guiController->setStyle(editorStyle));
 
-    const gpu::TextureViewPointer sceneTexture = _simulationGraphicPresenter->getTextureView();
-    EGO_CHECK_RETURN_FALSE(sceneTexture);
-
-    m_guiLayer.setSurface(_surface);
-    m_guiLayer.setSceneTexture(sceneTexture);
-    m_layerID = guiController->registerLayer(m_guiLayer);
-    if (m_layerID == gui::InvalidGuiLayerID)
-    {
-        m_guiLayer.reset();
-        return false;
-    }
+    m_mainSurface = mainSurface;
+    EGO_CHECK_INITIALIZATION(guiController->registerLayer(*this));
+    EGO_CHECK_INITIALIZATION(m_menuController.init());
+    EGO_CHECK_INITIALIZATION(m_windowController.init());
 
     return true;
 }
@@ -53,24 +47,39 @@ bool ego::editor::EditorGuiController::init(
 void ego::editor::EditorGuiController::release()
 {
     const gui::GuiControllerPointer guiController = GetGuiControllerPointer();
-    if (guiController && m_layerID != gui::InvalidGuiLayerID)
+    if (guiController)
     {
-        guiController->unregisterLayer(m_layerID);
+        guiController->unregisterLayer(*this);
     }
 
-    m_guiLayer.reset();
-    m_layerID = gui::InvalidGuiLayerID;
+    m_windowController.release();
+    m_menuController.release();
+
+    m_mainSurface = nullptr;
+    m_sceneTexture = nullptr;
 }
 
-bool ego::editor::EditorGuiController::isInitialized() const
+void ego::editor::EditorGuiController::setSceneTexture(const gpu::TextureViewPointer& _sceneTexture)
 {
-    return GetGuiControllerPointer() && m_layerID != gui::InvalidGuiLayerID;
+    m_sceneTexture = _sceneTexture;
+}
+
+bool ego::editor::EditorGuiController::registerMenuLayer(const GuiMenuLayerPointer& _layer, GuiMenuOrder _order)
+{
+    return m_menuController.registerLayer(_layer, _order);
+}
+
+bool ego::editor::EditorGuiController::unregisterMenuLayer(const GuiMenuLayerPointer& _layer)
+{
+    return m_menuController.unregisterLayer(_layer);
 }
 
 ego::gui::GuiControllerPointer ego::editor::EditorGuiController::GetGuiControllerPointer()
 {
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
-    return editorSubsystem ? editorSubsystem->getEditorController().getGuiControllerPointer() : nullptr;
+    const engine::EngineSessionPointer engineSession = editorSubsystem ? editorSubsystem->getEditorController().getEditorEngineSessionPointer() : nullptr;
+
+    return engineSession ? engineSession->getGuiControllerPointer() : nullptr;
 }
 
 bool ego::editor::EditorGuiController::readDefaultFont(const XmlDocument& _config, FileName& _path, float& _size) const
@@ -92,4 +101,20 @@ bool ego::editor::EditorGuiController::readDefaultFont(const XmlDocument& _confi
     _size = fontSize;
 
     return !_path.empty();
+}
+
+void ego::editor::EditorGuiController::drawGui()
+{
+    if (m_mainSurface)
+    {
+        m_titleBar.draw(*m_mainSurface, m_menuController);
+    }
+
+    gui::GuiFrameTextureID sceneTextureID = gui::InvalidGuiFrameTextureID;
+    if (m_windowController.isViewportVisible() && m_sceneTexture)
+    {
+        sceneTextureID = bindTexture(m_sceneTexture);
+    }
+
+    m_windowController.drawWindows(sceneTextureID);
 }

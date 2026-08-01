@@ -9,12 +9,12 @@ namespace ego
 
 namespace ego::editor
 {
-    class GuiWindowController;
+    class GuiMenuController;
 
     class EditorTitleBar final : public NonCopyable
     {
     public:
-        void draw(PlatformSurface& _surface, GuiWindowController& _windowController);
+        void draw(PlatformSurface& _surface, GuiMenuController& _menuController);
 
     private:
         enum class SystemButton

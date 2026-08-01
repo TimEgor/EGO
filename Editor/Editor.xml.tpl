@@ -5,8 +5,8 @@
         <GraphicHardwarePlugin>@TPL_EDITOR_GRAPHIC_HARDWARE_PLUGIN@</GraphicHardwarePlugin>
     </Application>
     <Engine>
-        <RenderPlugin>@TPL_EDITOR_RENDER_PLUGIN@</RenderPlugin>
-        <GuiRenderPlugin>@TPL_EDITOR_GUI_RENDER_PLUGIN@</GuiRenderPlugin>
+        <EditorRenderPlugin>@TPL_EDITOR_RENDER_PLUGIN@</EditorRenderPlugin>
+        <SimulationRenderPlugin>@TPL_SIMULATION_RENDER_PLUGIN@</SimulationRenderPlugin>
         <AssetsDir>@TPL_EDITOR_ASSETS_DIR@</AssetsDir>
         <DefaultFont>
             <Path>Fonts/Roboto-Medium.ttf</Path>

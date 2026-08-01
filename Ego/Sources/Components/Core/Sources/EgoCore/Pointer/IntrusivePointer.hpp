@@ -175,35 +175,11 @@ ego::IntrusivePointer<T> ego::MakeIntrusiveWithDeleter(TArguments&&... _argument
 template <typename T1, typename T2>
 bool ego::operator==(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2)
 {
-    return static_cast<const void*>(_pointer1.getObject()) == static_cast<const void*>(_pointer2.getObject());
+    return _pointer1.getObject() == _pointer2.getObject();
 }
 
 template <typename T1, typename T2>
 bool ego::operator!=(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2)
 {
     return !(_pointer1 == _pointer2);
-}
-
-template <typename T1, typename T2>
-bool ego::operator<(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2)
-{
-    return std::less<const void*>()(static_cast<const void*>(_pointer1.getObject()), static_cast<const void*>(_pointer2.getObject()));
-}
-
-template <typename T1, typename T2>
-bool ego::operator>(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2)
-{
-    return _pointer2 < _pointer1;
-}
-
-template <typename T1, typename T2>
-bool ego::operator<=(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2)
-{
-    return !(_pointer2 < _pointer1);
-}
-
-template <typename T1, typename T2>
-bool ego::operator>=(const IntrusivePointer<T1>& _pointer1, const IntrusivePointer<T2>& _pointer2)
-{
-    return !(_pointer1 < _pointer2);
 }

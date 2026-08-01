@@ -4,23 +4,24 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
-bool ego::application::ApplicationSubsystem::init(const ApplicationPointer& _application)
+bool ego::application::ApplicationSubsystem::init(const Application::InitData& _initData)
 {
-    EGO_CHECK_INITIALIZATION(m_application.isExpired());
-    EGO_CHECK_INITIALIZATION(_application);
+    EGO_CHECK_INITIALIZATION(!m_application);
 
-    m_application = _application;
+    m_application = MakePointer<Application>();
+    EGO_CHECK_INITIALIZATION(m_application && m_application->init(_initData, sharedFromThis()));
+
     return true;
 }
 
 void ego::application::ApplicationSubsystem::release()
 {
-    m_application.reset();
+    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_application);
 }
 
 ego::application::ApplicationPointer ego::application::ApplicationSubsystem::getApplicationPointer() const
 {
-    return m_application.lock();
+    return m_application;
 }
 
 ego::application::Application& ego::application::ApplicationSubsystem::getApplication() const
@@ -47,6 +48,7 @@ ego::application::ApplicationSubsystem& ego::application::GetApplicationSubsyste
 ego::application::ApplicationPointer ego::application::GetApplicationPointer()
 {
     const ApplicationSubsystemPointer applicationSubsystem = GetApplicationSubsystemPointer();
+
     return applicationSubsystem ? applicationSubsystem->getApplicationPointer() : nullptr;
 }
 

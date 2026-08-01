@@ -1,5 +1,10 @@
 #include "GuiWindowController.h"
 
+#include "EgoCore/UtilsMacros.h"
+
+#include "EditorApplication/EditorController.h"
+#include "EditorApplication/EditorSubsystem.h"
+
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -10,26 +15,39 @@ namespace
     constexpr float EntityInspectorWidthRatio = 0.22f;
 } // namespace
 
-void ego::editor::GuiWindowController::reset()
+bool ego::editor::GuiWindowController::init()
 {
+    if (m_menuLayer)
+    {
+        return true;
+    }
+
+    m_menuLayer = MakePointer<WindowMenuLayer>(*this);
+    EGO_CHECK_INITIALIZATION(m_menuLayer);
+
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_INITIALIZATION(editorSubsystem);
+
+    EGO_CHECK_INITIALIZATION(editorSubsystem->getEditorController().getEditorGuiController().registerMenuLayer(m_menuLayer, GuiMenuOrder::Window));
+
+    return true;
+}
+
+void ego::editor::GuiWindowController::release()
+{
+    if (m_menuLayer)
+    {
+        const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+        if (editorSubsystem)
+        {
+            editorSubsystem->getEditorController().getEditorGuiController().unregisterMenuLayer(m_menuLayer);
+        }
+    }
+
+    m_menuLayer = nullptr;
     m_isViewportVisible = true;
     m_isSceneInspectorVisible = true;
     m_isEntityInspectorVisible = true;
-}
-
-float ego::editor::GuiWindowController::drawWindowMenu()
-{
-    const bool isWindowMenuOpen = ImGui::BeginMenu("Window");
-    const float windowMenuMaxX = ImGui::GetItemRectMax().x;
-    if (isWindowMenuOpen)
-    {
-        ImGui::MenuItem("Viewport", nullptr, &m_isViewportVisible);
-        ImGui::MenuItem("Scene Inspector", nullptr, &m_isSceneInspectorVisible);
-        ImGui::MenuItem("Entity Inspector", nullptr, &m_isEntityInspectorVisible);
-        ImGui::EndMenu();
-    }
-
-    return windowMenuMaxX;
 }
 
 void ego::editor::GuiWindowController::drawWindows(gui::GuiFrameTextureID _sceneTextureID)
@@ -43,6 +61,31 @@ void ego::editor::GuiWindowController::drawWindows(gui::GuiFrameTextureID _scene
 bool ego::editor::GuiWindowController::isViewportVisible() const
 {
     return m_isViewportVisible;
+}
+
+void ego::editor::GuiWindowController::setViewportVisible(bool _isVisible)
+{
+    m_isViewportVisible = _isVisible;
+}
+
+bool ego::editor::GuiWindowController::isSceneInspectorVisible() const
+{
+    return m_isSceneInspectorVisible;
+}
+
+void ego::editor::GuiWindowController::setSceneInspectorVisible(bool _isVisible)
+{
+    m_isSceneInspectorVisible = _isVisible;
+}
+
+bool ego::editor::GuiWindowController::isEntityInspectorVisible() const
+{
+    return m_isEntityInspectorVisible;
+}
+
+void ego::editor::GuiWindowController::setEntityInspectorVisible(bool _isVisible)
+{
+    m_isEntityInspectorVisible = _isVisible;
 }
 
 void ego::editor::GuiWindowController::drawDockSpace()
@@ -70,10 +113,7 @@ void ego::editor::GuiWindowController::drawDockSpace()
 
 void ego::editor::GuiWindowController::drawViewport(gui::GuiFrameTextureID _sceneTextureID)
 {
-    if (!m_isViewportVisible)
-    {
-        return;
-    }
+    EGO_CHECK_RETURN(m_isViewportVisible);
 
     bool isViewportVisible = true;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -93,10 +133,7 @@ void ego::editor::GuiWindowController::drawViewport(gui::GuiFrameTextureID _scen
 
 void ego::editor::GuiWindowController::drawSceneInspector()
 {
-    if (!m_isSceneInspectorVisible)
-    {
-        return;
-    }
+    EGO_CHECK_RETURN(m_isSceneInspectorVisible);
 
     bool isSceneInspectorVisible = true;
     if (ImGui::Begin("Scene Inspector", &isSceneInspectorVisible))
@@ -117,10 +154,7 @@ void ego::editor::GuiWindowController::drawSceneInspector()
 
 void ego::editor::GuiWindowController::drawEntityInspector()
 {
-    if (!m_isEntityInspectorVisible)
-    {
-        return;
-    }
+    EGO_CHECK_RETURN(m_isEntityInspectorVisible);
 
     bool isEntityInspectorVisible = true;
     if (ImGui::Begin("Entity Inspector", &isEntityInspectorVisible))

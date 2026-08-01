@@ -1,6 +1,5 @@
 #include "GuiDemo.h"
 
-#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Math/Color.h"
 #include "EgoCore/UtilsMacros.h"
 
@@ -21,7 +20,6 @@ bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSes
     EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(m_engineSession.isExpired());
     EGO_CHECK_INITIALIZATION(!m_level);
-    EGO_CHECK_INITIALIZATION(m_guiLayerID == gui::InvalidGuiLayerID);
 
     m_engineSession = _engineSession;
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
@@ -30,8 +28,7 @@ bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSes
     const gui::GuiControllerPointer guiController = engineSession->getGuiControllerPointer();
     EGO_CHECK_INITIALIZATION(guiController);
 
-    m_guiLayerID = guiController->registerLayer(m_guiLayer);
-    EGO_CHECK_INITIALIZATION(m_guiLayerID != gui::InvalidGuiLayerID);
+    EGO_CHECK_INITIALIZATION(guiController->registerLayer(m_guiLayer));
 
     m_level = engineSession->getLevelController().createLevel();
     EGO_CHECK_INITIALIZATION(m_level);
@@ -64,17 +61,10 @@ void ego::demo::GuiDemo::release()
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     const gui::GuiControllerPointer guiController = engineSession ? engineSession->getGuiControllerPointer() : nullptr;
 
-    if (m_guiLayerID != gui::InvalidGuiLayerID)
+    if (guiController)
     {
-        EGO_ASSERT(guiController);
-        if (guiController)
-        {
-            const bool unregisterResult = guiController->unregisterLayer(m_guiLayerID);
-            EGO_ASSERT(unregisterResult);
-        }
+        guiController->unregisterLayer(m_guiLayer);
     }
-
-    m_guiLayerID = gui::InvalidGuiLayerID;
 
     if (engineSession && m_level)
     {
