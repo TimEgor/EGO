@@ -3,6 +3,7 @@
 #include <string>
 
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
+#include "EgoCore/Platform/Surface/PlatformSurface.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EditorApplication/EditorSubsystem.h"
@@ -21,8 +22,7 @@ bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     EGO_CHECK_INITIALIZATION(editorSubsystem);
 
-    const PlatformSurfacePointer mainSurface = editorSubsystem->getEditorController().getMainSurfacePointer();
-    EGO_CHECK_INITIALIZATION(mainSurface);
+    EGO_CHECK_INITIALIZATION(editorSubsystem->getEditorController().getMainSurfacePointer());
 
     const gui::GuiControllerPointer guiController = GetGuiControllerPointer();
     EGO_CHECK_INITIALIZATION(guiController);
@@ -36,7 +36,6 @@ bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
     const gui::GuiStyle editorStyle = CreateEditorGuiStyle();
     EGO_CHECK_INITIALIZATION(guiController->setStyle(editorStyle));
 
-    m_mainSurface = mainSurface;
     EGO_CHECK_INITIALIZATION(guiController->registerLayer(*this));
     EGO_CHECK_INITIALIZATION(m_menuController.init());
     EGO_CHECK_INITIALIZATION(m_windowController.init());
@@ -55,7 +54,6 @@ void ego::editor::EditorGuiController::release()
     m_windowController.release();
     m_menuController.release();
 
-    m_mainSurface = nullptr;
     m_sceneTexture = nullptr;
 }
 
@@ -72,6 +70,11 @@ bool ego::editor::EditorGuiController::registerMenuLayer(const GuiMenuLayerPoint
 bool ego::editor::EditorGuiController::unregisterMenuLayer(const GuiMenuLayerPointer& _layer)
 {
     return m_menuController.unregisterLayer(_layer);
+}
+
+bool ego::editor::EditorGuiController::pushModalWindow(const GuiModalWindowPointer& _window)
+{
+    return m_windowController.pushModalWindow(_window);
 }
 
 ego::gui::GuiControllerPointer ego::editor::EditorGuiController::GetGuiControllerPointer()
@@ -105,10 +108,13 @@ bool ego::editor::EditorGuiController::readDefaultFont(const XmlDocument& _confi
 
 void ego::editor::EditorGuiController::drawGui()
 {
-    if (m_mainSurface)
-    {
-        m_titleBar.draw(*m_mainSurface, m_menuController);
-    }
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_RETURN(editorSubsystem);
+
+    const PlatformSurfacePointer mainSurface = editorSubsystem->getEditorController().getMainSurfacePointer();
+    EGO_CHECK_RETURN(mainSurface);
+
+    m_titleBar.draw(*mainSurface, m_menuController);
 
     gui::GuiFrameTextureID sceneTextureID = gui::InvalidGuiFrameTextureID;
     if (m_windowController.isViewportVisible() && m_sceneTexture)

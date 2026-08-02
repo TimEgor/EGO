@@ -61,6 +61,7 @@ namespace ego::win32
         bool setSize(const SurfaceSize& _size) override;
         const SurfaceSize& getSize() const override;
 
+        bool setInputEnabled(bool _isEnabled) override;
         bool setInputTransparent(bool _isTransparent) override;
         bool isInputTransparent() const override;
 

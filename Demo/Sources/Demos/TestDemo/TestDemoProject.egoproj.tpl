@@ -1,4 +1,4 @@
-<Project>
+<Project Name="TestDemoProject">
     <AssetDirectories>
         <AssetDirectory Path="@TPL_TEST_DEMO_ASSETS_PATH@" />
     </AssetDirectories>

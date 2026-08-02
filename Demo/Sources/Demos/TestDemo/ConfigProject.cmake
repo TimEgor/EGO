@@ -2,8 +2,8 @@ set(EGO_TEST_DEMO_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 function(ego_test_demo_config_project)
     set(EGO_TEST_DEMO_ASSETS_DIR "${EGO_TEST_DEMO_DIR}/Assets")
-    set(EGO_TEST_DEMO_PROJECT_FILE "TestDemoProject.xml")
-    set(EGO_TEST_DEMO_PROJECT_TEMPLATE "${EGO_TEST_DEMO_DIR}/TestDemoProject.xml.tpl")
+    set(EGO_TEST_DEMO_PROJECT_FILE "TestDemoProject.egoproj")
+    set(EGO_TEST_DEMO_PROJECT_TEMPLATE "${EGO_TEST_DEMO_DIR}/TestDemoProject.egoproj.tpl")
     set(EGO_TEST_DEMO_INSTALL_DIR "Demo/Demos/TestDemo")
     set(EGO_TEST_DEMO_RUNTIME_ASSETS_DIR "Assets")
 

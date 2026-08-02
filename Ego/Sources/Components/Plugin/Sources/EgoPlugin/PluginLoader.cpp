@@ -44,7 +44,7 @@ ego::FileName ego::PluginLoader::selectPluginModule(const char* _typeName)
 
     const Platform::OpenFileDialogFilter filters[] = {{"Dynamic Libraries (*.dll)", "*.dll"}, {"All Files (*.*)", "*.*"}};
 
-    Platform::OpenFileDialogParams params;
+    Platform::SelectFileDialogParams params;
     params.m_title = title.c_str();
     params.m_defaultExtension = "dll";
     params.m_filters = filters;

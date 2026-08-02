@@ -1,52 +1,40 @@
 #include "Win32Platform.h"
 
+#include <array>
+#include <bit>
+#include <cstddef>
 #include <string>
+#include <vector>
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/FileName/FileNameUtils.h"
-#include "EgoCore/String/Format.h"
 #include "EgoCore/String/StringConverter.h"
 #include "EgoCore/UtilsMacros.h"
 #include "Input/Win32InputDeviceProvider.h"
 #include "Surface/Win32PlatformSurfaceController.h"
 
-#include <commdlg.h>
+#include <shobjidl.h>
 
 namespace
 {
-    std::string BuildWin32Filter(const ego::Platform::OpenFileDialogFilter* _filters, const std::size_t _filterCount)
+    template <std::size_t Size>
+    constexpr GUID MakeDialogClientGuid(const char (&_identifier)[Size])
     {
-        std::string result;
+        static_assert(Size > 1);
+        static_assert(Size <= sizeof(GUID) + 1);
 
-        if (_filters)
+        std::array<std::byte, sizeof(GUID)> clientGuidData = {};
+        for (std::size_t characterIndex = 0; characterIndex < Size - 1; ++characterIndex)
         {
-            for (std::size_t i = 0; i < _filterCount; ++i)
-            {
-                const ego::Platform::OpenFileDialogFilter& filter = _filters[i];
-                if (!filter.m_name || !filter.m_pattern)
-                {
-                    continue;
-                }
-
-                result += filter.m_name;
-                result.push_back('\0');
-                result += filter.m_pattern;
-                result.push_back('\0');
-            }
+            clientGuidData[characterIndex] = static_cast<std::byte>(_identifier[characterIndex]);
         }
 
-        if (result.empty())
-        {
-            result += "All Files (*.*)";
-            result.push_back('\0');
-            result += "*.*";
-            result.push_back('\0');
-        }
-
-        result.push_back('\0');
-        return result;
+        return std::bit_cast<GUID>(clientGuidData);
     }
-} // namespace
+
+    constexpr GUID SelectFileDialogClientGuid = MakeDialogClientGuid("Ego.SelectFile");
+    constexpr GUID SelectFolderDialogClientGuid = MakeDialogClientGuid("Ego.SelectFolder");
+}
 
 ego::win32::Win32Platform::Win32Platform(HINSTANCE _instance)
     : m_instance(_instance)
@@ -107,34 +95,152 @@ ego::PlatformSurfaceController& ego::win32::Win32Platform::getSurfaceController(
     return *m_surfaceController;
 }
 
-ego::FileName ego::win32::Win32Platform::selectOpenFile(const Platform::OpenFileDialogParams& _params) const
+ego::FileName ego::win32::Win32Platform::selectOpenFile(const Platform::SelectFileDialogParams& _params) const
 {
-    char fileName[MAX_PATH] = {};
-    const std::string filter = BuildWin32Filter(_params.m_filters, _params.m_filterCount);
-
-    OPENFILENAMEA openFileName = {};
-    openFileName.lStructSize = sizeof(openFileName);
-    openFileName.hwndOwner = _params.m_ownerWindowHandle ? static_cast<HWND>(_params.m_ownerWindowHandle) : GetActiveWindow();
-    openFileName.lpstrFile = fileName;
-    openFileName.nMaxFile = MAX_PATH;
-    openFileName.lpstrFilter = filter.c_str();
-    openFileName.nFilterIndex = 1;
-    openFileName.lpstrTitle = _params.m_title;
-    openFileName.lpstrDefExt = _params.m_defaultExtension;
-    openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-
-    if (!GetOpenFileNameA(&openFileName))
+    const HRESULT initializationResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (FAILED(initializationResult) && initializationResult != RPC_E_CHANGED_MODE)
     {
-        const DWORD error = CommDlgExtendedError();
-        if (error != 0)
-        {
-            OutputDebugStringA(StringFormat("Open file dialog error: {}\n", error).c_str());
-        }
-
         return FileName();
     }
 
-    return FileName(fileName);
+    FileName selectedFile;
+    IFileOpenDialog* dialog = nullptr;
+    const HRESULT creationResult = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog));
+    if (SUCCEEDED(creationResult))
+    {
+        FILEOPENDIALOGOPTIONS options = 0;
+        if (SUCCEEDED(dialog->SetClientGuid(SelectFileDialogClientGuid)) &&
+            SUCCEEDED(dialog->GetOptions(&options)) &&
+            SUCCEEDED(dialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR)))
+        {
+            std::vector<std::wstring> filterNames;
+            std::vector<std::wstring> filterPatterns;
+            filterNames.reserve(_params.m_filterCount);
+            filterPatterns.reserve(_params.m_filterCount);
+
+            if (_params.m_filters)
+            {
+                for (std::size_t filterIndex = 0; filterIndex < _params.m_filterCount; ++filterIndex)
+                {
+                    const Platform::OpenFileDialogFilter& filter = _params.m_filters[filterIndex];
+                    if (!filter.m_name || !filter.m_pattern)
+                    {
+                        continue;
+                    }
+
+                    filterNames.push_back(ConvertStringToWString(filter.m_name));
+                    filterPatterns.push_back(ConvertStringToWString(filter.m_pattern));
+                }
+            }
+
+            if (filterNames.empty())
+            {
+                filterNames.emplace_back(L"All Files (*.*)");
+                filterPatterns.emplace_back(L"*.*");
+            }
+
+            std::vector<COMDLG_FILTERSPEC> filterSpecs;
+            filterSpecs.reserve(filterNames.size());
+            for (std::size_t filterIndex = 0; filterIndex < filterNames.size(); ++filterIndex)
+            {
+                filterSpecs.push_back({filterNames[filterIndex].c_str(), filterPatterns[filterIndex].c_str()});
+            }
+
+            dialog->SetFileTypes(static_cast<UINT>(filterSpecs.size()), filterSpecs.data());
+            dialog->SetFileTypeIndex(1);
+
+            if (_params.m_title)
+            {
+                const std::wstring title = ConvertStringToWString(_params.m_title);
+                dialog->SetTitle(title.c_str());
+            }
+
+            if (_params.m_defaultExtension)
+            {
+                const std::wstring defaultExtension = ConvertStringToWString(_params.m_defaultExtension);
+                dialog->SetDefaultExtension(defaultExtension.c_str());
+            }
+
+            const HWND ownerWindow = _params.m_ownerWindowHandle ? static_cast<HWND>(_params.m_ownerWindowHandle) : GetActiveWindow();
+            if (SUCCEEDED(dialog->Show(ownerWindow)))
+            {
+                IShellItem* selectedItem = nullptr;
+                if (SUCCEEDED(dialog->GetResult(&selectedItem)))
+                {
+                    PWSTR selectedPath = nullptr;
+                    if (SUCCEEDED(selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &selectedPath)))
+                    {
+                        selectedFile = ConvertWStringToString(selectedPath);
+                        CoTaskMemFree(selectedPath);
+                    }
+
+                    selectedItem->Release();
+                }
+            }
+        }
+
+        dialog->Release();
+    }
+
+    if (SUCCEEDED(initializationResult))
+    {
+        CoUninitialize();
+    }
+
+    return selectedFile;
+}
+
+ego::FileName ego::win32::Win32Platform::selectDirectory(const Platform::SelectDirectoryDialogParams& _params) const
+{
+    const HRESULT initializationResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (FAILED(initializationResult) && initializationResult != RPC_E_CHANGED_MODE)
+    {
+        return FileName();
+    }
+
+    FileName selectedDirectory;
+    IFileOpenDialog* dialog = nullptr;
+    const HRESULT creationResult = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog));
+    if (SUCCEEDED(creationResult))
+    {
+        FILEOPENDIALOGOPTIONS options = 0;
+        if (SUCCEEDED(dialog->SetClientGuid(SelectFolderDialogClientGuid)) &&
+            SUCCEEDED(dialog->GetOptions(&options)) &&
+            SUCCEEDED(dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST)))
+        {
+            if (_params.m_title)
+            {
+                const std::wstring title = ConvertStringToWString(_params.m_title);
+                dialog->SetTitle(title.c_str());
+            }
+
+            const HWND ownerWindow = _params.m_ownerWindowHandle ? static_cast<HWND>(_params.m_ownerWindowHandle) : GetActiveWindow();
+            if (SUCCEEDED(dialog->Show(ownerWindow)))
+            {
+                IShellItem* selectedItem = nullptr;
+                if (SUCCEEDED(dialog->GetResult(&selectedItem)))
+                {
+                    PWSTR selectedPath = nullptr;
+                    if (SUCCEEDED(selectedItem->GetDisplayName(SIGDN_FILESYSPATH, &selectedPath)))
+                    {
+                        selectedDirectory = ConvertWStringToString(selectedPath);
+                        CoTaskMemFree(selectedPath);
+                    }
+
+                    selectedItem->Release();
+                }
+            }
+        }
+
+        dialog->Release();
+    }
+
+    if (SUCCEEDED(initializationResult))
+    {
+        CoUninitialize();
+    }
+
+    return selectedDirectory;
 }
 
 ego::Platform::DynamicLibraryHandle ego::win32::Win32Platform::loadDynamicLibrary(const FileName& _libraryPath)

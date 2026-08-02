@@ -3,7 +3,6 @@
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/Patterns/NonCopyable.h"
-#include "EgoCore/Platform/Surface/PlatformSurface.h"
 
 #include "EgoGui/Gui.h"
 
@@ -11,10 +10,12 @@
 #include "GuiWindowController.h"
 #include "Menu/GuiMenuController.h"
 #include "Menu/GuiMenuOrder.h"
+#include "Modal/GuiModalWindow.h"
 
 namespace ego::editor
 {
-    class EditorGuiController final : public gui::GuiLayer, public NonCopyable
+    class EditorGuiController final
+        : public gui::GuiLayer, public NonCopyable
     {
     public:
         EditorGuiController() = default;
@@ -28,6 +29,8 @@ namespace ego::editor
         bool registerMenuLayer(const GuiMenuLayerPointer& _layer, GuiMenuOrder _order);
         bool unregisterMenuLayer(const GuiMenuLayerPointer& _layer);
 
+        bool pushModalWindow(const GuiModalWindowPointer& _window);
+
     private:
         static gui::GuiControllerPointer GetGuiControllerPointer();
 
@@ -39,7 +42,6 @@ namespace ego::editor
         GuiMenuController m_menuController;
         GuiWindowController m_windowController;
 
-        PlatformSurfacePointer m_mainSurface = nullptr;
         gpu::TextureViewPointer m_sceneTexture = nullptr;
     };
 } // namespace ego::editor

@@ -24,12 +24,18 @@ namespace ego
             const char* m_pattern = nullptr;
         };
 
-        struct OpenFileDialogParams final
+        struct SelectFileDialogParams final
         {
             const char* m_title = nullptr;
             const char* m_defaultExtension = nullptr;
             const OpenFileDialogFilter* m_filters = nullptr;
             std::size_t m_filterCount = 0;
+            void* m_ownerWindowHandle = nullptr;
+        };
+
+        struct SelectDirectoryDialogParams final
+        {
+            const char* m_title = nullptr;
             void* m_ownerWindowHandle = nullptr;
         };
 
@@ -42,7 +48,8 @@ namespace ego
         virtual FileSystemPointer getFileSystem() = 0;
         virtual InputDeviceController& getInputDeviceController() = 0;
         virtual PlatformSurfaceController& getSurfaceController() = 0;
-        virtual FileName selectOpenFile(const OpenFileDialogParams& _params) const = 0;
+        virtual FileName selectOpenFile(const SelectFileDialogParams& _params) const = 0;
+        virtual FileName selectDirectory(const SelectDirectoryDialogParams& _params) const = 0;
 
         virtual DynamicLibraryHandle loadDynamicLibrary(const FileName& _libraryPath) = 0;
         virtual void unloadDynamicLibrary(DynamicLibraryHandle _libraryHandle, const FileName& _libraryPath) = 0;

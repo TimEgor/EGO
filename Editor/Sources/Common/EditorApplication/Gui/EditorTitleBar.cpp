@@ -134,7 +134,8 @@ void ego::editor::EditorTitleBar::updateCaptionArea(PlatformSurface& _surface, c
     const SurfaceSize size(
         static_cast<uint16_t>(std::clamp(_layout.m_systemButtonsMinX - _layout.m_menuMaxX, 0.0f, maximumExtent)),
         static_cast<uint16_t>(std::clamp(_layout.m_size.y, 0.0f, maximumExtent)));
-    EGO_ASSERT(_surface.setCaptionArea(position, size));
+    const bool isCaptionAreaUpdated = _surface.setCaptionArea(position, size);
+    EGO_ASSERT(isCaptionAreaUpdated);
 }
 
 void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight, float _dpiScale) const

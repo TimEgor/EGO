@@ -26,6 +26,7 @@ namespace ego::application
         bool show(bool _activate);
         bool setPosition(FloatVector2& _position);
         bool setSize(FloatVector2& _size);
+        bool setInputEnabled(bool _isEnabled);
         bool setInputTransparent(bool _isTransparent);
         void setFocused(bool _isFocused);
 

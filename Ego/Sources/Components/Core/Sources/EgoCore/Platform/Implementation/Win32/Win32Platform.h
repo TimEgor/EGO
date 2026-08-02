@@ -20,7 +20,8 @@ namespace ego::win32
         FileSystemPointer getFileSystem() override;
         InputDeviceController& getInputDeviceController() override;
         PlatformSurfaceController& getSurfaceController() override;
-        FileName selectOpenFile(const Platform::OpenFileDialogParams& _params) const override;
+        FileName selectOpenFile(const Platform::SelectFileDialogParams& _params) const override;
+        FileName selectDirectory(const Platform::SelectDirectoryDialogParams& _params) const override;
 
         Platform::DynamicLibraryHandle loadDynamicLibrary(const FileName& _libraryPath) override;
         void unloadDynamicLibrary(Platform::DynamicLibraryHandle _libraryHandle, const FileName& _libraryPath) override;

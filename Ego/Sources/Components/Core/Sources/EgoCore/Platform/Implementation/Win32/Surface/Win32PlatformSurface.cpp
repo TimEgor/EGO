@@ -90,6 +90,9 @@ bool ego::win32::Win32PlatformSurface::init(const PlatformSurfaceDesc& _desc, Wi
         windowPositionY = _desc.m_position.m_y + windowRect.top;
     }
 
+    const PlatformSurfacePointer ownerSurface = _desc.m_ownerSurface.lock();
+    const HWND ownerHandle = ownerSurface ? static_cast<HWND>(ownerSurface->getNativeHandle()) : nullptr;
+
     HWND handle = CreateWindowEx(
         extendedWindowStyle,
         EGO_WIN32_WINDOW_CLASS_NAME,
@@ -99,7 +102,7 @@ bool ego::win32::Win32PlatformSurface::init(const PlatformSurfaceDesc& _desc, Wi
         windowPositionY,
         windowWidth,
         windowHeight,
-        nullptr,
+        ownerHandle,
         nullptr,
         _instance,
         nullptr);
@@ -335,6 +338,15 @@ bool ego::win32::Win32PlatformSurface::setSize(const SurfaceSize& _size)
 const ego::SurfaceSize& ego::win32::Win32PlatformSurface::getSize() const
 {
     return m_surfaceSize;
+}
+
+bool ego::win32::Win32PlatformSurface::setInputEnabled(bool _isEnabled)
+{
+    EGO_CHECK_RETURN_FALSE(m_handle);
+
+    EnableWindow(m_handle, _isEnabled);
+
+    return (IsWindowEnabled(m_handle) != FALSE) == _isEnabled;
 }
 
 bool ego::win32::Win32PlatformSurface::setInputTransparent(bool _isTransparent)

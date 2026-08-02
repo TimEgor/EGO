@@ -51,6 +51,7 @@ namespace ego::application
 
         using ViewportPointer = SharedPointer<ApplicationGuiViewport>;
         using ViewportMap = std::unordered_map<gui::ViewportID, ViewportPointer>;
+        using ModalViewportStack = std::vector<gui::ViewportID>;
         using SurfaceCollection = std::vector<PlatformSurfacePointer>;
 
         bool registerInputEvents();
@@ -65,6 +66,8 @@ namespace ego::application
         void advanceViewportRetirement();
         void releaseSurfaces(SurfaceCollection& _surfaces);
         void releaseViewport(ViewportPointer& _viewport);
+        void removeModalViewport(gui::ViewportID _viewportID);
+        bool updateViewportInputState();
         ViewportPointer findViewport(gui::ViewportID _viewportID) const;
         gui::ViewportID findViewportAtScreenPosition(const FloatVector2& _position) const;
         gui::ViewportID findPointerInputViewport(const FloatVector2& _position) const;
@@ -75,10 +78,11 @@ namespace ego::application
 
         static EventControllerPointer GetEventControllerPointer();
         static PresenterProviderPointer GetPresenterProvider();
-        static PresentationDesc CreateViewportPresentationDesc(const gui::ViewportCreateRequest& _request);
+        PresentationDesc createViewportPresentationDesc(const gui::ViewportCreateRequest& _request) const;
 
         Presentation m_primaryPresentation;
         ViewportMap m_viewports;
+        ModalViewportStack m_modalViewportStack;
         SurfaceCollection m_retiringSurfaces;
         SurfaceCollection m_releasableSurfaces;
         gui::ViewportID m_primaryViewportID = gui::InvalidViewportID;

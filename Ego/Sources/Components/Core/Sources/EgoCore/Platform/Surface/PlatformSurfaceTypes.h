@@ -7,9 +7,12 @@
 #include "EgoCore/Math/Vector.h"
 #include "EgoCore/Platform/Input/InputTypes.h"
 #include "EgoCore/Platform/Input/KeyboardInputDevice.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 namespace ego
 {
+    class PlatformSurface;
+
     using SurfaceSize = UInt16Vector2;
     using SurfacePoint = Int32Vector2;
 
@@ -44,6 +47,7 @@ namespace ego
         std::string m_name;
         SurfaceSize m_size = DefaultSurfaceSize;
         SurfacePoint m_position = AutomaticSurfacePosition;
+        WeakPointer<PlatformSurface> m_ownerSurface = nullptr;
         bool m_hasFrame = true;
         bool m_isVisible = false;
     };

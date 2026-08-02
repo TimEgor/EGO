@@ -87,8 +87,13 @@ ego::application::ApplicationGuiViewportProvider::~ApplicationGuiViewportProvide
 bool ego::application::ApplicationGuiViewportProvider::init(const Presentation& _primaryPresentation)
 {
     EGO_CHECK_INITIALIZATION(
-        !m_primaryPresentation.m_surface && m_viewports.empty() && m_retiringSurfaces.empty() && m_releasableSurfaces.empty() &&
-        m_primaryViewportID == gui::InvalidViewportID);
+        !m_primaryPresentation.m_surface &&
+        m_viewports.empty() &&
+        m_modalViewportStack.empty() &&
+        m_retiringSurfaces.empty() &&
+        m_releasableSurfaces.empty() &&
+        m_primaryViewportID == gui::InvalidViewportID
+    );
     EGO_CHECK_INITIALIZATION(_primaryPresentation.m_surface && _primaryPresentation.m_graphicPresenter);
 
     m_primaryPresentation = _primaryPresentation;
@@ -108,6 +113,7 @@ void ego::application::ApplicationGuiViewportProvider::release()
     }
 
     m_viewports.clear();
+    m_modalViewportStack.clear();
     releaseSurfaces(m_retiringSurfaces);
     releaseSurfaces(m_releasableSurfaces);
     m_primaryViewportID = gui::InvalidViewportID;
@@ -120,12 +126,15 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     EGO_CHECK_RETURN_FALSE(m_primaryPresentation.m_surface);
     EGO_CHECK_RETURN_FALSE(!m_viewports.contains(_request.m_id));
     EGO_CHECK_RETURN_FALSE(_request.m_role != gui::ViewportRole::Primary || m_primaryViewportID == gui::InvalidViewportID);
+    EGO_CHECK_RETURN_FALSE(_request.m_parentID == gui::InvalidViewportID || m_viewports.contains(_request.m_parentID));
+    EGO_CHECK_RETURN_FALSE(!_request.m_isModal || _request.m_role == gui::ViewportRole::Secondary);
 
     const PresenterProviderPointer presenterProvider = GetPresenterProvider();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
 
     const bool isSecondary = _request.m_role == gui::ViewportRole::Secondary;
-    const Presentation presentation = isSecondary ? presenterProvider->createPresentation(CreateViewportPresentationDesc(_request)) : m_primaryPresentation;
+    const Presentation presentation =
+        isSecondary ? presenterProvider->createPresentation(createViewportPresentationDesc(_request)) : m_primaryPresentation;
     if (!presentation.m_surface || !presentation.m_graphicPresenter)
     {
         if (isSecondary && presentation.m_surface)
@@ -149,6 +158,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
         {
             presenterProvider->destroyPresentation(presentation.m_surface);
         }
+
         return false;
     }
 
@@ -156,6 +166,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     if (!insertResult.second)
     {
         releaseViewport(viewport);
+
         return false;
     }
 
@@ -163,6 +174,28 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     {
         m_primaryViewportID = _request.m_id;
         setFocusedViewport(_request.m_id);
+    }
+
+    if (_request.m_isModal)
+    {
+        m_modalViewportStack.push_back(_request.m_id);
+    }
+
+    if (!updateViewportInputState())
+    {
+        removeModalViewport(_request.m_id);
+        if (!isSecondary)
+        {
+            m_primaryViewportID = gui::InvalidViewportID;
+        }
+
+        m_viewports.erase(insertResult.first);
+        releaseViewport(viewport);
+
+        const bool isInputRestored = updateViewportInputState();
+        EGO_ASSERT(isInputRestored);
+
+        return false;
     }
 
     return true;
@@ -181,6 +214,8 @@ void ego::application::ApplicationGuiViewportProvider::destroyViewport(gui::View
         m_pointerViewportID = gui::InvalidViewportID;
     }
 
+    removeModalViewport(_viewportID);
+
     if (_viewportID == m_primaryViewportID)
     {
         m_primaryViewportID = gui::InvalidViewportID;
@@ -192,6 +227,9 @@ void ego::application::ApplicationGuiViewportProvider::destroyViewport(gui::View
     }
 
     m_viewports.erase(viewportIt);
+
+    const bool isInputUpdated = updateViewportInputState();
+    EGO_ASSERT(isInputUpdated);
 }
 
 ego::gui::ViewportState ego::application::ApplicationGuiViewportProvider::getViewportState(gui::ViewportID _viewportID) const
@@ -473,6 +511,27 @@ void ego::application::ApplicationGuiViewportProvider::releaseViewport(ViewportP
     }
 }
 
+void ego::application::ApplicationGuiViewportProvider::removeModalViewport(gui::ViewportID _viewportID)
+{
+    std::erase(m_modalViewportStack, _viewportID);
+}
+
+bool ego::application::ApplicationGuiViewportProvider::updateViewportInputState()
+{
+    const gui::ViewportID activeModalViewportID = m_modalViewportStack.empty() ? gui::InvalidViewportID : m_modalViewportStack.back();
+    bool isInputUpdated = true;
+    for (ViewportMap::value_type& viewportEntry : m_viewports)
+    {
+        const bool isInputEnabled = activeModalViewportID == gui::InvalidViewportID || viewportEntry.first == activeModalViewportID;
+        if (!viewportEntry.second || !viewportEntry.second->setInputEnabled(isInputEnabled))
+        {
+            isInputUpdated = false;
+        }
+    }
+
+    return isInputUpdated;
+}
+
 ego::application::ApplicationGuiViewportProvider::ViewportPointer ego::application::ApplicationGuiViewportProvider::findViewport(
     gui::ViewportID _viewportID) const
 {
@@ -556,20 +615,25 @@ ego::application::PresenterProviderPointer ego::application::ApplicationGuiViewp
     return application ? application->getPresenterProviderPointer() : nullptr;
 }
 
-ego::application::PresentationDesc ego::application::ApplicationGuiViewportProvider::CreateViewportPresentationDesc(const gui::ViewportCreateRequest& _request)
+ego::application::PresentationDesc ego::application::ApplicationGuiViewportProvider::createViewportPresentationDesc(
+    const gui::ViewportCreateRequest& _request) const
 {
-    constexpr SurfaceSize defaultViewportSize(500, 500);
+    constexpr SurfaceSize DefaultViewportSize(500, 500);
 
-    PresentationDesc presentationDesc;
-    presentationDesc.m_name = _request.m_title;
-    presentationDesc.m_hasFrame = false;
-    presentationDesc.m_size = SurfaceSize(ToSurfaceSizeValue(_request.m_size.m_x), ToSurfaceSizeValue(_request.m_size.m_y));
-    if (presentationDesc.m_size.m_x == 0 || presentationDesc.m_size.m_y == 0)
+    SurfaceSize viewportSize(ToSurfaceSizeValue(_request.m_size.m_x), ToSurfaceSizeValue(_request.m_size.m_y));
+    if (viewportSize.m_x == 0 || viewportSize.m_y == 0)
     {
-        presentationDesc.m_size = defaultViewportSize;
+        viewportSize = DefaultViewportSize;
     }
 
-    presentationDesc.m_position = SurfacePoint(ToSurfacePointValue(_request.m_position.m_x), ToSurfacePointValue(_request.m_position.m_y));
+    const ViewportPointer parentViewport = findViewport(_request.m_parentID);
+    const PlatformSurfacePointer ownerSurface = parentViewport ? parentViewport->getPresentation().m_surface : nullptr;
 
-    return presentationDesc;
+    return PresentationDesc{
+        .m_name = _request.m_title,
+        .m_size = viewportSize,
+        .m_position = SurfacePoint(ToSurfacePointValue(_request.m_position.m_x), ToSurfacePointValue(_request.m_position.m_y)),
+        .m_ownerSurface = ownerSurface,
+        .m_hasFrame = false
+    };
 }

@@ -17,9 +17,19 @@ float ego::editor::ProjectMenuLayer::drawMenu()
     const float menuMaxX = ImGui::GetItemRectMax().x;
     EGO_CHECK_RETURN_VALUE(isMenuOpen, menuMaxX);
 
+    if (ImGui::MenuItem("Create Project..."))
+    {
+        m_projectController.createProject();
+    }
+
     if (ImGui::MenuItem("Load Project..."))
     {
         m_projectController.loadProject();
+    }
+
+    if (m_projectController.isProjectLoaded() && ImGui::MenuItem("Save Project"))
+    {
+        m_projectController.saveProject();
     }
 
     if (m_projectController.isProjectLoaded() && ImGui::MenuItem("Unload Project"))

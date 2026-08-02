@@ -34,6 +34,7 @@ namespace ego
         virtual bool setSize(const SurfaceSize& _size) = 0;
         virtual const SurfaceSize& getSize() const = 0;
 
+        virtual bool setInputEnabled(bool _isEnabled) = 0;
         virtual bool setInputTransparent(bool _isTransparent) = 0;
         virtual bool isInputTransparent() const = 0;
         virtual bool capturePointer() = 0;

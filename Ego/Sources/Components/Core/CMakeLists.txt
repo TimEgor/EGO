@@ -21,9 +21,11 @@ if (WIN32)
     target_link_libraries(
         EgoCore
             PRIVATE
-                Comdlg32
                 Dwmapi
                 Gdi32
+                Ole32
+                Shell32
                 User32
+                Uuid
     )
 endif()

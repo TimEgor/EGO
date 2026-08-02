@@ -12,13 +12,15 @@ namespace ego
 
 namespace ego::engine
 {
-    class ProjectReader final : public NonInstanceable
+    class ProjectReader final
+        : public NonInstanceable
     {
     public:
         static bool ReadFromFile(const FileName& _fileName, Project& _project);
 
     private:
         static bool ReadFromRootNode(const XmlNode& _rootNode, Project& _project);
+        static bool ReadName(const XmlNode& _rootNode, Project& _project);
         static bool ReadAssetDirectories(const XmlNode& _rootNode, Project& _project);
         static bool ReadPluginDirectories(const XmlNode& _rootNode, Project& _project);
         static bool ReadPlugins(const XmlNode& _rootNode, Project& _project);

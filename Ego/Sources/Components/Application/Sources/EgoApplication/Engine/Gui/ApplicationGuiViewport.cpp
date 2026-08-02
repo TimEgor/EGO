@@ -117,6 +117,7 @@ void ego::application::ApplicationGuiViewport::release()
     if (m_presentation.m_surface)
     {
         unregisterSurfaceEvents();
+        m_presentation.m_surface->setInputEnabled(true);
         m_presentation.m_surface->setInputTransparent(false);
     }
 
@@ -289,6 +290,11 @@ bool ego::application::ApplicationGuiViewport::setSize(FloatVector2& _size)
     _size = m_requestedSize;
 
     return true;
+}
+
+bool ego::application::ApplicationGuiViewport::setInputEnabled(bool _isEnabled)
+{
+    return m_presentation.m_surface && m_presentation.m_surface->setInputEnabled(_isEnabled);
 }
 
 bool ego::application::ApplicationGuiViewport::setInputTransparent(bool _isTransparent)

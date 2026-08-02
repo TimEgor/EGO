@@ -6,6 +6,7 @@
 #include "EgoCore/UtilsMacros.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace
 {
@@ -68,7 +69,7 @@ bool ego::gui::ImGuiPlatformAdapter::init(const ViewportProviderPointer& _provid
     ImGuiIO& io = ImGui::GetIO();
     io.BackendPlatformName = BackendName;
     io.BackendPlatformUserData = this;
-    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
+    io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports | ImGuiBackendFlags_HasParentViewport;
 
     ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
     platformIO.Platform_CreateWindow = PlatformCreateWindow;
@@ -124,7 +125,7 @@ void ego::gui::ImGuiPlatformAdapter::release()
     {
         io.BackendPlatformName = nullptr;
         io.BackendPlatformUserData = nullptr;
-        io.BackendFlags &= ~ImGuiBackendFlags_PlatformHasViewports;
+        io.BackendFlags &= ~(ImGuiBackendFlags_PlatformHasViewports | ImGuiBackendFlags_HasParentViewport);
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
     }
 
@@ -373,15 +374,19 @@ void ego::gui::ImGuiPlatformAdapter::PlatformCreateWindow(ImGuiViewport* _viewpo
         return;
     }
 
-    ViewportDataOwner data = std::make_unique<ViewportData>();
-    data->m_viewportID = viewportID;
+    const ViewportData* parentViewportData = GetViewportData(_viewport->ParentViewport);
+    const ViewportID parentViewportID = parentViewportData ? parentViewportData->m_viewportID : InvalidViewportID;
+    const ImGuiViewportP& internalViewport = *static_cast<ImGuiViewportP*>(_viewport);
+    const bool isModal = internalViewport.Window && (internalViewport.Window->Flags & ImGuiWindowFlags_Modal) != 0;
 
-    ViewportCreateRequest request;
-    request.m_id = viewportID;
-    request.m_role = ViewportRole::Secondary;
-    request.m_title = SecondaryViewportTitle;
-    request.m_position = FloatVector2(_viewport->Pos.x, _viewport->Pos.y);
-    request.m_size = FloatVector2(_viewport->Size.x, _viewport->Size.y);
+    const ViewportCreateRequest request{.m_id = viewportID,
+        .m_parentID = parentViewportID,
+        .m_role = ViewportRole::Secondary,
+        .m_title = SecondaryViewportTitle,
+        .m_position = FloatVector2(_viewport->Pos.x, _viewport->Pos.y),
+        .m_size = FloatVector2(_viewport->Size.x, _viewport->Size.y),
+        .m_isModal = isModal};
+
     if (!adapter->m_provider->createViewport(request))
     {
         adapter->markViewportFailure(*_viewport);
@@ -390,7 +395,10 @@ void ego::gui::ImGuiPlatformAdapter::PlatformCreateWindow(ImGuiViewport* _viewpo
     }
 
     const ViewportState state = adapter->m_provider->getViewportState(viewportID);
+    ViewportDataOwner data = std::make_unique<ViewportData>();
+    data->m_viewportID = viewportID;
     _viewport->PlatformUserData = data.release();
+
     if (state.m_status != ViewportUpdateStatus::Alive || !state.m_graphicPresenter)
     {
         adapter->markViewportFailure(*_viewport);

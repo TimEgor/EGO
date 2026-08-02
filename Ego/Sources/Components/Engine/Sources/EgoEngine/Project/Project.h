@@ -10,7 +10,8 @@
 
 namespace ego::engine
 {
-    class Project final : public NonCopyable
+    class Project final
+        : public NonCopyable
     {
     public:
         struct PluginDesc final
@@ -27,6 +28,8 @@ namespace ego::engine
         Project() = default;
         ~Project() override = default;
 
+        bool setName(const std::string& _name);
+
         bool addAssetDirectory(const FileName& _directory);
         bool addPluginDirectory(const FileName& _directory);
         bool addPlugin(const PluginDesc& _plugin);
@@ -34,12 +37,15 @@ namespace ego::engine
 
         void clear();
 
+        const std::string& getName() const;
         const DirectoryCollection& getAssetDirectories() const;
         const DirectoryCollection& getPluginDirectories() const;
         const PluginCollection& getPlugins() const;
         const OptionalPluginDesc& getEngineLogicPlugin() const;
 
     private:
+        std::string m_name;
+
         DirectoryCollection m_assetDirectories;
         DirectoryCollection m_pluginDirectories;
         PluginCollection m_plugins;

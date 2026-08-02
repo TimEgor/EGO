@@ -23,9 +23,11 @@ namespace ego::gui
     struct ViewportCreateRequest final
     {
         ViewportID m_id = InvalidViewportID;
+        ViewportID m_parentID = InvalidViewportID;
         ViewportRole m_role = ViewportRole::Secondary;
         std::string m_title = "EGO Viewport";
         FloatVector2 m_position = AutomaticViewportPosition;
         FloatVector2 m_size = FloatVector2Zero;
+        bool m_isModal = false;
     };
 } // namespace ego::gui

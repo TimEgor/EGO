@@ -2,24 +2,29 @@
 
 #include <string>
 
+#include "EgoCore/FileName/FileNameUtils.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EgoECS/Entity.h"
-
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
 #include "EgoEngine/EngineSubsystem.h"
-#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
 #include "EgoEngine/Project/ProjectReader.h"
+#include "EgoEngine/Project/ProjectWriter.h"
 
 #include "EditorApplication/EditorController.h"
 #include "EditorApplication/EditorSubsystem.h"
+#include "EditorApplication/Gui/Window/ErrorWindow.h"
+#include "EditorApplication/Gui/Window/ProjectCreationWindow.h"
 
 namespace
 {
+    constexpr const char* ProjectAlreadyExistsErrorMessage = "A project with this name already exists in the selected location.";
+    constexpr const char* ProjectBackupFileSuffix = ".backup";
+    constexpr const char* ProjectFileExtension = ".egoproj";
+    constexpr const char* ProjectSavingErrorMessage = "Failed to save the project.";
     constexpr ego::gpu::Texture2DSize SimulationTextureSize(900, 600);
 } // namespace
 
@@ -69,6 +74,11 @@ bool ego::editor::EditorProjectController::isProjectLoaded() const
     return m_projectContext.m_simulationSession && m_projectContext.m_project;
 }
 
+const ego::FileName& ego::editor::EditorProjectController::getProjectDirectory() const
+{
+    return m_projectContext.m_directory;
+}
+
 ego::engine::EngineSessionPointer ego::editor::EditorProjectController::getSimulationSessionPointer() const
 {
     return m_projectContext.m_simulationSession;
@@ -77,6 +87,51 @@ ego::engine::EngineSessionPointer ego::editor::EditorProjectController::getSimul
 ego::LevelPointer ego::editor::EditorProjectController::getCurrentLevelPointer() const
 {
     return m_projectContext.m_simulationLevel;
+}
+
+void ego::editor::EditorProjectController::createProject()
+{
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_RETURN(editorSubsystem);
+
+    const ProjectCreationWindowPointer projectCreationWindow = MakePointer<ProjectCreationWindow>();
+    EGO_CHECK_RETURN(projectCreationWindow);
+
+    EditorGuiController& editorGuiController = editorSubsystem->getEditorController().getEditorGuiController();
+    EGO_CHECK_RETURN(editorGuiController.pushModalWindow(projectCreationWindow));
+}
+
+bool ego::editor::EditorProjectController::createProject(const std::string& _name, const FileName& _directory)
+{
+    EGO_CHECK_RETURN_FALSE(!_name.empty() && _directory);
+
+    const PlatformPointer platform = GetPlatformPointer();
+    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
+    EGO_CHECK_RETURN_FALSE(fileSystem);
+
+    const FileName projectDirectory = fileSystem->getAbsolutePath(_directory);
+    EGO_CHECK_RETURN_FALSE(projectDirectory);
+
+    const FileName projectFileName = file_name_utils::CombinePath(projectDirectory, FileName(_name + ProjectFileExtension));
+    EGO_CHECK_RETURN_FALSE(projectFileName);
+    if (fileSystem->exists(projectFileName))
+    {
+        showError(ProjectAlreadyExistsErrorMessage);
+
+        return false;
+    }
+
+    const engine::ProjectPointer project = MakePointer<engine::Project>();
+    EGO_CHECK_RETURN_FALSE(project && project->setName(_name));
+
+    if (isProjectLoaded())
+    {
+        unloadProject();
+    }
+
+    EGO_CHECK_RETURN_FALSE(initProjectContext(project, projectDirectory));
+
+    return saveProject();
 }
 
 void ego::editor::EditorProjectController::loadProject()
@@ -89,7 +144,25 @@ void ego::editor::EditorProjectController::loadProject()
         unloadProject();
     }
 
-    initProjectContext(projectFileName);
+    const engine::ProjectPointer project = MakePointer<engine::Project>();
+    EGO_CHECK_RETURN(project && engine::ProjectReader::ReadFromFile(projectFileName, *project));
+
+    const FileName projectDirectory = file_name_utils::GetFileDirPath(projectFileName);
+    EGO_CHECK_RETURN(projectDirectory);
+
+    initProjectContext(project, projectDirectory);
+}
+
+bool ego::editor::EditorProjectController::saveProject() const
+{
+    if (saveProjectContext())
+    {
+        return true;
+    }
+
+    showError(ProjectSavingErrorMessage);
+
+    return false;
 }
 
 void ego::editor::EditorProjectController::unloadProject()
@@ -120,11 +193,11 @@ ego::FileName ego::editor::EditorProjectController::selectProjectFile() const
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     EGO_CHECK_RETURN_VALUE(editorSubsystem, FileName());
 
-    const Platform::OpenFileDialogFilter filters[] = {{"EGO Project (*.xml)", "*.xml"}, {"All Files (*.*)", "*.*"}};
+    const Platform::OpenFileDialogFilter filters[] = {{"EGO Project (*.egoproj)", "*.egoproj"}, {"All Files (*.*)", "*.*"}};
 
-    Platform::OpenFileDialogParams params;
+    Platform::SelectFileDialogParams params;
     params.m_title = "Select EGO project";
-    params.m_defaultExtension = "xml";
+    params.m_defaultExtension = "egoproj";
     params.m_filters = filters;
     params.m_filterCount = sizeof(filters) / sizeof(filters[0]);
 
@@ -134,19 +207,72 @@ ego::FileName ego::editor::EditorProjectController::selectProjectFile() const
     return platform->selectOpenFile(params);
 }
 
-bool ego::editor::EditorProjectController::initProjectContext(const FileName& _projectFileName)
+void ego::editor::EditorProjectController::showError(const std::string& _message) const
 {
-    EGO_CHECK_RETURN_FALSE(m_simulationRenderPluginModuleName && _projectFileName);
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_RETURN(editorSubsystem);
 
-    engine::ProjectPointer project = MakePointer<engine::Project>();
-    EGO_CHECK_RETURN_FALSE(project && engine::ProjectReader::ReadFromFile(_projectFileName, *project));
+    const ErrorWindowPointer errorWindow = MakePointer<ErrorWindow>(_message);
+    EGO_CHECK_RETURN(errorWindow);
 
-    m_projectContext.m_project = project;
+    EditorGuiController& editorGuiController = editorSubsystem->getEditorController().getEditorGuiController();
+    EGO_CHECK_RETURN(editorGuiController.pushModalWindow(errorWindow));
+}
+
+bool ego::editor::EditorProjectController::initProjectContext(const engine::ProjectPointer& _project, const FileName& _directory)
+{
+    EGO_CHECK_RETURN_FALSE(m_simulationRenderPluginModuleName && _project && _directory);
+
+    m_projectContext.m_project = _project;
+    m_projectContext.m_directory = _directory;
 
     EGO_CHECK_RETURN_CALL_FALSE(initSimulationGraphicPresenter(), releaseProjectContext());
     EGO_CHECK_RETURN_CALL_FALSE(initSimulationSession(), releaseProjectContext());
 
     return true;
+}
+
+bool ego::editor::EditorProjectController::saveProjectContext() const
+{
+    EGO_CHECK_RETURN_FALSE(m_projectContext.m_project && m_projectContext.m_directory);
+
+    const PlatformPointer platform = GetPlatformPointer();
+    const FileSystemPointer fileSystem = platform ? platform->getFileSystem() : nullptr;
+    EGO_CHECK_RETURN_FALSE(fileSystem);
+    EGO_CHECK_RETURN_FALSE(fileSystem->isDirectory(m_projectContext.m_directory) || fileSystem->createDirectory(m_projectContext.m_directory));
+
+    const std::string& projectName = m_projectContext.m_project->getName();
+    EGO_CHECK_RETURN_FALSE(!projectName.empty());
+
+    const FileName projectFileName = file_name_utils::CombinePath(m_projectContext.m_directory, FileName(projectName + ProjectFileExtension));
+    EGO_CHECK_RETURN_FALSE(projectFileName);
+
+    const bool hasProjectFile = fileSystem->isFile(projectFileName);
+    EGO_CHECK_RETURN_FALSE(!fileSystem->exists(projectFileName) || hasProjectFile);
+
+    const FileName backupFileName = projectFileName + ProjectBackupFileSuffix;
+    if (hasProjectFile)
+    {
+        EGO_CHECK_RETURN_FALSE(!fileSystem->exists(backupFileName));
+        EGO_CHECK_RETURN_FALSE(fileSystem->move(projectFileName, backupFileName, false));
+    }
+
+    if (!engine::ProjectWriter::WriteToFile(projectFileName, *m_projectContext.m_project))
+    {
+        if (fileSystem->isFile(projectFileName))
+        {
+            fileSystem->removeFile(projectFileName);
+        }
+
+        if (hasProjectFile)
+        {
+            fileSystem->move(backupFileName, projectFileName, false);
+        }
+
+        return false;
+    }
+
+    return !hasProjectFile || fileSystem->removeFile(backupFileName);
 }
 
 bool ego::editor::EditorProjectController::initSimulationGraphicPresenter()
@@ -197,6 +323,7 @@ void ego::editor::EditorProjectController::releaseProjectContext()
     releaseSimulationGraphicPresenter();
 
     m_projectContext.m_project = nullptr;
+    m_projectContext.m_directory.clear();
 }
 
 void ego::editor::EditorProjectController::releaseSimulationLevel()

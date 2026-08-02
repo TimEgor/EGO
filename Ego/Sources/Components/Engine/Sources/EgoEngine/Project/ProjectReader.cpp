@@ -24,6 +24,7 @@ bool ego::engine::ProjectReader::ReadFromRootNode(const XmlNode& _rootNode, Proj
 
     _project.clear();
 
+    EGO_CHECK_RETURN_FALSE(ReadName(_rootNode, _project));
     EGO_CHECK_RETURN_FALSE(ReadPluginDirectories(_rootNode, _project));
     EGO_CHECK_RETURN_FALSE(ReadAssetDirectories(_rootNode, _project));
     EGO_CHECK_RETURN_FALSE(ReadPlugins(_rootNode, _project));
@@ -31,6 +32,13 @@ bool ego::engine::ProjectReader::ReadFromRootNode(const XmlNode& _rootNode, Proj
     EGO_CHECK_RETURN_FALSE(ReadEngineLogicPlugins(_rootNode, _project));
 
     return true;
+}
+
+bool ego::engine::ProjectReader::ReadName(const XmlNode& _rootNode, Project& _project)
+{
+    const std::string name = _rootNode.getAttributeOr<std::string>("Name", "");
+
+    return name.empty() || _project.setName(name);
 }
 
 bool ego::engine::ProjectReader::ReadAssetDirectories(const XmlNode& _rootNode, Project& _project)

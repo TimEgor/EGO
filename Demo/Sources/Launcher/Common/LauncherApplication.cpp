@@ -236,11 +236,11 @@ ego::application::PresentationDesc ego::demo::launcher::LauncherApplication::Cre
 
 ego::FileName ego::demo::launcher::LauncherApplication::selectProjectFile() const
 {
-    const Platform::OpenFileDialogFilter filters[] = {{"EGO Project (*.xml)", "*.xml"}, {"All Files (*.*)", "*.*"}};
+    const Platform::OpenFileDialogFilter filters[] = {{"EGO Project (*.egoproj)", "*.egoproj"}, {"All Files (*.*)", "*.*"}};
 
-    Platform::OpenFileDialogParams params;
+    Platform::SelectFileDialogParams params;
     params.m_title = "Select EGO project";
-    params.m_defaultExtension = "xml";
+    params.m_defaultExtension = "egoproj";
     params.m_filters = filters;
     params.m_filterCount = sizeof(filters) / sizeof(filters[0]);
 

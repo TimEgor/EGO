@@ -1,5 +1,8 @@
 #include "GuiWindowController.h"
 
+#include <string>
+#include <string_view>
+
 #include "EgoCore/UtilsMacros.h"
 
 #include "EditorApplication/EditorController.h"
@@ -11,6 +14,7 @@
 namespace
 {
     constexpr const char* EditorDockSpaceName = "EditorDockSpace";
+    constexpr std::string_view ModalWindowIDSuffix = "###EditorModalWindow";
     constexpr float SceneInspectorWidthRatio = 0.2f;
     constexpr float EntityInspectorWidthRatio = 0.22f;
 } // namespace
@@ -45,9 +49,23 @@ void ego::editor::GuiWindowController::release()
     }
 
     m_menuLayer = nullptr;
+
+    m_modalWindowStack.clear();
+    m_nextModalWindowInstanceID = 0;
+
     m_isViewportVisible = true;
     m_isSceneInspectorVisible = true;
     m_isEntityInspectorVisible = true;
+}
+
+bool ego::editor::GuiWindowController::pushModalWindow(const GuiModalWindowPointer& _window)
+{
+    EGO_CHECK_RETURN_FALSE(_window);
+
+    m_modalWindowStack.push_back({.m_instanceID = m_nextModalWindowInstanceID, .m_window = _window});
+    ++m_nextModalWindowInstanceID;
+
+    return true;
 }
 
 void ego::editor::GuiWindowController::drawWindows(gui::GuiFrameTextureID _sceneTextureID)
@@ -56,6 +74,10 @@ void ego::editor::GuiWindowController::drawWindows(gui::GuiFrameTextureID _scene
     drawViewport(_sceneTextureID);
     drawSceneInspector();
     drawEntityInspector();
+
+    EGO_CHECK_RETURN(!m_modalWindowStack.empty());
+
+    drawModalWindow(0);
 }
 
 bool ego::editor::GuiWindowController::isViewportVisible() const
@@ -167,4 +189,50 @@ void ego::editor::GuiWindowController::drawEntityInspector()
 
     ImGui::End();
     m_isEntityInspectorVisible = isEntityInspectorVisible;
+}
+
+void ego::editor::GuiWindowController::drawModalWindow(std::size_t _index)
+{
+    EGO_CHECK_RETURN(_index < m_modalWindowStack.size());
+
+    ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+    EGO_CHECK_RETURN(mainViewport);
+
+    const ModalWindowRecord windowRecord = m_modalWindowStack[_index];
+    EGO_CHECK_RETURN(windowRecord.m_window);
+
+    std::string windowName(windowRecord.m_window->getTitle());
+    windowName += ModalWindowIDSuffix;
+    windowName += std::to_string(windowRecord.m_instanceID);
+
+    if (!ImGui::IsPopupOpen(windowName.c_str()))
+    {
+        ImGui::OpenPopup(windowName.c_str());
+    }
+
+    ImGuiViewport* parentViewport = _index > 0 ? ImGui::GetWindowViewport() : mainViewport;
+    EGO_CHECK_RETURN(parentViewport);
+
+    ImGuiWindowClass windowClass;
+    windowClass.ParentViewportId = parentViewport->ID;
+    windowClass.ViewportFlagsOverrideSet = ImGuiViewportFlags_NoAutoMerge;
+    ImGui::SetNextWindowClass(&windowClass);
+
+    if (!ImGui::BeginPopupModal(windowName.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+    {
+        return;
+    }
+
+    const bool isOpen = windowRecord.m_window->draw();
+    if (!isOpen && _index + 1 == m_modalWindowStack.size() && m_modalWindowStack.back().m_instanceID == windowRecord.m_instanceID)
+    {
+        m_modalWindowStack.pop_back();
+        ImGui::CloseCurrentPopup();
+    }
+    else if (_index + 1 < m_modalWindowStack.size())
+    {
+        drawModalWindow(_index + 1);
+    }
+
+    ImGui::EndPopup();
 }
