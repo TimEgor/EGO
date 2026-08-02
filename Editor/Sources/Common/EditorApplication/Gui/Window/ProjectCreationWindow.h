@@ -7,7 +7,7 @@
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 
-#include "EditorApplication/Gui/Modal/GuiModalWindow.h"
+#include "GuiModalWindow.h"
 
 namespace ego::editor
 {

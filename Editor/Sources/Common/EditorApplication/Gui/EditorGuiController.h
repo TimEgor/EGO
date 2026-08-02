@@ -7,15 +7,13 @@
 #include "EgoGui/Gui.h"
 
 #include "EditorTitleBar.h"
-#include "GuiWindowController.h"
 #include "Menu/GuiMenuController.h"
-#include "Menu/GuiMenuOrder.h"
-#include "Modal/GuiModalWindow.h"
+#include "Window/GuiModalWindow.h"
+#include "Window/GuiWindowController.h"
 
 namespace ego::editor
 {
-    class EditorGuiController final
-        : public gui::GuiLayer, public NonCopyable
+    class EditorGuiController final : public gui::GuiLayer, public NonCopyable
     {
     public:
         EditorGuiController() = default;
@@ -25,9 +23,10 @@ namespace ego::editor
         void release();
 
         void setSceneTexture(const gpu::TextureViewPointer& _sceneTexture);
+        gui::GuiFrameTextureID getSceneTextureID();
 
-        bool registerMenuLayer(const GuiMenuLayerPointer& _layer, GuiMenuOrder _order);
-        bool unregisterMenuLayer(const GuiMenuLayerPointer& _layer);
+        GuiWindowController& getWindowController();
+        const GuiWindowController& getWindowController() const;
 
         bool pushModalWindow(const GuiModalWindowPointer& _window);
 

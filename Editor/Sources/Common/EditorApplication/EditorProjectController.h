@@ -12,8 +12,6 @@
 #include "EgoEngine/Level/Level.h"
 #include "EgoEngine/Project/Project.h"
 
-#include "EditorApplication/Gui/Menu/ProjectMenuLayer.h"
-
 namespace ego::editor
 {
     class EditorProjectController final
@@ -63,8 +61,6 @@ namespace ego::editor
         void releaseSimulationGraphicPresenter();
 
         ProjectContext m_projectContext;
-
-        ProjectMenuLayerPointer m_menuLayer = nullptr;
 
         FileName m_simulationRenderPluginModuleName;
     };

@@ -2,37 +2,51 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-#include "EditorApplication/Gui/GuiWindowController.h"
+#include "EditorApplication/EditorController.h"
+#include "EditorApplication/EditorSubsystem.h"
+#include "EditorApplication/Gui/Window/GuiWindowController.h"
 
 #include <imgui.h>
 
-ego::editor::WindowMenuLayer::WindowMenuLayer(GuiWindowController& _windowController)
-    : m_windowController(_windowController)
-{
-}
-
 float ego::editor::WindowMenuLayer::drawMenu()
 {
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_RETURN_VALUE(editorSubsystem, ImGui::GetCursorScreenPos().x);
+
     const bool isMenuOpen = ImGui::BeginMenu("Window");
     const float menuMaxX = ImGui::GetItemRectMax().x;
     EGO_CHECK_RETURN_VALUE(isMenuOpen, menuMaxX);
 
-    const bool isViewportVisible = m_windowController.isViewportVisible();
-    if (ImGui::MenuItem("Viewport", nullptr, isViewportVisible))
+    const GuiWindowController& windowController = editorSubsystem->getEditorController().getEditorGuiController().getWindowController();
+
+    const GuiWindowPointer viewportWindow = windowController.getViewportWindowPointer();
+    if (viewportWindow)
     {
-        m_windowController.setViewportVisible(!isViewportVisible);
+        const bool isVisible = viewportWindow->isVisible();
+        if (ImGui::MenuItem("Viewport", nullptr, isVisible))
+        {
+            viewportWindow->setVisible(!isVisible);
+        }
     }
 
-    const bool isSceneInspectorVisible = m_windowController.isSceneInspectorVisible();
-    if (ImGui::MenuItem("Scene Inspector", nullptr, isSceneInspectorVisible))
+    const GuiWindowPointer sceneInspectorWindow = windowController.getSceneInspectorWindowPointer();
+    if (sceneInspectorWindow)
     {
-        m_windowController.setSceneInspectorVisible(!isSceneInspectorVisible);
+        const bool isVisible = sceneInspectorWindow->isVisible();
+        if (ImGui::MenuItem("Scene Inspector", nullptr, isVisible))
+        {
+            sceneInspectorWindow->setVisible(!isVisible);
+        }
     }
 
-    const bool isEntityInspectorVisible = m_windowController.isEntityInspectorVisible();
-    if (ImGui::MenuItem("Entity Inspector", nullptr, isEntityInspectorVisible))
+    const GuiWindowPointer entityInspectorWindow = windowController.getEntityInspectorWindowPointer();
+    if (entityInspectorWindow)
     {
-        m_windowController.setEntityInspectorVisible(!isEntityInspectorVisible);
+        const bool isVisible = entityInspectorWindow->isVisible();
+        if (ImGui::MenuItem("Entity Inspector", nullptr, isVisible))
+        {
+            entityInspectorWindow->setVisible(!isVisible);
+        }
     }
 
     ImGui::EndMenu();

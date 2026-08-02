@@ -37,8 +37,8 @@ bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
     EGO_CHECK_INITIALIZATION(guiController->setStyle(editorStyle));
 
     EGO_CHECK_INITIALIZATION(guiController->registerLayer(*this));
-    EGO_CHECK_INITIALIZATION(m_menuController.init());
     EGO_CHECK_INITIALIZATION(m_windowController.init());
+    EGO_CHECK_INITIALIZATION(m_menuController.init());
 
     return true;
 }
@@ -51,8 +51,8 @@ void ego::editor::EditorGuiController::release()
         guiController->unregisterLayer(*this);
     }
 
-    m_windowController.release();
     m_menuController.release();
+    m_windowController.release();
 
     m_sceneTexture = nullptr;
 }
@@ -62,14 +62,19 @@ void ego::editor::EditorGuiController::setSceneTexture(const gpu::TextureViewPoi
     m_sceneTexture = _sceneTexture;
 }
 
-bool ego::editor::EditorGuiController::registerMenuLayer(const GuiMenuLayerPointer& _layer, GuiMenuOrder _order)
+ego::gui::GuiFrameTextureID ego::editor::EditorGuiController::getSceneTextureID()
 {
-    return m_menuController.registerLayer(_layer, _order);
+    return m_sceneTexture ? bindTexture(m_sceneTexture) : gui::InvalidGuiFrameTextureID;
 }
 
-bool ego::editor::EditorGuiController::unregisterMenuLayer(const GuiMenuLayerPointer& _layer)
+ego::editor::GuiWindowController& ego::editor::EditorGuiController::getWindowController()
 {
-    return m_menuController.unregisterLayer(_layer);
+    return m_windowController;
+}
+
+const ego::editor::GuiWindowController& ego::editor::EditorGuiController::getWindowController() const
+{
+    return m_windowController;
 }
 
 bool ego::editor::EditorGuiController::pushModalWindow(const GuiModalWindowPointer& _window)
@@ -116,11 +121,5 @@ void ego::editor::EditorGuiController::drawGui()
 
     m_titleBar.draw(*mainSurface, m_menuController);
 
-    gui::GuiFrameTextureID sceneTextureID = gui::InvalidGuiFrameTextureID;
-    if (m_windowController.isViewportVisible() && m_sceneTexture)
-    {
-        sceneTextureID = bindTexture(m_sceneTexture);
-    }
-
-    m_windowController.drawWindows(sceneTextureID);
+    m_windowController.drawWindows();
 }

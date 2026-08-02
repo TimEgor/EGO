@@ -37,34 +37,12 @@ bool ego::editor::EditorProjectController::init(const XmlDocument& _config)
 {
     release();
 
-    EGO_CHECK_INITIALIZATION(readConfig(_config));
-
-    m_menuLayer = MakePointer<ProjectMenuLayer>(*this);
-    EGO_CHECK_INITIALIZATION(m_menuLayer);
-
-    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
-    EGO_CHECK_INITIALIZATION(editorSubsystem);
-
-    EditorGuiController& editorGuiController = editorSubsystem->getEditorController().getEditorGuiController();
-    EGO_CHECK_INITIALIZATION(editorGuiController.registerMenuLayer(m_menuLayer, GuiMenuOrder::Project));
-
-    return true;
+    return readConfig(_config);
 }
 
 void ego::editor::EditorProjectController::release()
 {
     releaseProjectContext();
-
-    if (m_menuLayer)
-    {
-        const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
-        if (editorSubsystem)
-        {
-            editorSubsystem->getEditorController().getEditorGuiController().unregisterMenuLayer(m_menuLayer);
-        }
-    }
-
-    m_menuLayer = nullptr;
 
     m_simulationRenderPluginModuleName.clear();
 }

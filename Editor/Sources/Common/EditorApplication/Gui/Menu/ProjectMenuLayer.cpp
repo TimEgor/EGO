@@ -2,39 +2,41 @@
 
 #include "EgoCore/UtilsMacros.h"
 
+#include "EditorApplication/EditorController.h"
 #include "EditorApplication/EditorProjectController.h"
+#include "EditorApplication/EditorSubsystem.h"
 
 #include <imgui.h>
 
-ego::editor::ProjectMenuLayer::ProjectMenuLayer(EditorProjectController& _projectController)
-    : m_projectController(_projectController)
-{
-}
-
 float ego::editor::ProjectMenuLayer::drawMenu()
 {
+    const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
+    EGO_CHECK_RETURN_VALUE(editorSubsystem, ImGui::GetCursorScreenPos().x);
+
+    EditorProjectController& projectController = editorSubsystem->getEditorController().getProjectController();
+
     const bool isMenuOpen = ImGui::BeginMenu("Project");
     const float menuMaxX = ImGui::GetItemRectMax().x;
     EGO_CHECK_RETURN_VALUE(isMenuOpen, menuMaxX);
 
     if (ImGui::MenuItem("Create Project..."))
     {
-        m_projectController.createProject();
+        projectController.createProject();
     }
 
     if (ImGui::MenuItem("Load Project..."))
     {
-        m_projectController.loadProject();
+        projectController.loadProject();
     }
 
-    if (m_projectController.isProjectLoaded() && ImGui::MenuItem("Save Project"))
+    if (projectController.isProjectLoaded() && ImGui::MenuItem("Save Project"))
     {
-        m_projectController.saveProject();
+        projectController.saveProject();
     }
 
-    if (m_projectController.isProjectLoaded() && ImGui::MenuItem("Unload Project"))
+    if (projectController.isProjectLoaded() && ImGui::MenuItem("Unload Project"))
     {
-        m_projectController.unloadProject();
+        projectController.unloadProject();
     }
 
     ImGui::EndMenu();

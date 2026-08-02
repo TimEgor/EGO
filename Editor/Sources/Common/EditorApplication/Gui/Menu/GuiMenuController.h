@@ -1,11 +1,8 @@
 #pragma once
 
-#include <vector>
-
 #include "EgoCore/Patterns/NonCopyable.h"
 
 #include "GuiMenuLayer.h"
-#include "GuiMenuOrder.h"
 
 namespace ego::editor
 {
@@ -19,16 +16,8 @@ namespace ego::editor
 
         float draw();
 
-        bool registerLayer(const GuiMenuLayerPointer& _layer, GuiMenuOrder _order);
-        bool unregisterLayer(const GuiMenuLayerPointer& _layer);
-
     private:
-        struct LayerRecord final
-        {
-            GuiMenuOrder m_order = GuiMenuOrder::Project;
-            GuiMenuLayerPointer m_layer = nullptr;
-        };
-
-        std::vector<LayerRecord> m_layers;
+        GuiMenuLayerPointer m_projectMenuLayer = nullptr;
+        GuiMenuLayerPointer m_windowMenuLayer = nullptr;
     };
 } // namespace ego::editor
