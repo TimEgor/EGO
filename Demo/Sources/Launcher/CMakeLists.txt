@@ -8,7 +8,7 @@ add_library(Ego::Demo::Launcher ALIAS EgoDemoLauncher)
 ego_setup_target_sources(
     EgoDemoLauncher
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Common"
-    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/Common"
+    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/Common/EgoDemoLauncher"
     INCLUDE_SCOPE PUBLIC
 )
 

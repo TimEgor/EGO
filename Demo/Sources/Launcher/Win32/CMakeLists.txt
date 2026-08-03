@@ -6,8 +6,8 @@ add_executable(EgoDemoLauncherWin32 WIN32)
 
 ego_setup_target_sources(
     EgoDemoLauncherWin32
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}"
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/EgoDemoLauncherWin32"
+    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/EgoDemoLauncherWin32"
 )
 
 target_link_libraries(

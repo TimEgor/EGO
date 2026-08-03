@@ -16,7 +16,7 @@ add_library(Ego::Editor ALIAS EgoEditor)
 ego_setup_target_sources(
     EgoEditor
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Common"
-    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Common"
+    SOURCE_GROUP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Common/EgoEditor"
     INCLUDE_SCOPE PUBLIC
 )
 
