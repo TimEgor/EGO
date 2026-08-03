@@ -14,10 +14,9 @@ namespace ego
     {
     public:
         PluginSubsystem() = default;
-        ~PluginSubsystem() override = default;
+        ~PluginSubsystem() override;
 
         bool init();
-        void release() override;
 
         PluginCatalog& getPluginCatalog();
         const PluginCatalog& getPluginCatalog() const;
@@ -26,6 +25,8 @@ namespace ego
         EGO_SUBSYSTEM(PluginSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         PluginCatalog m_pluginCatalog;
         PluginControllerPointer m_pluginController = nullptr;
     };

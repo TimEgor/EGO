@@ -22,6 +22,11 @@ namespace
     constexpr ego::NormalizedColorRGB White = ego::NormalizedColorWhite;
 } // namespace
 
+ego::demo::DebugDrawDemo::~DebugDrawDemo()
+{
+    release();
+}
+
 bool ego::demo::DebugDrawDemo::init(const engine::EngineSessionWeakPointer& _engineSession)
 {
     EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
@@ -31,9 +36,9 @@ bool ego::demo::DebugDrawDemo::init(const engine::EngineSessionWeakPointer& _eng
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     EGO_CHECK_INITIALIZATION(engineSession);
 
-    m_level = engineSession->getLevelController().createLevel();
+    m_level = MakePointer<Level>();
     EGO_CHECK_INITIALIZATION(m_level);
-    EGO_CHECK_INITIALIZATION(engineSession->getLevelController().setActiveLevel(m_level->getID()));
+    EGO_CHECK_INITIALIZATION(engineSession->setActiveLevel(m_level));
 
     m_cameraEntity = m_level->createNode();
     EGO_CHECK_INITIALIZATION(m_cameraEntity);
@@ -72,10 +77,10 @@ void ego::demo::DebugDrawDemo::release()
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     if (engineSession && m_level)
     {
-        const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
-        if (activeLevel && activeLevel->getID() == m_level->getID())
+        const LevelPointer activeLevel = engineSession->getActiveLevel();
+        if (activeLevel == m_level)
         {
-            engineSession->getLevelController().clearActiveLevel();
+            engineSession->clearActiveLevel();
         }
 
         engineSession->clearRenderCameraEntity();

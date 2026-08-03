@@ -19,12 +19,14 @@ namespace ego::demo
     {
     public:
         TestDemo() = default;
+        ~TestDemo() override;
 
         bool init(const engine::EngineSessionWeakPointer& _engineSession) override;
         void update(float _deltaTime) override;
-        void release() override;
 
     private:
+        void release();
+
         bool createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const ComputeVector3& _position);
         bool setTriangleTransform(ecs::Entity _entity, const ComputeVector3& _position, float _rotationAngle);
 

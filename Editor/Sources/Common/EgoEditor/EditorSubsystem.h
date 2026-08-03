@@ -10,7 +10,7 @@ namespace ego::editor
     {
     public:
         EditorSubsystem() = default;
-        ~EditorSubsystem() override = default;
+        ~EditorSubsystem() override;
 
         EditorController& getEditorController();
         const EditorController& getEditorController() const;
@@ -18,7 +18,7 @@ namespace ego::editor
         EGO_SUBSYSTEM(EditorSubsystem, subsystem::Subsystem);
 
     private:
-        void release() override;
+        void release();
 
         EditorController m_editorController;
     };

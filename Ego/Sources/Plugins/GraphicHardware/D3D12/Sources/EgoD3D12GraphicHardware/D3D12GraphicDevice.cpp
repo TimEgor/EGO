@@ -379,6 +379,11 @@ ego::gpu::GpuResourceTicket<TPointer> ego::gpu::d3d12::D3D12GraphicDevice::build
     return GpuResourceTicket<TPointer>{accelerationStructure, buildTask};
 }
 
+ego::gpu::d3d12::D3D12GraphicDevice::~D3D12GraphicDevice()
+{
+    release();
+}
+
 bool ego::gpu::d3d12::D3D12GraphicDevice::init(const GraphicDevice::InitData& _initData)
 {
     EGO_CHECK_INITIALIZATION(

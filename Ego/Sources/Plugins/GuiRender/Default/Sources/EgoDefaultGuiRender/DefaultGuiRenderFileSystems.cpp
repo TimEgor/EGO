@@ -48,7 +48,6 @@ bool ego::gui::default_gui_render::DefaultGuiRenderFileSystems::loadAssetsRootPa
     const ResourceControllerPointer resourceController = resourceSubsystem ? resourceSubsystem->getResourceControllerPointer() : nullptr;
     if (!resourceController)
     {
-        configFileSystem->release();
         return false;
     }
 
@@ -58,7 +57,6 @@ bool ego::gui::default_gui_render::DefaultGuiRenderFileSystems::loadAssetsRootPa
     const bool loadResult = configResource && configResource->isLoaded() && ParseDefaultGuiRenderAssetsRootPath(configResource->getRootNode(), _assetsRootPath);
 
     resourceController->removeFileSystem(configFileSystem);
-    configFileSystem->release();
     if (!loadResult)
     {
         return false;
@@ -85,7 +83,6 @@ bool ego::gui::default_gui_render::DefaultGuiRenderFileSystems::initAssetsFileSy
     if (m_assetsFileSystem)
     {
         resourceController->removeFileSystem(m_assetsFileSystem);
-        m_assetsFileSystem->release();
         m_assetsFileSystem = nullptr;
     }
 
@@ -111,7 +108,6 @@ void ego::gui::default_gui_render::DefaultGuiRenderFileSystems::release()
         resourceController->removeFileSystem(m_assetsFileSystem);
     }
 
-    m_assetsFileSystem->release();
     m_assetsFileSystem = nullptr;
 }
 
@@ -132,7 +128,6 @@ ego::RootedFileSystemPointer ego::gui::default_gui_render::DefaultGuiRenderFileS
 
     if (!fileSystem->init())
     {
-        fileSystem->release();
         return nullptr;
     }
 

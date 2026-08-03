@@ -22,7 +22,6 @@ namespace ego::gui
         ~GuiBackend() override = default;
 
         virtual bool init(const ViewportProviderPointer& _viewportProvider, bool _enableMultiViewport) = 0;
-        virtual bool release() = 0;
 
         virtual bool setFont(const FileContent& _content, float _size) = 0;
         virtual bool setStyle(const GuiStyle& _style) = 0;

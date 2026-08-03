@@ -49,7 +49,6 @@ namespace ego
         virtual ~FileSystem() = default;
 
         virtual bool init() = 0;
-        virtual void release() = 0;
 
         virtual bool exists(const FileName& _path) const = 0;
         virtual bool isFile(const FileName& _path) const = 0;

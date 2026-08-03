@@ -5,6 +5,11 @@
 #include "EgoCore/Platform/PlatformFactory.h"
 #include "EgoCore/UtilsMacros.h"
 
+ego::PlatformSubsystem::~PlatformSubsystem()
+{
+    release();
+}
+
 bool ego::PlatformSubsystem::init(const InitData& _initData)
 {
     m_platform = CreatePlatform(_initData.m_nativeInstanceHandle);
@@ -15,7 +20,7 @@ bool ego::PlatformSubsystem::init(const InitData& _initData)
 
 void ego::PlatformSubsystem::release()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_platform);
+    m_platform = nullptr;
 }
 
 ego::PlatformPointer ego::PlatformSubsystem::getPlatformPointer() const

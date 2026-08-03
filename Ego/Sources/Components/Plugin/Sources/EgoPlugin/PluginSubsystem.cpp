@@ -6,6 +6,11 @@
 
 #include "PluginController.h"
 
+ego::PluginSubsystem::~PluginSubsystem()
+{
+    release();
+}
+
 bool ego::PluginSubsystem::init()
 {
     m_pluginCatalog.clear();
@@ -18,7 +23,7 @@ bool ego::PluginSubsystem::init()
 
 void ego::PluginSubsystem::release()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_pluginController);
+    m_pluginController = nullptr;
     m_pluginCatalog.clear();
 }
 

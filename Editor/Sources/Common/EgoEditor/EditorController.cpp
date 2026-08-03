@@ -124,7 +124,6 @@ void ego::editor::EditorController::releaseEditorAssets()
         resourceController->removeFileSystem(m_editorAssetsFileSystem);
     }
 
-    m_editorAssetsFileSystem->release();
     m_editorAssetsFileSystem = nullptr;
 }
 

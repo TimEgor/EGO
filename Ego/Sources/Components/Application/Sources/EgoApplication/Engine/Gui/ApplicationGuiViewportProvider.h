@@ -29,7 +29,6 @@ namespace ego::application
         ~ApplicationGuiViewportProvider() override;
 
         bool init(const Presentation& _primaryPresentation);
-        void release();
 
         bool createViewport(const gui::ViewportCreateRequest& _request) override;
         void destroyViewport(gui::ViewportID _viewportID) override;
@@ -41,6 +40,8 @@ namespace ego::application
         bool setViewportInputTransparent(gui::ViewportID _viewportID, bool _isTransparent) override;
 
     private:
+        void release();
+
         struct CallbackIDs final
         {
             EventCallbackID m_mouseChanged = InvalidEventCallbackID;

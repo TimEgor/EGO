@@ -64,7 +64,6 @@ namespace ego::application
         ~Application() override;
 
         bool init(const InitData& _initData, const ApplicationSubsystemPointer& _applicationSubsystem);
-        void release();
 
         const PresenterProviderPointer& getPresenterProviderPointer() const;
         InputControllerPointer getInputControllerPointer() const;
@@ -76,6 +75,8 @@ namespace ego::application
         bool isExitRequested() const;
 
     private:
+        void release();
+
         bool initDiagnosticSubsystem();
         bool initEventSubsystem();
         bool initPlatformSubsystem(void* _nativeInstanceHandle);
@@ -99,7 +100,7 @@ namespace ego::application
         void releaseSubsystemRegistry();
 
         bool registerSubsystem(const subsystem::SubsystemPointer& _subsystem);
-        void releaseSubsystem(const subsystem::SubsystemPointer& _subsystem);
+        void unregisterSubsystem(const subsystem::SubsystemPointer& _subsystem);
 
         bool registerPluginDirectory(const FileName& _pluginDirectory);
         void unregisterPluginDirectory();

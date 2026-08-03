@@ -4,6 +4,11 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
+ego::EventSubsystem::~EventSubsystem()
+{
+    release();
+}
+
 bool ego::EventSubsystem::init()
 {
     m_eventController = MakePointer<EventController>();
@@ -14,7 +19,7 @@ bool ego::EventSubsystem::init()
 
 void ego::EventSubsystem::release()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_eventController);
+    m_eventController = nullptr;
 }
 
 ego::EventControllerPointer ego::EventSubsystem::getEventControllerPointer() const

@@ -25,10 +25,9 @@ namespace ego
         };
 
         ResourceSubsystem() = default;
-        ~ResourceSubsystem() override = default;
+        ~ResourceSubsystem() override;
 
         bool init(const InitData& _initData);
-        void release() override;
 
         ResourceControllerPointer getResourceControllerPointer() const;
         ResourceController& getResourceController() const;
@@ -37,6 +36,8 @@ namespace ego
         EGO_SUBSYSTEM(ResourceSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         ResourceProviderPluginController m_resourceProviderPluginController;
         ResourceControllerPointer m_resourceController = nullptr;
     };

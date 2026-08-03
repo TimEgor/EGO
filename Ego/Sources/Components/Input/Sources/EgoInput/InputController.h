@@ -19,7 +19,6 @@ namespace ego
         ~InputController();
 
         bool init();
-        void release();
 
         void update() const;
 
@@ -32,6 +31,8 @@ namespace ego
         EventController& getEventController() const;
 
     private:
+        void release();
+
         using KeyProviderCollection = std::vector<InputKeyProviderPointer>;
 
         bool registerInputEvents();

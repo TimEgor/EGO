@@ -20,6 +20,11 @@ namespace
     const ego::ComputeVector3 SecondTrianglePosition(0.60f, 0.0f, 0.0f);
 } // namespace
 
+ego::demo::TestDemo::~TestDemo()
+{
+    release();
+}
+
 bool ego::demo::TestDemo::init(const engine::EngineSessionWeakPointer& _engineSession)
 {
     EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
@@ -46,9 +51,9 @@ bool ego::demo::TestDemo::init(const engine::EngineSessionWeakPointer& _engineSe
     m_secondTriangleMaterial = m_resourceController->load<render::MaterialResource>("TestTriangleSecond.material.xml");
     EGO_CHECK_INITIALIZATION(m_secondTriangleMaterial && m_secondTriangleMaterial->isLoaded());
 
-    m_level = engineSession->getLevelController().createLevel();
+    m_level = MakePointer<Level>();
     EGO_CHECK_INITIALIZATION(m_level);
-    EGO_CHECK_INITIALIZATION(engineSession->getLevelController().setActiveLevel(m_level->getID()));
+    EGO_CHECK_INITIALIZATION(engineSession->setActiveLevel(m_level));
 
     const ecs::Entity cameraNode = m_level->createNode();
     EGO_CHECK_INITIALIZATION(cameraNode);
@@ -84,10 +89,10 @@ void ego::demo::TestDemo::release()
     const engine::EngineSessionPointer engineSession = m_engineSession.lock();
     if (engineSession && m_level)
     {
-        const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
-        if (activeLevel && activeLevel->getID() == m_level->getID())
+        const LevelPointer activeLevel = engineSession->getActiveLevel();
+        if (activeLevel == m_level)
         {
-            engineSession->getLevelController().clearActiveLevel();
+            engineSession->clearActiveLevel();
         }
 
         engineSession->clearRenderCameraEntity();

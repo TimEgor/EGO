@@ -6,6 +6,8 @@
 #include "EgoCore/Parsers/XmlParser/XmlDocument.h"
 #include "EgoCore/Patterns/NonCopyable.h"
 
+#include "EgoECS/Entity.h"
+
 #include "EgoGraphicHardware/Presentation/TextureGraphicPresenter.h"
 
 #include "EgoEngine/EngineSession.h"
@@ -29,6 +31,10 @@ namespace ego::editor
         engine::EngineSessionPointer getSimulationSessionPointer() const;
         LevelPointer getCurrentLevelPointer() const;
 
+        bool selectEntity(ecs::Entity _entity);
+        ecs::Entity getSelectedEntity() const;
+        void clearSelectedEntity();
+
         void createProject();
         bool createProject(const std::string& _name, const FileName& _directory);
         void loadProject();
@@ -42,7 +48,8 @@ namespace ego::editor
             FileName m_directory;
             engine::EngineSessionPointer m_simulationSession = nullptr;
             TextureGraphicPresenterPointer m_simulationGraphicPresenter = nullptr;
-            LevelPointer m_simulationLevel = nullptr;
+            LevelWeakPointer m_selectedLevel;
+            ecs::Entity m_selectedEntity;
         };
 
         bool readConfig(const XmlDocument& _config);

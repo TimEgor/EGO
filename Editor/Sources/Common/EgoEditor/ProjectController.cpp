@@ -64,7 +64,39 @@ ego::engine::EngineSessionPointer ego::editor::ProjectController::getSimulationS
 
 ego::LevelPointer ego::editor::ProjectController::getCurrentLevelPointer() const
 {
-    return m_projectContext.m_simulationLevel;
+    return m_projectContext.m_simulationSession ? m_projectContext.m_simulationSession->getActiveLevel() : nullptr;
+}
+
+bool ego::editor::ProjectController::selectEntity(ecs::Entity _entity)
+{
+    const LevelPointer currentLevel = getCurrentLevelPointer();
+    if (!currentLevel || !currentLevel->isNode(_entity))
+    {
+        return false;
+    }
+
+    m_projectContext.m_selectedLevel = currentLevel;
+    m_projectContext.m_selectedEntity = _entity;
+
+    return true;
+}
+
+ego::ecs::Entity ego::editor::ProjectController::getSelectedEntity() const
+{
+    const LevelPointer selectedLevel = m_projectContext.m_selectedLevel.lock();
+    const LevelPointer currentLevel = getCurrentLevelPointer();
+    if (!selectedLevel || selectedLevel != currentLevel || !selectedLevel->isNode(m_projectContext.m_selectedEntity))
+    {
+        return ecs::Entity();
+    }
+
+    return m_projectContext.m_selectedEntity;
+}
+
+void ego::editor::ProjectController::clearSelectedEntity()
+{
+    m_projectContext.m_selectedLevel.reset();
+    m_projectContext.m_selectedEntity = ecs::Entity();
 }
 
 void ego::editor::ProjectController::createProject()
@@ -258,7 +290,7 @@ bool ego::editor::ProjectController::initSimulationGraphicPresenter()
     TextureGraphicPresenterPointer graphicPresenter = MakePointer<TextureGraphicPresenter>();
     if (!graphicPresenter || !graphicPresenter->init(gpu::GetGraphicDevice(), SimulationTextureSize, gpu::GraphicResourceFormat::R8G8B8A8UNorm))
     {
-        EGO_SAFE_RESET_POINTER_WITH_RELEASING(graphicPresenter);
+        graphicPresenter = nullptr;
 
         return false;
     }
@@ -267,7 +299,7 @@ bool ego::editor::ProjectController::initSimulationGraphicPresenter()
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     if (!sceneTexture || !editorSubsystem)
     {
-        EGO_SAFE_RESET_POINTER_WITH_RELEASING(graphicPresenter);
+        graphicPresenter = nullptr;
 
         return false;
     }
@@ -306,19 +338,13 @@ void ego::editor::ProjectController::releaseProjectContext()
 
 void ego::editor::ProjectController::releaseSimulationLevel()
 {
-    if (m_projectContext.m_simulationSession && m_projectContext.m_simulationLevel)
-    {
-        LevelController& levelController = m_projectContext.m_simulationSession->getLevelController();
-        const LevelPointer activeLevel = levelController.getActiveLevel();
-        if (activeLevel && activeLevel->getID() == m_projectContext.m_simulationLevel->getID())
-        {
-            levelController.clearActiveLevel();
-        }
+    clearSelectedEntity();
 
+    if (m_projectContext.m_simulationSession)
+    {
+        m_projectContext.m_simulationSession->clearActiveLevel();
         m_projectContext.m_simulationSession->clearRenderCameraEntity();
     }
-
-    m_projectContext.m_simulationLevel = nullptr;
 }
 
 void ego::editor::ProjectController::releaseSimulationSession()
@@ -341,5 +367,5 @@ void ego::editor::ProjectController::releaseSimulationGraphicPresenter()
         editorSubsystem->getEditorController().getGuiController().setSceneTexture(nullptr);
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_projectContext.m_simulationGraphicPresenter);
+    m_projectContext.m_simulationGraphicPresenter = nullptr;
 }

@@ -6,6 +6,11 @@
 
 #include "ResourceController.h"
 
+ego::ResourceSubsystem::~ResourceSubsystem()
+{
+    release();
+}
+
 bool ego::ResourceSubsystem::init(const InitData& _initData)
 {
     EGO_CHECK_RETURN_FALSE(_initData.m_resourceFileSystem);
@@ -21,7 +26,7 @@ bool ego::ResourceSubsystem::init(const InitData& _initData)
 void ego::ResourceSubsystem::release()
 {
     m_resourceProviderPluginController.release();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_resourceController);
+    m_resourceController = nullptr;
 }
 
 ego::ResourceControllerPointer ego::ResourceSubsystem::getResourceControllerPointer() const

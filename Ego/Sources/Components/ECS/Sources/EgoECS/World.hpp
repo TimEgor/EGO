@@ -123,11 +123,12 @@ namespace ego::ecs
 
         auto view = m_implementation->m_registry.view<TComponents...>();
         auto&& function = _function;
+        const WorldID worldID = m_id;
 
         view.each(
-            [&function](entt::entity _nativeEntity, TComponents&... _components)
+            [&function, worldID](entt::entity _nativeEntity, TComponents&... _components)
             {
-                std::invoke(function, detail::ToEntity(_nativeEntity), _components...);
+                std::invoke(function, detail::ToEntity(worldID, _nativeEntity), _components...);
             });
     }
 
@@ -138,11 +139,14 @@ namespace ego::ecs
 
         auto view = m_implementation->m_registry.view<const std::remove_const_t<TComponents>...>();
         auto&& function = _function;
+        const WorldID worldID = m_id;
 
         view.each(
-            [&function](entt::entity _nativeEntity, const std::remove_const_t<TComponents>&... _components)
+            [&function, worldID](
+                entt::entity _nativeEntity,
+                const std::remove_const_t<TComponents>&... _components)
             {
-                std::invoke(function, detail::ToEntity(_nativeEntity), _components...);
+                std::invoke(function, detail::ToEntity(worldID, _nativeEntity), _components...);
             });
     }
 } // namespace ego::ecs

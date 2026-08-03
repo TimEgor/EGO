@@ -26,10 +26,9 @@ namespace ego
     {
     public:
         DiagnosticSubsystem() = default;
-        ~DiagnosticSubsystem() override = default;
+        ~DiagnosticSubsystem() override;
 
         bool init();
-        void release() override;
 
         AssertControllerPointer getAssertController() const;
         log::LoggerControllerPointer getLoggerController() const;
@@ -38,6 +37,8 @@ namespace ego
         EGO_SUBSYSTEM(DiagnosticSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         AssertControllerPointer m_assertController = nullptr;
         log::LoggerControllerPointer m_loggerController = nullptr;
         profile::ProfilerControllerPointer m_profilerController = nullptr;

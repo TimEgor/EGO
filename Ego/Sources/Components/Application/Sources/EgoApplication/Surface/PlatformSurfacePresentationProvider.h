@@ -25,7 +25,6 @@ namespace ego::application
         ~PlatformSurfacePresentationProvider() override;
 
         bool init(const InitData& _initData);
-        void release() override;
 
         Presentation createPresentation(const PresentationDesc& _desc) override;
         bool destroyPresentation(const PlatformSurfacePointer& _surface) override;
@@ -35,6 +34,8 @@ namespace ego::application
         EGO_RTTI_VIRTUAL(PlatformSurfacePresentationProvider, PresenterProvider);
 
     private:
+        void release();
+
         struct SurfaceEventCallbackIDs final
         {
             InstancedEventCallbackID m_closeRequested = InvalidInstancedEventCallbackID;

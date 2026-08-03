@@ -60,6 +60,9 @@ namespace ego::ecs
         void forEach(TFunction&& _function) const;
 
     private:
+        static WorldID AllocateWorldID();
+
+        WorldID m_id = InvalidWorldID;
         std::unique_ptr<detail::WorldImplementation> m_implementation;
     };
 

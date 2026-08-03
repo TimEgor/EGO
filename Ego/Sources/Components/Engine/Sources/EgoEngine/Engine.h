@@ -25,7 +25,6 @@ namespace ego::engine
         ~Engine() override;
 
         bool init();
-        void release();
 
         EngineSessionPointer createSession(const EngineSession::InitData& _initData);
         bool destroySession(EngineSessionID _sessionID);
@@ -36,6 +35,8 @@ namespace ego::engine
         bool tick();
 
     private:
+        void release();
+
         bool initJobController();
         void releaseJobController();
 

@@ -22,7 +22,6 @@ namespace ego::engine
         }
 
         virtual void update(float) {}
-        virtual void release() {}
     };
 
     EGO_POINTER(EngineLogic);

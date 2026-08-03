@@ -10,6 +10,11 @@
 
 #include "DefaultRenderConstants.h"
 
+ego::render::DefaultRender::~DefaultRender()
+{
+    release();
+}
+
 bool ego::render::DefaultRender::init()
 {
     if (m_isInitialized)

@@ -8,9 +8,9 @@
 
 namespace ego::ecs::detail
 {
-    inline Entity ToEntity(entt::entity _entity)
+    inline Entity ToEntity(WorldID _worldID, entt::entity _entity)
     {
-        return Entity(static_cast<EntityID>(entt::to_integral(_entity)));
+        return Entity(_worldID, static_cast<EntityID>(entt::to_integral(_entity)));
     }
 
     inline entt::entity ToNativeEntity(Entity _entity)

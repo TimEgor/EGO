@@ -51,7 +51,6 @@ bool ego::render::DefaultRenderFileSystems::loadAssetsRootPath(FileName& _assets
     const bool loadResult = configResource && configResource->isLoaded() && ParseDefaultRenderAssetsRootPath(configResource->getRootNode(), _assetsRootPath);
 
     resourceController.removeFileSystem(configFileSystem);
-    configFileSystem->release();
     if (!loadResult)
     {
         return false;
@@ -75,7 +74,6 @@ bool ego::render::DefaultRenderFileSystems::initAssetsFileSystem(const FileName&
     if (m_assetsFileSystem)
     {
         resourceController.removeFileSystem(m_assetsFileSystem);
-        m_assetsFileSystem->release();
         m_assetsFileSystem = nullptr;
     }
 
@@ -101,7 +99,6 @@ void ego::render::DefaultRenderFileSystems::release()
         resourceController->removeFileSystem(m_assetsFileSystem);
     }
 
-    m_assetsFileSystem->release();
     m_assetsFileSystem = nullptr;
 }
 
@@ -122,7 +119,6 @@ ego::RootedFileSystemPointer ego::render::DefaultRenderFileSystems::CreateFileSy
 
     if (!fileSystem->init())
     {
-        fileSystem->release();
         return nullptr;
     }
 

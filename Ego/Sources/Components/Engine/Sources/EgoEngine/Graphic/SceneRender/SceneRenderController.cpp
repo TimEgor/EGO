@@ -18,23 +18,18 @@ bool ego::engine::SceneRenderController::init(const render::RenderPluginPointer&
 
     if (!sceneRender->init())
     {
-        sceneRender->release();
         return false;
     }
 
     m_renderPlugin = _renderPlugin;
     m_render = sceneRender;
+
     return true;
 }
 
 void ego::engine::SceneRenderController::release()
 {
-    if (m_render)
-    {
-        m_render->release();
-        m_render = nullptr;
-    }
-
+    m_render = nullptr;
     m_renderPlugin = nullptr;
     m_isFramePrepared = false;
 }

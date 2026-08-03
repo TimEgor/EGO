@@ -199,7 +199,7 @@ void ego::application::PlatformSurfacePresentationProvider::releasePresentation(
 {
     unregisterSurfaceEvents(_presentation);
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(_presentation.m_graphicPresenter);
+    _presentation.m_graphicPresenter = nullptr;
 
     if (_destroySurface)
     {
@@ -251,7 +251,7 @@ ego::application::SurfaceGraphicPresenterPointer ego::application::PlatformSurfa
     SurfaceGraphicPresenterPointer graphicPresenter = MakePointer<SurfaceGraphicPresenter>();
     if (!graphicPresenter || !graphicPresenter->init(*graphicDevice, _surface, m_swapChainDesc, presentationQueue))
     {
-        EGO_SAFE_RESET_POINTER_WITH_RELEASING(graphicPresenter);
+        graphicPresenter = nullptr;
 
         return nullptr;
     }

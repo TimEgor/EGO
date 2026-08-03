@@ -15,6 +15,11 @@ namespace
     constexpr auto TriangleBottomRight = ego::FloatVector3(0.6f, -0.5f, 0.0f);
 } // namespace
 
+ego::demo::GuiDemo::~GuiDemo()
+{
+    release();
+}
+
 bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSession)
 {
     EGO_CHECK_INITIALIZATION(!_engineSession.isExpired());
@@ -30,9 +35,9 @@ bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSes
 
     EGO_CHECK_INITIALIZATION(guiController->registerLayer(m_guiLayer));
 
-    m_level = engineSession->getLevelController().createLevel();
+    m_level = MakePointer<Level>();
     EGO_CHECK_INITIALIZATION(m_level);
-    EGO_CHECK_INITIALIZATION(engineSession->getLevelController().setActiveLevel(m_level->getID()));
+    EGO_CHECK_INITIALIZATION(engineSession->setActiveLevel(m_level));
 
     m_cameraEntity = m_level->createNode();
     EGO_CHECK_INITIALIZATION(m_cameraEntity);
@@ -68,10 +73,10 @@ void ego::demo::GuiDemo::release()
 
     if (engineSession && m_level)
     {
-        const LevelPointer activeLevel = engineSession->getLevelController().getActiveLevel();
-        if (activeLevel && activeLevel->getID() == m_level->getID())
+        const LevelPointer activeLevel = engineSession->getActiveLevel();
+        if (activeLevel == m_level)
         {
-            engineSession->getLevelController().clearActiveLevel();
+            engineSession->clearActiveLevel();
         }
 
         engineSession->clearRenderCameraEntity();

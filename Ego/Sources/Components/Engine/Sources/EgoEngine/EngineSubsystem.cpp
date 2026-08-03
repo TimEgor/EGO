@@ -4,6 +4,11 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
+ego::engine::EngineSubsystem::~EngineSubsystem()
+{
+    release();
+}
+
 bool ego::engine::EngineSubsystem::init()
 {
     EGO_CHECK_INITIALIZATION(!m_engine);
@@ -16,7 +21,7 @@ bool ego::engine::EngineSubsystem::init()
 
 void ego::engine::EngineSubsystem::release()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engine);
+    m_engine = nullptr;
 }
 
 ego::engine::EnginePointer ego::engine::EngineSubsystem::getEnginePointer() const

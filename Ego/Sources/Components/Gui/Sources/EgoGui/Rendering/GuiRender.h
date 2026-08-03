@@ -19,7 +19,6 @@ namespace ego::gui
         ~GuiRender() override = default;
 
         virtual bool init() = 0;
-        virtual void release() = 0;
         virtual void clearResources() = 0;
 
         virtual bool prepare(GuiRenderData&& _renderData) = 0;

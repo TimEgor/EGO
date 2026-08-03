@@ -31,7 +31,6 @@ namespace ego::gui
         ~GuiController() override;
 
         bool init(const InitData& _initData);
-        void release();
 
         bool setFont(const FileName& _path, float _size);
         bool setStyle(const GuiStyle& _style);
@@ -45,6 +44,8 @@ namespace ego::gui
         bool isInitialized() const;
 
     private:
+        void release();
+
         struct LayerRecord final
         {
             std::reference_wrapper<GuiLayer> m_layer;

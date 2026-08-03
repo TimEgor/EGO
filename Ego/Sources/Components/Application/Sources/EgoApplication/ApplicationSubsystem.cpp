@@ -4,6 +4,11 @@
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 #include "EgoCore/UtilsMacros.h"
 
+ego::application::ApplicationSubsystem::~ApplicationSubsystem()
+{
+    release();
+}
+
 bool ego::application::ApplicationSubsystem::init(const Application::InitData& _initData)
 {
     EGO_CHECK_INITIALIZATION(!m_application);
@@ -16,7 +21,7 @@ bool ego::application::ApplicationSubsystem::init(const Application::InitData& _
 
 void ego::application::ApplicationSubsystem::release()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_application);
+    m_application = nullptr;
 }
 
 ego::application::ApplicationPointer ego::application::ApplicationSubsystem::getApplicationPointer() const

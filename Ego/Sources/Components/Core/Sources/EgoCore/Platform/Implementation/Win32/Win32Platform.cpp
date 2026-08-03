@@ -41,6 +41,11 @@ ego::win32::Win32Platform::Win32Platform(HINSTANCE _instance)
 {
 }
 
+ego::win32::Win32Platform::~Win32Platform()
+{
+    release();
+}
+
 bool ego::win32::Win32Platform::init()
 {
     if (m_isInitialized)
@@ -72,9 +77,9 @@ void ego::win32::Win32Platform::release()
         return;
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_surfaceController);
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputDeviceController);
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_fileSystem);
+    m_surfaceController = nullptr;
+    m_inputDeviceController = nullptr;
+    m_fileSystem = nullptr;
     m_isInitialized = false;
 }
 

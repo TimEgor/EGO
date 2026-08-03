@@ -71,7 +71,6 @@ namespace ego
         ~ResourceController();
 
         bool init(uint32_t _threadCount = 0, const char* _jobThreadName = "EgoResourceJob");
-        void release();
 
         bool isInitialized() const;
 
@@ -154,6 +153,8 @@ namespace ego
         JobController& getJobController();
 
     private:
+        void release();
+
         ResourcePointer loadResource(ResourceType _type, const FileName& _path, const ResourceFactory& _factory);
 
         ResourceLoadingOperationPointer loadResourceAsync(ResourceType _type, const FileName& _path, const ResourceFactory& _factory);

@@ -71,24 +71,6 @@
             _OBJ = nullptr;                                                                                                                                                        \
         }                                                                                                                                                                          \
     }
-#define EGO_SAFE_DESTROY_WITH_RELEASING(_OBJ)                                                                                                                                      \
-    {                                                                                                                                                                              \
-        if (_OBJ)                                                                                                                                                                  \
-        {                                                                                                                                                                          \
-            _OBJ->release();                                                                                                                                                       \
-            delete _OBJ;                                                                                                                                                           \
-            _OBJ = nullptr;                                                                                                                                                        \
-        }                                                                                                                                                                          \
-    }
-#define EGO_SAFE_RESET_POINTER_WITH_RELEASING(_OBJ)                                                                                                                                \
-    {                                                                                                                                                                              \
-        if (_OBJ)                                                                                                                                                                  \
-        {                                                                                                                                                                          \
-            _OBJ->release();                                                                                                                                                       \
-            _OBJ.reset();                                                                                                                                                          \
-        }                                                                                                                                                                          \
-    }
-
 #define EGO_SAFE_CALL(_FUNCTION)                                                                                                                                                   \
     {                                                                                                                                                                              \
         if (_FUNCTION)                                                                                                                                                             \

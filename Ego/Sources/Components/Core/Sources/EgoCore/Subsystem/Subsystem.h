@@ -14,7 +14,6 @@ namespace ego::subsystem
         Subsystem() = default;
         virtual ~Subsystem() = default;
 
-        virtual void release() = 0;
         virtual SubsystemType getType() const = 0;
 
         EGO_RTTI_VIRTUAL_BASE(Subsystem);

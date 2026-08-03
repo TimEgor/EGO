@@ -3,6 +3,11 @@
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 
+ego::editor::EditorSubsystem::~EditorSubsystem()
+{
+    release();
+}
+
 ego::editor::EditorController& ego::editor::EditorSubsystem::getEditorController()
 {
     return m_editorController;

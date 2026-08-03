@@ -6,6 +6,11 @@
 
 #include "EgoPlugin/PluginController.h"
 
+ego::gpu::GraphicHardwareSubsystem::~GraphicHardwareSubsystem()
+{
+    release();
+}
+
 bool ego::gpu::GraphicHardwareSubsystem::init(const InitData& _initData)
 {
     release();
@@ -19,7 +24,7 @@ bool ego::gpu::GraphicHardwareSubsystem::init(const InitData& _initData)
 void ego::gpu::GraphicHardwareSubsystem::release()
 {
     m_graphicCommandQueue = nullptr;
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_graphicDevice);
+    m_graphicDevice = nullptr;
     m_graphicHardwarePlugin = nullptr;
 }
 

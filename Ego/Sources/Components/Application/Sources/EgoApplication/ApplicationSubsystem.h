@@ -12,10 +12,9 @@ namespace ego::application
     {
     public:
         ApplicationSubsystem() = default;
-        ~ApplicationSubsystem() override = default;
+        ~ApplicationSubsystem() override;
 
         bool init(const Application::InitData& _initData);
-        void release() override;
 
         ApplicationPointer getApplicationPointer() const;
         Application& getApplication() const;
@@ -23,6 +22,8 @@ namespace ego::application
         EGO_SUBSYSTEM(ApplicationSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         ApplicationPointer m_application = nullptr;
     };
 

@@ -10,10 +10,9 @@ namespace ego::engine
     {
     public:
         EngineSubsystem() = default;
-        ~EngineSubsystem() override = default;
+        ~EngineSubsystem() override;
 
         bool init();
-        void release() override;
 
         EnginePointer getEnginePointer() const;
         Engine& getEngine() const;
@@ -21,6 +20,8 @@ namespace ego::engine
         EGO_SUBSYSTEM(EngineSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         EnginePointer m_engine = nullptr;
     };
 

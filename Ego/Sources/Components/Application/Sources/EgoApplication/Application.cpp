@@ -204,31 +204,31 @@ bool ego::application::Application::initResourceSubsystem()
 
 void ego::application::Application::releaseResourceSubsystem()
 {
-    releaseSubsystem(m_resourceSubsystem);
+    unregisterSubsystem(m_resourceSubsystem);
     m_resourceSubsystem = nullptr;
 }
 
 void ego::application::Application::releaseGraphicHardwareSubsystem()
 {
-    releaseSubsystem(m_graphicHardwareSubsystem);
+    unregisterSubsystem(m_graphicHardwareSubsystem);
     m_graphicHardwareSubsystem = nullptr;
 }
 
 void ego::application::Application::releaseApplicationProfiler()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationProfiler);
+    m_applicationProfiler = nullptr;
 }
 
 void ego::application::Application::releasePluginSubsystem()
 {
     unregisterPluginDirectory();
-    releaseSubsystem(m_pluginSubsystem);
+    unregisterSubsystem(m_pluginSubsystem);
     m_pluginSubsystem = nullptr;
 }
 
 void ego::application::Application::releasePlatformSubsystem()
 {
-    releaseSubsystem(m_platformSubsystem);
+    unregisterSubsystem(m_platformSubsystem);
     m_platformSubsystem = nullptr;
 }
 
@@ -246,13 +246,13 @@ void ego::application::Application::releaseEventSubsystem()
         m_applicationQuitRequestedEventCallbackID = InvalidEventCallbackID;
     }
 
-    releaseSubsystem(m_eventSubsystem);
+    unregisterSubsystem(m_eventSubsystem);
     m_eventSubsystem = nullptr;
 }
 
 void ego::application::Application::releaseDiagnosticSubsystem()
 {
-    releaseSubsystem(m_diagnosticSubsystem);
+    unregisterSubsystem(m_diagnosticSubsystem);
     m_diagnosticSubsystem = nullptr;
 }
 
@@ -283,7 +283,7 @@ void ego::application::Application::releaseInputController()
     }
 
     m_platformInputKeyProvider = nullptr;
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_inputController);
+    m_inputController = nullptr;
 }
 
 bool ego::application::Application::initSubsystemRegistry()
@@ -324,14 +324,12 @@ bool ego::application::Application::registerSubsystem(const subsystem::Subsystem
     return m_subsystemRegistry && m_subsystemRegistry->registerSubsystem(_subsystem);
 }
 
-void ego::application::Application::releaseSubsystem(const subsystem::SubsystemPointer& _subsystem)
+void ego::application::Application::unregisterSubsystem(const subsystem::SubsystemPointer& _subsystem)
 {
     if (!_subsystem)
     {
         return;
     }
-
-    _subsystem->release();
 
     if (m_subsystemRegistry)
     {
@@ -418,7 +416,7 @@ bool ego::application::Application::initWindowing()
 
 void ego::application::Application::releaseWindowing()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_presenterProvider);
+    m_presenterProvider = nullptr;
 }
 
 void ego::application::Application::handleQuitRequested(const ApplicationQuitRequestedEvent&)

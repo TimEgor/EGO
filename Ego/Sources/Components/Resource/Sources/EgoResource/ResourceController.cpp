@@ -63,7 +63,7 @@ void ego::ResourceController::release()
     }
 
     waitAllLoading();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
+    m_jobController = nullptr;
 
     m_resourceRegistry.clear();
     m_resourceSources.clear();

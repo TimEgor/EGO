@@ -10,8 +10,6 @@ namespace ego
         GraphicPresenter() = default;
         virtual ~GraphicPresenter() = default;
 
-        virtual void release() = 0;
-
         virtual bool prepare() = 0;
         virtual gpu::Texture2DPointer getTargetTexture() = 0;
         virtual bool shouldClearTarget() const = 0;

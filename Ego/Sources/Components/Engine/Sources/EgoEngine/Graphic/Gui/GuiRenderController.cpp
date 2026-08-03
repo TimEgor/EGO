@@ -34,12 +34,7 @@ bool ego::engine::GuiRenderController::init(const gui::GuiRenderPluginPointer& _
 
 void ego::engine::GuiRenderController::release()
 {
-    if (m_guiRender)
-    {
-        m_guiRender->release();
-        m_guiRender = nullptr;
-    }
-
+    m_guiRender = nullptr;
     m_guiRenderPlugin = nullptr;
 }
 

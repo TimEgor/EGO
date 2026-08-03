@@ -35,7 +35,6 @@ namespace ego::log
         ~LoggerController() override;
 
         bool init();
-        void release();
 
         bool setLogger(const LoggerPointer& _logger);
         void resetLogger(const LoggerPointer& _logger = nullptr);
@@ -47,6 +46,8 @@ namespace ego::log
         static const char* GetLogCategoryName(LogCategory _category);
 
     private:
+        void release();
+
         static LoggerPointer CreateDefaultLogger();
 
         mutable std::shared_mutex m_lock;

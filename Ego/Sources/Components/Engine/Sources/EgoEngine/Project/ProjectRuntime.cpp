@@ -160,8 +160,6 @@ void ego::engine::ProjectRuntime::releaseAssetFileSystems()
         {
             resourceController->removeFileSystem(assetFileSystem);
         }
-
-        assetFileSystem->release();
     }
 }
 

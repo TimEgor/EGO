@@ -21,8 +21,6 @@ namespace ego::application
     public:
         virtual ~PresenterProvider() = default;
 
-        virtual void release() = 0;
-
         virtual Presentation createPresentation(const PresentationDesc& _desc) = 0;
         virtual bool destroyPresentation(const PlatformSurfacePointer& _surface) = 0;
         virtual GraphicPresenterPointer findGraphicPresenter(const PlatformSurfacePointer& _surface) const = 0;

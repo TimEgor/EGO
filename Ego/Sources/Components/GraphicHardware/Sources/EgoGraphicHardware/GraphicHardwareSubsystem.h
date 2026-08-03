@@ -18,10 +18,9 @@ namespace ego::gpu
         };
 
         GraphicHardwareSubsystem() = default;
-        ~GraphicHardwareSubsystem() override = default;
+        ~GraphicHardwareSubsystem() override;
 
         bool init(const InitData& _initData);
-        void release() override;
 
         GraphicDevicePointer getGraphicDevicePointer() const;
         const GraphicDevice& getGraphicDevice() const;
@@ -32,6 +31,8 @@ namespace ego::gpu
         EGO_SUBSYSTEM(GraphicHardwareSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         bool initGraphicDevice(const InitData& _initData);
         bool initGraphicCommandQueue();
 

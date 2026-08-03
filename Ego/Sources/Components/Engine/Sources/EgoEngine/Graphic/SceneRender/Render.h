@@ -35,7 +35,6 @@ namespace ego::render
         virtual ~Render() = default;
 
         virtual bool init() = 0;
-        virtual void release() = 0;
         virtual void clearResources() = 0;
 
         virtual bool prepare(const RenderPrepareContext& _context) = 0;

@@ -53,7 +53,6 @@ namespace ego
         GraphicDevice() = default;
 
         virtual bool init(const InitData& _initData) = 0;
-        virtual void release() = 0;
 
         virtual std::string getResourceProviderName() const = 0;
 

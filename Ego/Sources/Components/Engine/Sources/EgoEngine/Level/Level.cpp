@@ -2,49 +2,23 @@
 
 #include "EgoCore/Assert/Assert.h"
 
-#include "LevelController.h"
-
-ego::Level::Level(LevelID _id)
-    : m_world(MakePointer<ecs::World>()),
-      m_id(_id)
+struct ego::Level::HierarchyComponent final : public ecs::Component
 {
-    createRootNode();
+    ecs::Entity m_parent;
+    ecs::Entity m_firstChild;
+    ecs::Entity m_lastChild;
+    ecs::Entity m_previousSibling;
+    ecs::Entity m_nextSibling;
+};
+
+ego::Level::Level()
+    : m_world(MakePointer<ecs::World>())
+{
 }
 
 ego::Level::~Level()
 {
     release();
-}
-
-ego::LevelDeleter::LevelDeleter(const WeakPointer<LevelController>& _controller)
-    : m_controller(_controller)
-{
-}
-
-void ego::LevelDeleter::operator()(Level* _level) const
-{
-    if (!_level)
-    {
-        return;
-    }
-
-    const SharedPointer<LevelController> controller = m_controller.lock();
-    if (controller)
-    {
-        LevelController::LevelControllerAccessor::RemoveLevel(*controller, _level->getID());
-    }
-
-    Level::LevelAccessor::Destroy(_level);
-}
-
-void ego::Level::LevelAccessor::Destroy(Level* _level)
-{
-    if (!_level)
-    {
-        return;
-    }
-
-    delete _level;
 }
 
 ego::Level::NodeChildIterator::NodeChildIterator(const Level* _level, ecs::Entity _node)
@@ -79,6 +53,7 @@ ego::Level::NodeChildIterator ego::Level::NodeChildIterator::operator++(int)
 {
     NodeChildIterator iterator = *this;
     ++(*this);
+
     return iterator;
 }
 
@@ -92,25 +67,20 @@ bool ego::Level::NodeChildIterator::operator!=(const NodeChildIterator& _iterato
     return !(*this == _iterator);
 }
 
-ego::Level::NodeChildRange::NodeChildRange(const Level* _level, ecs::Entity _parent)
-    : m_level(_level && _parent ? _level : nullptr),
-      m_parent(_level ? _parent : ecs::Entity())
+ego::Level::NodeChildRange::NodeChildRange(const Level* _level, ecs::Entity _firstNode)
+    : m_level(_level),
+      m_firstNode(_level ? _firstNode : ecs::Entity())
 {
 }
 
 ego::Level::NodeChildIterator ego::Level::NodeChildRange::begin() const
 {
-    return m_level ? NodeChildIterator(m_level, m_level->getFirstNodeChild(m_parent)) : NodeChildIterator();
+    return m_level ? NodeChildIterator(m_level, m_firstNode) : NodeChildIterator();
 }
 
 ego::Level::NodeChildIterator ego::Level::NodeChildRange::end() const
 {
     return NodeChildIterator();
-}
-
-ego::LevelID ego::Level::getID() const
-{
-    return m_id;
 }
 
 bool ego::Level::isValid() const
@@ -123,11 +93,11 @@ ego::ecs::Entity ego::Level::createEntity()
     if (!m_world)
     {
         EGO_ASSERT_FAIL_MESSAGE("Level isn't valid.");
+
         return ecs::Entity();
     }
 
     const ecs::Entity entity = m_world->createEntity();
-    attachEntity(entity);
 
     return entity;
 }
@@ -153,6 +123,7 @@ void ego::Level::destroyEntity(ecs::Entity _entity)
     if (isNode(_entity))
     {
         destroyNode(_entity);
+
         return;
     }
 
@@ -161,13 +132,7 @@ void ego::Level::destroyEntity(ecs::Entity _entity)
 
 bool ego::Level::ownsEntity(ecs::Entity _entity) const
 {
-    if (!m_world || !m_world->isEntityAlive(_entity))
-    {
-        return false;
-    }
-
-    const LevelComponent* levelComponent = m_world->tryGetComponent<LevelComponent>(_entity);
-    return levelComponent && levelComponent->m_levelID == m_id;
+    return m_world && m_world->isEntityAlive(_entity);
 }
 
 size_t ego::Level::getEntityCount() const
@@ -175,30 +140,19 @@ size_t ego::Level::getEntityCount() const
     return m_world ? m_world->getEntityCount() : 0;
 }
 
-ego::ecs::Entity ego::Level::getRootNode() const
-{
-    if (!m_world || !isNode(m_rootNode))
-    {
-        return ecs::Entity();
-    }
-
-    const SceneNodeComponent* rootComponent = m_world->tryGetComponent<SceneNodeComponent>(m_rootNode);
-    return rootComponent && !rootComponent->m_parent ? m_rootNode : ecs::Entity();
-}
-
 bool ego::Level::isNode(ecs::Entity _entity) const
 {
-    return m_world && ownsEntity(_entity) && m_world->hasComponent<SceneNodeComponent>(_entity) && m_world->hasComponent<TransformComponent>(_entity);
+    return m_world && ownsEntity(_entity) && m_world->hasComponent<HierarchyComponent>(_entity) && m_world->hasComponent<TransformComponent>(_entity);
 }
 
 ego::ecs::Entity ego::Level::createNode()
 {
-    return createNode(getRootNode());
+    return createNode(ecs::Entity());
 }
 
 ego::ecs::Entity ego::Level::createNode(ecs::Entity _parent)
 {
-    if (!m_world || !isNode(_parent))
+    if (!m_world || (_parent && !isNode(_parent)))
     {
         return ecs::Entity();
     }
@@ -209,35 +163,50 @@ ego::ecs::Entity ego::Level::createNode(ecs::Entity _parent)
         return ecs::Entity();
     }
 
-    m_world->addOrReplaceComponent<SceneNodeComponent>(node);
+    m_world->addOrReplaceComponent<HierarchyComponent>(node);
     m_world->addOrReplaceComponent<TransformComponent>(node);
-
-    if (!attachNodeToParent(node, _parent))
-    {
-        m_world->destroyEntity(node);
-        return ecs::Entity();
-    }
+    linkNodeToParentEnd(node, _parent);
 
     return node;
 }
 
 bool ego::Level::destroyNode(ecs::Entity _node)
 {
-    if (!m_world || !isNode(_node) || _node == m_rootNode)
+    if (!m_world || !isNode(_node))
     {
         return false;
     }
 
-    std::vector<ecs::Entity> nodes;
-    collectNodeHierarchy(_node, nodes);
-    detachNodeFromParent(_node);
-
-    for (auto nodeIt = nodes.rbegin(); nodeIt != nodes.rend(); ++nodeIt)
+    ecs::Entity currentNode = _node;
+    while (currentNode)
     {
-        if (m_world->isEntityAlive(*nodeIt))
+        const HierarchyComponent* hierarchyComponent = m_world->tryGetComponent<HierarchyComponent>(currentNode);
+        EGO_ASSERT(hierarchyComponent);
+        if (!hierarchyComponent)
         {
-            m_world->destroyEntity(*nodeIt);
+            return false;
         }
+
+        if (hierarchyComponent->m_firstChild)
+        {
+            currentNode = hierarchyComponent->m_firstChild;
+
+            continue;
+        }
+
+        const ecs::Entity parent = hierarchyComponent->m_parent;
+        const ecs::Entity nextSibling = hierarchyComponent->m_nextSibling;
+        const bool isSubtreeRoot = currentNode == _node;
+
+        unlinkNode(currentNode);
+        m_world->destroyEntity(currentNode);
+
+        if (isSubtreeRoot)
+        {
+            break;
+        }
+
+        currentNode = nextSibling ? nextSibling : parent;
     }
 
     return true;
@@ -245,7 +214,7 @@ bool ego::Level::destroyNode(ecs::Entity _node)
 
 bool ego::Level::setNodeParent(ecs::Entity _node, ecs::Entity _parent)
 {
-    if (!m_world || !isNode(_node) || !isNode(_parent) || _node == _parent || _node == m_rootNode || isNodeChildOf(_parent, _node))
+    if (!canSetNodeParent(_node, _parent))
     {
         return false;
     }
@@ -256,13 +225,8 @@ bool ego::Level::setNodeParent(ecs::Entity _node, ecs::Entity _parent)
         return true;
     }
 
-    detachNodeFromParent(_node);
-
-    if (!attachNodeToParent(_node, _parent))
-    {
-        attachNodeToParent(_node, oldParent);
-        return false;
-    }
+    unlinkNode(_node);
+    linkNodeToParentEnd(_node, _parent);
 
     return true;
 }
@@ -274,8 +238,14 @@ ego::ecs::Entity ego::Level::getNodeParent(ecs::Entity _node) const
         return ecs::Entity();
     }
 
-    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    const HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+
     return nodeComponent ? nodeComponent->m_parent : ecs::Entity();
+}
+
+ego::Level::NodeChildRange ego::Level::getRootNodes() const
+{
+    return m_world ? NodeChildRange(this, m_firstRootNode) : NodeChildRange();
 }
 
 ego::Level::NodeChildRange ego::Level::getNodeChildren(ecs::Entity _node) const
@@ -285,7 +255,7 @@ ego::Level::NodeChildRange ego::Level::getNodeChildren(ecs::Entity _node) const
         return NodeChildRange();
     }
 
-    return NodeChildRange(this, _node);
+    return NodeChildRange(this, getFirstNodeChild(_node));
 }
 
 ego::ecs::Entity ego::Level::getFirstNodeChild(ecs::Entity _node) const
@@ -295,7 +265,8 @@ ego::ecs::Entity ego::Level::getFirstNodeChild(ecs::Entity _node) const
         return ecs::Entity();
     }
 
-    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    const HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+
     return nodeComponent ? nodeComponent->m_firstChild : ecs::Entity();
 }
 
@@ -306,7 +277,8 @@ ego::ecs::Entity ego::Level::getLastNodeChild(ecs::Entity _node) const
         return ecs::Entity();
     }
 
-    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    const HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+
     return nodeComponent ? nodeComponent->m_lastChild : ecs::Entity();
 }
 
@@ -317,7 +289,8 @@ ego::ecs::Entity ego::Level::getPreviousNodeSibling(ecs::Entity _node) const
         return ecs::Entity();
     }
 
-    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    const HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+
     return nodeComponent ? nodeComponent->m_previousSibling : ecs::Entity();
 }
 
@@ -328,7 +301,8 @@ ego::ecs::Entity ego::Level::getNextNodeSibling(ecs::Entity _node) const
         return ecs::Entity();
     }
 
-    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
+    const HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+
     return nodeComponent ? nodeComponent->m_nextSibling : ecs::Entity();
 }
 
@@ -340,8 +314,8 @@ void ego::Level::clear()
     }
 
     m_world->clear();
-    m_rootNode = ecs::Entity();
-    createRootNode();
+    m_firstRootNode = ecs::Entity();
+    m_lastRootNode = ecs::Entity();
 }
 
 void ego::Level::release()
@@ -351,59 +325,14 @@ void ego::Level::release()
         m_world->clear();
     }
 
-    m_rootNode = ecs::Entity();
+    m_firstRootNode = ecs::Entity();
+    m_lastRootNode = ecs::Entity();
     m_world = nullptr;
 }
 
-void ego::Level::attachEntity(ecs::Entity _entity)
+bool ego::Level::canSetNodeParent(ecs::Entity _node, ecs::Entity _parent) const
 {
-    EGO_ASSERT(m_world);
-    EGO_ASSERT(m_world->isEntityAlive(_entity));
-
-    m_world->addOrReplaceComponent<LevelComponent>(_entity, LevelComponent{m_id});
-}
-
-ego::ecs::Entity ego::Level::createRootNode()
-{
-    if (!m_world)
-    {
-        return ecs::Entity();
-    }
-
-    m_rootNode = ecs::Entity();
-
-    const ecs::Entity rootNode = createEntity();
-    if (!rootNode)
-    {
-        return ecs::Entity();
-    }
-
-    m_world->addOrReplaceComponent<SceneNodeComponent>(rootNode);
-    m_world->addOrReplaceComponent<TransformComponent>(rootNode);
-
-    m_rootNode = rootNode;
-    return m_rootNode;
-}
-
-void ego::Level::collectNodeHierarchy(ecs::Entity _node, std::vector<ecs::Entity>& _nodes) const
-{
-    if (!m_world || !isNode(_node))
-    {
-        return;
-    }
-
-    _nodes.push_back(_node);
-
-    const SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
-    if (!nodeComponent)
-    {
-        return;
-    }
-
-    for (ecs::Entity child : getNodeChildren(_node))
-    {
-        collectNodeHierarchy(child, _nodes);
-    }
+    return m_world && isNode(_node) && (!_parent || isNode(_parent)) && _node != _parent && (!_parent || !isNodeChildOf(_parent, _node));
 }
 
 bool ego::Level::isNodeChildOf(ecs::Entity _node, ecs::Entity _possibleParent) const
@@ -427,53 +356,71 @@ bool ego::Level::isNodeChildOf(ecs::Entity _node, ecs::Entity _possibleParent) c
     return false;
 }
 
-bool ego::Level::attachNodeToParent(ecs::Entity _node, ecs::Entity _parent)
+void ego::Level::linkNodeToParentEnd(ecs::Entity _node, ecs::Entity _parent)
 {
-    if (!m_world || !isNode(_node) || !isNode(_parent) || _node == _parent || _node == m_rootNode)
-    {
-        return false;
-    }
+    EGO_ASSERT(m_world && isNode(_node) && (!_parent || isNode(_parent)) && _node != _parent);
 
-    SceneNodeComponent* nodeComponent = m_world->tryGetComponent<SceneNodeComponent>(_node);
-    SceneNodeComponent* parentComponent = m_world->tryGetComponent<SceneNodeComponent>(_parent);
-    if (!nodeComponent || !parentComponent || nodeComponent->m_parent)
-    {
-        return false;
-    }
+    HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+    EGO_ASSERT(nodeComponent);
+    EGO_ASSERT(!nodeComponent->m_parent && !nodeComponent->m_previousSibling && !nodeComponent->m_nextSibling);
+    EGO_ASSERT(m_firstRootNode != _node && m_lastRootNode != _node);
 
-    if (parentComponent->m_lastChild)
+    if (_parent)
     {
-        SceneNodeComponent* lastChildComponent = m_world->tryGetComponent<SceneNodeComponent>(parentComponent->m_lastChild);
-        if (!lastChildComponent)
+        HierarchyComponent* parentComponent = m_world->tryGetComponent<HierarchyComponent>(_parent);
+        EGO_ASSERT(parentComponent);
+
+        if (parentComponent->m_lastChild)
         {
-            return false;
+            HierarchyComponent* lastChildComponent = m_world->tryGetComponent<HierarchyComponent>(parentComponent->m_lastChild);
+            EGO_ASSERT(lastChildComponent && !lastChildComponent->m_nextSibling);
+
+            lastChildComponent->m_nextSibling = _node;
+            nodeComponent->m_previousSibling = parentComponent->m_lastChild;
+        }
+        else
+        {
+            EGO_ASSERT(!parentComponent->m_firstChild);
+            parentComponent->m_firstChild = _node;
         }
 
-        lastChildComponent->m_nextSibling = _node;
-        nodeComponent->m_previousSibling = parentComponent->m_lastChild;
         parentComponent->m_lastChild = _node;
+        nodeComponent->m_parent = _parent;
     }
     else
     {
-        parentComponent->m_firstChild = _node;
-        parentComponent->m_lastChild = _node;
-    }
+        if (m_lastRootNode)
+        {
+            HierarchyComponent* lastRootComponent = m_world->tryGetComponent<HierarchyComponent>(m_lastRootNode);
+            EGO_ASSERT(lastRootComponent && !lastRootComponent->m_nextSibling);
 
-    nodeComponent->m_parent = _parent;
-    return true;
+            lastRootComponent->m_nextSibling = _node;
+            nodeComponent->m_previousSibling = m_lastRootNode;
+        }
+        else
+        {
+            EGO_ASSERT(!m_firstRootNode);
+            m_firstRootNode = _node;
+        }
+
+        m_lastRootNode = _node;
+    }
 }
 
-void ego::Level::detachNodeFromParent(ecs::Entity _node)
+void ego::Level::unlinkNode(ecs::Entity _node)
 {
-    SceneNodeComponent* nodeComponent = m_world && isNode(_node) ? m_world->tryGetComponent<SceneNodeComponent>(_node) : nullptr;
-    if (!nodeComponent || !nodeComponent->m_parent)
-    {
-        return;
-    }
+    EGO_ASSERT(m_world && isNode(_node));
 
-    SceneNodeComponent* parentComponent = m_world->tryGetComponent<SceneNodeComponent>(nodeComponent->m_parent);
-    if (parentComponent)
+    HierarchyComponent* nodeComponent = m_world->tryGetComponent<HierarchyComponent>(_node);
+    EGO_ASSERT(nodeComponent);
+
+    if (nodeComponent->m_parent)
     {
+        HierarchyComponent* parentComponent = m_world->tryGetComponent<HierarchyComponent>(nodeComponent->m_parent);
+        EGO_ASSERT(parentComponent);
+        EGO_ASSERT(nodeComponent->m_previousSibling || parentComponent->m_firstChild == _node);
+        EGO_ASSERT(nodeComponent->m_nextSibling || parentComponent->m_lastChild == _node);
+
         if (parentComponent->m_firstChild == _node)
         {
             parentComponent->m_firstChild = nodeComponent->m_nextSibling;
@@ -484,23 +431,34 @@ void ego::Level::detachNodeFromParent(ecs::Entity _node)
             parentComponent->m_lastChild = nodeComponent->m_previousSibling;
         }
     }
+    else
+    {
+        EGO_ASSERT(nodeComponent->m_previousSibling || m_firstRootNode == _node);
+        EGO_ASSERT(nodeComponent->m_nextSibling || m_lastRootNode == _node);
+
+        if (m_firstRootNode == _node)
+        {
+            m_firstRootNode = nodeComponent->m_nextSibling;
+        }
+
+        if (m_lastRootNode == _node)
+        {
+            m_lastRootNode = nodeComponent->m_previousSibling;
+        }
+    }
 
     if (nodeComponent->m_previousSibling)
     {
-        SceneNodeComponent* previousSiblingComponent = m_world->tryGetComponent<SceneNodeComponent>(nodeComponent->m_previousSibling);
-        if (previousSiblingComponent)
-        {
-            previousSiblingComponent->m_nextSibling = nodeComponent->m_nextSibling;
-        }
+        HierarchyComponent* previousSiblingComponent = m_world->tryGetComponent<HierarchyComponent>(nodeComponent->m_previousSibling);
+        EGO_ASSERT(previousSiblingComponent);
+        previousSiblingComponent->m_nextSibling = nodeComponent->m_nextSibling;
     }
 
     if (nodeComponent->m_nextSibling)
     {
-        SceneNodeComponent* nextSiblingComponent = m_world->tryGetComponent<SceneNodeComponent>(nodeComponent->m_nextSibling);
-        if (nextSiblingComponent)
-        {
-            nextSiblingComponent->m_previousSibling = nodeComponent->m_previousSibling;
-        }
+        HierarchyComponent* nextSiblingComponent = m_world->tryGetComponent<HierarchyComponent>(nodeComponent->m_nextSibling);
+        EGO_ASSERT(nextSiblingComponent);
+        nextSiblingComponent->m_previousSibling = nodeComponent->m_previousSibling;
     }
 
     nodeComponent->m_parent = ecs::Entity();

@@ -21,7 +21,6 @@ namespace ego
         const FileName& getPackPath() const;
 
         bool init() override;
-        void release() override;
 
         bool exists(const FileName& _path) const override;
         bool isFile(const FileName& _path) const override;
@@ -51,6 +50,8 @@ namespace ego
         EGO_RTTI_VIRTUAL(ZipResourcePackFileSystem, FileSystem);
 
     private:
+        void release();
+
         struct Entry final
         {
             FileName m_path;

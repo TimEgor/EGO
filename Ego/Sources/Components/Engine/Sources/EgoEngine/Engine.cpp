@@ -23,15 +23,7 @@ bool ego::engine::Engine::init()
 
 void ego::engine::Engine::release()
 {
-    while (!m_sessions.empty())
-    {
-        const EngineSessionPointer session = m_sessions.back();
-        m_sessions.pop_back();
-        if (session)
-        {
-            session->release();
-        }
-    }
+    m_sessions.clear();
 
     releaseJobController();
 
@@ -68,9 +60,7 @@ bool ego::engine::Engine::destroySession(EngineSessionID _sessionID)
         return false;
     }
 
-    const EngineSessionPointer session = *sessionIt;
     m_sessions.erase(sessionIt);
-    session->release();
 
     return true;
 }
@@ -97,7 +87,8 @@ bool ego::engine::Engine::tick()
 {
     EGO_CHECK_RETURN_FALSE(m_jobController);
 
-    for (const EngineSessionPointer& session : m_sessions)
+    const SessionCollection sessions = m_sessions;
+    for (const EngineSessionPointer& session : sessions)
     {
         EGO_CHECK_RETURN_FALSE(session && session->tick());
     }
@@ -122,7 +113,7 @@ bool ego::engine::Engine::initJobController()
 
 void ego::engine::Engine::releaseJobController()
 {
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_jobController);
+    m_jobController = nullptr;
 }
 
 ego::engine::EngineSessionID ego::engine::Engine::allocateSessionID()

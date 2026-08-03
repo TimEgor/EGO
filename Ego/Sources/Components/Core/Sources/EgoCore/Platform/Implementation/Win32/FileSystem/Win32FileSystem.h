@@ -15,7 +15,6 @@ namespace ego::win32
         ~Win32FileSystem() override;
 
         bool init() override;
-        void release() override;
 
         bool exists(const FileName& _path) const override;
         bool isFile(const FileName& _path) const override;
@@ -45,6 +44,8 @@ namespace ego::win32
         EGO_RTTI_VIRTUAL(Win32FileSystem, FileSystem);
 
     private:
+        void release();
+
         class FileHandle final
         {
         public:

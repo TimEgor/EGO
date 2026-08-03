@@ -43,7 +43,6 @@ namespace ego
         virtual ~Platform() = default;
 
         virtual bool init() = 0;
-        virtual void release() = 0;
 
         virtual FileSystemPointer getFileSystem() = 0;
         virtual InputDeviceController& getInputDeviceController() = 0;

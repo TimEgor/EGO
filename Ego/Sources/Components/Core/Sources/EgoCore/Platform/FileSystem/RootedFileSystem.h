@@ -19,7 +19,6 @@ namespace ego
         const FileName& getRootPath() const;
 
         bool init() override;
-        void release() override;
 
         bool exists(const FileName& _path) const override;
         bool isFile(const FileName& _path) const override;
@@ -49,6 +48,8 @@ namespace ego
         EGO_RTTI_VIRTUAL(RootedFileSystem, FileSystem);
 
     private:
+        void release();
+
         static bool IsPathSeparator(char _ch);
         static size_t GetPathRootLength(const std::string& _path);
         static std::string NormalizeRootPath(const FileName& _path);

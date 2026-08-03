@@ -30,13 +30,14 @@ namespace ego::gui::default_gui_render
         ~DefaultGuiRender() override;
 
         bool init() override;
-        void release() override;
         void clearResources() override;
 
         bool prepare(GuiRenderData&& _renderData) override;
         bool render(const TargetCollection& _targets) override;
 
     private:
+        void release();
+
         struct ViewportResources final
         {
             DrawData m_drawData;

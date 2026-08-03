@@ -13,9 +13,9 @@ namespace ego::win32
     {
     public:
         Win32Platform(HINSTANCE _instance);
+        ~Win32Platform() override;
 
         bool init() override;
-        void release() override;
 
         FileSystemPointer getFileSystem() override;
         InputDeviceController& getInputDeviceController() override;
@@ -30,6 +30,8 @@ namespace ego::win32
         HINSTANCE getInstanceHandle() const;
 
     private:
+        void release();
+
         static void OutputDynamicLibraryError(const FileName& _libraryPath);
 
         Win32FileSystemPointer m_fileSystem;

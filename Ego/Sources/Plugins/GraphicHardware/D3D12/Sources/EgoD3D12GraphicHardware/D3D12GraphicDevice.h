@@ -23,12 +23,12 @@ namespace ego::gpu::d3d12
     {
     public:
         D3D12GraphicDevice() = default;
+        ~D3D12GraphicDevice() override;
 
         using GraphicDevice::createBuffer;
         using GraphicDevice::createTexture2D;
 
         bool init(const GraphicDevice::InitData& _initData) override;
-        void release() override;
 
         std::string getResourceProviderName() const override;
 
@@ -95,6 +95,8 @@ namespace ego::gpu::d3d12
         bool executeImmediateCommands(const std::function<void(ID3D12GraphicsCommandList4*)>& _recordCommands);
 
     private:
+        void release();
+
         ID3D12Device5* getD3D12Device() const;
         template <typename TCommandListPointer, typename TCommandListObject>
         TCommandListPointer createCommandList(D3D12_COMMAND_LIST_TYPE _type);

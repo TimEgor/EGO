@@ -19,7 +19,6 @@ namespace ego::application
         ~ApplicationGuiViewport() override;
 
         bool init(const Presentation& _presentation);
-        void release();
 
         gui::ViewportState getState() const;
         gui::ViewportUpdate poll();
@@ -39,6 +38,8 @@ namespace ego::application
         bool hasPressedMouseButtons() const;
 
     private:
+        void release();
+
         struct SurfaceEventCallbackIDs final
         {
             InstancedEventCallbackID m_closeRequested = InvalidInstancedEventCallbackID;

@@ -20,7 +20,6 @@ namespace ego::application
             const PlatformSurface& _surface,
             const gpu::SwapChainDesc& _swapChainDesc,
             const gpu::CommandQueuePointer& _presentationQueue);
-        void release() override;
 
         bool prepare() override;
         gpu::Texture2DPointer getTargetTexture() override;
@@ -31,6 +30,8 @@ namespace ego::application
         void present() override;
 
     private:
+        void release();
+
         gpu::SwapChainPointer m_swapChain;
         gpu::Texture2DSize m_pendingSize = UInt32Vector2Zero;
     };

@@ -17,7 +17,7 @@
 
 #include "FrameLogic.h"
 #include "Graphic/GraphicFrameController.h"
-#include "Level/LevelController.h"
+#include "Level/Level.h"
 #include "Project/ProjectRuntime.h"
 
 namespace ego
@@ -76,12 +76,13 @@ namespace ego::engine
         ~EngineSession() override;
 
         bool init(const JobControllerPointer& _jobController, EngineSessionID _id, const InitData& _initData);
-        void release();
         bool tick();
 
         EngineSessionID getID() const;
 
-        LevelController& getLevelController();
+        LevelPointer getActiveLevel() const;
+        bool setActiveLevel(const LevelPointer& _level);
+        void clearActiveLevel();
 
         render::Render& getRender();
 
@@ -91,6 +92,8 @@ namespace ego::engine
         gui::GuiControllerPointer getGuiControllerPointer() const;
 
     private:
+        void release();
+
         PluginControllerPointer getPluginControllerPointer() const;
 
         bool initGuiController(const application::Presentation& _mainPresentation);
@@ -113,7 +116,7 @@ namespace ego::engine
         EngineLogicPointer m_engineLogic = nullptr;
         JobDescriptorID m_updateEngineLogicJobID;
 
-        LevelControllerPointer m_levelController = nullptr;
+        LevelPointer m_activeLevel = nullptr;
         JobControllerPointer m_jobController = nullptr;
 
         FrameLogic m_frameLogic;

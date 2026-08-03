@@ -86,7 +86,7 @@ void ego::demo::launcher::LauncherApplication::releaseApplicationSubsystem()
         subsystemRegistry->unregisterSubsystem(m_applicationSubsystem);
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationSubsystem);
+    m_applicationSubsystem = nullptr;
 }
 
 bool ego::demo::launcher::LauncherApplication::initEngineSubsystem(const CommandLineOptions& _options)
@@ -146,7 +146,7 @@ void ego::demo::launcher::LauncherApplication::releaseEngineSubsystem()
         subsystemRegistry->unregisterSubsystem(m_engineSubsystem);
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engineSubsystem);
+    m_engineSubsystem = nullptr;
 
     const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
     const application::PresenterProviderPointer presenterProvider = application ? application->getPresenterProviderPointer() : nullptr;

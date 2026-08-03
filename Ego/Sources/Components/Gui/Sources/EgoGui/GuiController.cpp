@@ -33,7 +33,7 @@ bool ego::gui::GuiController::init(const InitData& _initData)
 void ego::gui::GuiController::release()
 {
     EGO_ASSERT(!m_isFrameActive);
-    if (m_isFrameActive || (m_backend && !m_backend->release()))
+    if (m_isFrameActive)
     {
         return;
     }

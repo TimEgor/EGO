@@ -17,7 +17,6 @@ namespace ego::gui
         ~ImGuiBackend() override;
 
         bool init(const ViewportProviderPointer& _viewportProvider, bool _enableMultiViewport) override;
-        bool release() override;
 
         bool setFont(const FileContent& _content, float _size) override;
         bool setStyle(const GuiStyle& _style) override;
@@ -28,6 +27,8 @@ namespace ego::gui
         bool isInitialized() const override;
 
     private:
+        bool release();
+
         bool initializeContext(bool _enableMultiViewport);
 
         bool releaseContext();

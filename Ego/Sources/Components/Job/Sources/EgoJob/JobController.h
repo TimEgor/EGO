@@ -22,7 +22,6 @@ namespace ego
         }
 
         bool init(uint32_t _threadCount, const char* _name = "EgoJob");
-        void release();
 
         void addJob(const JobPointer& _job);
         void addJobGraph(const JobGraphPointer& _jobGraph);
@@ -38,6 +37,8 @@ namespace ego
         static uint32_t GetHardwareThreadCount();
 
     private:
+        void release();
+
         static void ThreadFunction(JobControllerWeakPointer _jobController);
 
         bool executeOnCurrentThread();

@@ -16,7 +16,6 @@ namespace ego::win32
         ~Win32PlatformSurfaceController() override;
 
         bool init();
-        void release();
 
         PlatformSurfacePointer createSurface(const PlatformSurfaceDesc& _desc) override;
         bool destroySurface(const PlatformSurfacePointer& _surface) override;
@@ -29,6 +28,8 @@ namespace ego::win32
         EGO_RTTI_VIRTUAL(Win32PlatformSurfaceController, PlatformSurfaceController);
 
     private:
+        void release();
+
         bool initWindowClass();
         Win32PlatformSurfacePointer findWindow(HWND _handle) const;
 

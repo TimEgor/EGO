@@ -9,10 +9,9 @@ namespace ego
     {
     public:
         EventSubsystem() = default;
-        ~EventSubsystem() override = default;
+        ~EventSubsystem() override;
 
         bool init();
-        void release() override;
 
         EventControllerPointer getEventControllerPointer() const;
         EventController& getEventController() const;
@@ -20,6 +19,8 @@ namespace ego
         EGO_SUBSYSTEM(EventSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         EventControllerPointer m_eventController = nullptr;
     };
 

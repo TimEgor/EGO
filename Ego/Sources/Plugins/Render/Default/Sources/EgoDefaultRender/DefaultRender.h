@@ -22,10 +22,9 @@ namespace ego::render
     {
     public:
         DefaultRender() = default;
-        ~DefaultRender() override = default;
+        ~DefaultRender() override;
 
         bool init() override;
-        void release() override;
         void clearResources() override;
 
         bool prepare(const RenderPrepareContext& _context) override;
@@ -47,6 +46,8 @@ namespace ego::render
         EGO_RENDER(DefaultRender, Render);
 
     private:
+        void release();
+
         bool initPassGraph(GraphicDevice& _graphicDevice);
         void releasePassGraph();
         gpu::Texture2DPointer resolvePresentationTargetTexture(const gpu::TextureViewPointer& _targetView) const;

@@ -14,10 +14,9 @@ namespace ego
         };
 
         PlatformSubsystem() = default;
-        ~PlatformSubsystem() override = default;
+        ~PlatformSubsystem() override;
 
         bool init(const InitData& _initData);
-        void release() override;
 
         PlatformPointer getPlatformPointer() const;
         Platform& getPlatform() const;
@@ -25,6 +24,8 @@ namespace ego
         EGO_SUBSYSTEM(PlatformSubsystem, subsystem::Subsystem);
 
     private:
+        void release();
+
         PlatformPointer m_platform = nullptr;
     };
 

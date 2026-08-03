@@ -1,9 +1,12 @@
 #include "World.h"
 
+#include <atomic>
+
 #include "Detail/WorldImplementation.h"
 
 ego::ecs::World::World()
-    : m_implementation(std::make_unique<detail::WorldImplementation>())
+    : m_id(AllocateWorldID()),
+      m_implementation(std::make_unique<detail::WorldImplementation>())
 {
 }
 
@@ -11,7 +14,7 @@ ego::ecs::World::~World() = default;
 
 ego::ecs::Entity ego::ecs::World::createEntity()
 {
-    const Entity entity = detail::ToEntity(m_implementation->m_registry.create());
+    const Entity entity = detail::ToEntity(m_id, m_implementation->m_registry.create());
     ++m_implementation->m_entityCount;
 
     return entity;
@@ -30,7 +33,9 @@ void ego::ecs::World::destroyEntity(Entity _entity)
 
 bool ego::ecs::World::isEntityAlive(Entity _entity) const
 {
-    return _entity.isValid() && m_implementation->m_registry.valid(detail::ToNativeEntity(_entity));
+    return _entity.getWorldID() == m_id &&
+           _entity.isValid() &&
+           m_implementation->m_registry.valid(detail::ToNativeEntity(_entity));
 }
 
 void ego::ecs::World::clear()
@@ -42,4 +47,17 @@ void ego::ecs::World::clear()
 size_t ego::ecs::World::getEntityCount() const
 {
     return m_implementation->m_entityCount;
+}
+
+ego::ecs::WorldID ego::ecs::World::AllocateWorldID()
+{
+    static std::atomic<WorldID> nextWorldID = FirstWorldID;
+
+    WorldID worldID = InvalidWorldID;
+    while (worldID == InvalidWorldID)
+    {
+        worldID = nextWorldID.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    return worldID;
 }

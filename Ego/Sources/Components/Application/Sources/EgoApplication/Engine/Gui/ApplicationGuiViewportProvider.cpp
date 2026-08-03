@@ -148,11 +148,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     ViewportPointer viewport = MakePointer<ApplicationGuiViewport>();
     if (!viewport || !viewport->init(presentation))
     {
-        if (viewport)
-        {
-            viewport->release();
-            viewport = nullptr;
-        }
+        viewport = nullptr;
 
         if (isSecondary)
         {
@@ -457,7 +453,6 @@ void ego::application::ApplicationGuiViewportProvider::retireViewport(ViewportPo
         surface->hide();
     }
 
-    _viewport->release();
     _viewport = nullptr;
 
     if (surface)
@@ -496,7 +491,6 @@ void ego::application::ApplicationGuiViewportProvider::releaseViewport(ViewportP
     releasePointer(_viewport);
 
     const PlatformSurfacePointer surface = _viewport->getPresentation().m_surface;
-    _viewport->release();
     _viewport = nullptr;
 
     if (!surface || surface.get() == m_primaryPresentation.m_surface.get())

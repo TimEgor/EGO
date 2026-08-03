@@ -36,7 +36,6 @@ namespace ego
         }
 
         bool init();
-        void release();
 
         FileName selectPluginModule(const char* _pluginTypeName);
 
@@ -85,6 +84,8 @@ namespace ego
         void unloadPlugin(Plugin* _plugin);
 
     private:
+        void release();
+
         PluginPointer loadPlugin(const FileName& _moduleName, PluginType _pluginType, const char* _pluginTypeName);
 
         static PluginModuleID GetModuleID(const FileName& _moduleName);

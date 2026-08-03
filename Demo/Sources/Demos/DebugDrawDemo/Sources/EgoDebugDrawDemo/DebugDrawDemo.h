@@ -11,12 +11,14 @@ namespace ego::demo
     {
     public:
         DebugDrawDemo() = default;
+        ~DebugDrawDemo() override;
 
         bool init(const engine::EngineSessionWeakPointer& _engineSession) override;
         void update(float _deltaTime) override;
-        void release() override;
 
     private:
+        void release();
+
         void drawStaticPrimitives(const engine::EngineSessionPointer& _engineSession);
         void drawAnimatedPrimitives(const engine::EngineSessionPointer& _engineSession);
 

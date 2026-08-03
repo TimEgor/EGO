@@ -88,7 +88,7 @@ void ego::editor::EditorApplication::releaseApplicationSubsystem()
         subsystemRegistry->unregisterSubsystem(m_applicationSubsystem);
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_applicationSubsystem);
+    m_applicationSubsystem = nullptr;
 }
 
 bool ego::editor::EditorApplication::loadConfig(XmlDocument& _config) const
@@ -121,7 +121,7 @@ void ego::editor::EditorApplication::releaseEngineSubsystem()
         subsystemRegistry->unregisterSubsystem(m_engineSubsystem);
     }
 
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engineSubsystem);
+    m_engineSubsystem = nullptr;
 }
 
 bool ego::editor::EditorApplication::initEditorSubsystem(const XmlDocument& _config)
@@ -144,8 +144,6 @@ bool ego::editor::EditorApplication::initEditorSubsystem(const XmlDocument& _con
 void ego::editor::EditorApplication::releaseEditorSubsystem()
 {
     EGO_CHECK_RETURN(m_editorSubsystem);
-
-    m_editorSubsystem->getEditorController().release();
 
     const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
     if (subsystemRegistry && subsystemRegistry->findSubsystem(m_editorSubsystem->getType()).get() == m_editorSubsystem.get())

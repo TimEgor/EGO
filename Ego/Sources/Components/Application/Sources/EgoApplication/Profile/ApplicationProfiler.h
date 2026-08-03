@@ -26,9 +26,10 @@ namespace ego::application
         ~ApplicationProfiler();
 
         bool init(const FileName& _pluginModuleName);
-        void release();
 
     private:
+        void release();
+
         ProfilerPluginPointer m_plugin = nullptr;
         profile::ProfilerPointer m_profiler = nullptr;
     };

@@ -8,6 +8,11 @@
 
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
 
+ego::DiagnosticSubsystem::~DiagnosticSubsystem()
+{
+    release();
+}
+
 bool ego::DiagnosticSubsystem::init()
 {
     release();
@@ -28,7 +33,7 @@ bool ego::DiagnosticSubsystem::init()
 void ego::DiagnosticSubsystem::release()
 {
     m_profilerController = nullptr;
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_loggerController);
+    m_loggerController = nullptr;
     m_assertController = nullptr;
 }
 

@@ -18,7 +18,6 @@
 #include "EgoApplication/Engine/Gui/ApplicationGuiViewportProvider.h"
 
 #include "Graphic/SceneRender/RenderPlugin.h"
-#include "Level/LevelController.h"
 #include "Project/EngineLogic.h"
 #include "Project/EngineLogicPlugin.h"
 
@@ -43,6 +42,7 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
 
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(!m_engineLogic);
+    EGO_CHECK_RETURN_FALSE(!m_activeLevel);
     EGO_CHECK_RETURN_FALSE(!m_scenePresenter);
     EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider);
     EGO_CHECK_RETURN_FALSE(m_id == InvalidEngineSessionID);
@@ -55,9 +55,6 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     m_prevFrameStartTime = m_currentFrameTime;
 
     EGO_CHECK_INITIALIZATION(m_projectRuntime.init(_initData.m_project));
-
-    m_levelController = MakePointer<LevelController>();
-    EGO_CHECK_INITIALIZATION(m_levelController && m_levelController->init());
 
     if (_initData.m_gui.m_isEnabled)
     {
@@ -78,14 +75,9 @@ void ego::engine::EngineSession::release()
     m_frameLogic.release();
 
     m_graphicFrameController.release();
-    if (m_guiController)
-    {
-        m_guiController->release();
-        m_guiController = nullptr;
-    }
-
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_guiViewportProvider);
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_levelController);
+    m_guiController = nullptr;
+    m_guiViewportProvider = nullptr;
+    m_activeLevel = nullptr;
 
     m_projectRuntime.release();
 
@@ -102,6 +94,7 @@ void ego::engine::EngineSession::release()
 ego::PluginControllerPointer ego::engine::EngineSession::getPluginControllerPointer() const
 {
     const PluginSubsystemPointer pluginSubsystem = subsystem::FindSubsystem<PluginSubsystem>();
+
     return pluginSubsystem ? pluginSubsystem->getPluginControllerPointer() : nullptr;
 }
 
@@ -124,6 +117,7 @@ bool ego::engine::EngineSession::tick()
     {
         EGO_ASSERT_FAIL_MESSAGE("Frame logic job graph is invalid.");
         endFrame();
+
         return false;
     }
 
@@ -141,10 +135,26 @@ ego::engine::EngineSessionID ego::engine::EngineSession::getID() const
     return m_id;
 }
 
-ego::LevelController& ego::engine::EngineSession::getLevelController()
+ego::LevelPointer ego::engine::EngineSession::getActiveLevel() const
 {
-    EGO_ASSERT(m_levelController);
-    return *m_levelController;
+    return m_activeLevel;
+}
+
+bool ego::engine::EngineSession::setActiveLevel(const LevelPointer& _level)
+{
+    if (!_level || !_level->isValid())
+    {
+        return false;
+    }
+
+    m_activeLevel = _level;
+
+    return true;
+}
+
+void ego::engine::EngineSession::clearActiveLevel()
+{
+    m_activeLevel = nullptr;
 }
 
 ego::render::Render& ego::engine::EngineSession::getRender()
@@ -261,18 +271,18 @@ bool ego::engine::EngineSession::initEngineLogic()
 
     if (!engineLogic->init(weakFromThis()))
     {
-        engineLogic->release();
         return false;
     }
 
     m_engineLogic = engineLogic;
+
     return registerEngineLogicFrameLogicJob();
 }
 
 void ego::engine::EngineSession::releaseEngineLogic()
 {
     unregisterEngineLogicFrameLogicJob();
-    EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_engineLogic);
+    m_engineLogic = nullptr;
 }
 
 bool ego::engine::EngineSession::registerEngineLogicFrameLogicJob()
@@ -341,7 +351,7 @@ void ego::engine::EngineSession::prepareGraphicFrame()
         guiRenderData = m_guiController->takeRenderData();
     }
 
-    sceneRenderData.m_activeLevel = m_levelController ? m_levelController->getActiveLevel() : nullptr;
+    sceneRenderData.m_activeLevel = m_activeLevel;
     sceneRenderData.m_cameraEntity = m_renderCameraEntity;
     sceneRenderData.m_deltaTime = getDeltaTime();
     m_graphicFrameController.prepareFrame(std::move(guiRenderData), sceneRenderData);

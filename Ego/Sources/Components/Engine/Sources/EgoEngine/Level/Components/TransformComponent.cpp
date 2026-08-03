@@ -1,9 +1,4 @@
-#include "SceneNodeComponent.h"
-
-ego::SceneNodeComponent::SceneNodeComponent(ecs::Entity _parent)
-    : m_parent(_parent)
-{
-}
+#include "TransformComponent.h"
 
 ego::TransformComponent::TransformComponent(const Transform& _globalTransform)
     : m_globalTransform(_globalTransform)

@@ -86,6 +86,7 @@ void ego::engine::GraphicFrameController::renderFrame()
     if (!targetTexture)
     {
         m_sceneRenderController.render(nullptr);
+
         return;
     }
 
@@ -150,7 +151,8 @@ void ego::engine::GraphicFrameController::prepareSceneFrame(const SceneRenderDat
         return;
     }
 
-    if (!_sceneRenderData.m_activeLevel || !_sceneRenderData.m_cameraEntity)
+    if (!_sceneRenderData.m_activeLevel ||
+        !_sceneRenderData.m_activeLevel->ownsEntity(_sceneRenderData.m_cameraEntity))
     {
         return;
     }
