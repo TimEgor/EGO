@@ -1,4 +1,4 @@
-#include "EditorTitleBar.h"
+#include "TitleBar.h"
 
 #include <algorithm>
 #include <cmath>
@@ -28,7 +28,7 @@ namespace
     constexpr ImU32 CloseButtonHighlightColor = IM_COL32(196, 43, 28, 255);
 } // namespace
 
-struct ego::editor::EditorTitleBar::TitleBarLayout final
+struct ego::editor::TitleBar::TitleBarLayout final
 {
     ImVec2 m_position;
     ImVec2 m_size;
@@ -39,7 +39,7 @@ struct ego::editor::EditorTitleBar::TitleBarLayout final
     float m_systemButtonsMinX = 0.0f;
 };
 
-struct ego::editor::EditorTitleBar::SystemButtonLayout final
+struct ego::editor::TitleBar::SystemButtonLayout final
 {
     ImVec2 m_position;
     ImVec2 m_size;
@@ -49,7 +49,7 @@ struct ego::editor::EditorTitleBar::SystemButtonLayout final
     float m_restoredWindowIconOffset = 0.0f;
 };
 
-void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, GuiMenuController& _menuController)
+void ego::editor::TitleBar::draw(PlatformSurface& _surface, GuiMenuController& _menuController)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(TitleBarHorizontalPadding, TitleBarVerticalPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(TitleBarHorizontalPadding, 0.0f));
@@ -79,7 +79,7 @@ void ego::editor::EditorTitleBar::draw(PlatformSurface& _surface, GuiMenuControl
     ImGui::PopStyleVar(2);
 }
 
-void ego::editor::EditorTitleBar::drawSystemButtons(PlatformSurface& _surface, TitleBarLayout& _layout) const
+void ego::editor::TitleBar::drawSystemButtons(PlatformSurface& _surface, TitleBarLayout& _layout) const
 {
     _layout.m_systemButtonWidth = SystemButtonWidth * _layout.m_dpiScale;
     _layout.m_systemButtonsMinX = _layout.m_position.x + _layout.m_size.x - _layout.m_systemButtonWidth * 3.0f;
@@ -109,7 +109,7 @@ void ego::editor::EditorTitleBar::drawSystemButtons(PlatformSurface& _surface, T
     }
 }
 
-void ego::editor::EditorTitleBar::drawTitle(const TitleBarLayout& _layout) const
+void ego::editor::TitleBar::drawTitle(const TitleBarLayout& _layout) const
 {
     const ImVec2 titleSize = ImGui::CalcTextSize(EditorTitle);
     const float minimumTitleX = _layout.m_menuMaxX + TitleBarHorizontalPadding * _layout.m_dpiScale;
@@ -124,7 +124,7 @@ void ego::editor::EditorTitleBar::drawTitle(const TitleBarLayout& _layout) const
     }
 }
 
-void ego::editor::EditorTitleBar::updateCaptionArea(PlatformSurface& _surface, const TitleBarLayout& _layout) const
+void ego::editor::TitleBar::updateCaptionArea(PlatformSurface& _surface, const TitleBarLayout& _layout) const
 {
     constexpr float maximumExtent = static_cast<float>((std::numeric_limits<uint16_t>::max)());
 
@@ -138,7 +138,7 @@ void ego::editor::EditorTitleBar::updateCaptionArea(PlatformSurface& _surface, c
     EGO_ASSERT(isCaptionAreaUpdated);
 }
 
-void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight, float _dpiScale) const
+void ego::editor::TitleBar::drawIcon(float _titleBarHeight, float _dpiScale) const
 {
     EGO_ASSERT(_dpiScale > 0.0f);
 
@@ -190,7 +190,7 @@ void ego::editor::EditorTitleBar::drawIcon(float _titleBarHeight, float _dpiScal
     drawVerticalLine(oMinX + glyphWidth - stroke, logoMinY, logoHeight);
 }
 
-bool ego::editor::EditorTitleBar::drawSystemButton(SystemButton _button, float _positionX, const TitleBarLayout& _layout, bool _isWindowMaximized) const
+bool ego::editor::TitleBar::drawSystemButton(SystemButton _button, float _positionX, const TitleBarLayout& _layout, bool _isWindowMaximized) const
 {
     const SystemButtonLayout buttonLayout = CreateSystemButtonLayout(_positionX, _layout);
     ImGui::SetCursorScreenPos(buttonLayout.m_position);
@@ -206,7 +206,7 @@ bool ego::editor::EditorTitleBar::drawSystemButton(SystemButton _button, float _
     return isClicked;
 }
 
-const char* ego::editor::EditorTitleBar::GetSystemButtonID(SystemButton _button)
+const char* ego::editor::TitleBar::GetSystemButtonID(SystemButton _button)
 {
     switch (_button)
     {
@@ -223,7 +223,7 @@ const char* ego::editor::EditorTitleBar::GetSystemButtonID(SystemButton _button)
     return "";
 }
 
-ego::editor::EditorTitleBar::SystemButtonLayout ego::editor::EditorTitleBar::CreateSystemButtonLayout(float _positionX, const TitleBarLayout& _titleBarLayout)
+ego::editor::TitleBar::SystemButtonLayout ego::editor::TitleBar::CreateSystemButtonLayout(float _positionX, const TitleBarLayout& _titleBarLayout)
 {
     SystemButtonLayout layout;
     layout.m_position = ImVec2(_positionX, _titleBarLayout.m_position.y);
@@ -236,7 +236,7 @@ ego::editor::EditorTitleBar::SystemButtonLayout ego::editor::EditorTitleBar::Cre
     return layout;
 }
 
-void ego::editor::EditorTitleBar::drawSystemButtonBackground(SystemButton _button, const SystemButtonLayout& _layout, bool _isHovered, bool _isActive) const
+void ego::editor::TitleBar::drawSystemButtonBackground(SystemButton _button, const SystemButtonLayout& _layout, bool _isHovered, bool _isActive) const
 {
     if (!_isHovered && !_isActive)
     {
@@ -249,7 +249,7 @@ void ego::editor::EditorTitleBar::drawSystemButtonBackground(SystemButton _butto
     drawList->AddRectFilled(_layout.m_position, ImVec2(_layout.m_position.x + _layout.m_size.x, _layout.m_position.y + _layout.m_size.y), color);
 }
 
-void ego::editor::EditorTitleBar::drawSystemButtonIcon(SystemButton _button, const SystemButtonLayout& _layout, bool _isWindowMaximized) const
+void ego::editor::TitleBar::drawSystemButtonIcon(SystemButton _button, const SystemButtonLayout& _layout, bool _isWindowMaximized) const
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     const ImU32 iconColor = ImGui::GetColorU32(ImGuiCol_Text);

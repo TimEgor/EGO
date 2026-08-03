@@ -2,8 +2,8 @@
 
 #include "EgoGui/Rendering/GuiTexture.h"
 
-#include "EditorApplication/EditorController.h"
-#include "EditorApplication/EditorSubsystem.h"
+#include "EditorController.h"
+#include "EditorSubsystem.h"
 
 #include <imgui.h>
 
@@ -24,7 +24,7 @@ void ego::editor::ViewportWindow::drawWindow(bool& _isVisible)
     {
         const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
         const gui::GuiFrameTextureID sceneTextureID =
-            editorSubsystem ? editorSubsystem->getEditorController().getEditorGuiController().getSceneTextureID() : gui::InvalidGuiFrameTextureID;
+            editorSubsystem ? editorSubsystem->getEditorController().getGuiController().getSceneTextureID() : gui::InvalidGuiFrameTextureID;
         const ImVec2 availableSize = ImGui::GetContentRegionAvail();
         if (sceneTextureID != gui::InvalidGuiFrameTextureID && availableSize.x > 0.0f && availableSize.y > 0.0f)
         {

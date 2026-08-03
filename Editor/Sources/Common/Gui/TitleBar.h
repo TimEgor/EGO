@@ -11,7 +11,7 @@ namespace ego::editor
 {
     class GuiMenuController;
 
-    class EditorTitleBar final : public NonCopyable
+    class TitleBar final : public NonCopyable
     {
     public:
         void draw(PlatformSurface& _surface, GuiMenuController& _menuController);

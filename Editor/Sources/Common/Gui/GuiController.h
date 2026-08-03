@@ -6,18 +6,18 @@
 
 #include "EgoGui/Gui.h"
 
-#include "EditorTitleBar.h"
+#include "TitleBar.h"
 #include "Menu/GuiMenuController.h"
 #include "Window/GuiModalWindow.h"
 #include "Window/GuiWindowController.h"
 
 namespace ego::editor
 {
-    class EditorGuiController final : public gui::GuiLayer, public NonCopyable
+    class GuiController final : public gui::GuiLayer, public NonCopyable
     {
     public:
-        EditorGuiController() = default;
-        ~EditorGuiController() override;
+        GuiController() = default;
+        ~GuiController() override;
 
         bool init(const XmlDocument& _config);
         void release();
@@ -36,7 +36,7 @@ namespace ego::editor
         bool readDefaultFont(const XmlDocument& _config, FileName& _path, float& _size) const;
         void drawGui() override;
 
-        EditorTitleBar m_titleBar;
+        TitleBar m_titleBar;
 
         GuiMenuController m_menuController;
         GuiWindowController m_windowController;

@@ -5,8 +5,8 @@
 
 #include "EgoEngine/EngineSession.h"
 
-#include "EditorApplication/EditorProjectController.h"
-#include "EditorApplication/Gui/EditorGuiController.h"
+#include "Gui/GuiController.h"
+#include "ProjectController.h"
 
 namespace ego
 {
@@ -28,17 +28,17 @@ namespace ego::editor
 
         engine::EngineSessionPointer getEditorEngineSessionPointer() const;
 
-        EditorGuiController& getEditorGuiController();
-        const EditorGuiController& getEditorGuiController() const;
+        GuiController& getGuiController();
+        const GuiController& getGuiController() const;
 
-        EditorProjectController& getProjectController();
-        const EditorProjectController& getProjectController() const;
+        ProjectController& getProjectController();
+        const ProjectController& getProjectController() const;
 
         PlatformSurfacePointer getMainSurfacePointer() const;
         bool isMainSurfaceValid() const;
 
     private:
-        struct EditorContext final
+        struct Context final
         {
             engine::EngineSessionPointer m_engineSession = nullptr;
             PlatformSurfacePointer m_mainSurface = nullptr;
@@ -47,14 +47,14 @@ namespace ego::editor
         bool initEditorAssets(const XmlDocument& _config);
         void releaseEditorAssets();
 
-        bool initEditorContext(const XmlDocument& _config);
-        void releaseEditorContext();
+        bool initContext(const XmlDocument& _config);
+        void releaseContext();
 
-        EditorContext m_editorContext;
+        Context m_editorContext;
 
         FileSystemPointer m_editorAssetsFileSystem = nullptr;
 
-        EditorGuiController m_editorGuiController;
-        EditorProjectController m_projectController;
+        GuiController m_guiController;
+        ProjectController m_projectController;
     };
 } // namespace ego::editor

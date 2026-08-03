@@ -14,12 +14,11 @@
 
 namespace ego::editor
 {
-    class EditorProjectController final
-        : public NonCopyable
+    class ProjectController final : public NonCopyable
     {
     public:
-        EditorProjectController() = default;
-        ~EditorProjectController() override;
+        ProjectController() = default;
+        ~ProjectController() override;
 
         bool init(const XmlDocument& _config);
         void release();

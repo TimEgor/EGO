@@ -1,4 +1,4 @@
-#include "EditorGuiController.h"
+#include "GuiController.h"
 
 #include <string>
 
@@ -6,16 +6,16 @@
 #include "EgoCore/Platform/Surface/PlatformSurface.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EditorApplication/EditorSubsystem.h"
+#include "EditorSubsystem.h"
 
-#include "EditorGuiStyle.h"
+#include "GuiStyle.h"
 
-ego::editor::EditorGuiController::~EditorGuiController()
+ego::editor::GuiController::~GuiController()
 {
     release();
 }
 
-bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
+bool ego::editor::GuiController::init(const XmlDocument& _config)
 {
     release();
 
@@ -33,7 +33,7 @@ bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
 
     EGO_CHECK_INITIALIZATION(guiController->setFont(defaultFontPath, defaultFontSize));
 
-    const gui::GuiStyle editorStyle = CreateEditorGuiStyle();
+    const gui::GuiStyle editorStyle = CreateGuiStyle();
     EGO_CHECK_INITIALIZATION(guiController->setStyle(editorStyle));
 
     EGO_CHECK_INITIALIZATION(guiController->registerLayer(*this));
@@ -43,7 +43,7 @@ bool ego::editor::EditorGuiController::init(const XmlDocument& _config)
     return true;
 }
 
-void ego::editor::EditorGuiController::release()
+void ego::editor::GuiController::release()
 {
     const gui::GuiControllerPointer guiController = GetGuiControllerPointer();
     if (guiController)
@@ -57,32 +57,32 @@ void ego::editor::EditorGuiController::release()
     m_sceneTexture = nullptr;
 }
 
-void ego::editor::EditorGuiController::setSceneTexture(const gpu::TextureViewPointer& _sceneTexture)
+void ego::editor::GuiController::setSceneTexture(const gpu::TextureViewPointer& _sceneTexture)
 {
     m_sceneTexture = _sceneTexture;
 }
 
-ego::gui::GuiFrameTextureID ego::editor::EditorGuiController::getSceneTextureID()
+ego::gui::GuiFrameTextureID ego::editor::GuiController::getSceneTextureID()
 {
     return m_sceneTexture ? bindTexture(m_sceneTexture) : gui::InvalidGuiFrameTextureID;
 }
 
-ego::editor::GuiWindowController& ego::editor::EditorGuiController::getWindowController()
+ego::editor::GuiWindowController& ego::editor::GuiController::getWindowController()
 {
     return m_windowController;
 }
 
-const ego::editor::GuiWindowController& ego::editor::EditorGuiController::getWindowController() const
+const ego::editor::GuiWindowController& ego::editor::GuiController::getWindowController() const
 {
     return m_windowController;
 }
 
-bool ego::editor::EditorGuiController::pushModalWindow(const GuiModalWindowPointer& _window)
+bool ego::editor::GuiController::pushModalWindow(const GuiModalWindowPointer& _window)
 {
     return m_windowController.pushModalWindow(_window);
 }
 
-ego::gui::GuiControllerPointer ego::editor::EditorGuiController::GetGuiControllerPointer()
+ego::gui::GuiControllerPointer ego::editor::GuiController::GetGuiControllerPointer()
 {
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     const engine::EngineSessionPointer engineSession = editorSubsystem ? editorSubsystem->getEditorController().getEditorEngineSessionPointer() : nullptr;
@@ -90,7 +90,7 @@ ego::gui::GuiControllerPointer ego::editor::EditorGuiController::GetGuiControlle
     return engineSession ? engineSession->getGuiControllerPointer() : nullptr;
 }
 
-bool ego::editor::EditorGuiController::readDefaultFont(const XmlDocument& _config, FileName& _path, float& _size) const
+bool ego::editor::GuiController::readDefaultFont(const XmlDocument& _config, FileName& _path, float& _size) const
 {
     const XmlNode rootNode = _config.getRootNode();
     EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
@@ -111,7 +111,7 @@ bool ego::editor::EditorGuiController::readDefaultFont(const XmlDocument& _confi
     return !_path.empty();
 }
 
-void ego::editor::EditorGuiController::drawGui()
+void ego::editor::GuiController::drawGui()
 {
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     EGO_CHECK_RETURN(editorSubsystem);

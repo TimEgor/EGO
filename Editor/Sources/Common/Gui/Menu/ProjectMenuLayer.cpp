@@ -2,9 +2,9 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-#include "EditorApplication/EditorController.h"
-#include "EditorApplication/EditorProjectController.h"
-#include "EditorApplication/EditorSubsystem.h"
+#include "EditorController.h"
+#include "ProjectController.h"
+#include "EditorSubsystem.h"
 
 #include <imgui.h>
 
@@ -13,7 +13,7 @@ float ego::editor::ProjectMenuLayer::drawMenu()
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     EGO_CHECK_RETURN_VALUE(editorSubsystem, ImGui::GetCursorScreenPos().x);
 
-    EditorProjectController& projectController = editorSubsystem->getEditorController().getProjectController();
+    ProjectController& projectController = editorSubsystem->getEditorController().getProjectController();
 
     const bool isMenuOpen = ImGui::BeginMenu("Project");
     const float menuMaxX = ImGui::GetItemRectMax().x;

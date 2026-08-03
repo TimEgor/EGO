@@ -1,4 +1,4 @@
-#include "EditorGuiStyle.h"
+#include "GuiStyle.h"
 
 #include <cstdint>
 
@@ -12,7 +12,7 @@ namespace
     }
 } // namespace
 
-ego::gui::GuiStyle ego::editor::CreateEditorGuiStyle()
+ego::gui::GuiStyle ego::editor::CreateGuiStyle()
 {
     gui::GuiStyle style;
 

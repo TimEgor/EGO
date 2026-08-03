@@ -20,7 +20,9 @@ bool ego::editor::GuiWindowController::init()
 {
     release();
 
-    return initWindows();
+    EGO_CHECK_INITIALIZATION(initWindows());
+
+    return true;
 }
 
 void ego::editor::GuiWindowController::release()
@@ -101,23 +103,30 @@ void ego::editor::GuiWindowController::drawDockSpace()
     const ImGuiID dockSpaceID = ImHashStr(EditorDockSpaceName);
     if (!ImGui::DockBuilderGetNode(dockSpaceID))
     {
-        const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
-
-        ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderSetNodeSize(dockSpaceID, mainViewport->WorkSize);
-
-        ImGuiID viewportNodeID = dockSpaceID;
-        const ImGuiID sceneInspectorNodeID = ImGui::DockBuilderSplitNode(viewportNodeID, ImGuiDir_Left, SceneInspectorWidthRatio, nullptr, &viewportNodeID);
-        const ImGuiID entityInspectorNodeID = ImGui::DockBuilderSplitNode(viewportNodeID, ImGuiDir_Right, EntityInspectorWidthRatio, nullptr, &viewportNodeID);
-
-        ImGui::DockBuilderDockWindow("Viewport", viewportNodeID);
-        ImGui::DockBuilderDockWindow("Scene Inspector", sceneInspectorNodeID);
-        ImGui::DockBuilderDockWindow("Entity Inspector", entityInspectorNodeID);
-
-        ImGui::DockBuilderFinish(dockSpaceID);
+        restoreDefaultDockLayout();
     }
 
     ImGui::DockSpaceOverViewport(dockSpaceID);
+}
+
+void ego::editor::GuiWindowController::restoreDefaultDockLayout()
+{
+    const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+    EGO_CHECK_RETURN(mainViewport);
+
+    const ImGuiID dockSpaceID = ImHashStr(EditorDockSpaceName);
+    ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockSpaceID, mainViewport->WorkSize);
+
+    ImGuiID viewportNodeID = dockSpaceID;
+    const ImGuiID sceneInspectorNodeID = ImGui::DockBuilderSplitNode(viewportNodeID, ImGuiDir_Left, SceneInspectorWidthRatio, nullptr, &viewportNodeID);
+    const ImGuiID entityInspectorNodeID = ImGui::DockBuilderSplitNode(viewportNodeID, ImGuiDir_Right, EntityInspectorWidthRatio, nullptr, &viewportNodeID);
+
+    ImGui::DockBuilderDockWindow("Viewport", viewportNodeID);
+    ImGui::DockBuilderDockWindow("Scene Inspector", sceneInspectorNodeID);
+    ImGui::DockBuilderDockWindow("Entity Inspector", entityInspectorNodeID);
+
+    ImGui::DockBuilderFinish(dockSpaceID);
 }
 
 void ego::editor::GuiWindowController::drawModalWindow(std::size_t _index)

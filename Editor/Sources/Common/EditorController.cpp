@@ -33,7 +33,7 @@ bool ego::editor::EditorController::init(const XmlDocument& _config)
     EGO_CHECK_INITIALIZATION(engineSubsystem && engineSubsystem->getEnginePointer());
 
     EGO_CHECK_INITIALIZATION(initEditorAssets(_config));
-    EGO_CHECK_INITIALIZATION(initEditorContext(_config));
+    EGO_CHECK_INITIALIZATION(initContext(_config));
     EGO_CHECK_INITIALIZATION(m_projectController.init(_config));
 
     m_editorContext.m_mainSurface->show();
@@ -44,7 +44,7 @@ bool ego::editor::EditorController::init(const XmlDocument& _config)
 void ego::editor::EditorController::release()
 {
     m_projectController.release();
-    releaseEditorContext();
+    releaseContext();
     releaseEditorAssets();
 }
 
@@ -58,22 +58,22 @@ ego::engine::EngineSessionPointer ego::editor::EditorController::getEditorEngine
     return m_editorContext.m_engineSession;
 }
 
-ego::editor::EditorGuiController& ego::editor::EditorController::getEditorGuiController()
+ego::editor::GuiController& ego::editor::EditorController::getGuiController()
 {
-    return m_editorGuiController;
+    return m_guiController;
 }
 
-const ego::editor::EditorGuiController& ego::editor::EditorController::getEditorGuiController() const
+const ego::editor::GuiController& ego::editor::EditorController::getGuiController() const
 {
-    return m_editorGuiController;
+    return m_guiController;
 }
 
-ego::editor::EditorProjectController& ego::editor::EditorController::getProjectController()
+ego::editor::ProjectController& ego::editor::EditorController::getProjectController()
 {
     return m_projectController;
 }
 
-const ego::editor::EditorProjectController& ego::editor::EditorController::getProjectController() const
+const ego::editor::ProjectController& ego::editor::EditorController::getProjectController() const
 {
     return m_projectController;
 }
@@ -128,7 +128,7 @@ void ego::editor::EditorController::releaseEditorAssets()
     m_editorAssetsFileSystem = nullptr;
 }
 
-bool ego::editor::EditorController::initEditorContext(const XmlDocument& _config)
+bool ego::editor::EditorController::initContext(const XmlDocument& _config)
 {
     EGO_CHECK_RETURN_FALSE(!m_editorContext.m_engineSession && !m_editorContext.m_mainSurface);
 
@@ -181,12 +181,12 @@ bool ego::editor::EditorController::initEditorContext(const XmlDocument& _config
     m_editorContext.m_engineSession = engineSession;
     m_editorContext.m_mainSurface = presentation.m_surface;
 
-    return m_editorGuiController.init(_config);
+    return m_guiController.init(_config);
 }
 
-void ego::editor::EditorController::releaseEditorContext()
+void ego::editor::EditorController::releaseContext()
 {
-    m_editorGuiController.release();
+    m_guiController.release();
 
     const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
     const engine::EnginePointer engine = engineSubsystem ? engineSubsystem->getEnginePointer() : nullptr;

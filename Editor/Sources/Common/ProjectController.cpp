@@ -1,4 +1,4 @@
-#include "EditorProjectController.h"
+#include "ProjectController.h"
 
 #include <string>
 
@@ -14,10 +14,10 @@
 #include "EgoEngine/Project/ProjectReader.h"
 #include "EgoEngine/Project/ProjectWriter.h"
 
-#include "EditorApplication/EditorController.h"
-#include "EditorApplication/EditorSubsystem.h"
-#include "EditorApplication/Gui/Window/ErrorWindow.h"
-#include "EditorApplication/Gui/Window/ProjectCreationWindow.h"
+#include "EditorController.h"
+#include "EditorSubsystem.h"
+#include "Gui/Window/ErrorWindow.h"
+#include "Gui/Window/ProjectCreationWindow.h"
 
 namespace
 {
@@ -28,46 +28,46 @@ namespace
     constexpr ego::gpu::Texture2DSize SimulationTextureSize(900, 600);
 } // namespace
 
-ego::editor::EditorProjectController::~EditorProjectController()
+ego::editor::ProjectController::~ProjectController()
 {
     release();
 }
 
-bool ego::editor::EditorProjectController::init(const XmlDocument& _config)
+bool ego::editor::ProjectController::init(const XmlDocument& _config)
 {
     release();
 
     return readConfig(_config);
 }
 
-void ego::editor::EditorProjectController::release()
+void ego::editor::ProjectController::release()
 {
     releaseProjectContext();
 
     m_simulationRenderPluginModuleName.clear();
 }
 
-bool ego::editor::EditorProjectController::isProjectLoaded() const
+bool ego::editor::ProjectController::isProjectLoaded() const
 {
     return m_projectContext.m_simulationSession && m_projectContext.m_project;
 }
 
-const ego::FileName& ego::editor::EditorProjectController::getProjectDirectory() const
+const ego::FileName& ego::editor::ProjectController::getProjectDirectory() const
 {
     return m_projectContext.m_directory;
 }
 
-ego::engine::EngineSessionPointer ego::editor::EditorProjectController::getSimulationSessionPointer() const
+ego::engine::EngineSessionPointer ego::editor::ProjectController::getSimulationSessionPointer() const
 {
     return m_projectContext.m_simulationSession;
 }
 
-ego::LevelPointer ego::editor::EditorProjectController::getCurrentLevelPointer() const
+ego::LevelPointer ego::editor::ProjectController::getCurrentLevelPointer() const
 {
     return m_projectContext.m_simulationLevel;
 }
 
-void ego::editor::EditorProjectController::createProject()
+void ego::editor::ProjectController::createProject()
 {
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     EGO_CHECK_RETURN(editorSubsystem);
@@ -75,11 +75,11 @@ void ego::editor::EditorProjectController::createProject()
     const ProjectCreationWindowPointer projectCreationWindow = MakePointer<ProjectCreationWindow>();
     EGO_CHECK_RETURN(projectCreationWindow);
 
-    EditorGuiController& editorGuiController = editorSubsystem->getEditorController().getEditorGuiController();
+    GuiController& editorGuiController = editorSubsystem->getEditorController().getGuiController();
     EGO_CHECK_RETURN(editorGuiController.pushModalWindow(projectCreationWindow));
 }
 
-bool ego::editor::EditorProjectController::createProject(const std::string& _name, const FileName& _directory)
+bool ego::editor::ProjectController::createProject(const std::string& _name, const FileName& _directory)
 {
     EGO_CHECK_RETURN_FALSE(!_name.empty() && _directory);
 
@@ -112,7 +112,7 @@ bool ego::editor::EditorProjectController::createProject(const std::string& _nam
     return saveProject();
 }
 
-void ego::editor::EditorProjectController::loadProject()
+void ego::editor::ProjectController::loadProject()
 {
     const FileName projectFileName = selectProjectFile();
     EGO_CHECK_RETURN(projectFileName);
@@ -131,7 +131,7 @@ void ego::editor::EditorProjectController::loadProject()
     initProjectContext(project, projectDirectory);
 }
 
-bool ego::editor::EditorProjectController::saveProject() const
+bool ego::editor::ProjectController::saveProject() const
 {
     if (saveProjectContext())
     {
@@ -143,12 +143,12 @@ bool ego::editor::EditorProjectController::saveProject() const
     return false;
 }
 
-void ego::editor::EditorProjectController::unloadProject()
+void ego::editor::ProjectController::unloadProject()
 {
     releaseProjectContext();
 }
 
-bool ego::editor::EditorProjectController::readConfig(const XmlDocument& _config)
+bool ego::editor::ProjectController::readConfig(const XmlDocument& _config)
 {
     EGO_CHECK_RETURN_FALSE(!m_simulationRenderPluginModuleName);
 
@@ -163,7 +163,7 @@ bool ego::editor::EditorProjectController::readConfig(const XmlDocument& _config
     return static_cast<bool>(m_simulationRenderPluginModuleName);
 }
 
-ego::FileName ego::editor::EditorProjectController::selectProjectFile() const
+ego::FileName ego::editor::ProjectController::selectProjectFile() const
 {
     const PlatformPointer platform = GetPlatformPointer();
     EGO_CHECK_RETURN_VALUE(platform, FileName());
@@ -185,7 +185,7 @@ ego::FileName ego::editor::EditorProjectController::selectProjectFile() const
     return platform->selectOpenFile(params);
 }
 
-void ego::editor::EditorProjectController::showError(const std::string& _message) const
+void ego::editor::ProjectController::showError(const std::string& _message) const
 {
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     EGO_CHECK_RETURN(editorSubsystem);
@@ -193,11 +193,11 @@ void ego::editor::EditorProjectController::showError(const std::string& _message
     const ErrorWindowPointer errorWindow = MakePointer<ErrorWindow>(_message);
     EGO_CHECK_RETURN(errorWindow);
 
-    EditorGuiController& editorGuiController = editorSubsystem->getEditorController().getEditorGuiController();
+    GuiController& editorGuiController = editorSubsystem->getEditorController().getGuiController();
     EGO_CHECK_RETURN(editorGuiController.pushModalWindow(errorWindow));
 }
 
-bool ego::editor::EditorProjectController::initProjectContext(const engine::ProjectPointer& _project, const FileName& _directory)
+bool ego::editor::ProjectController::initProjectContext(const engine::ProjectPointer& _project, const FileName& _directory)
 {
     EGO_CHECK_RETURN_FALSE(m_simulationRenderPluginModuleName && _project && _directory);
 
@@ -210,7 +210,7 @@ bool ego::editor::EditorProjectController::initProjectContext(const engine::Proj
     return true;
 }
 
-bool ego::editor::EditorProjectController::saveProjectContext() const
+bool ego::editor::ProjectController::saveProjectContext() const
 {
     EGO_CHECK_RETURN_FALSE(m_projectContext.m_project && m_projectContext.m_directory);
 
@@ -253,7 +253,7 @@ bool ego::editor::EditorProjectController::saveProjectContext() const
     return !hasProjectFile || fileSystem->removeFile(backupFileName);
 }
 
-bool ego::editor::EditorProjectController::initSimulationGraphicPresenter()
+bool ego::editor::ProjectController::initSimulationGraphicPresenter()
 {
     TextureGraphicPresenterPointer graphicPresenter = MakePointer<TextureGraphicPresenter>();
     if (!graphicPresenter || !graphicPresenter->init(gpu::GetGraphicDevice(), SimulationTextureSize, gpu::GraphicResourceFormat::R8G8B8A8UNorm))
@@ -273,12 +273,12 @@ bool ego::editor::EditorProjectController::initSimulationGraphicPresenter()
     }
 
     m_projectContext.m_simulationGraphicPresenter = graphicPresenter;
-    editorSubsystem->getEditorController().getEditorGuiController().setSceneTexture(sceneTexture);
+    editorSubsystem->getEditorController().getGuiController().setSceneTexture(sceneTexture);
 
     return true;
 }
 
-bool ego::editor::EditorProjectController::initSimulationSession()
+bool ego::editor::ProjectController::initSimulationSession()
 {
     const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
     const engine::EnginePointer engine = engineSubsystem ? engineSubsystem->getEnginePointer() : nullptr;
@@ -294,7 +294,7 @@ bool ego::editor::EditorProjectController::initSimulationSession()
     return static_cast<bool>(m_projectContext.m_simulationSession);
 }
 
-void ego::editor::EditorProjectController::releaseProjectContext()
+void ego::editor::ProjectController::releaseProjectContext()
 {
     releaseSimulationLevel();
     releaseSimulationSession();
@@ -304,7 +304,7 @@ void ego::editor::EditorProjectController::releaseProjectContext()
     m_projectContext.m_directory.clear();
 }
 
-void ego::editor::EditorProjectController::releaseSimulationLevel()
+void ego::editor::ProjectController::releaseSimulationLevel()
 {
     if (m_projectContext.m_simulationSession && m_projectContext.m_simulationLevel)
     {
@@ -321,7 +321,7 @@ void ego::editor::EditorProjectController::releaseSimulationLevel()
     m_projectContext.m_simulationLevel = nullptr;
 }
 
-void ego::editor::EditorProjectController::releaseSimulationSession()
+void ego::editor::ProjectController::releaseSimulationSession()
 {
     const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
     const engine::EnginePointer engine = engineSubsystem ? engineSubsystem->getEnginePointer() : nullptr;
@@ -333,12 +333,12 @@ void ego::editor::EditorProjectController::releaseSimulationSession()
     m_projectContext.m_simulationSession = nullptr;
 }
 
-void ego::editor::EditorProjectController::releaseSimulationGraphicPresenter()
+void ego::editor::ProjectController::releaseSimulationGraphicPresenter()
 {
     const EditorSubsystemPointer editorSubsystem = GetEditorSubsystemPointer();
     if (editorSubsystem)
     {
-        editorSubsystem->getEditorController().getEditorGuiController().setSceneTexture(nullptr);
+        editorSubsystem->getEditorController().getGuiController().setSceneTexture(nullptr);
     }
 
     EGO_SAFE_RESET_POINTER_WITH_RELEASING(m_projectContext.m_simulationGraphicPresenter);

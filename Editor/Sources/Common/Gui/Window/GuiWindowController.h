@@ -43,6 +43,7 @@ namespace ego::editor
         bool initWindows();
         void releaseWindows();
         void drawDockSpace();
+        void restoreDefaultDockLayout();
         void drawModalWindow(std::size_t _index);
 
         WindowCollection m_windows;

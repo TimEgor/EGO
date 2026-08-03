@@ -2,9 +2,9 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-#include "EditorApplication/EditorController.h"
-#include "EditorApplication/EditorSubsystem.h"
-#include "EditorApplication/Gui/Window/GuiWindowController.h"
+#include "EditorController.h"
+#include "EditorSubsystem.h"
+#include "Gui/Window/GuiWindowController.h"
 
 #include <imgui.h>
 
@@ -17,7 +17,7 @@ float ego::editor::WindowMenuLayer::drawMenu()
     const float menuMaxX = ImGui::GetItemRectMax().x;
     EGO_CHECK_RETURN_VALUE(isMenuOpen, menuMaxX);
 
-    const GuiWindowController& windowController = editorSubsystem->getEditorController().getEditorGuiController().getWindowController();
+    const GuiWindowController& windowController = editorSubsystem->getEditorController().getGuiController().getWindowController();
 
     const GuiWindowPointer viewportWindow = windowController.getViewportWindowPointer();
     if (viewportWindow)

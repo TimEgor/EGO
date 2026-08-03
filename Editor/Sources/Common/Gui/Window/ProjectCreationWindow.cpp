@@ -8,8 +8,8 @@
 #include "EgoCore/Platform/PlatformSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
 
-#include "EditorApplication/EditorController.h"
-#include "EditorApplication/EditorSubsystem.h"
+#include "EditorController.h"
+#include "EditorSubsystem.h"
 
 #include <imgui.h>
 

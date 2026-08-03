@@ -4,5 +4,5 @@
 
 namespace ego::editor
 {
-    gui::GuiStyle CreateEditorGuiStyle();
+    gui::GuiStyle CreateGuiStyle();
 } // namespace ego::editor
