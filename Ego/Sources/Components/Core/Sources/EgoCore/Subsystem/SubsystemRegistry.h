@@ -23,7 +23,7 @@ namespace ego::subsystem
     private:
         using SubsystemCollection = std::unordered_map<SubsystemType, SubsystemPointer>;
 
-        mutable std::mutex m_mutex;
+        mutable std::recursive_mutex m_mutex;
         SubsystemCollection m_subsystems;
     };
 

@@ -153,6 +153,8 @@ namespace ego
         JobController& getJobController();
 
     private:
+        friend class ResourceSubsystem;
+
         void release();
 
         ResourcePointer loadResource(ResourceType _type, const FileName& _path, const ResourceFactory& _factory);

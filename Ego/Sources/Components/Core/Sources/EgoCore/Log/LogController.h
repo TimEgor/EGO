@@ -8,6 +8,11 @@
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Pointer/Pointer.h"
 
+namespace ego
+{
+    class DiagnosticSubsystem;
+}
+
 namespace ego::log
 {
     enum class LogCategory
@@ -46,6 +51,8 @@ namespace ego::log
         static const char* GetLogCategoryName(LogCategory _category);
 
     private:
+        friend class ego::DiagnosticSubsystem;
+
         void release();
 
         static LoggerPointer CreateDefaultLogger();

@@ -65,7 +65,9 @@ void ego::subsystem::SubsystemRegistry::unregisterSubsystem(const SubsystemPoint
         return;
     }
 
-    m_subsystems.erase(subsystemIt);
+    Subsystem::SubsystemAccessor::NotifyUnregistered(*_subsystem);
+
+    m_subsystems.erase(subsystemType);
 }
 
 ego::subsystem::SubsystemPointer ego::subsystem::SubsystemRegistry::findSubsystem(SubsystemType _subsystemType) const

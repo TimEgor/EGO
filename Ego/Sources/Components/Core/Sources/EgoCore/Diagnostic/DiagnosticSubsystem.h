@@ -37,6 +37,7 @@ namespace ego
         EGO_SUBSYSTEM(DiagnosticSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         AssertControllerPointer m_assertController = nullptr;

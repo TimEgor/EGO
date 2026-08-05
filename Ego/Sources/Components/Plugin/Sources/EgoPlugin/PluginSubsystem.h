@@ -25,6 +25,7 @@ namespace ego
         EGO_SUBSYSTEM(PluginSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         PluginCatalog m_pluginCatalog;

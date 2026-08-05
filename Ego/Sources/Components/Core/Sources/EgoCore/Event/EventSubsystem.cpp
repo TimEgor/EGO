@@ -17,8 +17,18 @@ bool ego::EventSubsystem::init()
     return true;
 }
 
+void ego::EventSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::EventSubsystem::release()
 {
+    if (m_eventController)
+    {
+        m_eventController->release();
+    }
+
     m_eventController = nullptr;
 }
 

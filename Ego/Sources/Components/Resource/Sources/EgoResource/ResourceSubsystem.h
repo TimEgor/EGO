@@ -36,6 +36,7 @@ namespace ego
         EGO_SUBSYSTEM(ResourceSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         ResourceProviderPluginController m_resourceProviderPluginController;

@@ -18,6 +18,11 @@ const ego::editor::EditorController& ego::editor::EditorSubsystem::getEditorCont
     return m_editorController;
 }
 
+void ego::editor::EditorSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::editor::EditorSubsystem::release()
 {
     m_editorController.release();

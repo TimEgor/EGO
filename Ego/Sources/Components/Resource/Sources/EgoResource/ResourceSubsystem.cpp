@@ -23,9 +23,20 @@ bool ego::ResourceSubsystem::init(const InitData& _initData)
     return true;
 }
 
+void ego::ResourceSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::ResourceSubsystem::release()
 {
     m_resourceProviderPluginController.release();
+
+    if (m_resourceController)
+    {
+        m_resourceController->release();
+    }
+
     m_resourceController = nullptr;
 }
 

@@ -19,8 +19,18 @@ bool ego::engine::EngineSubsystem::init()
     return true;
 }
 
+void ego::engine::EngineSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::engine::EngineSubsystem::release()
 {
+    if (m_engine)
+    {
+        m_engine->release();
+    }
+
     m_engine = nullptr;
 }
 

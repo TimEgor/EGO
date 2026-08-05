@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EgoCore/Patterns/NonInstanceable.h"
 #include "EgoCore/Pointer/Pointer.h"
 #include "EgoCore/RTTI/RTTI.h"
 
@@ -8,15 +9,27 @@ namespace ego::subsystem
     using SubsystemType = rtti::TypeMetaInfoID;
     inline constexpr SubsystemType InvalidSubsystemType = rtti::InvalidTypeMetaInfoID;
 
+    class SubsystemRegistry;
+
     class Subsystem
     {
     public:
+        class SubsystemAccessor final : public NonInstanceable
+        {
+            friend class SubsystemRegistry;
+
+            static void NotifyUnregistered(Subsystem& _subsystem);
+        };
+
         Subsystem() = default;
         virtual ~Subsystem() = default;
 
         virtual SubsystemType getType() const = 0;
 
         EGO_RTTI_VIRTUAL_BASE(Subsystem);
+
+    protected:
+        virtual void onUnregistered() = 0;
     };
 
     EGO_POINTER(Subsystem);

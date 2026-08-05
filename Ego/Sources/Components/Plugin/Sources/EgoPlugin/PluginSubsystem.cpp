@@ -21,8 +21,18 @@ bool ego::PluginSubsystem::init()
     return true;
 }
 
+void ego::PluginSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::PluginSubsystem::release()
 {
+    if (m_pluginController)
+    {
+        m_pluginController->release();
+    }
+
     m_pluginController = nullptr;
     m_pluginCatalog.clear();
 }

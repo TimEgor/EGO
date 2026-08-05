@@ -198,6 +198,7 @@ bool ego::runtime::Runtime::initResourceSubsystem()
 
     ResourceSubsystem::InitData resourceSubsystemInitData;
     resourceSubsystemInitData.m_resourceFileSystem = resourceFileSystem;
+    resourceSubsystemInitData.m_resourceJobThreadCount = 2;
     EGO_CHECK_RETURN_FALSE(m_resourceSubsystem->init(resourceSubsystemInitData));
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_resourceSubsystem));
     EGO_CHECK_RETURN_FALSE(registerGraphicResourceProvider());

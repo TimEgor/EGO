@@ -18,6 +18,7 @@ namespace ego::editor
         EGO_SUBSYSTEM(EditorSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         EditorController m_editorController;

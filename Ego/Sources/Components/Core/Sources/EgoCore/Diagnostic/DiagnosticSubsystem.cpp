@@ -30,8 +30,18 @@ bool ego::DiagnosticSubsystem::init()
     return true;
 }
 
+void ego::DiagnosticSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::DiagnosticSubsystem::release()
 {
+    if (m_loggerController)
+    {
+        m_loggerController->release();
+    }
+
     m_profilerController = nullptr;
     m_loggerController = nullptr;
     m_assertController = nullptr;

@@ -20,6 +20,7 @@ namespace ego::runtime
         EGO_SUBSYSTEM(RuntimeSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         RuntimePointer m_runtime = nullptr;

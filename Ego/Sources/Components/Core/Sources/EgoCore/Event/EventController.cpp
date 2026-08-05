@@ -4,6 +4,11 @@
 
 #include "EgoCore/UtilsMacros.h"
 
+ego::EventController::~EventController()
+{
+    release();
+}
+
 bool ego::EventController::init()
 {
     EGO_CHECK_INITIALIZATION(!isDispatching());
@@ -50,6 +55,7 @@ bool ego::EventController::registerEvent(EventType _type)
     operation.m_type = PendingOperationType::RegisterEvent;
     operation.m_eventType = _type;
     m_pendingOperations.push_back(operation);
+
     return true;
 }
 
@@ -69,6 +75,7 @@ bool ego::EventController::unregisterEvent(EventType _type)
     operation.m_type = PendingOperationType::UnregisterEvent;
     operation.m_eventType = _type;
     m_pendingOperations.push_back(operation);
+
     return true;
 }
 
@@ -172,6 +179,7 @@ bool ego::EventController::addEventCallbackImmediate(EventCallbackID _callbackID
     CallbackOrderCollection& order = eventIt->second;
     callbackData->m_orderIndex = static_cast<uint32_t>(order.size());
     order.push_back(callbackData);
+
     return true;
 }
 
@@ -262,6 +270,7 @@ ego::InstancedEventID ego::EventController::registerInstancedEvent(EventType _ty
             m_instancedEvents.removeElement(eventID.m_key);
             return InvalidInstancedEventID;
         }
+
         return eventID;
     }
 
@@ -269,6 +278,7 @@ ego::InstancedEventID ego::EventController::registerInstancedEvent(EventType _ty
     operation.m_type = PendingOperationType::RegisterInstancedEvent;
     operation.m_instancedEventID = eventID;
     m_pendingOperations.push_back(operation);
+
     return eventID;
 }
 
@@ -288,6 +298,7 @@ bool ego::EventController::unregisterInstancedEvent(InstancedEventID _eventID)
     operation.m_type = PendingOperationType::UnregisterInstancedEvent;
     operation.m_instancedEventID = _eventID;
     m_pendingOperations.push_back(operation);
+
     return true;
 }
 
@@ -320,6 +331,7 @@ bool ego::EventController::unregisterInstancedEventImmediate(InstancedEventID _e
     {
         m_instancedCallbacks.removeElement(registeredCallbackID);
     }
+
     m_instancedEvents.removeElement(_eventID.m_key);
 
     return true;
@@ -365,6 +377,7 @@ ego::InstancedEventCallbackID ego::EventController::addInstanceEventCallback(Ins
         {
             return InvalidInstancedEventCallbackID;
         }
+
         return callbackID;
     }
 
@@ -372,6 +385,7 @@ ego::InstancedEventCallbackID ego::EventController::addInstanceEventCallback(Ins
     operation.m_type = PendingOperationType::AddInstancedEventCallback;
     operation.m_instancedEventCallbackID = callbackID;
     m_pendingOperations.push_back(operation);
+
     return callbackID;
 }
 
@@ -387,6 +401,7 @@ bool ego::EventController::addInstanceEventCallbackImmediate(InstancedEventCallb
     if (eventIt == m_instancedCallbackOrders.end())
     {
         m_instancedCallbacks.removeElement(_callbackID);
+
         return false;
     }
 
@@ -401,6 +416,7 @@ bool ego::EventController::addInstanceEventCallbackImmediate(InstancedEventCallb
     }
 
     eventIt->second = _callbackID;
+
     return true;
 }
 
@@ -414,6 +430,7 @@ void ego::EventController::removeInstancedEventDispatcher(InstancedEventCallback
     if (!isDispatching())
     {
         removeInstancedEventCallbackImmediate(_callbackID);
+
         return;
     }
 
@@ -485,6 +502,7 @@ bool ego::EventController::emitEvent(InstancedEventID _eventID, const Event& _ev
     }
 
     endDispatch();
+
     return true;
 }
 

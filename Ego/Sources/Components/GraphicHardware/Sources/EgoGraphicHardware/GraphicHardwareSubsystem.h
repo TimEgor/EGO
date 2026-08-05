@@ -31,6 +31,7 @@ namespace ego::gpu
         EGO_SUBSYSTEM(GraphicHardwareSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         bool initGraphicDevice(const InitData& _initData);

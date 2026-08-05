@@ -85,12 +85,10 @@ namespace ego
     {
     public:
         EventController() = default;
-        ~EventController()
-        {
-            release();
-        }
+        ~EventController();
 
         bool init();
+        void release();
 
         template <typename TEvent>
         bool registerEvent()
@@ -196,8 +194,6 @@ namespace ego
         }
 
     private:
-        void release();
-
         struct EventCallbackData final
         {
             EventCallback m_callback;

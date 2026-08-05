@@ -24,6 +24,7 @@ namespace ego
         EGO_SUBSYSTEM(PlatformSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         PlatformPointer m_platform = nullptr;

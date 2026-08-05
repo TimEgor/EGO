@@ -21,6 +21,11 @@ bool ego::gpu::GraphicHardwareSubsystem::init(const InitData& _initData)
     return true;
 }
 
+void ego::gpu::GraphicHardwareSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::gpu::GraphicHardwareSubsystem::release()
 {
     m_graphicCommandQueue = nullptr;

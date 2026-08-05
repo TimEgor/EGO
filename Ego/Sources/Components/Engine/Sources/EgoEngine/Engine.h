@@ -35,6 +35,8 @@ namespace ego::engine
         bool tick();
 
     private:
+        friend class EngineSubsystem;
+
         void release();
 
         bool initJobController();

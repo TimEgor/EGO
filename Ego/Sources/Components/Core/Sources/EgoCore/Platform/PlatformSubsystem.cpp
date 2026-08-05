@@ -18,6 +18,11 @@ bool ego::PlatformSubsystem::init(const InitData& _initData)
     return true;
 }
 
+void ego::PlatformSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::PlatformSubsystem::release()
 {
     m_platform = nullptr;

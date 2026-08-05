@@ -19,6 +19,7 @@ namespace ego
         EGO_SUBSYSTEM(EventSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         EventControllerPointer m_eventController = nullptr;

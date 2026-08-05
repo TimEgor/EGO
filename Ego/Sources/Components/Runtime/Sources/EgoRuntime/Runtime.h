@@ -73,6 +73,8 @@ namespace ego::runtime
         bool isExitRequested() const;
 
     private:
+        friend class RuntimeSubsystem;
+
         void release();
 
         bool initDiagnosticSubsystem();

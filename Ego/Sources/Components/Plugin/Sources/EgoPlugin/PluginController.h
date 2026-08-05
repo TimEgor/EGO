@@ -84,6 +84,8 @@ namespace ego
         void unloadPlugin(Plugin* _plugin);
 
     private:
+        friend class PluginSubsystem;
+
         void release();
 
         PluginPointer loadPlugin(const FileName& _moduleName, PluginType _pluginType, const char* _pluginTypeName);

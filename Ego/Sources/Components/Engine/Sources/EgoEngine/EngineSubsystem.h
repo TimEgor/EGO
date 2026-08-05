@@ -20,6 +20,7 @@ namespace ego::engine
         EGO_SUBSYSTEM(EngineSubsystem, subsystem::Subsystem);
 
     private:
+        void onUnregistered() override;
         void release();
 
         EnginePointer m_engine = nullptr;

@@ -19,8 +19,18 @@ bool ego::runtime::RuntimeSubsystem::init(const Runtime::InitData& _initData)
     return true;
 }
 
+void ego::runtime::RuntimeSubsystem::onUnregistered()
+{
+    release();
+}
+
 void ego::runtime::RuntimeSubsystem::release()
 {
+    if (m_runtime)
+    {
+        m_runtime->release();
+    }
+
     m_runtime = nullptr;
 }
 
