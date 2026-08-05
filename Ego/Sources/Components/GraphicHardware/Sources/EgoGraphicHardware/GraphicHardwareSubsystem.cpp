@@ -28,8 +28,13 @@ void ego::gpu::GraphicHardwareSubsystem::onUnregistered()
 
 void ego::gpu::GraphicHardwareSubsystem::release()
 {
+    EGO_ASSERT(!m_graphicCommandQueue || m_graphicCommandQueue.getUsingCount() == 1);
     m_graphicCommandQueue = nullptr;
+
+    EGO_ASSERT(!m_graphicDevice || m_graphicDevice.getUsingCount() == 1);
     m_graphicDevice = nullptr;
+
+    EGO_ASSERT(!m_graphicHardwarePlugin || m_graphicHardwarePlugin.getUsingCount() == 1);
     m_graphicHardwarePlugin = nullptr;
 }
 

@@ -2,17 +2,17 @@
 
 #include <cstdint>
 
-#include "EgoCore/Pointer/IntrusivePointer.h"
+#include "EgoCore/Pointer/Pointer.h"
 
 namespace ego::gpu
 {
     inline constexpr uint32_t InvalidBindlessIndex = -1;
 
-    class GraphicObject : public MTCountable
+    class GraphicObject
     {
     public:
         GraphicObject() = default;
-        ~GraphicObject() override = default;
+        virtual ~GraphicObject() = default;
 
         virtual void* getNativeHandle() const = 0;
 
@@ -25,5 +25,5 @@ namespace ego::gpu
         virtual void setName(const char* _name) = 0;
     };
 
-    EGO_INTRUSIVE_POINTER(GraphicObject);
+    EGO_POINTER(GraphicObject);
 } // namespace ego::gpu

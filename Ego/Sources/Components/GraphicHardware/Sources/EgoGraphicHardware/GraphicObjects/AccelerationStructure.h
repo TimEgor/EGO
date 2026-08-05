@@ -11,10 +11,10 @@
 namespace ego::gpu
 {
     class GeometryAccelerationStructure;
-    EGO_INTRUSIVE_POINTER(GeometryAccelerationStructure);
+    EGO_POINTER(GeometryAccelerationStructure);
 
     class InstanceAccelerationStructure;
-    EGO_INTRUSIVE_POINTER(InstanceAccelerationStructure);
+    EGO_POINTER(InstanceAccelerationStructure);
 
     struct GeometryAccelerationStructureDesc final
     {
@@ -57,7 +57,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(AccelerationStructure, GraphicResource);
     };
 
-    EGO_INTRUSIVE_POINTER(AccelerationStructure);
+    EGO_POINTER(AccelerationStructure);
 
     class GeometryAccelerationStructure : public AccelerationStructure
     {
@@ -83,5 +83,5 @@ namespace ego::gpu
         GraphicResourceViewType getViewType() const override;
     };
 
-    EGO_INTRUSIVE_POINTER(AccelerationStructureView);
+    EGO_POINTER(AccelerationStructureView);
 } // namespace ego::gpu

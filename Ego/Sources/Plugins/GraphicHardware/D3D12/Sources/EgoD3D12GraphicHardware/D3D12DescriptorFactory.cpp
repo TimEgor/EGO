@@ -25,17 +25,21 @@ bool ego::gpu::d3d12::D3D12DescriptorFactory::init(ID3D12Device5* _device)
 
     m_viewDescriptorAllocator = MakePointer<D3D12DescriptorAllocator>();
     EGO_CHECK_INITIALIZATION(
-        m_viewDescriptorAllocator && m_viewDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, BindlessResourceDescriptorCapacity, true));
+        m_viewDescriptorAllocator &&
+        m_viewDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, BindlessResourceDescriptorCapacity, true));
 
     m_samplerDescriptorAllocator = MakePointer<D3D12DescriptorAllocator>();
     EGO_CHECK_INITIALIZATION(
-        m_samplerDescriptorAllocator && m_samplerDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, BindlessSamplerDescriptorCapacity, true));
+        m_samplerDescriptorAllocator &&
+        m_samplerDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, BindlessSamplerDescriptorCapacity, true));
 
     m_rtvDescriptorAllocator = MakePointer<D3D12DescriptorAllocator>();
-    EGO_CHECK_INITIALIZATION(m_rtvDescriptorAllocator && m_rtvDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, RenderTargetDescriptorCapacity, false));
+    EGO_CHECK_INITIALIZATION(
+        m_rtvDescriptorAllocator && m_rtvDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, RenderTargetDescriptorCapacity, false));
 
     m_dsvDescriptorAllocator = MakePointer<D3D12DescriptorAllocator>();
-    EGO_CHECK_INITIALIZATION(m_dsvDescriptorAllocator && m_dsvDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DepthStencilDescriptorCapacity, false));
+    EGO_CHECK_INITIALIZATION(
+        m_dsvDescriptorAllocator && m_dsvDescriptorAllocator->init(m_device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DepthStencilDescriptorCapacity, false));
 
     return true;
 }
@@ -77,7 +81,7 @@ ego::gpu::SamplerPointer ego::gpu::d3d12::D3D12DescriptorFactory::createSampler(
     const D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = allocator->getCpuHandle(descriptorIndex);
     m_device->CreateSampler(&samplerDesc, cpuHandle);
 
-    return MakeIntrusive<D3D12Sampler>(_desc, descriptorIndex, allocator);
+    return MakePointer<D3D12Sampler>(_desc, descriptorIndex, allocator);
 }
 
 ego::gpu::BufferViewPointer ego::gpu::d3d12::D3D12DescriptorFactory::createBufferView(const BufferPointer& _buffer, const BufferViewDesc& _desc) const
@@ -153,7 +157,7 @@ ego::gpu::BufferViewPointer ego::gpu::d3d12::D3D12DescriptorFactory::createBuffe
         m_device->CreateUnorderedAccessView(buffer->getD3D12Resource(), nullptr, &viewDesc, cpuHandle);
     }
 
-    return MakeIntrusive<D3D12BufferView>(_buffer, _desc, descriptorIndex, allocator);
+    return MakePointer<D3D12BufferView>(_buffer, _desc, descriptorIndex, allocator);
 }
 
 ego::gpu::TextureViewPointer ego::gpu::d3d12::D3D12DescriptorFactory::createTextureView(const TexturePointer& _texture, const TextureViewDesc& _desc) const
@@ -284,7 +288,7 @@ ego::gpu::TextureViewPointer ego::gpu::d3d12::D3D12DescriptorFactory::createText
         m_device->CreateDepthStencilView(texture->getD3D12Resource(), &viewDesc, cpuHandle);
     }
 
-    return MakeIntrusive<D3D12TextureView>(_texture, _desc, descriptorIndex, allocator);
+    return MakePointer<D3D12TextureView>(_texture, _desc, descriptorIndex, allocator);
 }
 
 ego::gpu::AccelerationStructureViewPointer ego::gpu::d3d12::D3D12DescriptorFactory::createAccelerationStructureView(
@@ -312,10 +316,7 @@ ego::gpu::AccelerationStructureViewPointer ego::gpu::d3d12::D3D12DescriptorFacto
     const D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = allocator->getCpuHandle(descriptorIndex);
     m_device->CreateShaderResourceView(nullptr, &viewDesc, cpuHandle);
 
-    return MakeIntrusive<D3D12AccelerationStructureView>(
-        _accelerationStructure,
-        descriptorIndex,
-        allocator);
+    return MakePointer<D3D12AccelerationStructureView>(_accelerationStructure, descriptorIndex, allocator);
 }
 
 ID3D12DescriptorHeap* ego::gpu::d3d12::D3D12DescriptorFactory::getViewDescriptorHeap() const
@@ -328,10 +329,15 @@ ID3D12DescriptorHeap* ego::gpu::d3d12::D3D12DescriptorFactory::getSamplerDescrip
     return m_samplerDescriptorAllocator ? m_samplerDescriptorAllocator->getHeap() : nullptr;
 }
 
-bool ego::gpu::d3d12::D3D12DescriptorFactory::FillBufferViewDesc(const D3D12Buffer* _buffer, const BufferViewDesc& _desc, D3D12_BUFFER_SRV& _outBufferDesc, DXGI_FORMAT& _outFormat)
+bool ego::gpu::d3d12::D3D12DescriptorFactory::FillBufferViewDesc(
+    const D3D12Buffer* _buffer,
+    const BufferViewDesc& _desc,
+    D3D12_BUFFER_SRV& _outBufferDesc,
+    DXGI_FORMAT& _outFormat)
 {
     const uint64_t size = ResolveViewSize(_buffer->getDesc().m_size, _desc.m_offset, _desc.m_size);
-    const uint32_t stride = _desc.m_format == GraphicResourceFormat::Undefined ? (_desc.m_stride ? _desc.m_stride : _buffer->getDesc().m_stride) : GetFormatStride(_desc.m_format);
+    const uint32_t stride =
+        _desc.m_format == GraphicResourceFormat::Undefined ? (_desc.m_stride ? _desc.m_stride : _buffer->getDesc().m_stride) : GetFormatStride(_desc.m_format);
     if (!stride || !size)
     {
         return false;

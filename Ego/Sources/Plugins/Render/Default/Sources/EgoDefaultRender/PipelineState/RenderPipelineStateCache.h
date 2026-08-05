@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <unordered_map>
 
-#include "EgoCore/Pointer/IntrusivePointerIdentity.h"
+#include "EgoCore/Pointer/PointerIdentity.h"
 
 #include "EgoEngine/Graphic/SceneRender/RenderGpuObject.h"
 

@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "EgoCore/Pointer/IntrusivePointer.h"
+
 #include "Fence.h"
 #include "GraphicObject.h"
 

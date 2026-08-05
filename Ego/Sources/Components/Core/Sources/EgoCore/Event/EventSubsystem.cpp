@@ -26,6 +26,7 @@ void ego::EventSubsystem::release()
 {
     if (m_eventController)
     {
+        EGO_ASSERT(m_eventController.getUsingCount() == 1);
         m_eventController->release();
     }
 

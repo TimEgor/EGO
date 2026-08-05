@@ -7,7 +7,7 @@
 namespace
 {
     template <typename TShader>
-    ego::IntrusivePointer<TShader> MakeTypedShaderPointer(const ego::gpu::ShaderPointer& _shader, ego::gpu::ShaderStage _stage)
+    ego::SharedPointer<TShader> MakeTypedShaderPointer(const ego::gpu::ShaderPointer& _shader, ego::gpu::ShaderStage _stage)
     {
         ego::gpu::Shader* shader = _shader.getObject();
         if (!shader || shader->getShaderType() != _stage)
@@ -15,7 +15,7 @@ namespace
             return nullptr;
         }
 
-        return static_cast<TShader*>(shader);
+        return ego::StaticPointerCast<TShader>(_shader);
     }
 } // namespace
 
@@ -32,12 +32,10 @@ bool ego::gpu::ShaderResource::onLoad(ego::FileContent&& _content, ResourceLoadi
         return false;
     }
 
-    const ShaderCodePointer code = MakeIntrusive<ShaderCode>(
-        _content.data(),
-        static_cast<uint32_t>(_content.size()));
+    const ShaderCodePointer code = MakeIntrusive<ShaderCode>(_content.data(), static_cast<uint32_t>(_content.size()));
     m_shader = createShader(code);
 
-    return m_shader != nullptr;
+    return static_cast<bool>(m_shader);
 }
 
 void ego::gpu::ShaderResource::onUnload()

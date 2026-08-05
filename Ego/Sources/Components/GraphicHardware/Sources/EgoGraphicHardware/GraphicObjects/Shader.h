@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "EgoCore/Pointer/IntrusivePointer.h"
+
 #include "GraphicResource.h"
 
 namespace ego::gpu
@@ -31,7 +33,8 @@ namespace ego::gpu
         ShaderStageFlagAnyHit = 1 << 7,
         ShaderStageFlagIntersection = 1 << 8,
         ShaderStageFlagAllGraphics = ShaderStageFlagVertex | ShaderStageFlagPixel,
-        ShaderStageFlagAllRayTracing = ShaderStageFlagRayGeneration | ShaderStageFlagMiss | ShaderStageFlagClosestHit | ShaderStageFlagAnyHit | ShaderStageFlagIntersection,
+        ShaderStageFlagAllRayTracing =
+            ShaderStageFlagRayGeneration | ShaderStageFlagMiss | ShaderStageFlagClosestHit | ShaderStageFlagAnyHit | ShaderStageFlagIntersection,
         ShaderStageFlagAll = ShaderStageFlagAllGraphics | ShaderStageFlagCompute | ShaderStageFlagAllRayTracing
     };
 
@@ -68,7 +71,7 @@ namespace ego::gpu
         ShaderCodePointer m_code;
     };
 
-    EGO_INTRUSIVE_POINTER(Shader);
+    EGO_POINTER(Shader);
 
     class VertexShader : public Shader
     {
@@ -80,7 +83,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(VertexShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(VertexShader);
+    EGO_POINTER(VertexShader);
 
     class PixelShader : public Shader
     {
@@ -92,7 +95,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(PixelShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(PixelShader);
+    EGO_POINTER(PixelShader);
 
     class ComputeShader : public Shader
     {
@@ -104,7 +107,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(ComputeShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(ComputeShader);
+    EGO_POINTER(ComputeShader);
 
     class RayGenerationShader : public Shader
     {
@@ -116,7 +119,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(RayGenerationShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(RayGenerationShader);
+    EGO_POINTER(RayGenerationShader);
 
     class MissShader : public Shader
     {
@@ -128,7 +131,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(MissShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(MissShader);
+    EGO_POINTER(MissShader);
 
     class ClosestHitShader : public Shader
     {
@@ -140,7 +143,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(ClosestHitShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(ClosestHitShader);
+    EGO_POINTER(ClosestHitShader);
 
     class AnyHitShader : public Shader
     {
@@ -152,7 +155,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(AnyHitShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(AnyHitShader);
+    EGO_POINTER(AnyHitShader);
 
     class IntersectionShader : public Shader
     {
@@ -164,5 +167,5 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(IntersectionShader, Shader);
     };
 
-    EGO_INTRUSIVE_POINTER(IntersectionShader);
+    EGO_POINTER(IntersectionShader);
 } // namespace ego::gpu

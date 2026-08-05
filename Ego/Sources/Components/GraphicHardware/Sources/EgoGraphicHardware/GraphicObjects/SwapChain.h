@@ -26,5 +26,5 @@ namespace ego::gpu
         const SwapChainDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(SwapChain);
+    EGO_POINTER(SwapChain);
 } // namespace ego::gpu

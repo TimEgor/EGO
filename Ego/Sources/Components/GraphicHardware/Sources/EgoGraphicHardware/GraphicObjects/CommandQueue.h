@@ -33,5 +33,5 @@ namespace ego::gpu
         CommandQueueDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(CommandQueue);
+    EGO_POINTER(CommandQueue);
 } // namespace ego::gpu

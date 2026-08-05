@@ -39,11 +39,16 @@ void ego::DiagnosticSubsystem::release()
 {
     if (m_loggerController)
     {
+        EGO_ASSERT(m_loggerController.getUsingCount() == 1);
         m_loggerController->release();
     }
 
+    EGO_ASSERT(!m_profilerController || m_profilerController.getUsingCount() == 1);
     m_profilerController = nullptr;
+
     m_loggerController = nullptr;
+
+    EGO_ASSERT(!m_assertController || m_assertController.getUsingCount() == 1);
     m_assertController = nullptr;
 }
 

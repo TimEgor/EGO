@@ -36,7 +36,7 @@ namespace ego::gpu
         BufferDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(Buffer);
+    EGO_POINTER(Buffer);
 
     struct BufferViewDesc final
     {
@@ -59,5 +59,5 @@ namespace ego::gpu
         BufferViewDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(BufferView);
+    EGO_POINTER(BufferView);
 } // namespace ego::gpu

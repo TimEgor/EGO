@@ -61,7 +61,7 @@ TCommandListPointer ego::gpu::d3d12::D3D12GraphicDevice::createCommandList(D3D12
     }
 
     commandList->Close();
-    return MakeIntrusive<TCommandListObject>(this, &m_descriptorFactory, std::move(allocator), std::move(commandList));
+    return MakePointer<TCommandListObject>(this, &m_descriptorFactory, std::move(allocator), std::move(commandList));
 }
 
 bool ego::gpu::d3d12::D3D12GraphicDevice::createUploadBuffer(uint64_t _size, Microsoft::WRL::ComPtr<ID3D12Resource>& _resource) const
@@ -95,11 +95,11 @@ bool ego::gpu::d3d12::D3D12GraphicDevice::createUploadBuffer(uint64_t _size, Mic
             IID_PPV_ARGS(&_resource)));
 }
 
-ego::IntrusivePointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createUploadD3D12Buffer(uint64_t _size)
+ego::SharedPointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createUploadD3D12Buffer(uint64_t _size)
 {
     if (!FitsUint32(_size))
     {
-        return ego::IntrusivePointer<D3D12Buffer>();
+        return ego::SharedPointer<D3D12Buffer>();
     }
 
     BufferDesc uploadDesc;
@@ -117,7 +117,7 @@ ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadBufferToDefa
     const InitialGraphicResourceData& _initialData)
 {
     const uint64_t uploadSize = (std::min<uint64_t>)(_initialData.m_dataSize, _dstSize);
-    ego::IntrusivePointer<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(uploadSize);
+    ego::SharedPointer<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(uploadSize);
 
     if (!uploadBuffer || !WriteToUploadBuffer(uploadBuffer->getD3D12Resource(), _initialData.m_data, uploadSize, uploadSize))
     {
@@ -164,7 +164,7 @@ ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2DToD
 
     getD3D12Device()->GetCopyableFootprints(&_dstDesc, 0, 1, 0, &footprint, &numRows, &rowSizeInBytes, &totalBytes);
 
-    ego::IntrusivePointer<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(totalBytes);
+    ego::SharedPointer<D3D12Buffer> uploadBuffer = createUploadD3D12Buffer(totalBytes);
     if (!uploadBuffer)
     {
         return GpuTaskPointer();
@@ -317,7 +317,7 @@ ego::gpu::GpuResourceTicket<TPointer> ego::gpu::d3d12::D3D12GraphicDevice::build
     scratchDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessGpuRead | GraphicResourceAccessGpuWrite);
     scratchDesc.m_size = static_cast<uint32_t>(prebuildInfo.ScratchDataSizeInBytes);
 
-    ego::IntrusivePointer<D3D12Buffer> scratchBuffer = createD3D12Buffer(scratchDesc);
+    ego::SharedPointer<D3D12Buffer> scratchBuffer = createD3D12Buffer(scratchDesc);
     if (!scratchBuffer)
     {
         return GpuResourceTicket<TPointer>();
@@ -328,7 +328,7 @@ ego::gpu::GpuResourceTicket<TPointer> ego::gpu::d3d12::D3D12GraphicDevice::build
     resultDesc.m_access = static_cast<CommonGraphicResourceAccess>(GraphicResourceAccessGpuRead | GraphicResourceAccessGpuWrite);
     resultDesc.m_size = static_cast<uint32_t>(prebuildInfo.ResultDataMaxSizeInBytes);
 
-    ego::IntrusivePointer<D3D12Buffer> resultBuffer = createD3D12Buffer(resultDesc);
+    ego::SharedPointer<D3D12Buffer> resultBuffer = createD3D12Buffer(resultDesc);
     if (!resultBuffer)
     {
         return GpuResourceTicket<TPointer>();
@@ -368,7 +368,7 @@ ego::gpu::GpuResourceTicket<TPointer> ego::gpu::d3d12::D3D12GraphicDevice::build
 
     resultBuffer->setLastWriteTask(buildTask);
 
-    TPointer accelerationStructure = MakeIntrusive<TObject>(resultBuffer);
+    TPointer accelerationStructure = MakePointer<TObject>(resultBuffer);
     accelerationStructure->setLastWriteTask(buildTask);
 
     if (_options.shouldWait())
@@ -435,7 +435,7 @@ ego::gpu::CommandQueuePointer ego::gpu::d3d12::D3D12GraphicDevice::createCommand
         return CommandQueuePointer();
     }
 
-    return MakeIntrusive<D3D12CommandQueue>(_desc, std::move(queue));
+    return MakePointer<D3D12CommandQueue>(_desc, std::move(queue));
 }
 
 ego::gpu::GraphicCommandListPointer ego::gpu::d3d12::D3D12GraphicDevice::createGraphicCommandList()
@@ -458,11 +458,11 @@ ego::gpu::BufferPointer ego::gpu::d3d12::D3D12GraphicDevice::createBuffer(const 
     return createD3D12Buffer(_desc);
 }
 
-ego::IntrusivePointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createD3D12Buffer(const BufferDesc& _desc)
+ego::SharedPointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12GraphicDevice::createD3D12Buffer(const BufferDesc& _desc)
 {
     if (!getD3D12Device() || !_desc.m_size)
     {
-        return ego::IntrusivePointer<D3D12Buffer>();
+        return ego::SharedPointer<D3D12Buffer>();
     }
 
     D3D12_HEAP_PROPERTIES heapProperties = {};
@@ -495,10 +495,10 @@ ego::IntrusivePointer<ego::gpu::d3d12::D3D12Buffer> ego::gpu::d3d12::D3D12Graphi
                 nullptr,
                 IID_PPV_ARGS(&resource))))
     {
-        return ego::IntrusivePointer<D3D12Buffer>();
+        return ego::SharedPointer<D3D12Buffer>();
     }
 
-    return MakeIntrusive<D3D12Buffer>(_desc, std::move(resource));
+    return MakePointer<D3D12Buffer>(_desc, std::move(resource));
 }
 
 ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadBuffer(
@@ -612,7 +612,7 @@ ego::gpu::Texture2DPointer ego::gpu::d3d12::D3D12GraphicDevice::createTexture2D(
         return Texture2DPointer();
     }
 
-    return MakeIntrusive<D3D12Texture2D>(_desc, std::move(resource));
+    return MakePointer<D3D12Texture2D>(_desc, std::move(resource));
 }
 
 ego::gpu::GpuTaskPointer ego::gpu::d3d12::D3D12GraphicDevice::uploadTexture2D(
@@ -669,7 +669,7 @@ ego::gpu::VertexShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createVertexS
         return VertexShaderPointer();
     }
 
-    return MakeIntrusive<D3D12VertexShader>(_code);
+    return MakePointer<D3D12VertexShader>(_code);
 }
 
 ego::gpu::PixelShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createPixelShader(const ShaderCodePointer& _code)
@@ -679,7 +679,7 @@ ego::gpu::PixelShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createPixelSha
         return PixelShaderPointer();
     }
 
-    return MakeIntrusive<D3D12PixelShader>(_code);
+    return MakePointer<D3D12PixelShader>(_code);
 }
 
 ego::gpu::ComputeShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createComputeShader(const ShaderCodePointer& _code)
@@ -689,7 +689,7 @@ ego::gpu::ComputeShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createComput
         return ComputeShaderPointer();
     }
 
-    return MakeIntrusive<D3D12ComputeShader>(_code);
+    return MakePointer<D3D12ComputeShader>(_code);
 }
 
 ego::gpu::RayGenerationShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createRayGenerationShader(const ShaderCodePointer& _code)
@@ -699,7 +699,7 @@ ego::gpu::RayGenerationShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::create
         return RayGenerationShaderPointer();
     }
 
-    return MakeIntrusive<D3D12RayGenerationShader>(_code);
+    return MakePointer<D3D12RayGenerationShader>(_code);
 }
 
 ego::gpu::MissShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createMissShader(const ShaderCodePointer& _code)
@@ -709,7 +709,7 @@ ego::gpu::MissShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createMissShade
         return MissShaderPointer();
     }
 
-    return MakeIntrusive<D3D12MissShader>(_code);
+    return MakePointer<D3D12MissShader>(_code);
 }
 
 ego::gpu::ClosestHitShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createClosestHitShader(const ShaderCodePointer& _code)
@@ -719,7 +719,7 @@ ego::gpu::ClosestHitShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createClo
         return ClosestHitShaderPointer();
     }
 
-    return MakeIntrusive<D3D12ClosestHitShader>(_code);
+    return MakePointer<D3D12ClosestHitShader>(_code);
 }
 
 ego::gpu::AnyHitShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createAnyHitShader(const ShaderCodePointer& _code)
@@ -729,7 +729,7 @@ ego::gpu::AnyHitShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createAnyHitS
         return AnyHitShaderPointer();
     }
 
-    return MakeIntrusive<D3D12AnyHitShader>(_code);
+    return MakePointer<D3D12AnyHitShader>(_code);
 }
 
 ego::gpu::IntersectionShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createIntersectionShader(const ShaderCodePointer& _code)
@@ -739,7 +739,7 @@ ego::gpu::IntersectionShaderPointer ego::gpu::d3d12::D3D12GraphicDevice::createI
         return IntersectionShaderPointer();
     }
 
-    return MakeIntrusive<D3D12IntersectionShader>(_code);
+    return MakePointer<D3D12IntersectionShader>(_code);
 }
 
 ego::gpu::GpuGeometryAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDevice::buildGeometryAccelerationStructure(
@@ -854,7 +854,7 @@ ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
 
     const InitialGraphicResourceData instanceData(instanceDescs.data(), static_cast<uint32_t>(instanceBufferSize));
     const GpuOperationOptions uploadOptions{GpuCompletionMode::WaitForCompletion};
-    ego::IntrusivePointer<D3D12Buffer> instanceBuffer = createD3D12Buffer(instanceBufferDesc);
+    ego::SharedPointer<D3D12Buffer> instanceBuffer = createD3D12Buffer(instanceBufferDesc);
     if (!instanceBuffer)
     {
         return GpuInstanceAccelerationStructureTicket();
@@ -1028,7 +1028,7 @@ ego::gpu::GraphicPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createGrap
         return GraphicPipelinePointer();
     }
 
-    return MakeIntrusive<D3D12GraphicPipeline>(_desc, std::move(pipelineState), layout);
+    return MakePointer<D3D12GraphicPipeline>(_desc, std::move(pipelineState), layout);
 }
 
 ego::gpu::ComputePipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createComputePipeline(const ComputePipelineDesc& _desc)
@@ -1061,7 +1061,7 @@ ego::gpu::ComputePipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createComp
         return ComputePipelinePointer();
     }
 
-    return MakeIntrusive<D3D12ComputePipeline>(_desc, std::move(pipelineState), layout);
+    return MakePointer<D3D12ComputePipeline>(_desc, std::move(pipelineState), layout);
 }
 
 ego::gpu::RayTracingPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createRayTracingPipeline(const RayTracingPipelineDesc& _desc)
@@ -1334,7 +1334,7 @@ ego::gpu::RayTracingPipelinePointer ego::gpu::d3d12::D3D12GraphicDevice::createR
         return RayTracingPipelinePointer();
     }
 
-    return MakeIntrusive<D3D12RayTracingPipeline>(
+    return MakePointer<D3D12RayTracingPipeline>(
         _desc,
         std::move(stateObject),
         std::move(shaderTable),
@@ -1404,7 +1404,7 @@ ego::gpu::BindingLayoutPointer ego::gpu::d3d12::D3D12GraphicDevice::createBindin
         return BindingLayoutPointer();
     }
 
-    return MakeIntrusive<D3D12BindingLayout>(_desc, std::move(rootSignature), std::move(pushConstants));
+    return MakePointer<D3D12BindingLayout>(_desc, std::move(rootSignature), std::move(pushConstants));
 }
 
 ego::gpu::FencePointer ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence::FenceValue _initialValue)
@@ -1420,7 +1420,7 @@ ego::gpu::FencePointer ego::gpu::d3d12::D3D12GraphicDevice::createFence(Fence::F
         return FencePointer();
     }
 
-    return MakeIntrusive<D3D12Fence>(_initialValue, std::move(fence));
+    return MakePointer<D3D12Fence>(_initialValue, std::move(fence));
 }
 
 ego::gpu::SwapChainPointer ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
@@ -1513,12 +1513,12 @@ ego::gpu::SwapChainPointer ego::gpu::d3d12::D3D12GraphicDevice::createSwapChain(
             return SwapChainPointer();
         }
 
-        Texture2DPointer targetTexture = MakeIntrusive<D3D12Texture2D>(textureDesc, std::move(resource));
+        Texture2DPointer targetTexture = MakePointer<D3D12Texture2D>(textureDesc, std::move(resource));
         targetTexture->setState(GraphicResourceState::Present);
         targetTextures.push_back(targetTexture);
     }
 
-    return MakeIntrusive<D3D12SwapChain>(_swapChainDesc, std::move(swapChain3), std::move(targetTextures), _presentationQueue);
+    return MakePointer<D3D12SwapChain>(_swapChainDesc, std::move(swapChain3), std::move(targetTextures), _presentationQueue);
 }
 
 const ego::GraphicDevice::Capabilities& ego::gpu::d3d12::D3D12GraphicDevice::getCapabilities() const

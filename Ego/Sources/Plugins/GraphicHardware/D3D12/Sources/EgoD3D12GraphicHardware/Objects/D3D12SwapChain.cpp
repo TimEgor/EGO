@@ -118,9 +118,7 @@ bool ego::gpu::d3d12::D3D12SwapChain::createTargetTextures(const Texture2DSize& 
             return false;
         }
 
-        Texture2DPointer targetTexture = MakeIntrusive<D3D12Texture2D>(
-            textureDesc,
-            std::move(resource));
+        Texture2DPointer targetTexture = MakePointer<D3D12Texture2D>(textureDesc, std::move(resource));
         targetTexture->setState(GraphicResourceState::Present);
         targetTextures.push_back(targetTexture);
     }

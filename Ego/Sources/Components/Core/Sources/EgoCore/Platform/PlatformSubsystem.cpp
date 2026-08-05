@@ -25,6 +25,7 @@ void ego::PlatformSubsystem::onUnregistered()
 
 void ego::PlatformSubsystem::release()
 {
+    EGO_ASSERT(!m_platform || m_platform.getUsingCount() == 1);
     m_platform = nullptr;
 }
 

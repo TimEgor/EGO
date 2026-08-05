@@ -199,7 +199,7 @@ namespace ego::gpu
         EGO_GRAPHIC_RESOURCE(Pipeline, GraphicResource);
     };
 
-    EGO_INTRUSIVE_POINTER(Pipeline);
+    EGO_POINTER(Pipeline);
 
     class GraphicPipeline : public Pipeline
     {
@@ -216,7 +216,7 @@ namespace ego::gpu
         GraphicPipelineDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(GraphicPipeline);
+    EGO_POINTER(GraphicPipeline);
 
     class ComputePipeline : public Pipeline
     {
@@ -233,7 +233,7 @@ namespace ego::gpu
         ComputePipelineDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(ComputePipeline);
+    EGO_POINTER(ComputePipeline);
 
     class RayTracingPipeline : public Pipeline
     {
@@ -250,5 +250,5 @@ namespace ego::gpu
         RayTracingPipelineDesc m_desc;
     };
 
-    EGO_INTRUSIVE_POINTER(RayTracingPipeline);
+    EGO_POINTER(RayTracingPipeline);
 } // namespace ego::gpu

@@ -35,7 +35,7 @@ bool ego::gpu::d3d12::D3D12ImmediateContext::init(ID3D12Device5* _device)
         return false;
     }
 
-    m_fence = MakeIntrusive<D3D12Fence>(0, std::move(fence));
+    m_fence = MakePointer<D3D12Fence>(0, std::move(fence));
     m_fenceValue = 0;
     return true;
 }

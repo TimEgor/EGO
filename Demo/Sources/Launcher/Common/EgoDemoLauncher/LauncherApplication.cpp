@@ -39,9 +39,9 @@ void ego::demo::launcher::LauncherApplication::release()
 
 int ego::demo::launcher::LauncherApplication::run()
 {
-    const runtime::RuntimePointer runtime = m_runtimeSubsystem ? m_runtimeSubsystem->getRuntimePointer() : nullptr;
-    const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
-    if (!runtime || !engine || !m_engineSession)
+    const bool isReadyToRun =
+        m_runtimeSubsystem && m_runtimeSubsystem->getRuntimePointer() && m_engineSubsystem && m_engineSubsystem->getEnginePointer() && m_engineSession;
+    if (!isReadyToRun)
     {
         return InitializationFailedExitCode;
     }
@@ -127,10 +127,13 @@ bool ego::demo::launcher::LauncherApplication::initEngineSubsystem(const Command
 
 void ego::demo::launcher::LauncherApplication::releaseEngineSubsystem()
 {
-    const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
-    if (engine && m_engineSession)
+    if (m_engineSubsystem && m_engineSession)
     {
-        engine->destroySession(m_engineSession->getID());
+        const engine::EnginePointer engine = m_engineSubsystem->getEnginePointer();
+        if (engine)
+        {
+            engine->destroySession(m_engineSession->getID());
+        }
     }
 
     m_engineSession = nullptr;

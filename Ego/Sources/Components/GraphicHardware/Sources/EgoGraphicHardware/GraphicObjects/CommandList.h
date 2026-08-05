@@ -143,7 +143,7 @@ namespace ego::gpu
         std::vector<GpuTaskPointer> m_gpuWaits;
     };
 
-    EGO_INTRUSIVE_POINTER(CommandList);
+    EGO_POINTER(CommandList);
 
     class CopyCommandList : public CommandList
     {
@@ -153,7 +153,7 @@ namespace ego::gpu
         CommandType getCommandType() const override;
     };
 
-    EGO_INTRUSIVE_POINTER(CopyCommandList);
+    EGO_POINTER(CopyCommandList);
 
     class ComputeCommandList : public CopyCommandList
     {
@@ -168,7 +168,7 @@ namespace ego::gpu
         CommandType getCommandType() const override;
     };
 
-    EGO_INTRUSIVE_POINTER(ComputeCommandList);
+    EGO_POINTER(ComputeCommandList);
 
     class GraphicCommandList : public ComputeCommandList
     {
@@ -187,10 +187,15 @@ namespace ego::gpu
 
         virtual void draw(uint32_t _vertexCount, uint32_t _instanceCount = 1, uint32_t _firstVertex = 0, uint32_t _firstInstance = 0) = 0;
 
-        virtual void drawIndexed(uint32_t _indexCount, uint32_t _instanceCount = 1, uint32_t _firstIndex = 0, int32_t _vertexOffset = 0, uint32_t _firstInstance = 0) = 0;
+        virtual void drawIndexed(
+            uint32_t _indexCount,
+            uint32_t _instanceCount = 1,
+            uint32_t _firstIndex = 0,
+            int32_t _vertexOffset = 0,
+            uint32_t _firstInstance = 0) = 0;
 
         CommandType getCommandType() const override;
     };
 
-    EGO_INTRUSIVE_POINTER(GraphicCommandList);
+    EGO_POINTER(GraphicCommandList);
 } // namespace ego::gpu

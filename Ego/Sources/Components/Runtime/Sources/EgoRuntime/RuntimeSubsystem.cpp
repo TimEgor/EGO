@@ -28,6 +28,7 @@ void ego::runtime::RuntimeSubsystem::release()
 {
     if (m_runtime)
     {
+        EGO_ASSERT(m_runtime.getUsingCount() == 1);
         m_runtime->release();
     }
 

@@ -96,32 +96,32 @@ namespace ego::gpu
         GraphicResourceState m_state = GraphicResourceState::Common;
     };
 
-    EGO_INTRUSIVE_POINTER(GraphicResource);
+    EGO_POINTER(GraphicResource);
 } // namespace ego::gpu
 
-#define EGO_GRAPHIC_RESOURCE_TYPE_INFO()                                                                                                                                           \
-    static const char* GetGraphicResourceTypeName()                                                                                                                                \
-    {                                                                                                                                                                              \
-        return GetMetaInfoTypeName();                                                                                                                                              \
-    }                                                                                                                                                                              \
-                                                                                                                                                                                   \
-    static ego::gpu::GraphicResourceType GetGraphicResourceType()                                                                                                                  \
-    {                                                                                                                                                                              \
-        return GetMetaInfoID();                                                                                                                                                    \
+#define EGO_GRAPHIC_RESOURCE_TYPE_INFO()                                                                                                                       \
+    static const char* GetGraphicResourceTypeName()                                                                                                            \
+    {                                                                                                                                                          \
+        return GetMetaInfoTypeName();                                                                                                                          \
+    }                                                                                                                                                          \
+                                                                                                                                                               \
+    static ego::gpu::GraphicResourceType GetGraphicResourceType()                                                                                              \
+    {                                                                                                                                                          \
+        return GetMetaInfoID();                                                                                                                                \
     }
 
-#define EGO_GRAPHIC_RESOURCE(_TYPE, ...)                                                                                                                                           \
-    EGO_RTTI_VIRTUAL(_TYPE, __VA_ARGS__);                                                                                                                                          \
-    EGO_GRAPHIC_RESOURCE_TYPE_INFO();                                                                                                                                              \
-                                                                                                                                                                                   \
-    virtual const char* getTypeName() const override                                                                                                                               \
-    {                                                                                                                                                                              \
-        return GetGraphicResourceTypeName();                                                                                                                                       \
-    }                                                                                                                                                                              \
-                                                                                                                                                                                   \
-    virtual ego::gpu::GraphicResourceType getType() const override                                                                                                                 \
-    {                                                                                                                                                                              \
-        return GetGraphicResourceType();                                                                                                                                           \
+#define EGO_GRAPHIC_RESOURCE(_TYPE, ...)                                                                                                                       \
+    EGO_RTTI_VIRTUAL(_TYPE, __VA_ARGS__);                                                                                                                      \
+    EGO_GRAPHIC_RESOURCE_TYPE_INFO();                                                                                                                          \
+                                                                                                                                                               \
+    virtual const char* getTypeName() const override                                                                                                           \
+    {                                                                                                                                                          \
+        return GetGraphicResourceTypeName();                                                                                                                   \
+    }                                                                                                                                                          \
+                                                                                                                                                               \
+    virtual ego::gpu::GraphicResourceType getType() const override                                                                                             \
+    {                                                                                                                                                          \
+        return GetGraphicResourceType();                                                                                                                       \
     }
 
 #define EGO_GRAPHIC_RESOURCE_TYPE(_RESOURCE) (_RESOURCE::GetGraphicResourceType())

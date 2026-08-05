@@ -418,7 +418,7 @@ ego::gpu::Texture2DPointer ego::gui::default_gui_render::DefaultGuiRender::resol
         return nullptr;
     }
 
-    return gpu::Texture2DPointer(targetResource.getObjectCast<gpu::Texture2D>());
+    return StaticPointerCast<gpu::Texture2D>(targetResource);
 }
 
 void ego::gui::default_gui_render::DefaultGuiRender::transitionTextureViews() const
@@ -426,7 +426,7 @@ void ego::gui::default_gui_render::DefaultGuiRender::transitionTextureViews() co
     for (const gpu::TextureViewPointer& textureView : m_textureViews)
     {
         const gpu::GraphicResourcePointer& textureResource = textureView->getResource();
-        const gpu::Texture2DPointer texture(textureResource.getObjectCast<gpu::Texture2D>());
+        const gpu::Texture2DPointer texture = StaticPointerCast<gpu::Texture2D>(textureResource);
         if (texture->getState() != gpu::GraphicResourceState::ShaderRead)
         {
             m_commandList->resourceBarrier(texture, gpu::GraphicResourceState::ShaderRead);

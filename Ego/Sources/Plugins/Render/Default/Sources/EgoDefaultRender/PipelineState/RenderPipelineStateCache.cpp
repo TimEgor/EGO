@@ -54,9 +54,9 @@ uint64_t ego::render::RenderPipelineStateCache::HashGraphicPipelineDesc(const gp
 {
     uint64_t hash = ego::HashValues(
         0,
-        IntrusivePointerIdentityHash{}(_desc.m_bindingLayout),
-        IntrusivePointerIdentityHash{}(_desc.m_vertexShader),
-        IntrusivePointerIdentityHash{}(_desc.m_pixelShader),
+        PointerIdentityHash{}(_desc.m_bindingLayout),
+        PointerIdentityHash{}(_desc.m_vertexShader),
+        PointerIdentityHash{}(_desc.m_pixelShader),
         _desc.m_inputLayoutDesc.getHash(),
         HashRasterizationState(_desc.m_rasterizationStateDesc),
         HashDepthStencilState(_desc.m_depthStencilStateDesc),
@@ -77,9 +77,9 @@ uint64_t ego::render::RenderPipelineStateCache::HashRayTracingPipelineDesc(const
 {
     uint64_t hash = ego::HashValues(
         0,
-        IntrusivePointerIdentityHash{}(_desc.m_bindingLayout),
-        IntrusivePointerIdentityHash{}(_desc.m_rayGenerationShader),
-        IntrusivePointerIdentityHash{}(_desc.m_missShader),
+        PointerIdentityHash{}(_desc.m_bindingLayout),
+        PointerIdentityHash{}(_desc.m_rayGenerationShader),
+        PointerIdentityHash{}(_desc.m_missShader),
         _desc.m_hitGroups.size(),
         _desc.m_maxPayloadSize,
         _desc.m_maxAttributeSize,
@@ -90,9 +90,9 @@ uint64_t ego::render::RenderPipelineStateCache::HashRayTracingPipelineDesc(const
         hash = ego::HashValues(
             hash,
             hitGroup.m_type,
-            IntrusivePointerIdentityHash{}(hitGroup.m_closestHitShader),
-            IntrusivePointerIdentityHash{}(hitGroup.m_anyHitShader),
-            IntrusivePointerIdentityHash{}(hitGroup.m_intersectionShader));
+            PointerIdentityHash{}(hitGroup.m_closestHitShader),
+            PointerIdentityHash{}(hitGroup.m_anyHitShader),
+            PointerIdentityHash{}(hitGroup.m_intersectionShader));
     }
 
     return hash;
@@ -110,7 +110,9 @@ bool ego::render::RenderPipelineStateCache::IsPipelineHandlerUsedOnlyByCache(con
     return !source || source->getReferenceCount() <= 1;
 }
 
-ego::render::RenderGraphicPipeline ego::render::RenderPipelineStateCache::getOrCreateGraphicPipeline(GraphicDevice& _graphicDevice, const gpu::GraphicPipelineDesc& _desc)
+ego::render::RenderGraphicPipeline ego::render::RenderPipelineStateCache::getOrCreateGraphicPipeline(
+    GraphicDevice& _graphicDevice,
+    const gpu::GraphicPipelineDesc& _desc)
 {
     const uint64_t hash = HashGraphicPipelineDesc(_desc);
     std::pair<GraphicPipelineMap::iterator, GraphicPipelineMap::iterator> pipelineRange = m_graphicPipelines.equal_range(hash);

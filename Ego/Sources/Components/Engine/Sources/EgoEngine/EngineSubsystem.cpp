@@ -28,6 +28,7 @@ void ego::engine::EngineSubsystem::release()
 {
     if (m_engine)
     {
+        EGO_ASSERT(m_engine.getUsingCount() == 1);
         m_engine->release();
     }
 

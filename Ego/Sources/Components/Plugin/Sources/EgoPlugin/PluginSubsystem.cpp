@@ -30,6 +30,7 @@ void ego::PluginSubsystem::release()
 {
     if (m_pluginController)
     {
+        EGO_ASSERT(m_pluginController.getUsingCount() == 1);
         m_pluginController->release();
     }
 

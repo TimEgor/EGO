@@ -34,6 +34,7 @@ void ego::ResourceSubsystem::release()
 
     if (m_resourceController)
     {
+        EGO_ASSERT(m_resourceController.getUsingCount() == 1);
         m_resourceController->release();
     }
 

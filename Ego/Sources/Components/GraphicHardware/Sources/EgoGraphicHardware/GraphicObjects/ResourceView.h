@@ -27,5 +27,5 @@ namespace ego::gpu
         GraphicResourcePointer m_resource;
     };
 
-    EGO_INTRUSIVE_POINTER(ResourceView);
+    EGO_POINTER(ResourceView);
 } // namespace ego::gpu

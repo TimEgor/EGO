@@ -234,7 +234,7 @@ ego::gpu::Texture2DPointer ego::render::DefaultRender::resolvePresentationTarget
         return nullptr;
     }
 
-    const gpu::Texture2DPointer targetTexture = targetResource.getObjectCast<gpu::Texture2D>();
+    const gpu::Texture2DPointer targetTexture = StaticPointerCast<gpu::Texture2D>(targetResource);
     const gpu::Texture2DDesc& resultDesc = m_renderTarget.getTexture()->getDesc();
     const gpu::Texture2DDesc& targetDesc = targetTexture->getDesc();
     const gpu::GraphicResourceFormat targetViewFormat = _targetView->getDesc().m_format;

@@ -46,10 +46,9 @@ void ego::editor::EditorApplication::release()
 
 int ego::editor::EditorApplication::run()
 {
-    const runtime::RuntimePointer runtime = m_runtimeSubsystem ? m_runtimeSubsystem->getRuntimePointer() : nullptr;
-    const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
-
-    EGO_CHECK_RETURN_VALUE(runtime && engine && m_editorSubsystem, InitializationFailedExitCode);
+    const bool isReadyToRun =
+        m_runtimeSubsystem && m_runtimeSubsystem->getRuntimePointer() && m_engineSubsystem && m_engineSubsystem->getEnginePointer() && m_editorSubsystem;
+    EGO_CHECK_RETURN_VALUE(isReadyToRun, InitializationFailedExitCode);
 
     const int exitCode = runMainLoop() ? SuccessExitCode : RuntimeFailedExitCode;
     release();

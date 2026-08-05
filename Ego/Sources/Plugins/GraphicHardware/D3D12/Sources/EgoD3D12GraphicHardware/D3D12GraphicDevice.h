@@ -100,9 +100,9 @@ namespace ego::gpu::d3d12
         ID3D12Device5* getD3D12Device() const;
         template <typename TCommandListPointer, typename TCommandListObject>
         TCommandListPointer createCommandList(D3D12_COMMAND_LIST_TYPE _type);
-        ego::IntrusivePointer<D3D12Buffer> createD3D12Buffer(const BufferDesc& _desc);
+        ego::SharedPointer<D3D12Buffer> createD3D12Buffer(const BufferDesc& _desc);
         bool createUploadBuffer(uint64_t _size, Microsoft::WRL::ComPtr<ID3D12Resource>& _resource) const;
-        ego::IntrusivePointer<D3D12Buffer> createUploadD3D12Buffer(uint64_t _size);
+        ego::SharedPointer<D3D12Buffer> createUploadD3D12Buffer(uint64_t _size);
         GpuTaskPointer uploadBufferToDefaultHeap(ID3D12Resource* _dstResource, uint64_t _dstSize, const InitialGraphicResourceData& _initialData);
         GpuTaskPointer uploadTexture2DToDefaultHeap(
             ID3D12Resource* _dstResource,
