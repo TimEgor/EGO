@@ -15,7 +15,7 @@
 
 #include "EgoGui/Rendering/GuiRenderPlugin.h"
 
-#include "EgoApplication/Engine/Gui/ApplicationGuiViewportProvider.h"
+#include "EgoRuntime/Engine/Gui/RuntimeGuiViewportProvider.h"
 
 #include "Graphic/SceneRender/RenderPlugin.h"
 #include "Project/EngineLogic.h"
@@ -30,7 +30,7 @@ ego::engine::EngineSession::~EngineSession()
 
 bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController, EngineSessionID _id, const InitData& _initData)
 {
-    const application::Presentation& mainPresentation = _initData.m_mainPresentation;
+    const runtime::Presentation& mainPresentation = _initData.m_mainPresentation;
     const bool hasMainSurface = static_cast<bool>(mainPresentation.m_surface);
     const bool hasMainGraphicPresenter = static_cast<bool>(mainPresentation.m_graphicPresenter);
 
@@ -184,11 +184,11 @@ ego::JobGraphPointer ego::engine::EngineSession::getFrameLogicJobGraph()
     return m_frameLogic.createJobGraph();
 }
 
-bool ego::engine::EngineSession::initGuiController(const application::Presentation& _mainPresentation)
+bool ego::engine::EngineSession::initGuiController(const runtime::Presentation& _mainPresentation)
 {
     EGO_CHECK_RETURN_FALSE(!m_guiViewportProvider && !m_guiController);
 
-    m_guiViewportProvider = MakePointer<application::ApplicationGuiViewportProvider>();
+    m_guiViewportProvider = MakePointer<runtime::RuntimeGuiViewportProvider>();
     EGO_CHECK_RETURN_FALSE(m_guiViewportProvider && m_guiViewportProvider->init(_mainPresentation));
 
     m_guiController = MakePointer<gui::GuiController>();

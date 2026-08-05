@@ -1,21 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(EgoEngine)
+project(EgoRuntime)
 
 ego_add_component(
-    EgoEngine
-    ALIAS Ego::Engine
+    EgoRuntime
+    ALIAS Ego::Runtime
 )
 
 target_link_libraries(
-    EgoEngine
+    EgoRuntime
         PUBLIC
             Ego::Core
-            Ego::ECS
             Ego::Gui
-            Ego::GraphicHardware
-            Ego::Job
+            Ego::Input
             Ego::Plugin
             Ego::Resource
-            Ego::Runtime
+            Ego::GraphicHardware
 )

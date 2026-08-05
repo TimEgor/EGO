@@ -1,4 +1,4 @@
-#include "ApplicationGuiViewportProvider.h"
+#include "RuntimeGuiViewportProvider.h"
 
 #include <cmath>
 #include <cstdint>
@@ -12,9 +12,9 @@
 
 #include "EgoInput/InputEvents.h"
 
-#include "EgoApplication/ApplicationSubsystem.h"
+#include "EgoRuntime/RuntimeSubsystem.h"
 
-#include "ApplicationGuiViewport.h"
+#include "RuntimeGuiViewport.h"
 
 namespace
 {
@@ -79,21 +79,16 @@ namespace
     }
 } // namespace
 
-ego::application::ApplicationGuiViewportProvider::~ApplicationGuiViewportProvider()
+ego::runtime::RuntimeGuiViewportProvider::~RuntimeGuiViewportProvider()
 {
     release();
 }
 
-bool ego::application::ApplicationGuiViewportProvider::init(const Presentation& _primaryPresentation)
+bool ego::runtime::RuntimeGuiViewportProvider::init(const Presentation& _primaryPresentation)
 {
     EGO_CHECK_INITIALIZATION(
-        !m_primaryPresentation.m_surface &&
-        m_viewports.empty() &&
-        m_modalViewportStack.empty() &&
-        m_retiringSurfaces.empty() &&
-        m_releasableSurfaces.empty() &&
-        m_primaryViewportID == gui::InvalidViewportID
-    );
+        !m_primaryPresentation.m_surface && m_viewports.empty() && m_modalViewportStack.empty() && m_retiringSurfaces.empty() && m_releasableSurfaces.empty() &&
+        m_primaryViewportID == gui::InvalidViewportID);
     EGO_CHECK_INITIALIZATION(_primaryPresentation.m_surface && _primaryPresentation.m_graphicPresenter);
 
     m_primaryPresentation = _primaryPresentation;
@@ -102,7 +97,7 @@ bool ego::application::ApplicationGuiViewportProvider::init(const Presentation& 
     return true;
 }
 
-void ego::application::ApplicationGuiViewportProvider::release()
+void ego::runtime::RuntimeGuiViewportProvider::release()
 {
     unregisterInputEvents();
     m_pointerViewportID = gui::InvalidViewportID;
@@ -120,7 +115,7 @@ void ego::application::ApplicationGuiViewportProvider::release()
     m_primaryPresentation = Presentation();
 }
 
-bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui::ViewportCreateRequest& _request)
+bool ego::runtime::RuntimeGuiViewportProvider::createViewport(const gui::ViewportCreateRequest& _request)
 {
     EGO_CHECK_RETURN_FALSE(_request.m_id != gui::InvalidViewportID);
     EGO_CHECK_RETURN_FALSE(m_primaryPresentation.m_surface);
@@ -133,8 +128,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     EGO_CHECK_RETURN_FALSE(presenterProvider);
 
     const bool isSecondary = _request.m_role == gui::ViewportRole::Secondary;
-    const Presentation presentation =
-        isSecondary ? presenterProvider->createPresentation(createViewportPresentationDesc(_request)) : m_primaryPresentation;
+    const Presentation presentation = isSecondary ? presenterProvider->createPresentation(createViewportPresentationDesc(_request)) : m_primaryPresentation;
     if (!presentation.m_surface || !presentation.m_graphicPresenter)
     {
         if (isSecondary && presentation.m_surface)
@@ -145,7 +139,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
         return false;
     }
 
-    ViewportPointer viewport = MakePointer<ApplicationGuiViewport>();
+    ViewportPointer viewport = MakePointer<RuntimeGuiViewport>();
     if (!viewport || !viewport->init(presentation))
     {
         viewport = nullptr;
@@ -197,7 +191,7 @@ bool ego::application::ApplicationGuiViewportProvider::createViewport(const gui:
     return true;
 }
 
-void ego::application::ApplicationGuiViewportProvider::destroyViewport(gui::ViewportID _viewportID)
+void ego::runtime::RuntimeGuiViewportProvider::destroyViewport(gui::ViewportID _viewportID)
 {
     ViewportMap::iterator viewportIt = m_viewports.find(_viewportID);
     if (viewportIt == m_viewports.end())
@@ -228,13 +222,13 @@ void ego::application::ApplicationGuiViewportProvider::destroyViewport(gui::View
     EGO_ASSERT(isInputUpdated);
 }
 
-ego::gui::ViewportState ego::application::ApplicationGuiViewportProvider::getViewportState(gui::ViewportID _viewportID) const
+ego::gui::ViewportState ego::runtime::RuntimeGuiViewportProvider::getViewportState(gui::ViewportID _viewportID) const
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     return viewport ? viewport->getState() : gui::ViewportState();
 }
 
-ego::gui::ViewportUpdate ego::application::ApplicationGuiViewportProvider::pollViewport(gui::ViewportID _viewportID)
+ego::gui::ViewportUpdate ego::runtime::RuntimeGuiViewportProvider::pollViewport(gui::ViewportID _viewportID)
 {
     if (_viewportID == m_primaryViewportID)
     {
@@ -250,7 +244,7 @@ ego::gui::ViewportUpdate ego::application::ApplicationGuiViewportProvider::pollV
     return viewportIt->second->poll();
 }
 
-bool ego::application::ApplicationGuiViewportProvider::showViewport(gui::ViewportID _viewportID, bool _activate)
+bool ego::runtime::RuntimeGuiViewportProvider::showViewport(gui::ViewportID _viewportID, bool _activate)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
@@ -264,7 +258,7 @@ bool ego::application::ApplicationGuiViewportProvider::showViewport(gui::Viewpor
     return true;
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setViewportPosition(gui::ViewportID _viewportID, FloatVector2& _position)
+bool ego::runtime::RuntimeGuiViewportProvider::setViewportPosition(gui::ViewportID _viewportID, FloatVector2& _position)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
@@ -272,7 +266,7 @@ bool ego::application::ApplicationGuiViewportProvider::setViewportPosition(gui::
     return viewport->setPosition(_position);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setViewportSize(gui::ViewportID _viewportID, FloatVector2& _size)
+bool ego::runtime::RuntimeGuiViewportProvider::setViewportSize(gui::ViewportID _viewportID, FloatVector2& _size)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
@@ -280,7 +274,7 @@ bool ego::application::ApplicationGuiViewportProvider::setViewportSize(gui::View
     return viewport->setSize(_size);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::setViewportInputTransparent(gui::ViewportID _viewportID, bool _isTransparent)
+bool ego::runtime::RuntimeGuiViewportProvider::setViewportInputTransparent(gui::ViewportID _viewportID, bool _isTransparent)
 {
     const ViewportPointer viewport = findViewport(_viewportID);
     EGO_CHECK_RETURN_FALSE(viewport);
@@ -288,31 +282,31 @@ bool ego::application::ApplicationGuiViewportProvider::setViewportInputTranspare
     return viewport->setInputTransparent(_isTransparent);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::registerInputEvents()
+bool ego::runtime::RuntimeGuiViewportProvider::registerInputEvents()
 {
     const EventControllerPointer eventController = GetEventControllerPointer();
     EGO_CHECK_RETURN_FALSE(eventController);
 
     unregisterInputEvents();
 
-    m_callbackIDs.m_mouseChanged = eventController->addEventCallback<InputDeviceChangedEvent>(*this, &ApplicationGuiViewportProvider::handleMouseChangedEvent);
+    m_callbackIDs.m_mouseChanged = eventController->addEventCallback<InputDeviceChangedEvent>(*this, &RuntimeGuiViewportProvider::handleMouseChangedEvent);
     EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseChanged != InvalidEventCallbackID, unregisterInputEvents());
 
-    m_callbackIDs.m_mouseWheel = eventController->addEventCallback<InputKeyChangedEvent>(*this, &ApplicationGuiViewportProvider::handleMouseWheelEvent);
+    m_callbackIDs.m_mouseWheel = eventController->addEventCallback<InputKeyChangedEvent>(*this, &RuntimeGuiViewportProvider::handleMouseWheelEvent);
     EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseWheel != InvalidEventCallbackID, unregisterInputEvents());
 
     m_callbackIDs.m_mouseButtonPressed =
-        eventController->addEventCallback<InputButtonPressedEvent>(*this, &ApplicationGuiViewportProvider::handleMouseButtonPressedEvent);
+        eventController->addEventCallback<InputButtonPressedEvent>(*this, &RuntimeGuiViewportProvider::handleMouseButtonPressedEvent);
     EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseButtonPressed != InvalidEventCallbackID, unregisterInputEvents());
 
     m_callbackIDs.m_mouseButtonReleased =
-        eventController->addEventCallback<InputButtonReleasedEvent>(*this, &ApplicationGuiViewportProvider::handleMouseButtonReleasedEvent);
+        eventController->addEventCallback<InputButtonReleasedEvent>(*this, &RuntimeGuiViewportProvider::handleMouseButtonReleasedEvent);
     EGO_CHECK_RETURN_CALL_FALSE(m_callbackIDs.m_mouseButtonReleased != InvalidEventCallbackID, unregisterInputEvents());
 
     return true;
 }
 
-void ego::application::ApplicationGuiViewportProvider::unregisterInputEvents()
+void ego::runtime::RuntimeGuiViewportProvider::unregisterInputEvents()
 {
     const EventControllerPointer eventController = GetEventControllerPointer();
 
@@ -322,7 +316,7 @@ void ego::application::ApplicationGuiViewportProvider::unregisterInputEvents()
     RemoveEventCallback(eventController, m_callbackIDs.m_mouseChanged);
 }
 
-void ego::application::ApplicationGuiViewportProvider::handleMouseChangedEvent(const InputDeviceChangedEvent& _event)
+void ego::runtime::RuntimeGuiViewportProvider::handleMouseChangedEvent(const InputDeviceChangedEvent& _event)
 {
     if (_event.m_deviceType != MouseInputDevice::GetMetaInfoID() || !_event.m_device || !HasMousePositionChanged(*_event.m_device))
     {
@@ -342,7 +336,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseChangedEvent(c
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::handleMouseWheelEvent(const InputKeyChangedEvent& _event)
+void ego::runtime::RuntimeGuiViewportProvider::handleMouseWheelEvent(const InputKeyChangedEvent& _event)
 {
     if (_event.m_deviceType != MouseInputDevice::GetMetaInfoID() || !_event.m_device || _event.m_key != ToInputDeviceKey(MouseInputKey::Wheel))
     {
@@ -363,17 +357,17 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseWheelEvent(con
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::handleMouseButtonPressedEvent(const InputKeyEvent& _event)
+void ego::runtime::RuntimeGuiViewportProvider::handleMouseButtonPressedEvent(const InputKeyEvent& _event)
 {
     handleMouseButtonEvent(_event, InputButtonAction::Pressed);
 }
 
-void ego::application::ApplicationGuiViewportProvider::handleMouseButtonReleasedEvent(const InputKeyEvent& _event)
+void ego::runtime::RuntimeGuiViewportProvider::handleMouseButtonReleasedEvent(const InputKeyEvent& _event)
 {
     handleMouseButtonEvent(_event, InputButtonAction::Released);
 }
 
-void ego::application::ApplicationGuiViewportProvider::handleMouseButtonEvent(const InputKeyEvent& _event, InputButtonAction _action)
+void ego::runtime::RuntimeGuiViewportProvider::handleMouseButtonEvent(const InputKeyEvent& _event, InputButtonAction _action)
 {
     if (_event.m_deviceType != MouseInputDevice::GetMetaInfoID() || !_event.m_device)
     {
@@ -414,7 +408,7 @@ void ego::application::ApplicationGuiViewportProvider::handleMouseButtonEvent(co
     }
 }
 
-ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findViewportAtScreenPosition(const FloatVector2& _position) const
+ego::gui::ViewportID ego::runtime::RuntimeGuiViewportProvider::findViewportAtScreenPosition(const FloatVector2& _position) const
 {
     const SurfacePoint position(ToSurfacePointValue(_position.m_x), ToSurfacePointValue(_position.m_y));
     const PlatformPointer platform = GetPlatformPointer();
@@ -437,7 +431,7 @@ ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findViewp
     return gui::InvalidViewportID;
 }
 
-void ego::application::ApplicationGuiViewportProvider::retireViewport(ViewportPointer& _viewport)
+void ego::runtime::RuntimeGuiViewportProvider::retireViewport(ViewportPointer& _viewport)
 {
     if (!_viewport)
     {
@@ -461,13 +455,13 @@ void ego::application::ApplicationGuiViewportProvider::retireViewport(ViewportPo
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::advanceViewportRetirement()
+void ego::runtime::RuntimeGuiViewportProvider::advanceViewportRetirement()
 {
     releaseSurfaces(m_releasableSurfaces);
     m_releasableSurfaces.swap(m_retiringSurfaces);
 }
 
-void ego::application::ApplicationGuiViewportProvider::releaseSurfaces(SurfaceCollection& _surfaces)
+void ego::runtime::RuntimeGuiViewportProvider::releaseSurfaces(SurfaceCollection& _surfaces)
 {
     const PresenterProviderPointer presenterProvider = GetPresenterProvider();
     if (presenterProvider)
@@ -481,7 +475,7 @@ void ego::application::ApplicationGuiViewportProvider::releaseSurfaces(SurfaceCo
     _surfaces.clear();
 }
 
-void ego::application::ApplicationGuiViewportProvider::releaseViewport(ViewportPointer& _viewport)
+void ego::runtime::RuntimeGuiViewportProvider::releaseViewport(ViewportPointer& _viewport)
 {
     if (!_viewport)
     {
@@ -505,12 +499,12 @@ void ego::application::ApplicationGuiViewportProvider::releaseViewport(ViewportP
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::removeModalViewport(gui::ViewportID _viewportID)
+void ego::runtime::RuntimeGuiViewportProvider::removeModalViewport(gui::ViewportID _viewportID)
 {
     std::erase(m_modalViewportStack, _viewportID);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::updateViewportInputState()
+bool ego::runtime::RuntimeGuiViewportProvider::updateViewportInputState()
 {
     const gui::ViewportID activeModalViewportID = m_modalViewportStack.empty() ? gui::InvalidViewportID : m_modalViewportStack.back();
     bool isInputUpdated = true;
@@ -526,14 +520,13 @@ bool ego::application::ApplicationGuiViewportProvider::updateViewportInputState(
     return isInputUpdated;
 }
 
-ego::application::ApplicationGuiViewportProvider::ViewportPointer ego::application::ApplicationGuiViewportProvider::findViewport(
-    gui::ViewportID _viewportID) const
+ego::runtime::RuntimeGuiViewportProvider::ViewportPointer ego::runtime::RuntimeGuiViewportProvider::findViewport(gui::ViewportID _viewportID) const
 {
     const ViewportMap::const_iterator viewportIt = m_viewports.find(_viewportID);
     return viewportIt != m_viewports.end() ? viewportIt->second : nullptr;
 }
 
-ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findPointerInputViewport(const FloatVector2& _position) const
+ego::gui::ViewportID ego::runtime::RuntimeGuiViewportProvider::findPointerInputViewport(const FloatVector2& _position) const
 {
     for (const ViewportMap::value_type& viewportEntry : m_viewports)
     {
@@ -548,7 +541,7 @@ ego::gui::ViewportID ego::application::ApplicationGuiViewportProvider::findPoint
     return findViewportAtScreenPosition(_position);
 }
 
-bool ego::application::ApplicationGuiViewportProvider::capturePointer(const ViewportPointer& _viewport)
+bool ego::runtime::RuntimeGuiViewportProvider::capturePointer(const ViewportPointer& _viewport)
 {
     EGO_CHECK_RETURN_FALSE(_viewport);
 
@@ -556,7 +549,7 @@ bool ego::application::ApplicationGuiViewportProvider::capturePointer(const View
     return surface && surface->capturePointer();
 }
 
-void ego::application::ApplicationGuiViewportProvider::releasePointer(const ViewportPointer& _viewport)
+void ego::runtime::RuntimeGuiViewportProvider::releasePointer(const ViewportPointer& _viewport)
 {
     if (!_viewport)
     {
@@ -570,7 +563,7 @@ void ego::application::ApplicationGuiViewportProvider::releasePointer(const View
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::setFocusedViewport(gui::ViewportID _viewportID)
+void ego::runtime::RuntimeGuiViewportProvider::setFocusedViewport(gui::ViewportID _viewportID)
 {
     for (ViewportMap::value_type& viewportEntry : m_viewports)
     {
@@ -581,7 +574,7 @@ void ego::application::ApplicationGuiViewportProvider::setFocusedViewport(gui::V
     }
 }
 
-void ego::application::ApplicationGuiViewportProvider::updatePointerViewport(gui::ViewportID _viewportID, const FloatVector2& _position)
+void ego::runtime::RuntimeGuiViewportProvider::updatePointerViewport(gui::ViewportID _viewportID, const FloatVector2& _position)
 {
     if (m_pointerViewportID == _viewportID)
     {
@@ -597,20 +590,19 @@ void ego::application::ApplicationGuiViewportProvider::updatePointerViewport(gui
     m_pointerViewportID = _viewportID;
 }
 
-ego::EventControllerPointer ego::application::ApplicationGuiViewportProvider::GetEventControllerPointer()
+ego::EventControllerPointer ego::runtime::RuntimeGuiViewportProvider::GetEventControllerPointer()
 {
     const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
     return eventSubsystem ? eventSubsystem->getEventControllerPointer() : nullptr;
 }
 
-ego::application::PresenterProviderPointer ego::application::ApplicationGuiViewportProvider::GetPresenterProvider()
+ego::runtime::PresenterProviderPointer ego::runtime::RuntimeGuiViewportProvider::GetPresenterProvider()
 {
-    const ApplicationPointer application = GetApplicationPointer();
-    return application ? application->getPresenterProviderPointer() : nullptr;
+    const RuntimePointer runtime = GetRuntimePointer();
+    return runtime ? runtime->getPresenterProviderPointer() : nullptr;
 }
 
-ego::application::PresentationDesc ego::application::ApplicationGuiViewportProvider::createViewportPresentationDesc(
-    const gui::ViewportCreateRequest& _request) const
+ego::runtime::PresentationDesc ego::runtime::RuntimeGuiViewportProvider::createViewportPresentationDesc(const gui::ViewportCreateRequest& _request) const
 {
     constexpr SurfaceSize DefaultViewportSize(500, 500);
 
@@ -623,11 +615,9 @@ ego::application::PresentationDesc ego::application::ApplicationGuiViewportProvi
     const ViewportPointer parentViewport = findViewport(_request.m_parentID);
     const PlatformSurfacePointer ownerSurface = parentViewport ? parentViewport->getPresentation().m_surface : nullptr;
 
-    return PresentationDesc{
-        .m_name = _request.m_title,
+    return PresentationDesc{.m_name = _request.m_title,
         .m_size = viewportSize,
         .m_position = SurfacePoint(ToSurfacePointValue(_request.m_position.m_x), ToSurfacePointValue(_request.m_position.m_y)),
         .m_ownerSurface = ownerSurface,
-        .m_hasFrame = false
-    };
+        .m_hasFrame = false};
 }

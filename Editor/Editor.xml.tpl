@@ -1,9 +1,9 @@
 <Editor>
-    <Application>
+    <Runtime>
         <PluginDirectory>@TPL_EDITOR_PLUGIN_DIRECTORY@</PluginDirectory>
         <ProfilerPlugin>@TPL_EDITOR_PROFILER_PLUGIN@</ProfilerPlugin>
         <GraphicHardwarePlugin>@TPL_EDITOR_GRAPHIC_HARDWARE_PLUGIN@</GraphicHardwarePlugin>
-    </Application>
+    </Runtime>
     <Engine>
         <EditorRenderPlugin>@TPL_EDITOR_RENDER_PLUGIN@</EditorRenderPlugin>
         <SimulationRenderPlugin>@TPL_SIMULATION_RENDER_PLUGIN@</SimulationRenderPlugin>

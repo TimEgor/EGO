@@ -8,15 +8,15 @@
 
 #include "EgoGui/Viewport/ViewportProvider.h"
 
-#include "EgoApplication/Presentation/PresenterProvider.h"
+#include "EgoRuntime/Presentation/PresenterProvider.h"
 
-namespace ego::application
+namespace ego::runtime
 {
-    class ApplicationGuiViewport final : public NonCopyable
+    class RuntimeGuiViewport final : public NonCopyable
     {
     public:
-        ApplicationGuiViewport() = default;
-        ~ApplicationGuiViewport() override;
+        RuntimeGuiViewport() = default;
+        ~RuntimeGuiViewport() override;
 
         bool init(const Presentation& _presentation);
 
@@ -85,4 +85,4 @@ namespace ego::application
         bool m_isFocused = false;
         bool m_isInputTransparent = false;
     };
-} // namespace ego::application
+} // namespace ego::runtime

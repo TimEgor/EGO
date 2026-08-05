@@ -7,7 +7,7 @@
 #include "EgoGraphicHardware/GraphicObjects/SwapChain.h"
 #include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
 
-namespace ego::application
+namespace ego::runtime
 {
     class SurfaceGraphicPresenter final : public GraphicPresenter
     {
@@ -37,4 +37,4 @@ namespace ego::application
     };
 
     EGO_POINTER(SurfaceGraphicPresenter);
-} // namespace ego::application
+} // namespace ego::runtime

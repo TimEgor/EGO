@@ -16,6 +16,7 @@ target_link_libraries(
     EgoDemoLauncher
         PUBLIC
             Ego::Application
+            Ego::Runtime
             Ego::Engine
         PRIVATE
             Ego::Core

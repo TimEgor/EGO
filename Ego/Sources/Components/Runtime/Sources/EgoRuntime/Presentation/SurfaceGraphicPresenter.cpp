@@ -2,12 +2,12 @@
 
 #include "EgoCore/UtilsMacros.h"
 
-ego::application::SurfaceGraphicPresenter::~SurfaceGraphicPresenter()
+ego::runtime::SurfaceGraphicPresenter::~SurfaceGraphicPresenter()
 {
     release();
 }
 
-bool ego::application::SurfaceGraphicPresenter::init(
+bool ego::runtime::SurfaceGraphicPresenter::init(
     GraphicDevice& _graphicDevice,
     const PlatformSurface& _surface,
     const gpu::SwapChainDesc& _swapChainDesc,
@@ -19,28 +19,28 @@ bool ego::application::SurfaceGraphicPresenter::init(
     return true;
 }
 
-void ego::application::SurfaceGraphicPresenter::release()
+void ego::runtime::SurfaceGraphicPresenter::release()
 {
     m_swapChain.reset();
     m_pendingSize = UInt32Vector2Zero;
 }
 
-ego::gpu::Texture2DPointer ego::application::SurfaceGraphicPresenter::getTargetTexture()
+ego::gpu::Texture2DPointer ego::runtime::SurfaceGraphicPresenter::getTargetTexture()
 {
     return m_swapChain ? m_swapChain->getTargetTexture() : gpu::Texture2DPointer();
 }
 
-bool ego::application::SurfaceGraphicPresenter::shouldClearTarget() const
+bool ego::runtime::SurfaceGraphicPresenter::shouldClearTarget() const
 {
     return true;
 }
 
-ego::gpu::GraphicResourceState ego::application::SurfaceGraphicPresenter::getPresentationState() const
+ego::gpu::GraphicResourceState ego::runtime::SurfaceGraphicPresenter::getPresentationState() const
 {
     return gpu::GraphicResourceState::Present;
 }
 
-bool ego::application::SurfaceGraphicPresenter::prepare()
+bool ego::runtime::SurfaceGraphicPresenter::prepare()
 {
     if (!m_swapChain)
     {
@@ -61,7 +61,7 @@ bool ego::application::SurfaceGraphicPresenter::prepare()
     return true;
 }
 
-bool ego::application::SurfaceGraphicPresenter::resize(const gpu::Texture2DSize& _size)
+bool ego::runtime::SurfaceGraphicPresenter::resize(const gpu::Texture2DSize& _size)
 {
     if (!m_swapChain || _size.m_x == 0 || _size.m_y == 0)
     {
@@ -83,7 +83,7 @@ bool ego::application::SurfaceGraphicPresenter::resize(const gpu::Texture2DSize&
     return true;
 }
 
-void ego::application::SurfaceGraphicPresenter::present()
+void ego::runtime::SurfaceGraphicPresenter::present()
 {
     if (m_swapChain)
     {

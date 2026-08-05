@@ -13,7 +13,7 @@
 
 #include "EgoGui/GuiController.h"
 
-#include "EgoApplication/Presentation/PresenterProvider.h"
+#include "EgoRuntime/Presentation/PresenterProvider.h"
 
 #include "FrameLogic.h"
 #include "Graphic/GraphicFrameController.h"
@@ -34,12 +34,12 @@ namespace ego::render
     class Render;
 } // namespace ego::render
 
-namespace ego::application
+namespace ego::runtime
 {
-    class ApplicationGuiViewportProvider;
+    class RuntimeGuiViewportProvider;
 
-    EGO_POINTER(ApplicationGuiViewportProvider);
-} // namespace ego::application
+    EGO_POINTER(RuntimeGuiViewportProvider);
+} // namespace ego::runtime
 
 namespace ego::engine
 {
@@ -67,7 +67,7 @@ namespace ego::engine
         struct InitData final
         {
             ProjectPointer m_project = nullptr;
-            application::Presentation m_mainPresentation;
+            runtime::Presentation m_mainPresentation;
             GuiOptions m_gui;
             SceneRenderOptions m_sceneRender;
         };
@@ -96,7 +96,7 @@ namespace ego::engine
 
         PluginControllerPointer getPluginControllerPointer() const;
 
-        bool initGuiController(const application::Presentation& _mainPresentation);
+        bool initGuiController(const runtime::Presentation& _mainPresentation);
         bool initGraphicFrameController(const InitData& _initData);
         bool initFrameLogic();
 
@@ -123,7 +123,7 @@ namespace ego::engine
         GraphicFrameController m_graphicFrameController;
 
         GraphicPresenterPointer m_scenePresenter = nullptr;
-        application::ApplicationGuiViewportProviderPointer m_guiViewportProvider = nullptr;
+        runtime::RuntimeGuiViewportProviderPointer m_guiViewportProvider = nullptr;
         gui::GuiControllerPointer m_guiController = nullptr;
 
         ClockTimePoint m_currentFrameTime;

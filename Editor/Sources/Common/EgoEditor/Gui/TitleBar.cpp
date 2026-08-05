@@ -8,7 +8,7 @@
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Platform/Surface/PlatformSurface.h"
 
-#include "EgoApplication/ApplicationSubsystem.h"
+#include "EgoRuntime/RuntimeSubsystem.h"
 
 #include "EgoEditor/Gui/Menu/GuiMenuController.h"
 
@@ -105,7 +105,7 @@ void ego::editor::TitleBar::drawSystemButtons(PlatformSurface& _surface, TitleBa
 
     if (drawSystemButton(SystemButton::Close, _layout.m_systemButtonsMinX + _layout.m_systemButtonWidth * 2.0f, _layout, isWindowMaximized))
     {
-        application::GetApplication().requestExit();
+        runtime::GetRuntime().requestExit();
     }
 }
 

@@ -17,13 +17,13 @@ namespace ego
     EGO_POINTER(ProfilerPlugin);
 } // namespace ego
 
-namespace ego::application
+namespace ego::runtime
 {
-    class ApplicationProfiler final
+    class RuntimeProfiler final
     {
     public:
-        ApplicationProfiler() = default;
-        ~ApplicationProfiler();
+        RuntimeProfiler() = default;
+        ~RuntimeProfiler();
 
         bool init(const FileName& _pluginModuleName);
 
@@ -34,5 +34,5 @@ namespace ego::application
         profile::ProfilerPointer m_profiler = nullptr;
     };
 
-    EGO_POINTER(ApplicationProfiler);
-} // namespace ego::application
+    EGO_POINTER(RuntimeProfiler);
+} // namespace ego::runtime

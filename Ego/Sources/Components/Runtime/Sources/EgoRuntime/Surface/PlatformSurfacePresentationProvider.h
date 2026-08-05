@@ -8,10 +8,10 @@
 
 #include "EgoGraphicHardware/GraphicObjects/SwapChain.h"
 
-#include "EgoApplication/Presentation/PresenterProvider.h"
-#include "EgoApplication/Presentation/SurfaceGraphicPresenter.h"
+#include "EgoRuntime/Presentation/PresenterProvider.h"
+#include "EgoRuntime/Presentation/SurfaceGraphicPresenter.h"
 
-namespace ego::application
+namespace ego::runtime
 {
     class PlatformSurfacePresentationProvider final : public PresenterProvider, public NonCopyable
     {
@@ -73,4 +73,4 @@ namespace ego::application
     };
 
     EGO_POINTER(PlatformSurfacePresentationProvider);
-} // namespace ego::application
+} // namespace ego::runtime

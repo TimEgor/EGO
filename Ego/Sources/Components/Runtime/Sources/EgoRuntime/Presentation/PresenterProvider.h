@@ -6,7 +6,7 @@
 
 #include "EgoGraphicHardware/Presentation/GraphicPresenter.h"
 
-namespace ego::application
+namespace ego::runtime
 {
     using PresentationDesc = PlatformSurfaceDesc;
 
@@ -30,4 +30,4 @@ namespace ego::application
     };
 
     EGO_POINTER(PresenterProvider);
-} // namespace ego::application
+} // namespace ego::runtime

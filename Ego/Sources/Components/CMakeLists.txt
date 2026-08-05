@@ -11,6 +11,7 @@ add_subdirectory(Input)
 add_subdirectory(GraphicHardware)
 add_subdirectory(Gui)
 add_subdirectory(Application)
+add_subdirectory(Runtime)
 add_subdirectory(Engine)
 
 add_library(EgoComponents INTERFACE)
@@ -23,6 +24,7 @@ target_link_libraries(EgoComponents
         Ego::Gui
         Ego::GraphicHardware
         Ego::Application
+        Ego::Runtime
         Ego::Engine
         Ego::Input
         Ego::Job

@@ -24,6 +24,7 @@ target_link_libraries(
     EgoEditor
         PUBLIC
             Ego::Application
+            Ego::Runtime
             Ego::Engine
         PRIVATE
             Ego::Core

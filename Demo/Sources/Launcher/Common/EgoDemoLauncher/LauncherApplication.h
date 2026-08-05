@@ -2,10 +2,10 @@
 
 #include <string>
 
-#include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoApplication/Application.h"
 
-#include "EgoApplication/ApplicationSubsystem.h"
-#include "EgoApplication/Presentation/PresenterProvider.h"
+#include "EgoRuntime/RuntimeSubsystem.h"
+#include "EgoRuntime/Presentation/PresenterProvider.h"
 
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/EngineSubsystem.h"
@@ -13,7 +13,7 @@
 
 namespace ego::demo::launcher
 {
-    class LauncherApplication final : public NonCopyable
+    class LauncherApplication final : public application::Application
     {
     public:
         static constexpr int SuccessExitCode = 0;
@@ -39,8 +39,8 @@ namespace ego::demo::launcher
             std::string m_projectFilePath;
         };
 
-        bool initApplicationSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options);
-        void releaseApplicationSubsystem();
+        bool initRuntimeSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options);
+        void releaseRuntimeSubsystem();
 
         bool initEngineSubsystem(const CommandLineOptions& _options);
         void releaseEngineSubsystem();
@@ -50,10 +50,10 @@ namespace ego::demo::launcher
         void parseCommandLine(int _argCount, char** _argValues, CommandLineOptions& _options) const;
         bool fillEngineSessionInitData(const CommandLineOptions& _options, engine::EngineSession::InitData& _sessionInitData);
         bool loadProject(const FileName& _projectFileName, engine::ProjectPointer& _project) const;
-        static application::PresentationDesc CreateMainPresentationDesc();
+        static runtime::PresentationDesc CreateMainPresentationDesc();
         FileName selectProjectFile() const;
 
-        application::ApplicationSubsystemPointer m_applicationSubsystem = nullptr;
+        runtime::RuntimeSubsystemPointer m_runtimeSubsystem = nullptr;
         engine::EngineSubsystemPointer m_engineSubsystem = nullptr;
         engine::EngineSessionPointer m_engineSession = nullptr;
 

@@ -1,4 +1,4 @@
-#include "ApplicationProfiler.h"
+#include "RuntimeProfiler.h"
 
 #include "EgoCore/Diagnostic/DiagnosticSubsystem.h"
 #include "EgoCore/Profile/ProfileController.h"
@@ -8,12 +8,12 @@
 
 #include "ProfilerPlugin.h"
 
-ego::application::ApplicationProfiler::~ApplicationProfiler()
+ego::runtime::RuntimeProfiler::~RuntimeProfiler()
 {
     release();
 }
 
-bool ego::application::ApplicationProfiler::init(const FileName& _pluginModuleName)
+bool ego::runtime::RuntimeProfiler::init(const FileName& _pluginModuleName)
 {
     EGO_CHECK_RETURN_FALSE(!m_plugin);
     EGO_CHECK_RETURN_FALSE(!m_profiler);
@@ -40,7 +40,7 @@ bool ego::application::ApplicationProfiler::init(const FileName& _pluginModuleNa
     return true;
 }
 
-void ego::application::ApplicationProfiler::release()
+void ego::runtime::RuntimeProfiler::release()
 {
     const profile::ProfilerControllerPointer profilerController = GetProfilerController();
     if (m_profiler && profilerController)

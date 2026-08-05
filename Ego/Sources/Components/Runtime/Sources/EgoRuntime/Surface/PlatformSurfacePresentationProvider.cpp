@@ -11,14 +11,14 @@
 
 #include "EgoGraphicHardware/GraphicHardwareSubsystem.h"
 
-#include "EgoApplication/ApplicationSubsystem.h"
+#include "EgoRuntime/RuntimeSubsystem.h"
 
-ego::application::PlatformSurfacePresentationProvider::~PlatformSurfacePresentationProvider()
+ego::runtime::PlatformSurfacePresentationProvider::~PlatformSurfacePresentationProvider()
 {
     release();
 }
 
-bool ego::application::PlatformSurfacePresentationProvider::init(const InitData& _initData)
+bool ego::runtime::PlatformSurfacePresentationProvider::init(const InitData& _initData)
 {
     EGO_CHECK_INITIALIZATION(!m_isInitialized && m_presentations.empty() && !m_mainSurface);
 
@@ -32,7 +32,7 @@ bool ego::application::PlatformSurfacePresentationProvider::init(const InitData&
     return true;
 }
 
-void ego::application::PlatformSurfacePresentationProvider::release()
+void ego::runtime::PlatformSurfacePresentationProvider::release()
 {
     releasePresentations();
 
@@ -40,7 +40,7 @@ void ego::application::PlatformSurfacePresentationProvider::release()
     m_isInitialized = false;
 }
 
-ego::application::Presentation ego::application::PlatformSurfacePresentationProvider::createPresentation(const PresentationDesc& _desc)
+ego::runtime::Presentation ego::runtime::PlatformSurfacePresentationProvider::createPresentation(const PresentationDesc& _desc)
 {
     Presentation presentation;
     if (!m_isInitialized)
@@ -85,7 +85,7 @@ ego::application::Presentation ego::application::PlatformSurfacePresentationProv
     return presentation;
 }
 
-bool ego::application::PlatformSurfacePresentationProvider::destroyPresentation(const PlatformSurfacePointer& _surface)
+bool ego::runtime::PlatformSurfacePresentationProvider::destroyPresentation(const PlatformSurfacePointer& _surface)
 {
     if (!_surface)
     {
@@ -111,7 +111,7 @@ bool ego::application::PlatformSurfacePresentationProvider::destroyPresentation(
     return true;
 }
 
-ego::GraphicPresenterPointer ego::application::PlatformSurfacePresentationProvider::findGraphicPresenter(const PlatformSurfacePointer& _surface) const
+ego::GraphicPresenterPointer ego::runtime::PlatformSurfacePresentationProvider::findGraphicPresenter(const PlatformSurfacePointer& _surface) const
 {
     if (!_surface)
     {
@@ -123,7 +123,7 @@ ego::GraphicPresenterPointer ego::application::PlatformSurfacePresentationProvid
     return presentationIt != m_presentations.end() ? presentationIt->m_graphicPresenter : nullptr;
 }
 
-void ego::application::PlatformSurfacePresentationProvider::processEvents()
+void ego::runtime::PlatformSurfacePresentationProvider::processEvents()
 {
     if (m_isInitialized)
     {
@@ -131,7 +131,7 @@ void ego::application::PlatformSurfacePresentationProvider::processEvents()
     }
 }
 
-ego::PlatformSurfaceController& ego::application::PlatformSurfacePresentationProvider::getSurfaceController() const
+ego::PlatformSurfaceController& ego::runtime::PlatformSurfacePresentationProvider::getSurfaceController() const
 {
     const PlatformPointer platform = GetPlatformPointer();
     EGO_ASSERT(platform);
@@ -139,7 +139,7 @@ ego::PlatformSurfaceController& ego::application::PlatformSurfacePresentationPro
     return platform->getSurfaceController();
 }
 
-bool ego::application::PlatformSurfacePresentationProvider::registerSurfaceEvents(PresentationEntry& _presentation)
+bool ego::runtime::PlatformSurfacePresentationProvider::registerSurfaceEvents(PresentationEntry& _presentation)
 {
     EGO_CHECK_RETURN_FALSE(_presentation.m_surface);
 
@@ -164,7 +164,7 @@ bool ego::application::PlatformSurfacePresentationProvider::registerSurfaceEvent
     return true;
 }
 
-void ego::application::PlatformSurfacePresentationProvider::unregisterSurfaceEvents(PresentationEntry& _presentation)
+void ego::runtime::PlatformSurfacePresentationProvider::unregisterSurfaceEvents(PresentationEntry& _presentation)
 {
     if (!_presentation.m_surface)
     {
@@ -183,7 +183,7 @@ void ego::application::PlatformSurfacePresentationProvider::unregisterSurfaceEve
     callbackIDs = SurfaceEventCallbackIDs();
 }
 
-void ego::application::PlatformSurfacePresentationProvider::releasePresentations()
+void ego::runtime::PlatformSurfacePresentationProvider::releasePresentations()
 {
     while (!m_presentations.empty())
     {
@@ -195,7 +195,7 @@ void ego::application::PlatformSurfacePresentationProvider::releasePresentations
     m_mainSurface = nullptr;
 }
 
-void ego::application::PlatformSurfacePresentationProvider::releasePresentation(PresentationEntry& _presentation, bool _destroySurface)
+void ego::runtime::PlatformSurfacePresentationProvider::releasePresentation(PresentationEntry& _presentation, bool _destroySurface)
 {
     unregisterSurfaceEvents(_presentation);
 
@@ -212,7 +212,7 @@ void ego::application::PlatformSurfacePresentationProvider::releasePresentation(
     }
 }
 
-ego::application::PlatformSurfacePresentationProvider::PresentationCollection::iterator ego::application::PlatformSurfacePresentationProvider::findPresentation(
+ego::runtime::PlatformSurfacePresentationProvider::PresentationCollection::iterator ego::runtime::PlatformSurfacePresentationProvider::findPresentation(
     PlatformSurface& _surface)
 {
     for (PresentationCollection::iterator presentationIt = m_presentations.begin(); presentationIt != m_presentations.end(); ++presentationIt)
@@ -226,8 +226,8 @@ ego::application::PlatformSurfacePresentationProvider::PresentationCollection::i
     return m_presentations.end();
 }
 
-ego::application::PlatformSurfacePresentationProvider::PresentationCollection::const_iterator ego::application::PlatformSurfacePresentationProvider::
-    findPresentation(const PlatformSurface& _surface) const
+ego::runtime::PlatformSurfacePresentationProvider::PresentationCollection::const_iterator ego::runtime::PlatformSurfacePresentationProvider::findPresentation(
+    const PlatformSurface& _surface) const
 {
     for (PresentationCollection::const_iterator presentationIt = m_presentations.begin(); presentationIt != m_presentations.end(); ++presentationIt)
     {
@@ -240,8 +240,7 @@ ego::application::PlatformSurfacePresentationProvider::PresentationCollection::c
     return m_presentations.end();
 }
 
-ego::application::SurfaceGraphicPresenterPointer ego::application::PlatformSurfacePresentationProvider::createGraphicPresenter(
-    const PlatformSurface& _surface) const
+ego::runtime::SurfaceGraphicPresenterPointer ego::runtime::PlatformSurfacePresentationProvider::createGraphicPresenter(const PlatformSurface& _surface) const
 {
     const gpu::GraphicHardwareSubsystemPointer graphicHardwareSubsystem = gpu::GetGraphicHardwareSubsystemPointer();
     const GraphicDevicePointer graphicDevice = graphicHardwareSubsystem ? graphicHardwareSubsystem->getGraphicDevicePointer() : nullptr;
@@ -259,17 +258,17 @@ ego::application::SurfaceGraphicPresenterPointer ego::application::PlatformSurfa
     return graphicPresenter;
 }
 
-void ego::application::PlatformSurfacePresentationProvider::handleSurfaceCloseRequested(const PlatformSurfaceCloseRequestedEvent& _event)
+void ego::runtime::PlatformSurfacePresentationProvider::handleSurfaceCloseRequested(const PlatformSurfaceCloseRequestedEvent& _event)
 {
     if (m_mainSurface.get() == &_event.m_surface)
     {
-        GetApplication().requestExit();
+        GetRuntime().requestExit();
     }
 
     _event.handle();
 }
 
-void ego::application::PlatformSurfacePresentationProvider::handleSurfaceSizeChanged(const PlatformSurfaceSizeChangedEvent& _event)
+void ego::runtime::PlatformSurfacePresentationProvider::handleSurfaceSizeChanged(const PlatformSurfaceSizeChangedEvent& _event)
 {
     const PresentationCollection::iterator presentationIt = findPresentation(_event.m_surface);
     if (presentationIt == m_presentations.end() || !presentationIt->m_graphicPresenter)
@@ -288,7 +287,7 @@ void ego::application::PlatformSurfacePresentationProvider::handleSurfaceSizeCha
     EGO_ASSERT_MESSAGE(resizeResult, "Failed to request a window graphic presenter resize.");
 }
 
-ego::EventControllerPointer ego::application::PlatformSurfacePresentationProvider::GetEventControllerPointer()
+ego::EventControllerPointer ego::runtime::PlatformSurfacePresentationProvider::GetEventControllerPointer()
 {
     const EventSubsystemPointer eventSubsystem = GetEventSubsystemPointer();
 

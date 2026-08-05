@@ -13,8 +13,8 @@
 #include "EgoResource/ResourceController.h"
 #include "EgoResource/ResourceSubsystem.h"
 
-#include "EgoApplication/ApplicationSubsystem.h"
-#include "EgoApplication/Presentation/PresenterProvider.h"
+#include "EgoRuntime/RuntimeSubsystem.h"
+#include "EgoRuntime/Presentation/PresenterProvider.h"
 
 #include "EgoEngine/EngineSubsystem.h"
 
@@ -27,8 +27,8 @@ bool ego::editor::EditorController::init(const XmlDocument& _config)
 {
     release();
 
-    const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
-    EGO_CHECK_INITIALIZATION_ASSERT(applicationSubsystem && applicationSubsystem->getApplicationPointer());
+    const runtime::RuntimeSubsystemPointer runtimeSubsystem = runtime::GetRuntimeSubsystemPointer();
+    EGO_CHECK_INITIALIZATION_ASSERT(runtimeSubsystem && runtimeSubsystem->getRuntimePointer());
 
     const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
     EGO_CHECK_INITIALIZATION_ASSERT(engineSubsystem && engineSubsystem->getEnginePointer());
@@ -132,9 +132,9 @@ bool ego::editor::EditorController::initContext(const XmlDocument& _config)
 {
     EGO_CHECK_RETURN_FALSE(!m_editorContext.m_engineSession && !m_editorContext.m_mainSurface);
 
-    const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
-    const application::ApplicationPointer application = applicationSubsystem ? applicationSubsystem->getApplicationPointer() : nullptr;
-    EGO_CHECK_RETURN_FALSE(application);
+    const runtime::RuntimeSubsystemPointer runtimeSubsystem = runtime::GetRuntimeSubsystemPointer();
+    const runtime::RuntimePointer runtime = runtimeSubsystem ? runtimeSubsystem->getRuntimePointer() : nullptr;
+    EGO_CHECK_RETURN_FALSE(runtime);
 
     const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
     const engine::EnginePointer engine = engineSubsystem ? engineSubsystem->getEnginePointer() : nullptr;
@@ -146,14 +146,14 @@ bool ego::editor::EditorController::initContext(const XmlDocument& _config)
     const XmlNode engineNode = rootNode.getChild("Engine");
     EGO_CHECK_RETURN_FALSE(engineNode);
 
-    const application::PresenterProviderPointer presenterProvider = application->getPresenterProviderPointer();
+    const runtime::PresenterProviderPointer presenterProvider = runtime->getPresenterProviderPointer();
     EGO_CHECK_RETURN_FALSE(presenterProvider);
 
-    application::PresentationDesc presentationDesc;
+    runtime::PresentationDesc presentationDesc;
     presentationDesc.m_name = "EgoEditor";
     presentationDesc.m_size = SurfaceSize(1100, 700);
     presentationDesc.m_hasFrame = false;
-    const application::Presentation presentation = presenterProvider->createPresentation(presentationDesc);
+    const runtime::Presentation presentation = presenterProvider->createPresentation(presentationDesc);
     if (!presentation.m_surface || !presentation.m_graphicPresenter || !presentation.m_surface->isValid())
     {
         EGO_ASSERT_FAIL_MESSAGE("Failed to create the editor presentation.");
@@ -205,9 +205,9 @@ void ego::editor::EditorController::releaseContext()
     }
     m_editorContext.m_engineSession = nullptr;
 
-    const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
-    const application::ApplicationPointer application = applicationSubsystem ? applicationSubsystem->getApplicationPointer() : nullptr;
-    const application::PresenterProviderPointer presenterProvider = application ? application->getPresenterProviderPointer() : nullptr;
+    const runtime::RuntimeSubsystemPointer runtimeSubsystem = runtime::GetRuntimeSubsystemPointer();
+    const runtime::RuntimePointer runtime = runtimeSubsystem ? runtimeSubsystem->getRuntimePointer() : nullptr;
+    const runtime::PresenterProviderPointer presenterProvider = runtime ? runtime->getPresenterProviderPointer() : nullptr;
     if (presenterProvider && m_editorContext.m_mainSurface)
     {
         presenterProvider->destroyPresentation(m_editorContext.m_mainSurface);

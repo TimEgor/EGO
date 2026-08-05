@@ -21,6 +21,7 @@ ego::editor::EditorApplication::~EditorApplication()
 bool ego::editor::EditorApplication::init(void* _nativeInstanceHandle, int _argCount, char** _argValues)
 {
     release();
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(application::Application::init(), "Failed to initialize the application.");
 
     XmlDocument config;
     EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(loadConfig(config), "Failed to load the editor configuration.");
@@ -28,9 +29,7 @@ bool ego::editor::EditorApplication::init(void* _nativeInstanceHandle, int _argC
     CommandLineOptions options;
     ParseCommandLine(_argCount, _argValues, options);
 
-    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(
-        initApplicationSubsystem(_nativeInstanceHandle, options, config),
-        "Failed to initialize the editor application subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initRuntimeSubsystem(_nativeInstanceHandle, options, config), "Failed to initialize the editor runtime subsystem.");
     EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEngineSubsystem(), "Failed to initialize the editor engine subsystem.");
     EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEditorSubsystem(config), "Failed to initialize the editor subsystem.");
 
@@ -41,15 +40,16 @@ void ego::editor::EditorApplication::release()
 {
     releaseEditorSubsystem();
     releaseEngineSubsystem();
-    releaseApplicationSubsystem();
+    releaseRuntimeSubsystem();
+    application::Application::release();
 }
 
 int ego::editor::EditorApplication::run()
 {
-    const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
+    const runtime::RuntimePointer runtime = m_runtimeSubsystem ? m_runtimeSubsystem->getRuntimePointer() : nullptr;
     const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
 
-    EGO_CHECK_RETURN_VALUE(application && engine && m_editorSubsystem, InitializationFailedExitCode);
+    EGO_CHECK_RETURN_VALUE(runtime && engine && m_editorSubsystem, InitializationFailedExitCode);
 
     const int exitCode = runMainLoop() ? SuccessExitCode : RuntimeFailedExitCode;
     release();
@@ -57,41 +57,42 @@ int ego::editor::EditorApplication::run()
     return exitCode;
 }
 
-bool ego::editor::EditorApplication::initApplicationSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options, const XmlDocument& _config)
+bool ego::editor::EditorApplication::initRuntimeSubsystem(void* _nativeInstanceHandle, const CommandLineOptions& _options, const XmlDocument& _config)
 {
-    EGO_CHECK_RETURN_FALSE(!m_applicationSubsystem);
+    EGO_CHECK_RETURN_FALSE(!m_runtimeSubsystem);
 
     const XmlNode rootNode = _config.getRootNode();
     EGO_CHECK_RETURN_FALSE(rootNode && rootNode.getNameView() == "Editor");
 
-    const XmlNode applicationNode = rootNode.getChild("Application");
-    EGO_CHECK_RETURN_FALSE(applicationNode);
+    const XmlNode runtimeNode = rootNode.getChild("Runtime");
+    EGO_CHECK_RETURN_FALSE(runtimeNode);
 
-    m_applicationSubsystem = MakePointer<application::ApplicationSubsystem>();
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem);
+    m_runtimeSubsystem = MakePointer<runtime::RuntimeSubsystem>();
+    EGO_CHECK_RETURN_FALSE(m_runtimeSubsystem);
 
-    application::Application::InitData initData;
+    runtime::Runtime::InitData initData;
     initData.m_nativeInstanceHandle = _nativeInstanceHandle;
-    initData.m_pluginDirectory = FileName(applicationNode.getChildValueOr<std::string>("PluginDirectory", std::string()));
-    initData.m_profilerPluginModuleName = FileName(applicationNode.getChildValueOr<std::string>("ProfilerPlugin", std::string()));
-    initData.m_graphicHardwarePluginModuleName = ResolveOption(_options.m_graphicHardwarePluginModuleName, applicationNode, "GraphicHardwarePlugin");
+    initData.m_pluginDirectory = FileName(runtimeNode.getChildValueOr<std::string>("PluginDirectory", std::string()));
+    initData.m_profilerPluginModuleName = FileName(runtimeNode.getChildValueOr<std::string>("ProfilerPlugin", std::string()));
+    initData.m_graphicHardwarePluginModuleName = ResolveOption(_options.m_graphicHardwarePluginModuleName, runtimeNode, "GraphicHardwarePlugin");
     initData.m_enableGraphicHardware = true;
-    EGO_CHECK_RETURN_CALL_FALSE(m_applicationSubsystem->init(initData), releaseApplicationSubsystem());
+    EGO_CHECK_RETURN_CALL_FALSE(m_runtimeSubsystem->init(initData), releaseRuntimeSubsystem());
+
+    const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
+    EGO_CHECK_RETURN_CALL_FALSE(subsystemRegistry && subsystemRegistry->registerSubsystem(m_runtimeSubsystem), releaseRuntimeSubsystem());
 
     return true;
 }
 
-void ego::editor::EditorApplication::releaseApplicationSubsystem()
+void ego::editor::EditorApplication::releaseRuntimeSubsystem()
 {
-    EGO_CHECK_RETURN(m_applicationSubsystem);
-
     const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
-    if (subsystemRegistry && subsystemRegistry->findSubsystem(m_applicationSubsystem->getType()).get() == m_applicationSubsystem.get())
+    if (subsystemRegistry && m_runtimeSubsystem && subsystemRegistry->findSubsystem(m_runtimeSubsystem->getType()).get() == m_runtimeSubsystem.get())
     {
-        subsystemRegistry->unregisterSubsystem(m_applicationSubsystem);
+        subsystemRegistry->unregisterSubsystem(m_runtimeSubsystem);
     }
 
-    m_applicationSubsystem = nullptr;
+    m_runtimeSubsystem = nullptr;
 }
 
 bool ego::editor::EditorApplication::loadConfig(XmlDocument& _config) const
@@ -101,7 +102,7 @@ bool ego::editor::EditorApplication::loadConfig(XmlDocument& _config) const
 
 bool ego::editor::EditorApplication::initEngineSubsystem()
 {
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem && m_applicationSubsystem->getApplicationPointer());
+    EGO_CHECK_RETURN_FALSE(m_runtimeSubsystem && m_runtimeSubsystem->getRuntimePointer());
     EGO_CHECK_RETURN_FALSE(!m_engineSubsystem);
 
     m_engineSubsystem = MakePointer<engine::EngineSubsystem>();
@@ -116,10 +117,8 @@ bool ego::editor::EditorApplication::initEngineSubsystem()
 
 void ego::editor::EditorApplication::releaseEngineSubsystem()
 {
-    EGO_CHECK_RETURN(m_engineSubsystem);
-
     const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
-    if (subsystemRegistry && subsystemRegistry->findSubsystem(m_engineSubsystem->getType()).get() == m_engineSubsystem.get())
+    if (subsystemRegistry && m_engineSubsystem && subsystemRegistry->findSubsystem(m_engineSubsystem->getType()).get() == m_engineSubsystem.get())
     {
         subsystemRegistry->unregisterSubsystem(m_engineSubsystem);
     }
@@ -129,7 +128,7 @@ void ego::editor::EditorApplication::releaseEngineSubsystem()
 
 bool ego::editor::EditorApplication::initEditorSubsystem(const XmlDocument& _config)
 {
-    EGO_CHECK_RETURN_FALSE(m_applicationSubsystem && m_applicationSubsystem->getApplicationPointer());
+    EGO_CHECK_RETURN_FALSE(m_runtimeSubsystem && m_runtimeSubsystem->getRuntimePointer());
     EGO_CHECK_RETURN_FALSE(m_engineSubsystem && m_engineSubsystem->getEnginePointer());
     EGO_CHECK_RETURN_FALSE(!m_editorSubsystem);
 
@@ -146,10 +145,8 @@ bool ego::editor::EditorApplication::initEditorSubsystem(const XmlDocument& _con
 
 void ego::editor::EditorApplication::releaseEditorSubsystem()
 {
-    EGO_CHECK_RETURN(m_editorSubsystem);
-
     const subsystem::SubsystemRegistryPointer subsystemRegistry = subsystem::SubsystemLocator::GetInstance().getRegistryPointer();
-    if (subsystemRegistry && subsystemRegistry->findSubsystem(m_editorSubsystem->getType()).get() == m_editorSubsystem.get())
+    if (subsystemRegistry && m_editorSubsystem && subsystemRegistry->findSubsystem(m_editorSubsystem->getType()).get() == m_editorSubsystem.get())
     {
         subsystemRegistry->unregisterSubsystem(m_editorSubsystem);
     }
@@ -159,21 +156,21 @@ void ego::editor::EditorApplication::releaseEditorSubsystem()
 
 bool ego::editor::EditorApplication::runMainLoop()
 {
-    const application::ApplicationPointer application = m_applicationSubsystem ? m_applicationSubsystem->getApplicationPointer() : nullptr;
+    const runtime::RuntimePointer runtime = m_runtimeSubsystem ? m_runtimeSubsystem->getRuntimePointer() : nullptr;
     const engine::EnginePointer engine = m_engineSubsystem ? m_engineSubsystem->getEnginePointer() : nullptr;
-    EGO_CHECK_RETURN_FALSE(application && engine && m_editorSubsystem);
+    EGO_CHECK_RETURN_FALSE(runtime && engine && m_editorSubsystem);
 
     EditorController& editorController = m_editorSubsystem->getEditorController();
 
-    while (!application->isExitRequested())
+    while (!runtime->isExitRequested())
     {
-        application->processWindowEvents();
-        if (application->isExitRequested() || !editorController.isMainSurfaceValid())
+        runtime->processWindowEvents();
+        if (runtime->isExitRequested() || !editorController.isMainSurfaceValid())
         {
             break;
         }
 
-        application->updateInputDevices();
+        runtime->updateInputDevices();
 
         EGO_CHECK_RETURN_FALSE(engine->tick());
     }

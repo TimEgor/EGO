@@ -9,7 +9,7 @@
 
 #include "EgoGui/Viewport/ViewportProvider.h"
 
-#include "EgoApplication/Presentation/PresenterProvider.h"
+#include "EgoRuntime/Presentation/PresenterProvider.h"
 
 namespace ego
 {
@@ -18,15 +18,15 @@ namespace ego
     struct InputKeyEvent;
 } // namespace ego
 
-namespace ego::application
+namespace ego::runtime
 {
-    class ApplicationGuiViewport;
+    class RuntimeGuiViewport;
 
-    class ApplicationGuiViewportProvider final : public gui::ViewportProvider, public NonCopyable
+    class RuntimeGuiViewportProvider final : public gui::ViewportProvider, public NonCopyable
     {
     public:
-        ApplicationGuiViewportProvider() = default;
-        ~ApplicationGuiViewportProvider() override;
+        RuntimeGuiViewportProvider() = default;
+        ~RuntimeGuiViewportProvider() override;
 
         bool init(const Presentation& _primaryPresentation);
 
@@ -50,7 +50,7 @@ namespace ego::application
             EventCallbackID m_mouseButtonReleased = InvalidEventCallbackID;
         };
 
-        using ViewportPointer = SharedPointer<ApplicationGuiViewport>;
+        using ViewportPointer = SharedPointer<RuntimeGuiViewport>;
         using ViewportMap = std::unordered_map<gui::ViewportID, ViewportPointer>;
         using ModalViewportStack = std::vector<gui::ViewportID>;
         using SurfaceCollection = std::vector<PlatformSurfacePointer>;
@@ -91,5 +91,5 @@ namespace ego::application
         CallbackIDs m_callbackIDs;
     };
 
-    EGO_POINTER(ApplicationGuiViewportProvider);
-} // namespace ego::application
+    EGO_POINTER(RuntimeGuiViewportProvider);
+} // namespace ego::runtime
