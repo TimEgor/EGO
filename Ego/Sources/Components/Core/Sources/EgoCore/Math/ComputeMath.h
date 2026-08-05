@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <limits>
 #include <numbers>
+#include <type_traits>
 #include <utility>
 
 #include "EgoCore/Assert/Assert.h"
@@ -12,21 +13,21 @@
 namespace ego
 {
 #if defined(EGO_COMPUTE_TYPE_DOUBLE)
-    using ComputeValueType = double;
+    using ComputeValue = double;
 #else
-    using ComputeValueType = float;
+    using ComputeValue = float;
     #ifndef EGO_COMPUTE_TYPE_FLOAT
         #define EGO_COMPUTE_TYPE_FLOAT
     #endif
 #endif
 
-    using ComputeValue = ComputeValueType;
+    using ComputeValueType = ComputeValue;
 
     namespace literals
     {
-        constexpr ComputeValueType operator""_ecv(long double _value)
+        constexpr ComputeValue operator""_ecv(long double _value)
         {
-            return static_cast<ComputeValueType>(_value);
+            return static_cast<ComputeValue>(_value);
         }
     } // namespace literals
 
@@ -83,21 +84,28 @@ namespace ego
         template <typename T>
         constexpr T TypedMin()
         {
+            return std::numeric_limits<T>::lowest();
+        }
+
+        template <typename T>
+        constexpr T TypedPositiveMin()
+        {
             return std::numeric_limits<T>::min();
         }
 
-        inline constexpr ComputeValueType Pi = TypedPi<ComputeValueType>();
-        inline constexpr ComputeValueType Pi2 = TypedPi2<ComputeValueType>();
-        inline constexpr ComputeValueType HalfPi = TypedHalfPi<ComputeValueType>();
+        inline constexpr ComputeValue Pi = TypedPi<ComputeValue>();
+        inline constexpr ComputeValue Pi2 = TypedPi2<ComputeValue>();
+        inline constexpr ComputeValue HalfPi = TypedHalfPi<ComputeValue>();
 
-        inline constexpr ComputeValueType DegToRad = TypedDegToRad<ComputeValueType>();
-        inline constexpr ComputeValueType RadToDeg = TypedRadToDeg<ComputeValueType>();
+        inline constexpr ComputeValue DegToRad = TypedDegToRad<ComputeValue>();
+        inline constexpr ComputeValue RadToDeg = TypedRadToDeg<ComputeValue>();
 
-        inline constexpr ComputeValueType Epsilon = TypedEpsilon<ComputeValueType>();
-        inline constexpr ComputeValueType EpsilonSqr = TypedEpsilonSqr<ComputeValueType>();
+        inline constexpr ComputeValue Epsilon = TypedEpsilon<ComputeValue>();
+        inline constexpr ComputeValue EpsilonSqr = TypedEpsilonSqr<ComputeValue>();
 
-        inline constexpr ComputeValueType Max = TypedMax<ComputeValueType>();
-        inline constexpr ComputeValueType Min = TypedMin<ComputeValueType>();
+        inline constexpr ComputeValue Max = TypedMax<ComputeValue>();
+        inline constexpr ComputeValue Min = TypedMin<ComputeValue>();
+        inline constexpr ComputeValue PositiveMin = TypedPositiveMin<ComputeValue>();
 
         template <typename T>
         T ConvertDegToRad(T _angle)
@@ -159,5 +167,3 @@ namespace ego
         }
     } // namespace math
 } // namespace ego
-
-#include "Simd/ComputeOperations.h"

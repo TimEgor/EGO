@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <span>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "DynamicVector.h"
@@ -16,10 +19,14 @@ namespace ego
     public:
         using ValueType = T;
         using ValueContainer = std::vector<ValueType>;
-        using RowType = DynamicVectorBase<ValueType>;
-        using RowContainer = std::vector<RowType>;
+        using ColumnVectorType = DynamicVectorBase<ValueType>;
+        using RowVectorType = DynamicVectorBase<ValueType>;
+        using ColumnContainer = std::vector<ColumnVectorType>;
+        using ColumnView = std::span<ValueType>;
+        using ConstColumnView = std::span<const ValueType>;
+        using ConstValueView = std::span<const ValueType>;
 
-        static_assert(std::is_arithmetic_v<ValueType>);
+        static_assert(std::is_arithmetic_v<ValueType> && !std::is_same_v<ValueType, bool>);
 
         static constexpr ValueType DefaultValue = 0;
 
@@ -27,25 +34,27 @@ namespace ego
         size_t m_rowCount = 0;
         size_t m_columnCount = 0;
         ValueContainer m_values;
-        RowContainer m_rows;
 
+        static bool IsValidDimension(size_t _dimension);
+        static bool TryComputeElementCount(size_t _rowCount, size_t _columnCount, size_t& _elementCount);
         size_t getElementIndex(size_t _row, size_t _column) const;
-        void rebuildRows();
 
     public:
         DynamicMatrixBase() = default;
-        DynamicMatrixBase(size_t _dimensionRow, size_t _dimensionColumn);
-        DynamicMatrixBase(RowContainer&& _values);
-        DynamicMatrixBase(const DynamicMatrixBase& _matrix);
-        DynamicMatrixBase(DynamicMatrixBase&& _matrix);
+        explicit DynamicMatrixBase(size_t _dimensionRow, size_t _dimensionColumn);
+        explicit DynamicMatrixBase(ColumnContainer&& _columns);
+        DynamicMatrixBase(const DynamicMatrixBase& _matrix) = default;
+        DynamicMatrixBase(DynamicMatrixBase&& _matrix) noexcept;
 
-        DynamicMatrixBase& operator=(const DynamicMatrixBase& _matrix);
-        DynamicMatrixBase& operator=(DynamicMatrixBase&& _matrix);
-        const RowType& operator[](size_t _index) const;
-        RowType& operator[](size_t _index);
+        DynamicMatrixBase& operator=(const DynamicMatrixBase& _matrix) = default;
+        DynamicMatrixBase& operator=(DynamicMatrixBase&& _matrix) noexcept;
+        ConstColumnView operator[](size_t _index) const;
+        ColumnView operator[](size_t _index);
 
-        const RowType& getRow(size_t _index) const;
-        RowType& getRow(size_t _index);
+        ConstColumnView getColumn(size_t _index) const;
+        ColumnView getColumn(size_t _index);
+        RowVectorType getRow(size_t _index) const;
+        void setRow(size_t _index, ConstValueView _values);
 
         ValueType getElement(size_t _row, size_t _column) const;
         ValueType& getElement(size_t _row, size_t _column);
@@ -58,6 +67,7 @@ namespace ego
         uint32_t getColumnCount() const;
     };
 
+    using DynamicMatrix = DynamicMatrixBase<ComputeValue>;
     using FloatDynamicMatrix = DynamicMatrixBase<float>;
 } // namespace ego
 

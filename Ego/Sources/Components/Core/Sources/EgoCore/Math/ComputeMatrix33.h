@@ -27,16 +27,19 @@ namespace ego
     template <typename T>
     ComputeMatrix3x3Base<T> ComputeMatrix3x3ZeroBase()
     {
-        return ComputeMatrix3x3Base<T>(T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0));
+        return ComputeMatrix3x3Base<T>();
     }
 
     template <typename T>
     ComputeMatrix3x3Base<T> ComputeMatrix3x3IdentityBase()
     {
-        return ComputeMatrix3x3Base<T>(T(1.0), T(0.0), T(0.0), T(0.0), T(1.0), T(0.0), T(0.0), T(0.0), T(1.0));
+        return ComputeMatrix3x3Base<T>(
+            ComputeVector3Base<T>(T(1.0), T(0.0), T(0.0)),
+            ComputeVector3Base<T>(T(0.0), T(1.0), T(0.0)),
+            ComputeVector3Base<T>(T(0.0), T(0.0), T(1.0)));
     }
 
-    using ComputeMatrix3x3 = ComputeMatrix3x3Base<ComputeValueType>;
+    using ComputeMatrix3x3 = ComputeMatrix3x3Base<ComputeValue>;
     using FloatComputeMatrix3x3 = ComputeMatrix3x3Base<float>;
 } // namespace ego
 

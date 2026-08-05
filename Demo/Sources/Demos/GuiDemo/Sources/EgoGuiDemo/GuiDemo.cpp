@@ -10,7 +10,7 @@
 
 namespace
 {
-    constexpr ego::FloatVector3 CameraPosition(0.0f, 0.0f, -2.0f);
+    constexpr ego::TransformVector CameraPosition(ego::TransformValue(0.0), ego::TransformValue(0.0), ego::TransformValue(-2.0));
     constexpr ego::NormalizedColorRGB TriangleColor(0.1f, 0.8f, 1.0f);
     constexpr auto TriangleTop = ego::FloatVector3(0.0f, 0.6f, 0.0f);
     constexpr auto TriangleBottomLeft = ego::FloatVector3(-0.6f, -0.5f, 0.0f);

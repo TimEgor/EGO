@@ -34,7 +34,7 @@ namespace ego
         return ComputeVector2Base<T>(math::TypedEpsilon<T>());
     }
 
-    using ComputeVector2 = ComputeVector2Base<ComputeValueType>;
+    using ComputeVector2 = ComputeVector2Base<ComputeValue>;
     using FloatComputeVector2 = ComputeVector2Base<float>;
 } // namespace ego
 

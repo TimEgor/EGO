@@ -2,7 +2,8 @@
 
 #include <cstdint>
 
-#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE__) || defined(__SSE2__) || defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(_M_AVX) || defined(_M_AVX512) || defined(_M_X64) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 1)))
+#if !defined(EGO_MATH_DISABLE_SIMD) && (defined(__SSE__) || defined(__SSE2__) || defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) ||              \
+                                           defined(_M_AVX) || defined(_M_AVX512) || defined(_M_X64) || (defined(_M_IX86_FP) && (_M_IX86_FP >= 1)))
     #include <immintrin.h>
 #endif
 

@@ -5,23 +5,12 @@ namespace ego
     template <typename T>
     ComputeMatrix4x4Base<T> CrossProductSkewSymmetricComputeMatrix4x4(const ComputeVector4Base<T>& _vector)
     {
-        return ComputeMatrix4x4Base<T>(
-            T(0.0),
-            _vector[2],
-            -_vector[1],
-            T(0.0),
-            -_vector[2],
-            T(0.0),
-            _vector[0],
-            T(0.0),
-            _vector[1],
-            -_vector[0],
-            T(0.0),
-            T(0.0),
-            T(0.0),
-            T(0.0),
-            T(0.0),
-            T(1.0));
+        const ComputeVector4Base<T> column0(T(0.0), _vector[2], -_vector[1], T(0.0));
+        const ComputeVector4Base<T> column1(-_vector[2], T(0.0), _vector[0], T(0.0));
+        const ComputeVector4Base<T> column2(_vector[1], -_vector[0], T(0.0), T(0.0));
+        const ComputeVector4Base<T> column3(T(0.0), T(0.0), T(0.0), T(1.0));
+
+        return ComputeMatrix4x4Base<T>(column0, column1, column2, column3);
     }
 
     template <typename T>
@@ -53,9 +42,9 @@ namespace ego
     }
 
     template <typename T>
-    ComputeMatrix4x4Base<T> RotationEulerComputeMatrix4x4(T _pitch, T _yaw, T _roll)
+    ComputeMatrix4x4Base<T> RotationEulerComputeMatrix4x4(T _roll, T _pitch, T _yaw)
     {
-        return RotationEulerComputeMatrix4x4(ComputeVector3Base<T>(_pitch, _yaw, _roll));
+        return RotationEulerComputeMatrix4x4(ComputeVector3Base<T>(_roll, _pitch, _yaw));
     }
 
     template <typename T>

@@ -92,7 +92,7 @@ namespace ego
         return ComputeVector3Base<T>(T(0.0), T(0.0), T(-1.0));
     }
 
-    using ComputeVector3 = ComputeVector3Base<ComputeValueType>;
+    using ComputeVector3 = ComputeVector3Base<ComputeValue>;
     using FloatComputeVector3 = ComputeVector3Base<float>;
 } // namespace ego
 

@@ -31,73 +31,35 @@ namespace ego
     {
     public:
         using ValueType = T;
-        static_assert(std::is_arithmetic_v<ValueType>);
+        static_assert(std::is_floating_point_v<ValueType>);
         static_assert(Size >= 2 && Size <= 4);
 
-        static constexpr uint32_t ElementCount = Size;
+        static constexpr uint32_t RowCount = Size;
+        static constexpr uint32_t ColumnCount = Size;
+        static constexpr uint32_t ElementCount = RowCount * ColumnCount;
 
         using MatrixType = typename ComputeMatrixStorageTraits<ValueType, Size>::StorageType;
         using ColumnVectorType = ComputeVectorBase<ValueType, Size>;
 
         ComputeMatrixBase() = default;
 
-        ComputeMatrixBase(ValueType _m11, ValueType _m12, ValueType _m21, ValueType _m22)
-            requires(Size == 2);
-        ComputeMatrixBase(
-            ValueType _m11,
-            ValueType _m12,
-            ValueType _m13,
-            ValueType _m21,
-            ValueType _m22,
-            ValueType _m23,
-            ValueType _m31,
-            ValueType _m32,
-            ValueType _m33)
-            requires(Size == 3);
-        ComputeMatrixBase(
-            ValueType _m11,
-            ValueType _m12,
-            ValueType _m13,
-            ValueType _m14,
-            ValueType _m21,
-            ValueType _m22,
-            ValueType _m23,
-            ValueType _m24,
-            ValueType _m31,
-            ValueType _m32,
-            ValueType _m33,
-            ValueType _m34,
-            ValueType _m41,
-            ValueType _m42,
-            ValueType _m43,
-            ValueType _m44)
-            requires(Size == 4);
+        template <typename SourceValueType>
+        ComputeMatrixBase(const Matrix2x2Base<SourceValueType>& _matrix) requires(Size == 2);
+        template <typename SourceValueType>
+        ComputeMatrixBase(const Matrix3x3Base<SourceValueType>& _matrix) requires(Size == 3);
+        template <typename SourceValueType>
+        ComputeMatrixBase(const Matrix4x4Base<SourceValueType>& _matrix) requires(Size == 4);
 
-        template <typename SourceValueType>
-        ComputeMatrixBase(const Matrix2x2Base<SourceValueType>& _matrix)
-            requires(Size == 2);
-        template <typename SourceValueType>
-        ComputeMatrixBase(const Matrix3x3Base<SourceValueType>& _matrix)
-            requires(Size == 3);
-        template <typename SourceValueType>
-        ComputeMatrixBase(const Matrix4x4Base<SourceValueType>& _matrix)
-            requires(Size == 4);
-
-        ComputeMatrixBase(const ColumnVectorType& _column1, const ColumnVectorType& _column2)
-            requires(Size == 2);
-        ComputeMatrixBase(const ColumnVectorType& _column1, const ColumnVectorType& _column2, const ColumnVectorType& _column3)
-            requires(Size == 3);
+        ComputeMatrixBase(const ColumnVectorType& _column0, const ColumnVectorType& _column1) requires(Size == 2);
+        ComputeMatrixBase(const ColumnVectorType& _column0, const ColumnVectorType& _column1, const ColumnVectorType& _column2) requires(Size == 3);
         ComputeMatrixBase(
+            const ColumnVectorType& _column0,
             const ColumnVectorType& _column1,
             const ColumnVectorType& _column2,
-            const ColumnVectorType& _column3,
-            const ColumnVectorType& _column4)
-            requires(Size == 4);
+            const ColumnVectorType& _column3) requires(Size == 4);
 
-        ComputeMatrixBase(const ComputeMatrixBase<ValueType, 2>& _matrix)
-            requires(Size == 3 || Size == 4);
-        ComputeMatrixBase(const ComputeMatrixBase<ValueType, 3>& _matrix)
-            requires(Size == 4);
+        ComputeMatrixBase(const ComputeMatrixBase<ValueType, 2>& _matrix) requires(Size == 3 || Size == 4);
+        ComputeMatrixBase(const ComputeMatrixBase<ValueType, 3>& _matrix) requires(Size == 4);
         ComputeMatrixBase(const ComputeMatrixBase& _matrix) = default;
 
         ComputeMatrixBase& operator=(const ComputeMatrixBase& _matrix) = default;

@@ -5,14 +5,17 @@
 
 namespace ego
 {
+    using AABBValue = TransformValue;
+    using AABBVector = TransformVector;
+
     struct AABB3 final
     {
-        FloatVector3 m_minPosition = FloatVector3Zero;
-        FloatVector3 m_maxPosition = FloatVector3Zero;
+        AABBVector m_minPosition = {};
+        AABBVector m_maxPosition = {};
 
         constexpr AABB3() = default;
 
-        constexpr AABB3(const FloatVector3& _min, const FloatVector3& _max)
+        constexpr AABB3(const AABBVector& _min, const AABBVector& _max)
             : m_minPosition(_min),
               m_maxPosition(_max)
         {
@@ -22,11 +25,14 @@ namespace ego
 
         Transform getTransform() const;
 
-        ComputeValue getVolume() const;
+        AABBValue getVolume() const;
 
+        bool contains(const AABB3& _volume) const;
+        bool overlaps(const AABB3& _volume) const;
         bool isContained(const AABB3& _volume) const;
         bool isOverlapped(const AABB3& _volume) const;
     };
 
+    AABB3 MergeAABBs(const AABB3& _volume1, const AABB3& _volume2);
     AABB3 AABBFromMerging(const AABB3& _volume1, const AABB3& _volume2);
 } // namespace ego

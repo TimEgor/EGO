@@ -1,6 +1,7 @@
 #include "D3D12CommandList.h"
 
 #include <algorithm>
+#include <array>
 #include <utility>
 #include <vector>
 
@@ -30,11 +31,17 @@ namespace
         const D3D12_RESOURCE_DESC resourceDesc = _texture->GetDesc();
         const uint32_t width = std::max<uint32_t>(1, static_cast<uint32_t>(resourceDesc.Width) >> _mipLevel);
         const uint32_t height = std::max<uint32_t>(1, resourceDesc.Height >> _mipLevel);
-        const uint32_t depth = resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? std::max<uint32_t>(1, resourceDesc.DepthOrArraySize >> _mipLevel) : 1;
+        const uint32_t depth =
+            resourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? std::max<uint32_t>(1, resourceDesc.DepthOrArraySize >> _mipLevel) : 1;
         return ego::UInt32Vector3(width, height, depth);
     }
 
-    bool ExtractFootprint(ID3D12Device* _device, ID3D12Resource* _texture, uint32_t _subresource, uint64_t _bufferOffset, D3D12_PLACED_SUBRESOURCE_FOOTPRINT& _outFootprint)
+    bool ExtractFootprint(
+        ID3D12Device* _device,
+        ID3D12Resource* _texture,
+        uint32_t _subresource,
+        uint64_t _bufferOffset,
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT& _outFootprint)
     {
         if (!_device || !_texture)
         {
@@ -155,7 +162,8 @@ void ego::gpu::d3d12::D3D12CommandListBase::pushConstantsInternal(ShaderStageFla
     EGO_ASSERT_MESSAGE((_size % sizeof(uint32_t)) == 0, "D3D12 root constants require 32-bit aligned size");
     EGO_ASSERT_MESSAGE(m_currentBindingLayout, "D3D12 push constants require a bound pipeline");
 
-    const D3D12BindingLayout::PushConstantInfo* pushConstantRange = m_currentBindingLayout ? m_currentBindingLayout->findPushConstantRange(_stageFlags, _offset, _size) : nullptr;
+    const D3D12BindingLayout::PushConstantInfo* pushConstantRange =
+        m_currentBindingLayout ? m_currentBindingLayout->findPushConstantRange(_stageFlags, _offset, _size) : nullptr;
 
     EGO_ASSERT_MESSAGE(pushConstantRange, "Push constant range is not present in layout");
 
@@ -218,7 +226,10 @@ void ego::gpu::d3d12::D3D12CommandListBase::dispatchRaysInternal(const DispatchR
     m_commandList->DispatchRays(&dispatchDesc);
 }
 
-void ego::gpu::d3d12::D3D12CommandListBase::copyBufferInternal(const BufferPointer& _srcBuffer, const BufferPointer& _dstBuffer, const BufferCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12CommandListBase::copyBufferInternal(
+    const BufferPointer& _srcBuffer,
+    const BufferPointer& _dstBuffer,
+    const BufferCopyRegionDesc& _region)
 {
     ID3D12Resource* srcBuffer = _srcBuffer ? _srcBuffer->getNativeHandle<ID3D12Resource>() : nullptr;
     ID3D12Resource* dstBuffer = _dstBuffer ? _dstBuffer->getNativeHandle<ID3D12Resource>() : nullptr;
@@ -230,7 +241,10 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyBufferInternal(const BufferPoint
     m_commandList->CopyBufferRegion(dstBuffer, _region.m_dstOffset, srcBuffer, _region.m_srcOffset, _region.m_size);
 }
 
-void ego::gpu::d3d12::D3D12CommandListBase::copyTextureInternal(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12CommandListBase::copyTextureInternal(
+    const TexturePointer& _srcTexture,
+    const TexturePointer& _dstTexture,
+    const TextureCopyRegionDesc& _region)
 {
     ID3D12Resource* srcTexture = _srcTexture ? _srcTexture->getNativeHandle<ID3D12Resource>() : nullptr;
     ID3D12Resource* dstTexture = _dstTexture ? _dstTexture->getNativeHandle<ID3D12Resource>() : nullptr;
@@ -304,7 +318,8 @@ void ego::gpu::d3d12::D3D12CommandListBase::copyBufferToTextureInternal(
     srcBox.bottom = extent.m_y;
     srcBox.back = extent.m_z;
 
-    m_commandList->CopyTextureRegion(&dstLocation, _region.m_textureOffset.m_x, _region.m_textureOffset.m_y, _region.m_textureOffset.m_z, &srcLocation, &srcBox);
+    m_commandList
+        ->CopyTextureRegion(&dstLocation, _region.m_textureOffset.m_x, _region.m_textureOffset.m_y, _region.m_textureOffset.m_z, &srcLocation, &srcBox);
 }
 
 void ego::gpu::d3d12::D3D12CommandListBase::copyTextureToBufferInternal(
@@ -410,21 +425,30 @@ void ego::gpu::d3d12::D3D12CopyCommandList::copyBuffer(const BufferPointer& _src
     copyBufferInternal(_srcBuffer, _dstBuffer, _region);
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::copyTexture(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12CopyCommandList::copyTexture(
+    const TexturePointer& _srcTexture,
+    const TexturePointer& _dstTexture,
+    const TextureCopyRegionDesc& _region)
 {
     addResourceGpuWait(_srcTexture);
     addResourceGpuWait(_dstTexture);
     copyTextureInternal(_srcTexture, _dstTexture, _region);
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::copyBufferToTexture(const BufferPointer& _srcBuffer, const TexturePointer& _dstTexture, const BufferTextureCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12CopyCommandList::copyBufferToTexture(
+    const BufferPointer& _srcBuffer,
+    const TexturePointer& _dstTexture,
+    const BufferTextureCopyRegionDesc& _region)
 {
     addResourceGpuWait(_srcBuffer);
     addResourceGpuWait(_dstTexture);
     copyBufferToTextureInternal(_srcBuffer, _dstTexture, _region);
 }
 
-void ego::gpu::d3d12::D3D12CopyCommandList::copyTextureToBuffer(const TexturePointer& _srcTexture, const BufferPointer& _dstBuffer, const BufferTextureCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12CopyCommandList::copyTextureToBuffer(
+    const TexturePointer& _srcTexture,
+    const BufferPointer& _dstBuffer,
+    const BufferTextureCopyRegionDesc& _region)
 {
     addResourceGpuWait(_srcTexture);
     addResourceGpuWait(_dstBuffer);
@@ -488,7 +512,10 @@ void ego::gpu::d3d12::D3D12ComputeCommandList::copyBuffer(const BufferPointer& _
     copyBufferInternal(_srcBuffer, _dstBuffer, _region);
 }
 
-void ego::gpu::d3d12::D3D12ComputeCommandList::copyTexture(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12ComputeCommandList::copyTexture(
+    const TexturePointer& _srcTexture,
+    const TexturePointer& _dstTexture,
+    const TextureCopyRegionDesc& _region)
 {
     addResourceGpuWait(_srcTexture);
     addResourceGpuWait(_dstTexture);
@@ -604,7 +631,10 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::copyBuffer(const BufferPointer& _
     copyBufferInternal(_srcBuffer, _dstBuffer, _region);
 }
 
-void ego::gpu::d3d12::D3D12GraphicCommandList::copyTexture(const TexturePointer& _srcTexture, const TexturePointer& _dstTexture, const TextureCopyRegionDesc& _region)
+void ego::gpu::d3d12::D3D12GraphicCommandList::copyTexture(
+    const TexturePointer& _srcTexture,
+    const TexturePointer& _dstTexture,
+    const TextureCopyRegionDesc& _region)
 {
     addResourceGpuWait(_srcTexture);
     addResourceGpuWait(_dstTexture);
@@ -684,12 +714,17 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::beginRendering(const RenderingDes
 
         if (colorAttachment.m_loadOperation == AttachmentLoadOperation::Clear)
         {
-            getD3D12CommandList()->ClearRenderTargetView(handle, colorAttachment.m_clearValue.m_values, 0, nullptr);
+            const std::array<float, 4> clearValue = {colorAttachment.m_clearValue.getX(),
+                colorAttachment.m_clearValue.getY(),
+                colorAttachment.m_clearValue.getZ(),
+                colorAttachment.m_clearValue.getW()};
+            getD3D12CommandList()->ClearRenderTargetView(handle, clearValue.data(), 0, nullptr);
         }
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = {};
-    D3D12TextureView* depthView = _desc.m_depthStencilAttachment.m_view ? static_cast<D3D12TextureView*>(_desc.m_depthStencilAttachment.m_view.getObject()) : nullptr;
+    D3D12TextureView* depthView =
+        _desc.m_depthStencilAttachment.m_view ? static_cast<D3D12TextureView*>(_desc.m_depthStencilAttachment.m_view.getObject()) : nullptr;
     if (depthView)
     {
         addResourceGpuWait(depthView->getResource());
@@ -719,7 +754,8 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::beginRendering(const RenderingDes
         }
     }
 
-    getD3D12CommandList()->OMSetRenderTargets(static_cast<UINT>(rtvHandles.size()), rtvHandles.empty() ? nullptr : rtvHandles.data(), FALSE, depthView ? &dsvHandle : nullptr);
+    getD3D12CommandList()
+        ->OMSetRenderTargets(static_cast<UINT>(rtvHandles.size()), rtvHandles.empty() ? nullptr : rtvHandles.data(), FALSE, depthView ? &dsvHandle : nullptr);
 }
 
 void ego::gpu::d3d12::D3D12GraphicCommandList::endRendering() {}
@@ -805,7 +841,12 @@ void ego::gpu::d3d12::D3D12GraphicCommandList::draw(uint32_t _vertexCount, uint3
     getD3D12CommandList()->DrawInstanced(_vertexCount, _instanceCount, _firstVertex, _firstInstance);
 }
 
-void ego::gpu::d3d12::D3D12GraphicCommandList::drawIndexed(uint32_t _indexCount, uint32_t _instanceCount, uint32_t _firstIndex, int32_t _vertexOffset, uint32_t _firstInstance)
+void ego::gpu::d3d12::D3D12GraphicCommandList::drawIndexed(
+    uint32_t _indexCount,
+    uint32_t _instanceCount,
+    uint32_t _firstIndex,
+    int32_t _vertexOffset,
+    uint32_t _firstInstance)
 {
     getD3D12CommandList()->DrawIndexedInstanced(_indexCount, _instanceCount, _firstIndex, _vertexOffset, _firstInstance);
 }

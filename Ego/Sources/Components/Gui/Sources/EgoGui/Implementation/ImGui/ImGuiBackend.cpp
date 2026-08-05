@@ -22,7 +22,11 @@ namespace
 
     ImVec4 ToImGuiColor(const ego::NormalizedColorRGBA& _color)
     {
-        return ImVec4(_color.m_r, _color.m_g, _color.m_b, _color.m_a);
+        return ImVec4(
+            static_cast<float>(_color.getR()),
+            static_cast<float>(_color.getG()),
+            static_cast<float>(_color.getB()),
+            static_cast<float>(_color.getA()));
     }
 
     ImGuiDir ToImGuiDirection(ego::gui::GuiDirection _direction)

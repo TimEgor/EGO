@@ -1,88 +1,230 @@
 #include "Transform.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+
+#include "EgoCore/Assert/Assert.h"
+
+#include "ComputeQuaternion.h"
+
+namespace
+{
+    template <typename T, uint32_t Size>
+    bool TryNormalizeFinite(ego::ComputeVectorBase<T, Size>& _vector)
+    {
+        T maxAbsoluteValue = T(0.0);
+        for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
+        {
+            const T value = _vector.getElement(elementIndex);
+            if (!std::isfinite(value))
+            {
+                return false;
+            }
+
+            maxAbsoluteValue = (std::max)(maxAbsoluteValue, std::abs(value));
+        }
+
+        if (maxAbsoluteValue <= T(0.0))
+        {
+            return false;
+        }
+
+        for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
+        {
+            _vector.setElement(elementIndex, _vector.getElement(elementIndex) / maxAbsoluteValue);
+        }
+
+        const T scaledLength = _vector.getLength();
+        if (!std::isfinite(scaledLength) || scaledLength <= T(0.0) || maxAbsoluteValue <= ego::math::TypedEpsilon<T>() / scaledLength)
+        {
+            return false;
+        }
+
+        _vector /= scaledLength;
+        for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
+        {
+            if (!std::isfinite(_vector.getElement(elementIndex)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+} // namespace
+
 ego::Transform::Transform(const TransformMatrix& _matrix)
     : m_matrix(_matrix)
 {
 }
 
-ego::FloatVector3 ego::Transform::getAxisX() const
+const ego::TransformMatrix& ego::Transform::getMatrix() const
 {
-    return m_matrix.m_row1.m_xyz;
+    return m_matrix;
 }
 
-void ego::Transform::setAxisX(const FloatVector3& _axis)
+void ego::Transform::setMatrix(const TransformMatrix& _matrix)
 {
-    m_matrix.m_row1.m_xyz = _axis;
+    m_matrix = _matrix;
 }
 
-ego::FloatVector3 ego::Transform::getAxisY() const
+ego::TransformVector ego::Transform::getAxisX() const
 {
-    return m_matrix.m_row2.m_xyz;
+    return TransformVector(m_matrix.getElement(0, 0), m_matrix.getElement(1, 0), m_matrix.getElement(2, 0));
 }
 
-void ego::Transform::setAxisY(const FloatVector3& _axis)
+void ego::Transform::setAxisX(const TransformVector& _axis)
 {
-    m_matrix.m_row2.m_xyz = _axis;
+    m_matrix.setElement(0, 0, _axis.getX());
+    m_matrix.setElement(1, 0, _axis.getY());
+    m_matrix.setElement(2, 0, _axis.getZ());
 }
 
-ego::FloatVector3 ego::Transform::getAxisZ() const
+ego::TransformVector ego::Transform::getAxisY() const
 {
-    return m_matrix.m_row3.m_xyz;
+    return TransformVector(m_matrix.getElement(0, 1), m_matrix.getElement(1, 1), m_matrix.getElement(2, 1));
 }
 
-void ego::Transform::setAxisZ(const FloatVector3& _axis)
+void ego::Transform::setAxisY(const TransformVector& _axis)
 {
-    m_matrix.m_row3.m_xyz = _axis;
+    m_matrix.setElement(0, 1, _axis.getX());
+    m_matrix.setElement(1, 1, _axis.getY());
+    m_matrix.setElement(2, 1, _axis.getZ());
 }
 
-ego::FloatVector3 ego::Transform::getOrigin() const
+ego::TransformVector ego::Transform::getAxisZ() const
 {
-    return m_matrix.m_row4.m_xyz;
+    return TransformVector(m_matrix.getElement(0, 2), m_matrix.getElement(1, 2), m_matrix.getElement(2, 2));
 }
 
-void ego::Transform::setOrigin(const FloatVector3& _origin)
+void ego::Transform::setAxisZ(const TransformVector& _axis)
 {
-    m_matrix.m_row4.m_xyz = _origin;
+    m_matrix.setElement(0, 2, _axis.getX());
+    m_matrix.setElement(1, 2, _axis.getY());
+    m_matrix.setElement(2, 2, _axis.getZ());
 }
 
-ego::FloatMatrix3x3 ego::Transform::getRotationMatrix() const
+ego::TransformVector ego::Transform::getOrigin() const
 {
-    FloatMatrix3x3 rotation;
-    getRotationMatrix(rotation);
-
-    return rotation;
+    return TransformVector(m_matrix.getElement(0, 3), m_matrix.getElement(1, 3), m_matrix.getElement(2, 3));
 }
 
-void ego::Transform::getRotationMatrix(FloatMatrix3x3& _rotation) const
+void ego::Transform::setOrigin(const TransformVector& _origin)
 {
-    _rotation.m_row1 = getAxisX();
-    _rotation.m_row2 = getAxisY();
-    _rotation.m_row3 = getAxisZ();
+    m_matrix.setElement(0, 3, _origin.getX());
+    m_matrix.setElement(1, 3, _origin.getY());
+    m_matrix.setElement(2, 3, _origin.getZ());
 }
 
-void ego::Transform::setRotationMatrix(const FloatMatrix3x3& _rotation)
+ego::TransformLinearMatrix ego::Transform::getLinearMatrix() const
 {
-    setAxisX(_rotation.m_row1);
-    setAxisY(_rotation.m_row2);
-    setAxisZ(_rotation.m_row3);
+    TransformLinearMatrix linearMatrix;
+    getLinearMatrix(linearMatrix);
+
+    return linearMatrix;
 }
 
-ego::ComputeQuaternion ego::Transform::getRotationQuaternion() const
+void ego::Transform::getLinearMatrix(TransformLinearMatrix& _linearMatrix) const
 {
-    ComputeQuaternion quaternion;
+    for (size_t columnIndex = 0; columnIndex < 3; ++columnIndex)
+    {
+        for (size_t rowIndex = 0; rowIndex < 3; ++rowIndex)
+        {
+            _linearMatrix.setElement(rowIndex, columnIndex, m_matrix.getElement(rowIndex, columnIndex));
+        }
+    }
+}
+
+void ego::Transform::setLinearMatrix(const TransformLinearMatrix& _linearMatrix)
+{
+    for (size_t columnIndex = 0; columnIndex < 3; ++columnIndex)
+    {
+        for (size_t rowIndex = 0; rowIndex < 3; ++rowIndex)
+        {
+            m_matrix.setElement(rowIndex, columnIndex, _linearMatrix.getElement(rowIndex, columnIndex));
+        }
+    }
+}
+
+ego::TransformLinearMatrix ego::Transform::getRotationMatrix() const
+{
+    return getLinearMatrix();
+}
+
+void ego::Transform::getRotationMatrix(TransformLinearMatrix& _rotation) const
+{
+    getLinearMatrix(_rotation);
+}
+
+void ego::Transform::setRotationMatrix(const TransformLinearMatrix& _rotation)
+{
+    setLinearMatrix(_rotation);
+}
+
+ego::TransformQuaternion ego::Transform::getRotationQuaternion() const
+{
+    TransformQuaternion quaternion;
     getRotationQuaternion(quaternion);
 
     return quaternion;
 }
 
-void ego::Transform::getRotationQuaternion(ComputeQuaternion& _rotation) const
+void ego::Transform::getRotationQuaternion(TransformQuaternion& _rotation) const
 {
-    const ComputeMatrix3x3 rotationMatrix(getRotationMatrix());
-    _rotation.setupFromRotationMatrix3x3(rotationMatrix);
+    const bool hasRotation = tryGetRotationQuaternion(_rotation);
+    EGO_ASSERT(hasRotation);
+
+    if (!hasRotation)
+    {
+        _rotation = TransformQuaternionIdentity;
+    }
 }
 
-void ego::Transform::setRotationQuaternion(const ComputeQuaternion& _rotation)
+bool ego::Transform::tryGetRotationQuaternion(TransformQuaternion& _rotation) const
 {
-    const ComputeMatrix3x3 rotationMatrix = _rotation.getRotationMatrix3x3();
-    setRotationMatrix(rotationMatrix.getMatrix<float>());
+    ComputeVector3 axisX(getAxisX());
+    ComputeVector3 axisY(getAxisY());
+    ComputeVector3 sourceAxisZ(getAxisZ());
+
+    if (!TryNormalizeFinite(axisX) || !TryNormalizeFinite(axisY) || !TryNormalizeFinite(sourceAxisZ))
+    {
+        return false;
+    }
+
+    axisY -= axisX * axisX.dot(axisY);
+    if (!TryNormalizeFinite(axisY))
+    {
+        return false;
+    }
+
+    ComputeVector3 axisZ = CrossComputeVector3(axisX, axisY);
+    if (!TryNormalizeFinite(axisZ) || axisZ.dot(sourceAxisZ) <= ComputeValue(0.0))
+    {
+        return false;
+    }
+
+    ComputeQuaternion rotation(ComputeMatrix3x3(axisX, axisY, axisZ));
+    if (!TryNormalizeFinite(rotation.getVector()))
+    {
+        return false;
+    }
+
+    _rotation = TransformQuaternion(rotation.getX(), rotation.getY(), rotation.getZ(), rotation.getW());
+
+    return true;
+}
+
+void ego::Transform::setRotationQuaternion(const TransformQuaternion& _rotation)
+{
+    ComputeQuaternion rotation(_rotation);
+    const bool hasRotation = TryNormalizeFinite(rotation.getVector());
+    EGO_ASSERT(hasRotation);
+
+    if (!hasRotation)
+    {
+        return;
+    }
+
+    setLinearMatrix(rotation.getRotationMatrix3x3().getMatrix<TransformValue>());
 }

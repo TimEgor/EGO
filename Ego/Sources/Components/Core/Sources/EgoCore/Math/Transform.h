@@ -1,35 +1,60 @@
 #pragma once
 
-#include "ComputeQuaternion.h"
+#include "ComputeMath.h"
 #include "Matrix.h"
+#include "Quaternion.h"
 #include "Vector.h"
 
 namespace ego
 {
-    using TransformMatrix = FloatMatrix4x4;
+    using TransformValue = ComputeValue;
+    using TransformVector = Vector3Base<TransformValue>;
+    using TransformColumn = Vector4Base<TransformValue>;
+    using TransformLinearMatrix = Matrix3x3Base<TransformValue>;
+    using TransformMatrix = Matrix4x4Base<TransformValue>;
+    using TransformQuaternion = QuaternionBase<TransformValue>;
 
-    struct Transform final
+    inline constexpr TransformMatrix TransformMatrixIdentity = TransformMatrix(
+        TransformColumn(TransformValue(1.0), TransformValue(0.0), TransformValue(0.0), TransformValue(0.0)),
+        TransformColumn(TransformValue(0.0), TransformValue(1.0), TransformValue(0.0), TransformValue(0.0)),
+        TransformColumn(TransformValue(0.0), TransformValue(0.0), TransformValue(1.0), TransformValue(0.0)),
+        TransformColumn(TransformValue(0.0), TransformValue(0.0), TransformValue(0.0), TransformValue(1.0)));
+
+    inline constexpr TransformQuaternion TransformQuaternionIdentity =
+        TransformQuaternion(TransformValue(0.0), TransformValue(0.0), TransformValue(0.0), TransformValue(1.0));
+
+    class Transform final
     {
-        TransformMatrix m_matrix = FloatMatrix4x4Identity;
-
+    public:
         Transform() = default;
-        Transform(const TransformMatrix& _matrix);
+        explicit Transform(const TransformMatrix& _matrix);
 
-        FloatVector3 getAxisX() const;
-        void setAxisX(const FloatVector3& _axis);
-        FloatVector3 getAxisY() const;
-        void setAxisY(const FloatVector3& _axis);
-        FloatVector3 getAxisZ() const;
-        void setAxisZ(const FloatVector3& _axis);
-        FloatVector3 getOrigin() const;
-        void setOrigin(const FloatVector3& _origin);
+        const TransformMatrix& getMatrix() const;
+        void setMatrix(const TransformMatrix& _matrix);
 
-        FloatMatrix3x3 getRotationMatrix() const;
-        void getRotationMatrix(FloatMatrix3x3& _rotation) const;
-        void setRotationMatrix(const FloatMatrix3x3& _rotation);
+        TransformVector getAxisX() const;
+        void setAxisX(const TransformVector& _axis);
+        TransformVector getAxisY() const;
+        void setAxisY(const TransformVector& _axis);
+        TransformVector getAxisZ() const;
+        void setAxisZ(const TransformVector& _axis);
+        TransformVector getOrigin() const;
+        void setOrigin(const TransformVector& _origin);
 
-        ComputeQuaternion getRotationQuaternion() const;
-        void getRotationQuaternion(ComputeQuaternion& _rotation) const;
-        void setRotationQuaternion(const ComputeQuaternion& _rotation);
+        TransformLinearMatrix getLinearMatrix() const;
+        void getLinearMatrix(TransformLinearMatrix& _linearMatrix) const;
+        void setLinearMatrix(const TransformLinearMatrix& _linearMatrix);
+
+        TransformLinearMatrix getRotationMatrix() const;
+        void getRotationMatrix(TransformLinearMatrix& _rotation) const;
+        void setRotationMatrix(const TransformLinearMatrix& _rotation);
+
+        TransformQuaternion getRotationQuaternion() const;
+        void getRotationQuaternion(TransformQuaternion& _rotation) const;
+        bool tryGetRotationQuaternion(TransformQuaternion& _rotation) const;
+        void setRotationQuaternion(const TransformQuaternion& _rotation);
+
+    private:
+        TransformMatrix m_matrix = TransformMatrixIdentity;
     };
 } // namespace ego

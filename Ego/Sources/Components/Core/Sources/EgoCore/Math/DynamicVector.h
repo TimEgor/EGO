@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "ComputeMath.h"
+
 namespace ego
 {
     template <typename T>
@@ -20,31 +22,31 @@ namespace ego
         using ValueView = std::span<ValueType>;
         using ConstValueView = std::span<const ValueType>;
 
-        static_assert(std::is_arithmetic_v<ValueType>);
+        static_assert(std::is_arithmetic_v<ValueType> && !std::is_same_v<ValueType, bool>);
 
         static constexpr ValueType DefaultValue = 0;
 
     private:
         ValueContainer m_values;
-        ValueView m_view;
 
-        bool isView() const;
-        ValueView getValues();
-        ConstValueView getValues() const;
-        void assignValues(ConstValueView _values);
+        static bool IsValidElementCount(size_t _elementCount);
 
     public:
         DynamicVectorBase() = default;
-        DynamicVectorBase(size_t _dimension);
-        DynamicVectorBase(ValueContainer&& _values);
-        DynamicVectorBase(ValueView _values);
-        DynamicVectorBase(const DynamicVectorBase& _vector);
-        DynamicVectorBase(DynamicVectorBase&& _vector);
+        explicit DynamicVectorBase(size_t _dimension);
+        explicit DynamicVectorBase(ValueContainer&& _values);
+        explicit DynamicVectorBase(ValueView _values);
+        explicit DynamicVectorBase(ConstValueView _values);
+        DynamicVectorBase(const DynamicVectorBase& _vector) = default;
+        DynamicVectorBase(DynamicVectorBase&& _vector) noexcept = default;
 
-        DynamicVectorBase& operator=(const DynamicVectorBase& _vector);
-        DynamicVectorBase& operator=(DynamicVectorBase&& _vector);
+        DynamicVectorBase& operator=(const DynamicVectorBase& _vector) = default;
+        DynamicVectorBase& operator=(DynamicVectorBase&& _vector) noexcept = default;
         ValueType operator[](size_t _index) const;
         ValueType& operator[](size_t _index);
+
+        ValueView getValues();
+        ConstValueView getValues() const;
 
         ValueType getElement(size_t _index) const;
         ValueType& getElement(size_t _index);
@@ -56,6 +58,7 @@ namespace ego
         uint32_t getElementCount() const;
     };
 
+    using DynamicVector = DynamicVectorBase<ComputeValue>;
     using FloatDynamicVector = DynamicVectorBase<float>;
 } // namespace ego
 

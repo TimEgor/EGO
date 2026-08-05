@@ -23,13 +23,13 @@ namespace ego
     template <typename T>
     bool ComputeQuaternionBase<T>::operator==(const ComputeQuaternionBase<T>& _quaternion) const
     {
-        return isEqual(_quaternion);
+        return m_vector == _quaternion.m_vector;
     }
 
     template <typename T>
     bool ComputeQuaternionBase<T>::operator!=(const ComputeQuaternionBase<T>& _quaternion) const
     {
-        return !isEqual(_quaternion);
+        return !operator==(_quaternion);
     }
 
     template <typename T>
@@ -86,10 +86,6 @@ namespace ego
             setZ(T(0.25) * s);
         }
 
-        setX(-getX());
-        setY(-getY());
-        setZ(-getZ());
-
         return *this;
     }
 
@@ -121,7 +117,7 @@ namespace ego
     template <typename T>
     ComputeQuaternionBase<T>& ComputeQuaternionBase<T>::setupFromEulerAngles(const ComputeVector3Base<T>& _eulerAngles)
     {
-        return setupFromRollPitchYaw(_eulerAngles.getZ(), _eulerAngles.getX(), _eulerAngles.getY());
+        return setupFromRollPitchYaw(_eulerAngles.getX(), _eulerAngles.getY(), _eulerAngles.getZ());
     }
 
     template <typename T>
@@ -246,12 +242,13 @@ namespace ego
     template <typename T>
     void ComputeQuaternionBase<T>::getRotationMatrix3x3(ComputeMatrix3x3Base<T>& _matrix) const
     {
+        EGO_ASSERT(isUnit());
+
         const T x = getX();
         const T y = getY();
         const T z = getZ();
         const T w = getW();
 
-        const T ww = w * w;
         const T xx = x * x;
         const T yy = y * y;
         const T zz = z * z;
@@ -262,18 +259,11 @@ namespace ego
         const T xz = x * z;
         const T yz = y * z;
 
-        _matrix = ComputeMatrix3x3Base<T>(
-            T(1.0) - T(2.0) * (yy + zz),
-            T(2.0) * (xy - wz),
-            T(2.0) * (xz + wy),
+        const ComputeVector3Base<T> column0(T(1.0) - T(2.0) * (yy + zz), T(2.0) * (xy + wz), T(2.0) * (xz - wy));
+        const ComputeVector3Base<T> column1(T(2.0) * (xy - wz), T(1.0) - T(2.0) * (xx + zz), T(2.0) * (yz + wx));
+        const ComputeVector3Base<T> column2(T(2.0) * (xz + wy), T(2.0) * (yz - wx), T(1.0) - T(2.0) * (xx + yy));
 
-            T(2.0) * (xy + wz),
-            T(1.0) - T(2.0) * (xx + zz),
-            T(2.0) * (yz - wx),
-
-            T(2.0) * (xz - wy),
-            T(2.0) * (yz + wx),
-            T(1.0) - T(2.0) * (xx + yy));
+        _matrix = ComputeMatrix3x3Base<T>(column0, column1, column2);
     }
 
     template <typename T>
@@ -328,8 +318,8 @@ namespace ego
             _angles.setY(std::asin(sinp));
         }
 
-        _angles.setZ(std::atan2(sinr_cosp, cosr_cosp));
-        _angles.setX(std::atan2(siny_cosp, cosy_cosp));
+        _angles.setX(std::atan2(sinr_cosp, cosr_cosp));
+        _angles.setZ(std::atan2(siny_cosp, cosy_cosp));
     }
 
     template <typename T>

@@ -823,12 +823,12 @@ ego::gpu::GpuInstanceAccelerationStructureTicket ego::gpu::d3d12::D3D12GraphicDe
 
         D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
         const ego::FloatMatrix4x4& transform = instance.m_transform;
-        // Ego stores transform columns in FloatMatrix4x4 rows, while DXR expects a row-major 3x4 matrix.
+        // Ego stores matrices column-major, while DXR expects a row-major 3x4 matrix.
         for (uint32_t row = 0; row < 3; ++row)
         {
             for (uint32_t column = 0; column < 4; ++column)
             {
-                instanceDesc.Transform[row][column] = transform.m_values[column][row];
+                instanceDesc.Transform[row][column] = transform.getElement(row, column);
             }
         }
 

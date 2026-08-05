@@ -3,128 +3,72 @@
 namespace ego
 {
     template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(ValueType _m11, ValueType _m12, ValueType _m21, ValueType _m22)
-        requires(Size == 2)
-        : m_columns{ColumnVectorType(_m11, _m12), ColumnVectorType(_m21, _m22)}
-    {
-    }
-
-    template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(
-        ValueType _m11,
-        ValueType _m12,
-        ValueType _m13,
-        ValueType _m21,
-        ValueType _m22,
-        ValueType _m23,
-        ValueType _m31,
-        ValueType _m32,
-        ValueType _m33)
-        requires(Size == 3)
-        : m_columns{ColumnVectorType(_m11, _m12, _m13), ColumnVectorType(_m21, _m22, _m23), ColumnVectorType(_m31, _m32, _m33)}
-    {
-    }
-
-    template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(
-        ValueType _m11,
-        ValueType _m12,
-        ValueType _m13,
-        ValueType _m14,
-        ValueType _m21,
-        ValueType _m22,
-        ValueType _m23,
-        ValueType _m24,
-        ValueType _m31,
-        ValueType _m32,
-        ValueType _m33,
-        ValueType _m34,
-        ValueType _m41,
-        ValueType _m42,
-        ValueType _m43,
-        ValueType _m44)
-        requires(Size == 4)
-        : m_columns{
-              ColumnVectorType(_m11, _m12, _m13, _m14),
-              ColumnVectorType(_m21, _m22, _m23, _m24),
-              ColumnVectorType(_m31, _m32, _m33, _m34),
-              ColumnVectorType(_m41, _m42, _m43, _m44)}
-    {
-    }
-
-    template <typename T, uint32_t Size>
     template <typename SourceValueType>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix2x2Base<SourceValueType>& _matrix)
-        requires(Size == 2)
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix2x2Base<SourceValueType>& _matrix) requires(Size == 2)
         : m_columns{}
     {
         for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
         {
             for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
             {
-                m_columns[columnIndex].setElement(rowIndex, static_cast<ValueType>(_matrix.m_values[columnIndex][rowIndex]));
+                setElement(rowIndex, columnIndex, static_cast<ValueType>(_matrix.getElement(rowIndex, columnIndex)));
             }
         }
     }
 
     template <typename T, uint32_t Size>
     template <typename SourceValueType>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix3x3Base<SourceValueType>& _matrix)
-        requires(Size == 3)
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix3x3Base<SourceValueType>& _matrix) requires(Size == 3)
         : m_columns{}
     {
         for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
         {
             for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
             {
-                m_columns[columnIndex].setElement(rowIndex, static_cast<ValueType>(_matrix.m_values[columnIndex][rowIndex]));
+                setElement(rowIndex, columnIndex, static_cast<ValueType>(_matrix.getElement(rowIndex, columnIndex)));
             }
         }
     }
 
     template <typename T, uint32_t Size>
     template <typename SourceValueType>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix4x4Base<SourceValueType>& _matrix)
-        requires(Size == 4)
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix4x4Base<SourceValueType>& _matrix) requires(Size == 4)
         : m_columns{}
     {
         for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
         {
             for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
             {
-                m_columns[columnIndex].setElement(rowIndex, static_cast<ValueType>(_matrix.m_values[columnIndex][rowIndex]));
+                setElement(rowIndex, columnIndex, static_cast<ValueType>(_matrix.getElement(rowIndex, columnIndex)));
             }
         }
     }
 
     template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ColumnVectorType& _column1, const ColumnVectorType& _column2)
-        requires(Size == 2)
-        : m_columns{_column1, _column2}
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ColumnVectorType& _column0, const ColumnVectorType& _column1) requires(Size == 2)
+        : m_columns{_column0, _column1}
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ColumnVectorType& _column1, const ColumnVectorType& _column2, const ColumnVectorType& _column3)
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ColumnVectorType& _column0, const ColumnVectorType& _column1, const ColumnVectorType& _column2)
         requires(Size == 3)
-        : m_columns{_column1, _column2, _column3}
+        : m_columns{_column0, _column1, _column2}
     {
     }
 
     template <typename T, uint32_t Size>
     ComputeMatrixBase<T, Size>::ComputeMatrixBase(
+        const ColumnVectorType& _column0,
         const ColumnVectorType& _column1,
         const ColumnVectorType& _column2,
-        const ColumnVectorType& _column3,
-        const ColumnVectorType& _column4)
-        requires(Size == 4)
-        : m_columns{_column1, _column2, _column3, _column4}
+        const ColumnVectorType& _column3) requires(Size == 4)
+        : m_columns{_column0, _column1, _column2, _column3}
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ComputeMatrixBase<ValueType, 2>& _matrix)
-        requires(Size == 3 || Size == 4)
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ComputeMatrixBase<ValueType, 2>& _matrix) requires(Size == 3 || Size == 4)
         : m_columns{}
     {
         m_columns[0] = ColumnVectorType(_matrix.m_columns[0]);
@@ -137,9 +81,11 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ComputeMatrixBase<ValueType, 3>& _matrix)
-        requires(Size == 4)
-        : m_columns{ColumnVectorType(_matrix.m_columns[0]), ColumnVectorType(_matrix.m_columns[1]), ColumnVectorType(_matrix.m_columns[2]), ColumnVectorType(ValueType(0.0))}
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const ComputeMatrixBase<ValueType, 3>& _matrix) requires(Size == 4)
+        : m_columns{ColumnVectorType(_matrix.m_columns[0]),
+              ColumnVectorType(_matrix.m_columns[1]),
+              ColumnVectorType(_matrix.m_columns[2]),
+              ColumnVectorType(ValueType(0.0))}
     {
     }
 
@@ -176,13 +122,21 @@ namespace ego
     template <typename T, uint32_t Size>
     bool ComputeMatrixBase<T, Size>::operator==(const ComputeMatrixBase& _matrix) const
     {
-        return isEqual(_matrix);
+        for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
+        {
+            if (getColumn(columnIndex) != _matrix.getColumn(columnIndex))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     template <typename T, uint32_t Size>
     bool ComputeMatrixBase<T, Size>::operator!=(const ComputeMatrixBase& _matrix) const
     {
-        return !isEqual(_matrix);
+        return !operator==(_matrix);
     }
 
     template <typename T, uint32_t Size>
@@ -215,7 +169,7 @@ namespace ego
         {
             for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
             {
-                _out.setElement(columnIndex, rowIndex, static_cast<ResultValueType>(getStoredElement(columnIndex, rowIndex)));
+                _out.setElement(rowIndex, columnIndex, static_cast<ResultValueType>(getElement(rowIndex, columnIndex)));
             }
         }
     }
@@ -347,7 +301,9 @@ namespace ego
 
         if constexpr (Size == 2)
         {
-            ComputeMatrixBase inverted(getStoredElement(1, 1), -getStoredElement(0, 1), -getStoredElement(1, 0), getStoredElement(0, 0));
+            const ColumnVectorType column0(getElement(1, 1), -getElement(1, 0));
+            const ColumnVectorType column1(-getElement(0, 1), getElement(0, 0));
+            ComputeMatrixBase inverted(column0, column1);
             inverted *= ValueType(1.0) / determinant;
 
             *this = inverted;
@@ -407,10 +363,26 @@ namespace ego
             const ValueType c1 = m20 * m32 - m30 * m22;
             const ValueType c0 = m20 * m31 - m30 * m21;
 
-            ColumnVectorType column0(m11 * c5 - m12 * c4 + m13 * c3, -m01 * c5 + m02 * c4 - m03 * c3, m31 * s5 - m32 * s4 + m33 * s3, -m21 * s5 + m22 * s4 - m23 * s3);
-            ColumnVectorType column1(-m10 * c5 + m12 * c2 - m13 * c1, m00 * c5 - m02 * c2 + m03 * c1, -m30 * s5 + m32 * s2 - m33 * s1, m20 * s5 - m22 * s2 + m23 * s1);
-            ColumnVectorType column2(m10 * c4 - m11 * c2 + m13 * c0, -m00 * c4 + m01 * c2 - m03 * c0, m30 * s4 - m31 * s2 + m33 * s0, -m20 * s4 + m21 * s2 - m23 * s0);
-            ColumnVectorType column3(-m10 * c3 + m11 * c1 - m12 * c0, m00 * c3 - m01 * c1 + m02 * c0, -m30 * s3 + m31 * s1 - m32 * s0, m20 * s3 - m21 * s1 + m22 * s0);
+            ColumnVectorType column0(
+                m11 * c5 - m12 * c4 + m13 * c3,
+                -m01 * c5 + m02 * c4 - m03 * c3,
+                m31 * s5 - m32 * s4 + m33 * s3,
+                -m21 * s5 + m22 * s4 - m23 * s3);
+            ColumnVectorType column1(
+                -m10 * c5 + m12 * c2 - m13 * c1,
+                m00 * c5 - m02 * c2 + m03 * c1,
+                -m30 * s5 + m32 * s2 - m33 * s1,
+                m20 * s5 - m22 * s2 + m23 * s1);
+            ColumnVectorType column2(
+                m10 * c4 - m11 * c2 + m13 * c0,
+                -m00 * c4 + m01 * c2 - m03 * c0,
+                m30 * s4 - m31 * s2 + m33 * s0,
+                -m20 * s4 + m21 * s2 - m23 * s0);
+            ColumnVectorType column3(
+                -m10 * c3 + m11 * c1 - m12 * c0,
+                m00 * c3 - m01 * c1 + m02 * c0,
+                -m30 * s3 + m31 * s1 - m32 * s0,
+                m20 * s3 - m21 * s1 + m22 * s0);
 
             ComputeMatrixBase inverted(column0, column1, column2, column3);
             inverted *= ValueType(1.0) / determinant;

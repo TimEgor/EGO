@@ -182,7 +182,7 @@ bool ego::render::RayTracingRenderPass::prepare(RenderPassPrepareContext& _conte
         const uint32_t instanceIndex = static_cast<uint32_t>(sceneDesc.m_instances.size());
         gpu::InstanceGeometryAccelerationStructureBuildDesc instanceDesc;
         instanceDesc.m_geometry = geometryAccelerationStructure.getObject();
-        instanceDesc.m_transform = item.m_globalTransform.m_matrix;
+        instanceDesc.m_transform = FloatMatrix4x4(item.m_globalTransform.getMatrix());
         instanceDesc.m_instanceId = instanceIndex;
         instanceDesc.m_instanceMask = 0xff;
         instanceDesc.m_hitGroupIndex = hitGroupIndex;
@@ -198,7 +198,8 @@ bool ego::render::RayTracingRenderPass::prepare(RenderPassPrepareContext& _conte
     }
 
     const gpu::GpuOperationOptions buildOptions{gpu::GpuCompletionMode::WaitForCompletion};
-    const gpu::GpuInstanceAccelerationStructureTicket sceneAccelerationStructure = _context.m_graphicDevice.buildInstanceAccelerationStructure(sceneDesc, buildOptions);
+    const gpu::GpuInstanceAccelerationStructureTicket sceneAccelerationStructure =
+        _context.m_graphicDevice.buildInstanceAccelerationStructure(sceneDesc, buildOptions);
     m_sceneAccelerationStructure = sceneAccelerationStructure.m_resource;
     EGO_CHECK_RETURN_FALSE(m_sceneAccelerationStructure);
 
@@ -250,7 +251,8 @@ bool ego::render::RayTracingRenderPass::loadShaders()
 
     ResourceController& resourceController = GetResourceSubsystem().getResourceController();
 
-    const gpu::RayGenerationShaderResourcePointer rayGenerationShaderResource = resourceController.load<gpu::RayGenerationShaderResource>(config.m_rayGenerationShaderPath);
+    const gpu::RayGenerationShaderResourcePointer rayGenerationShaderResource =
+        resourceController.load<gpu::RayGenerationShaderResource>(config.m_rayGenerationShaderPath);
     const gpu::MissShaderResourcePointer missShaderResource = resourceController.load<gpu::MissShaderResource>(config.m_missShaderPath);
     EGO_CHECK_RETURN_FALSE(rayGenerationShaderResource && rayGenerationShaderResource->isLoaded());
     EGO_CHECK_RETURN_FALSE(missShaderResource && missShaderResource->isLoaded());
@@ -357,7 +359,9 @@ bool ego::render::RayTracingRenderPass::findHitGroupIndex(const RayTracingMateri
     return true;
 }
 
-ego::render::RenderRayTracingPipeline ego::render::RayTracingRenderPass::getOrCreatePipeline(GraphicDevice& _graphicDevice, RenderPipelineStateCache& _pipelineStateCache) const
+ego::render::RenderRayTracingPipeline ego::render::RayTracingRenderPass::getOrCreatePipeline(
+    GraphicDevice& _graphicDevice,
+    RenderPipelineStateCache& _pipelineStateCache) const
 {
     if (m_hitGroupTable.empty() || !m_rayGenerationShader || !m_missShader || !m_bindingLayout)
     {

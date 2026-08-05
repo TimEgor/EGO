@@ -15,16 +15,16 @@ namespace ego
     template <typename T>
     ComputeMatrix2x2Base<T> ComputeMatrix2x2ZeroBase()
     {
-        return ComputeMatrix2x2Base<T>(T(0.0), T(0.0), T(0.0), T(0.0));
+        return ComputeMatrix2x2Base<T>();
     }
 
     template <typename T>
     ComputeMatrix2x2Base<T> ComputeMatrix2x2IdentityBase()
     {
-        return ComputeMatrix2x2Base<T>(T(1.0), T(0.0), T(0.0), T(1.0));
+        return ComputeMatrix2x2Base<T>(ComputeVector2Base<T>(T(1.0), T(0.0)), ComputeVector2Base<T>(T(0.0), T(1.0)));
     }
 
-    using ComputeMatrix2x2 = ComputeMatrix2x2Base<ComputeValueType>;
+    using ComputeMatrix2x2 = ComputeMatrix2x2Base<ComputeValue>;
     using FloatComputeMatrix2x2 = ComputeMatrix2x2Base<float>;
 } // namespace ego
 

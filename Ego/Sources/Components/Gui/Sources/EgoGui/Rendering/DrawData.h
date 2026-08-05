@@ -22,7 +22,7 @@ namespace ego::gui
     {
         FloatVector2 m_position = FloatVector2Zero;
         FloatVector2 m_uv = FloatVector2Zero;
-        NormalizedColorRGBA m_color = NormalizedColorRGBA(NormalizedColorWhite);
+        FloatVector4 m_color = FloatVector4One;
     };
 
     struct DrawCommand final

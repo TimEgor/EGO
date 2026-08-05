@@ -14,7 +14,7 @@ namespace
 {
     constexpr float FullRotation = 6.28318530718f;
 
-    constexpr ego::FloatVector3 CameraPosition(0.0f, 0.0f, -2.0f);
+    constexpr ego::TransformVector CameraPosition(ego::TransformValue(0.0), ego::TransformValue(0.0), ego::TransformValue(-2.0));
     constexpr ego::NormalizedColorRGB Red(1.0f, 0.1f, 0.1f);
     constexpr ego::NormalizedColorRGB Green(0.1f, 1.0f, 0.1f);
     constexpr ego::NormalizedColorRGB Blue(0.1f, 0.3f, 1.0f);

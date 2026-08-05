@@ -125,7 +125,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool AreVectorElementsEqual(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool AreVectorElementsEqual(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -140,7 +144,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool AreVectorElementsLess(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool AreVectorElementsLess(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -155,7 +163,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool AreVectorElementsLessOrEqual(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool AreVectorElementsLessOrEqual(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -170,7 +182,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool AreVectorElementsGreater(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool AreVectorElementsGreater(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -185,7 +201,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool AreVectorElementsGreaterOrEqual(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool AreVectorElementsGreaterOrEqual(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -200,7 +220,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool IsAnyVectorElementLess(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool IsAnyVectorElementLess(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -215,7 +239,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool IsAnyVectorElementLessOrEqual(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool IsAnyVectorElementLessOrEqual(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -230,7 +258,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool IsAnyVectorElementGreater(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool IsAnyVectorElementGreater(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -245,7 +277,11 @@ namespace ego
                 }
 
                 template <typename VectorType>
-                bool IsAnyVectorElementGreaterOrEqual(const VectorType& _vector1, const VectorType& _vector2, typename VectorType::ValueType _epsilon, uint32_t _elementCount)
+                bool IsAnyVectorElementGreaterOrEqual(
+                    const VectorType& _vector1,
+                    const VectorType& _vector2,
+                    typename VectorType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     EGO_ASSERT(_epsilon > static_cast<typename VectorType::ValueType>(0.0));
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)
@@ -343,7 +379,11 @@ namespace ego
                     {
                         if (_elementCount == 2)
                         {
-                            TransformMatrix2x2VectorElements(_target.getColumn(0), _target.getColumn(1), _source.getColumn(columnIndex), result.getColumn(columnIndex));
+                            TransformMatrix2x2VectorElements(
+                                _target.getColumn(0),
+                                _target.getColumn(1),
+                                _source.getColumn(columnIndex),
+                                result.getColumn(columnIndex));
                         }
                         else if (_elementCount == 3)
                         {
@@ -371,7 +411,11 @@ namespace ego
                 }
 
                 template <typename MatrixType>
-                bool AreMatrixElementsEqual(const MatrixType& _matrix1, const MatrixType& _matrix2, typename MatrixType::ValueType _epsilon, uint32_t _elementCount)
+                bool AreMatrixElementsEqual(
+                    const MatrixType& _matrix1,
+                    const MatrixType& _matrix2,
+                    typename MatrixType::ValueType _epsilon,
+                    uint32_t _elementCount)
                 {
                     for (uint32_t columnIndex = 0; columnIndex < _elementCount; ++columnIndex)
                     {
@@ -387,8 +431,11 @@ namespace ego
                 template <typename VectorType>
                 void TransformMatrix2x2VectorElements(const VectorType& _column0, const VectorType& _column1, const VectorType& _vector, VectorType& _out)
                 {
-                    _out.setElement(0, _column0[0] * _vector[0] + _column1[0] * _vector[1]);
-                    _out.setElement(1, _column0[1] * _vector[0] + _column1[1] * _vector[1]);
+                    const typename VectorType::ValueType x = _vector[0];
+                    const typename VectorType::ValueType y = _vector[1];
+
+                    _out.setElement(0, _column0[0] * x + _column1[0] * y);
+                    _out.setElement(1, _column0[1] * x + _column1[1] * y);
                 }
 
                 template <typename VectorType>
@@ -399,9 +446,13 @@ namespace ego
                     const VectorType& _vector,
                     VectorType& _out)
                 {
-                    _out.setElement(0, _column0[0] * _vector[0] + _column1[0] * _vector[1] + _column2[0] * _vector[2]);
-                    _out.setElement(1, _column0[1] * _vector[0] + _column1[1] * _vector[1] + _column2[1] * _vector[2]);
-                    _out.setElement(2, _column0[2] * _vector[0] + _column1[2] * _vector[1] + _column2[2] * _vector[2]);
+                    const typename VectorType::ValueType x = _vector[0];
+                    const typename VectorType::ValueType y = _vector[1];
+                    const typename VectorType::ValueType z = _vector[2];
+
+                    _out.setElement(0, _column0[0] * x + _column1[0] * y + _column2[0] * z);
+                    _out.setElement(1, _column0[1] * x + _column1[1] * y + _column2[1] * z);
+                    _out.setElement(2, _column0[2] * x + _column1[2] * y + _column2[2] * z);
                 }
 
                 template <typename VectorType>
@@ -413,10 +464,15 @@ namespace ego
                     const VectorType& _vector,
                     VectorType& _out)
                 {
-                    _out.setElement(0, _column0[0] * _vector[0] + _column1[0] * _vector[1] + _column2[0] * _vector[2] + _column3[0] * _vector[3]);
-                    _out.setElement(1, _column0[1] * _vector[0] + _column1[1] * _vector[1] + _column2[1] * _vector[2] + _column3[1] * _vector[3]);
-                    _out.setElement(2, _column0[2] * _vector[0] + _column1[2] * _vector[1] + _column2[2] * _vector[2] + _column3[2] * _vector[3]);
-                    _out.setElement(3, _column0[3] * _vector[0] + _column1[3] * _vector[1] + _column2[3] * _vector[2] + _column3[3] * _vector[3]);
+                    const typename VectorType::ValueType x = _vector[0];
+                    const typename VectorType::ValueType y = _vector[1];
+                    const typename VectorType::ValueType z = _vector[2];
+                    const typename VectorType::ValueType w = _vector[3];
+
+                    _out.setElement(0, _column0[0] * x + _column1[0] * y + _column2[0] * z + _column3[0] * w);
+                    _out.setElement(1, _column0[1] * x + _column1[1] * y + _column2[1] * z + _column3[1] * w);
+                    _out.setElement(2, _column0[2] * x + _column1[2] * y + _column2[2] * z + _column3[2] * w);
+                    _out.setElement(3, _column0[3] * x + _column1[3] * y + _column2[3] * z + _column3[3] * w);
                 }
 
                 template <typename MatrixType>
@@ -437,7 +493,11 @@ namespace ego
                 }
 
                 template <typename MatrixType, typename VectorType>
-                typename MatrixType::ValueType DotDynamicMatrixRowVectorElements(const MatrixType& _matrix, const VectorType& _vector, uint32_t _rowIndex, uint32_t _elementCount)
+                typename MatrixType::ValueType DotDynamicMatrixRowVectorElements(
+                    const MatrixType& _matrix,
+                    const VectorType& _vector,
+                    uint32_t _rowIndex,
+                    uint32_t _elementCount)
                 {
                     typename MatrixType::ValueType value = static_cast<typename MatrixType::ValueType>(0.0);
                     for (uint32_t elementIndex = 0; elementIndex < _elementCount; ++elementIndex)

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-	<Type Name="Edge::BaseVector2&lt;*&gt;">
+  <Type Name="ego::Vector2Base&lt;*&gt;">
+    <DisplayString>{{{m_x}, {m_y}}}</DisplayString>
     <Expand>
       <Synthetic Name="x">
         <DisplayString>{m_x}</DisplayString>
@@ -9,8 +10,9 @@
         <DisplayString>{m_y}</DisplayString>
       </Synthetic>
     </Expand>
-	</Type>
-  <Type Name="Edge::BaseVector2&lt;*&gt;">
+  </Type>
+  <Type Name="ego::Vector3Base&lt;*&gt;">
+    <DisplayString>{{{m_x}, {m_y}, {m_z}}}</DisplayString>
     <Expand>
       <Synthetic Name="x">
         <DisplayString>{m_x}</DisplayString>
@@ -23,7 +25,8 @@
       </Synthetic>
     </Expand>
   </Type>
-  <Type Name="Edge::BaseVector2&lt;*&gt;">
+  <Type Name="ego::Vector4Base&lt;*&gt;">
+    <DisplayString>{{{m_x}, {m_y}, {m_z}, {m_w}}}</DisplayString>
     <Expand>
       <Synthetic Name="x">
         <DisplayString>{m_x}</DisplayString>
@@ -37,6 +40,55 @@
       <Synthetic Name="w">
         <DisplayString>{m_w}</DisplayString>
       </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="ego::Matrix2x2Base&lt;*&gt;">
+    <DisplayString>{{{m_columns[0].m_x}, {m_columns[1].m_x}}, {{m_columns[0].m_y}, {m_columns[1].m_y}}}</DisplayString>
+    <Expand>
+      <Synthetic Name="row 0">
+        <DisplayString>{m_columns[0].m_x}, {m_columns[1].m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 1">
+        <DisplayString>{m_columns[0].m_y}, {m_columns[1].m_y}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="ego::Matrix3x3Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="row 0">
+        <DisplayString>{m_columns[0].m_x}, {m_columns[1].m_x}, {m_columns[2].m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 1">
+        <DisplayString>{m_columns[0].m_y}, {m_columns[1].m_y}, {m_columns[2].m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 2">
+        <DisplayString>{m_columns[0].m_z}, {m_columns[1].m_z}, {m_columns[2].m_z}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="ego::Matrix4x4Base&lt;*&gt;">
+    <Expand>
+      <Synthetic Name="row 0">
+        <DisplayString>{m_columns[0].m_x}, {m_columns[1].m_x}, {m_columns[2].m_x}, {m_columns[3].m_x}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 1">
+        <DisplayString>{m_columns[0].m_y}, {m_columns[1].m_y}, {m_columns[2].m_y}, {m_columns[3].m_y}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 2">
+        <DisplayString>{m_columns[0].m_z}, {m_columns[1].m_z}, {m_columns[2].m_z}, {m_columns[3].m_z}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="row 3">
+        <DisplayString>{m_columns[0].m_w}, {m_columns[1].m_w}, {m_columns[2].m_w}, {m_columns[3].m_w}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  <Type Name="ego::QuaternionBase&lt;*&gt;">
+    <DisplayString>{{{m_elements.m_x}, {m_elements.m_y}, {m_elements.m_z}, {m_elements.m_w}}}</DisplayString>
+    <Expand>
+      <Item Name="x">m_elements.m_x</Item>
+      <Item Name="y">m_elements.m_y</Item>
+      <Item Name="z">m_elements.m_z</Item>
+      <Item Name="w">m_elements.m_w</Item>
     </Expand>
   </Type>
   <Type Name="ego::ComputeVectorBase&lt;float,2&gt;">

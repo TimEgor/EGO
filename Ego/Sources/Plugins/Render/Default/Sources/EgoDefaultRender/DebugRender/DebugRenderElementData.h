@@ -16,13 +16,13 @@ namespace ego::render
         struct PointData final
         {
             FloatVector3 m_position = FloatVector3Zero;
-            NormalizedColorRGB m_color = NormalizedColorWhite;
+            FloatVector3 m_color = FloatVector3One;
 
             PointData() = default;
 
             PointData(const FloatVector3& _position, const NormalizedColorRGB& _color)
                 : m_position(_position),
-                  m_color(_color)
+                  m_color(static_cast<float>(_color.getR()), static_cast<float>(_color.getG()), static_cast<float>(_color.getB()))
             {
             }
         };
@@ -40,13 +40,13 @@ namespace ego::render
         struct VertexData final
         {
             FloatVector3 m_position = FloatVector3Zero;
-            NormalizedColorRGB m_color = NormalizedColorWhite;
+            FloatVector3 m_color = FloatVector3One;
 
             VertexData() = default;
 
             VertexData(const FloatVector3& _position, const NormalizedColorRGB& _color)
                 : m_position(_position),
-                  m_color(_color)
+                  m_color(static_cast<float>(_color.getR()), static_cast<float>(_color.getG()), static_cast<float>(_color.getB()))
             {
             }
         };

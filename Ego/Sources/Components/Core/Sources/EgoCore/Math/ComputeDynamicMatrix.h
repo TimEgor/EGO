@@ -4,14 +4,14 @@
 
 namespace ego
 {
-    void TransposeDynamicMatrix(const FloatDynamicMatrix& _matrix, FloatDynamicMatrix& _result);
-    FloatDynamicMatrix TransposeDynamicMatrix(const FloatDynamicMatrix& _matrix);
+    void TransposeDynamicMatrix(const DynamicMatrix& _matrix, DynamicMatrix& _result);
+    DynamicMatrix TransposeDynamicMatrix(const DynamicMatrix& _matrix);
 
-    void MultiplyDynamicMatrix(const FloatDynamicMatrix& _matrix1, const FloatDynamicMatrix& _matrix2, FloatDynamicMatrix& _result);
-    FloatDynamicMatrix MultiplyDynamicMatrix(const FloatDynamicMatrix& _matrix1, const FloatDynamicMatrix& _matrix2);
+    void MultiplyDynamicMatrix(const DynamicMatrix& _matrix1, const DynamicMatrix& _matrix2, DynamicMatrix& _result);
+    DynamicMatrix MultiplyDynamicMatrix(const DynamicMatrix& _matrix1, const DynamicMatrix& _matrix2);
 
-    void TransformDynamicVector(const FloatDynamicMatrix& _matrix, const FloatDynamicVector& _vector, FloatDynamicVector& _result);
-    FloatDynamicVector TransformDynamicVector(const FloatDynamicMatrix& _matrix, const FloatDynamicVector& _vector);
+    void TransformDynamicVector(const DynamicMatrix& _matrix, const DynamicVector& _vector, DynamicVector& _result);
+    DynamicVector TransformDynamicVector(const DynamicMatrix& _matrix, const DynamicVector& _vector);
 
-    void DynamicMatrixAddDiagonal(FloatDynamicMatrix& _matrix, float _value);
+    void DynamicMatrixAddDiagonal(DynamicMatrix& _matrix, ComputeValue _value);
 } // namespace ego

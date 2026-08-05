@@ -10,74 +10,63 @@ namespace ego
 
     template <typename T, uint32_t Size>
     ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _value)
-        : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(
-              _value,
-              _value,
-              Size >= 3 ? _value : ValueType(0.0),
-              Size == 4 ? _value : ValueType(0.0)))
+        : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_value, _value, Size >= 3 ? _value : ValueType(0.0), Size == 4 ? _value : ValueType(0.0)))
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _x, ValueType _y)
-        requires(Size == 2)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _x, ValueType _y) requires(Size == 2)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_x, _y, ValueType(0.0), ValueType(0.0)))
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _x, ValueType _y, ValueType _z)
-        requires(Size == 3)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _x, ValueType _y, ValueType _z) requires(Size == 3)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_x, _y, _z, ValueType(0.0)))
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _x, ValueType _y, ValueType _z, ValueType _w)
-        requires(Size == 4)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(ValueType _x, ValueType _y, ValueType _z, ValueType _w) requires(Size == 4)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_x, _y, _z, _w))
     {
     }
 
     template <typename T, uint32_t Size>
     template <typename SourceValueType>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector2Base<SourceValueType>& _vector)
-        requires(Size == 2)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector2Base<SourceValueType>& _vector) requires(Size == 2)
         : ComputeVectorBase()
     {
         for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
         {
-            setElement(elementIndex, static_cast<ValueType>(_vector.m_values[elementIndex]));
+            setElement(elementIndex, static_cast<ValueType>(_vector.getElement(elementIndex)));
         }
     }
 
     template <typename T, uint32_t Size>
     template <typename SourceValueType>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector3Base<SourceValueType>& _vector)
-        requires(Size == 3)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector3Base<SourceValueType>& _vector) requires(Size == 3)
         : ComputeVectorBase()
     {
         for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
         {
-            setElement(elementIndex, static_cast<ValueType>(_vector.m_values[elementIndex]));
+            setElement(elementIndex, static_cast<ValueType>(_vector.getElement(elementIndex)));
         }
     }
 
     template <typename T, uint32_t Size>
     template <typename SourceValueType>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector4Base<SourceValueType>& _vector)
-        requires(Size == 4)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector4Base<SourceValueType>& _vector) requires(Size == 4)
         : ComputeVectorBase()
     {
         for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
         {
-            setElement(elementIndex, static_cast<ValueType>(_vector.m_values[elementIndex]));
+            setElement(elementIndex, static_cast<ValueType>(_vector.getElement(elementIndex)));
         }
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector, ValueType _z)
-        requires(Size == 3)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector, ValueType _z) requires(Size == 3)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_vector.getX(), _vector.getY(), _z, ValueType(0.0)))
     {
     }
@@ -90,29 +79,25 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector, ValueType _z, ValueType _w)
-        requires(Size == 4)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector, ValueType _z, ValueType _w) requires(Size == 4)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_vector.getX(), _vector.getY(), _z, _w))
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector)
-        requires(Size == 3 || Size == 4)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector) requires(Size == 3 || Size == 4)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_vector.getX(), _vector.getY(), ValueType(0.0), ValueType(0.0)))
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 3>& _vector)
-        requires(Size == 4)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 3>& _vector) requires(Size == 4)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_vector.getX(), _vector.getY(), _vector.getZ(), ValueType(0.0)))
     {
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 3>& _vector, ValueType _w)
-        requires(Size == 4)
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const ComputeVectorBase<ValueType, 3>& _vector, ValueType _w) requires(Size == 4)
         : m_nativeValues(math::simd::MakeNativeComputeVectorStorage(_vector.getX(), _vector.getY(), _vector.getZ(), _w))
     {
     }
@@ -144,7 +129,15 @@ namespace ego
     template <typename T, uint32_t Size>
     bool ComputeVectorBase<T, Size>::operator==(const ComputeVectorBase& _vector) const
     {
-        return isEqual(_vector);
+        for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
+        {
+            if (getElement(elementIndex) != _vector.getElement(elementIndex))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     template <typename T, uint32_t Size>
@@ -236,15 +229,13 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    typename ComputeVectorBase<T, Size>::ValueType ComputeVectorBase<T, Size>::getZ() const
-        requires(Size >= 3)
+    typename ComputeVectorBase<T, Size>::ValueType ComputeVectorBase<T, Size>::getZ() const requires(Size >= 3)
     {
         return getElement(2);
     }
 
     template <typename T, uint32_t Size>
-    typename ComputeVectorBase<T, Size>::ValueType ComputeVectorBase<T, Size>::getW() const
-        requires(Size == 4)
+    typename ComputeVectorBase<T, Size>::ValueType ComputeVectorBase<T, Size>::getW() const requires(Size == 4)
     {
         return getElement(3);
     }
@@ -262,59 +253,51 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::setZ(ValueType _value)
-        requires(Size >= 3)
+    void ComputeVectorBase<T, Size>::setZ(ValueType _value) requires(Size >= 3)
     {
         setElement(2, _value);
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::setW(ValueType _value)
-        requires(Size == 4)
+    void ComputeVectorBase<T, Size>::setW(ValueType _value) requires(Size == 4)
     {
         setElement(3, _value);
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<typename ComputeVectorBase<T, Size>::ValueType, 2> ComputeVectorBase<T, Size>::getXY() const
-        requires(Size >= 3)
+    ComputeVectorBase<typename ComputeVectorBase<T, Size>::ValueType, 2> ComputeVectorBase<T, Size>::getXY() const requires(Size >= 3)
     {
         return ComputeVectorBase<ValueType, 2>(getX(), getY());
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<typename ComputeVectorBase<T, Size>::ValueType, 2> ComputeVectorBase<T, Size>::getZW() const
-        requires(Size == 4)
+    ComputeVectorBase<typename ComputeVectorBase<T, Size>::ValueType, 2> ComputeVectorBase<T, Size>::getZW() const requires(Size == 4)
     {
         return ComputeVectorBase<ValueType, 2>(getZ(), getW());
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<typename ComputeVectorBase<T, Size>::ValueType, 3> ComputeVectorBase<T, Size>::getXYZ() const
-        requires(Size == 4)
+    ComputeVectorBase<typename ComputeVectorBase<T, Size>::ValueType, 3> ComputeVectorBase<T, Size>::getXYZ() const requires(Size == 4)
     {
         return ComputeVectorBase<ValueType, 3>(getX(), getY(), getZ());
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::setXY(const ComputeVectorBase<ValueType, 2>& _vector)
-        requires(Size >= 3)
+    void ComputeVectorBase<T, Size>::setXY(const ComputeVectorBase<ValueType, 2>& _vector) requires(Size >= 3)
     {
         setX(_vector.getX());
         setY(_vector.getY());
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::setZW(const ComputeVectorBase<ValueType, 2>& _vector)
-        requires(Size == 4)
+    void ComputeVectorBase<T, Size>::setZW(const ComputeVectorBase<ValueType, 2>& _vector) requires(Size == 4)
     {
         setZ(_vector.getX());
         setW(_vector.getY());
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::setXYZ(const ComputeVectorBase<ValueType, 3>& _vector)
-        requires(Size == 4)
+    void ComputeVectorBase<T, Size>::setXYZ(const ComputeVectorBase<ValueType, 3>& _vector) requires(Size == 4)
     {
         setX(_vector.getX());
         setY(_vector.getY());
@@ -340,15 +323,13 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>& ComputeVectorBase<T, Size>::computeReciprocal()
-        requires(Size == 3)
+    ComputeVectorBase<T, Size>& ComputeVectorBase<T, Size>::computeReciprocal() requires(Size == 3)
     {
         return math::simd::ReciprocalVectorElements(*this, Size);
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>& ComputeVectorBase<T, Size>::multiplyElements(const ComputeVectorBase& _vector)
-        requires(Size == 3)
+    ComputeVectorBase<T, Size>& ComputeVectorBase<T, Size>::multiplyElements(const ComputeVectorBase& _vector) requires(Size == 3)
     {
         return math::simd::MultiplyVectorElements(*this, _vector, Size);
     }
@@ -361,8 +342,7 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::getUnit(ComputeVectorBase& _out) const
-        requires(Size == 3)
+    void ComputeVectorBase<T, Size>::getUnit(ComputeVectorBase& _out) const requires(Size == 3)
     {
         _out = getUnit();
     }
@@ -380,8 +360,7 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::getOrthogonal() const
-        requires(Size == 3)
+    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::getOrthogonal() const requires(Size == 3)
     {
         ComputeVectorBase result;
         getOrthogonal(result);
@@ -390,8 +369,7 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::getOrthogonal(ComputeVectorBase& _out) const
-        requires(Size == 3)
+    void ComputeVectorBase<T, Size>::getOrthogonal(ComputeVectorBase& _out) const requires(Size == 3)
     {
         if (abs(getX()) > abs(getY()))
         {
@@ -404,8 +382,7 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::getAbs() const
-        requires(Size == 3)
+    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::getAbs() const requires(Size == 3)
     {
         ComputeVectorBase result;
         getAbs(result);
@@ -414,23 +391,20 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::getAbs(ComputeVectorBase& _out) const
-        requires(Size == 3)
+    void ComputeVectorBase<T, Size>::getAbs(ComputeVectorBase& _out) const requires(Size == 3)
     {
         _out = *this;
         math::simd::AbsVectorElements(_out, Size);
     }
 
     template <typename T, uint32_t Size>
-    uint32_t ComputeVectorBase<T, Size>::getMinElementIndex() const
-        requires(Size == 3)
+    uint32_t ComputeVectorBase<T, Size>::getMinElementIndex() const requires(Size == 3)
     {
         return getX() < getY() ? getX() < getZ() ? 0 : 2 : getY() < getZ() ? 1 : 2;
     }
 
     template <typename T, uint32_t Size>
-    uint32_t ComputeVectorBase<T, Size>::getMaxElementIndex() const
-        requires(Size == 3)
+    uint32_t ComputeVectorBase<T, Size>::getMaxElementIndex() const requires(Size == 3)
     {
         return getX() > getY() ? getX() > getZ() ? 0 : 2 : getY() > getZ() ? 1 : 2;
     }
@@ -442,8 +416,7 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::cross(const ComputeVectorBase& _vector) const
-        requires(Size == 3)
+    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::cross(const ComputeVectorBase& _vector) const requires(Size == 3)
     {
         ComputeVectorBase result;
         math::simd::CrossVector3Elements(*this, _vector, result);
@@ -452,8 +425,7 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::swizzle(uint32_t _index1, uint32_t _index2, uint32_t _index3) const
-        requires(Size == 3)
+    ComputeVectorBase<T, Size> ComputeVectorBase<T, Size>::swizzle(uint32_t _index1, uint32_t _index2, uint32_t _index3) const requires(Size == 3)
     {
         return ComputeVectorBase(getElement(_index1), getElement(_index2), getElement(_index3));
     }

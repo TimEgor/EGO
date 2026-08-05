@@ -17,9 +17,9 @@ namespace
     constexpr float FullRotation = 6.28318530718f;
     constexpr float TriangleScale = 0.65f;
 
-    constexpr ego::FloatVector3 CameraPosition(0.0f, 0.0f, -2.0f);
-    constexpr ego::FloatVector3 FirstTrianglePosition(-0.60f, 0.0f, 0.0f);
-    constexpr ego::FloatVector3 SecondTrianglePosition(0.60f, 0.0f, 0.0f);
+    constexpr ego::TransformVector CameraPosition(ego::TransformValue(0.0), ego::TransformValue(0.0), ego::TransformValue(-2.0));
+    constexpr ego::TransformVector FirstTrianglePosition(ego::TransformValue(-0.60), ego::TransformValue(0.0), ego::TransformValue(0.0));
+    constexpr ego::TransformVector SecondTrianglePosition(ego::TransformValue(0.60), ego::TransformValue(0.0), ego::TransformValue(0.0));
 } // namespace
 
 ego::demo::TestDemo::~TestDemo()
@@ -114,7 +114,7 @@ void ego::demo::TestDemo::release()
     m_engineSession.reset();
 }
 
-bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const FloatVector3& _position)
+bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const TransformVector& _position)
 {
     _entity = m_level->createNode();
     EGO_CHECK_RETURN_FALSE(_entity);
@@ -129,20 +129,21 @@ bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const rende
     return true;
 }
 
-bool ego::demo::TestDemo::setTriangleTransform(ecs::Entity _entity, const FloatVector3& _position, float _rotationAngle)
+bool ego::demo::TestDemo::setTriangleTransform(ecs::Entity _entity, const TransformVector& _position, float _rotationAngle)
 {
     TransformComponent* transformComponent = m_level->tryGetComponent<TransformComponent>(_entity);
     EGO_CHECK_RETURN_FALSE(transformComponent);
 
     Transform transform;
-    transform.setRotationQuaternion(ComputeQuaternion(ComputeVector3UnitZBase<ComputeValueType>(), _rotationAngle));
-    const ComputeValueType triangleScale = static_cast<ComputeValueType>(TriangleScale);
+    const ComputeQuaternion rotation(ComputeVector3UnitZBase<ComputeValue>(), static_cast<ComputeValue>(_rotationAngle));
+    transform.setRotationQuaternion(TransformQuaternion(rotation.getX(), rotation.getY(), rotation.getZ(), rotation.getW()));
+    const ComputeValue triangleScale = static_cast<ComputeValue>(TriangleScale);
     const ComputeVector3 axisX = ComputeVector3(transform.getAxisX()) * triangleScale;
     const ComputeVector3 axisY = ComputeVector3(transform.getAxisY()) * triangleScale;
     const ComputeVector3 axisZ = ComputeVector3(transform.getAxisZ()) * triangleScale;
-    transform.setAxisX(axisX.getVector<float>());
-    transform.setAxisY(axisY.getVector<float>());
-    transform.setAxisZ(axisZ.getVector<float>());
+    transform.setAxisX(axisX.getVector<TransformValue>());
+    transform.setAxisY(axisY.getVector<TransformValue>());
+    transform.setAxisZ(axisZ.getVector<TransformValue>());
     transform.setOrigin(_position);
     transformComponent->m_globalTransform = transform;
 

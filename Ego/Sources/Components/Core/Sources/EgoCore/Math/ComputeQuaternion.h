@@ -11,7 +11,7 @@ namespace ego
     {
     public:
         using ValueType = T;
-        static_assert(std::is_arithmetic_v<ValueType>);
+        static_assert(std::is_floating_point_v<ValueType>);
 
         using QuaternionType = QuaternionBase<ValueType>;
 
@@ -169,11 +169,11 @@ namespace ego
         return _rotation.getEulerAngles();
     }
 
-    using ComputeQuaternion = ComputeQuaternionBase<ComputeValueType>;
+    using ComputeQuaternion = ComputeQuaternionBase<ComputeValue>;
     using FloatComputeQuaternion = ComputeQuaternionBase<float>;
 
-    inline const ComputeQuaternion ComputeQuaternionZero = ComputeQuaternionZeroBase<ComputeValueType>();
-    inline const ComputeQuaternion ComputeQuaternionIdentity = ComputeQuaternionIdentityBase<ComputeValueType>();
+    inline const ComputeQuaternion ComputeQuaternionZero = ComputeQuaternionZeroBase<ComputeValue>();
+    inline const ComputeQuaternion ComputeQuaternionIdentity = ComputeQuaternionIdentityBase<ComputeValue>();
 } // namespace ego
 
 #include "ComputeQuaternion.hpp"

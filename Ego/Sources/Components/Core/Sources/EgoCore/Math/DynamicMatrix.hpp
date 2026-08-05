@@ -6,135 +6,199 @@ namespace ego
 {
 #pragma region DynamicMatrixBase
     template <typename T>
+    bool DynamicMatrixBase<T>::IsValidDimension(size_t _dimension)
+    {
+        return _dimension > 0 && _dimension <= std::numeric_limits<uint32_t>::max();
+    }
+
+    template <typename T>
+    bool DynamicMatrixBase<T>::TryComputeElementCount(size_t _rowCount, size_t _columnCount, size_t& _elementCount)
+    {
+        _elementCount = 0;
+        if (!IsValidDimension(_rowCount) || !IsValidDimension(_columnCount))
+        {
+            return false;
+        }
+
+        if (_columnCount > std::numeric_limits<size_t>::max() / _rowCount)
+        {
+            return false;
+        }
+
+        _elementCount = _rowCount * _columnCount;
+        return true;
+    }
+
+    template <typename T>
     size_t DynamicMatrixBase<T>::getElementIndex(size_t _row, size_t _column) const
     {
         EGO_ASSERT(_row < m_rowCount);
         EGO_ASSERT(_column < m_columnCount);
-        return _row * m_columnCount + _column;
-    }
-
-    template <typename T>
-    void DynamicMatrixBase<T>::rebuildRows()
-    {
-        m_rows.clear();
-        m_rows.reserve(m_rowCount);
-
-        for (size_t rowIndex = 0; rowIndex < m_rowCount; ++rowIndex)
-        {
-            const size_t elementOffset = rowIndex * m_columnCount;
-            typename RowType::ValueView rowView(m_values.data() + elementOffset, m_columnCount);
-            m_rows.emplace_back(rowView);
-        }
+        return _column * m_rowCount + _row;
     }
 
     template <typename T>
     DynamicMatrixBase<T>::DynamicMatrixBase(size_t _dimensionRow, size_t _dimensionColumn)
-        : m_rowCount(_dimensionRow),
-          m_columnCount(_dimensionColumn),
-          m_values(_dimensionRow * _dimensionColumn)
     {
-        EGO_ASSERT(_dimensionRow > 0);
-        EGO_ASSERT(_dimensionColumn > 0);
+        size_t elementCount = 0;
+        if (!TryComputeElementCount(_dimensionRow, _dimensionColumn, elementCount))
+        {
+            EGO_ASSERT(
+                IsValidDimension(_dimensionRow) && IsValidDimension(_dimensionColumn) &&
+                _dimensionColumn <= std::numeric_limits<size_t>::max() / _dimensionRow);
 
-        rebuildRows();
-        reset();
+            return;
+        }
+
+        m_rowCount = _dimensionRow;
+        m_columnCount = _dimensionColumn;
+        m_values.resize(elementCount, DefaultValue);
     }
 
     template <typename T>
-    DynamicMatrixBase<T>::DynamicMatrixBase(RowContainer&& _values)
+    DynamicMatrixBase<T>::DynamicMatrixBase(ColumnContainer&& _columns)
     {
-        m_rowCount = _values.size();
-        EGO_ASSERT(m_rowCount > 0);
-
-        m_columnCount = _values[0].getElementCount();
-        EGO_ASSERT(m_columnCount > 0);
-        m_values.resize(m_rowCount * m_columnCount);
-
-        for (size_t rowIndex = 0; rowIndex < m_rowCount; ++rowIndex)
+        if (_columns.empty())
         {
-            EGO_ASSERT(m_columnCount == _values[rowIndex].getElementCount());
+            EGO_ASSERT(!_columns.empty());
 
-            for (size_t columnIndex = 0; columnIndex < m_columnCount; ++columnIndex)
+            return;
+        }
+
+        const size_t rowCount = _columns.front().getElementCount();
+        const size_t columnCount = _columns.size();
+        size_t elementCount = 0;
+        if (!TryComputeElementCount(rowCount, columnCount, elementCount))
+        {
+            EGO_ASSERT(IsValidDimension(rowCount) && IsValidDimension(columnCount) && columnCount <= std::numeric_limits<size_t>::max() / rowCount);
+
+            return;
+        }
+
+        for (const ColumnVectorType& column : _columns)
+        {
+            if (column.getElementCount() != rowCount)
             {
-                m_values[rowIndex * m_columnCount + columnIndex] = _values[rowIndex].getElement(columnIndex);
+                EGO_ASSERT(column.getElementCount() == rowCount);
+
+                return;
             }
         }
 
-        rebuildRows();
+        ValueContainer values(elementCount, DefaultValue);
+        for (size_t columnIndex = 0; columnIndex < columnCount; ++columnIndex)
+        {
+            const typename ColumnVectorType::ConstValueView columnValues = _columns[columnIndex].getValues();
+            std::copy(columnValues.begin(), columnValues.end(), values.begin() + columnIndex * rowCount);
+        }
+
+        m_rowCount = rowCount;
+        m_columnCount = columnCount;
+        m_values = std::move(values);
     }
 
     template <typename T>
-    DynamicMatrixBase<T>::DynamicMatrixBase(const DynamicMatrixBase& _matrix)
-        : m_rowCount(_matrix.m_rowCount),
-          m_columnCount(_matrix.m_columnCount),
-          m_values(_matrix.m_values)
-    {
-        rebuildRows();
-    }
-
-    template <typename T>
-    DynamicMatrixBase<T>::DynamicMatrixBase(DynamicMatrixBase&& _matrix)
+    DynamicMatrixBase<T>::DynamicMatrixBase(DynamicMatrixBase&& _matrix) noexcept
         : m_rowCount(_matrix.m_rowCount),
           m_columnCount(_matrix.m_columnCount),
           m_values(std::move(_matrix.m_values))
     {
-        rebuildRows();
-
         _matrix.m_rowCount = 0;
         _matrix.m_columnCount = 0;
-        _matrix.m_rows.clear();
+        _matrix.m_values.clear();
     }
 
     template <typename T>
-    DynamicMatrixBase<T>& DynamicMatrixBase<T>::operator=(const DynamicMatrixBase& _matrix)
+    DynamicMatrixBase<T>& DynamicMatrixBase<T>::operator=(DynamicMatrixBase&& _matrix) noexcept
     {
-        m_rowCount = _matrix.m_rowCount;
-        m_columnCount = _matrix.m_columnCount;
-        m_values = _matrix.m_values;
-        rebuildRows();
+        if (this == &_matrix)
+        {
+            return *this;
+        }
 
-        return *this;
-    }
-
-    template <typename T>
-    DynamicMatrixBase<T>& DynamicMatrixBase<T>::operator=(DynamicMatrixBase&& _matrix)
-    {
         m_rowCount = _matrix.m_rowCount;
         m_columnCount = _matrix.m_columnCount;
         m_values = std::move(_matrix.m_values);
-        rebuildRows();
 
         _matrix.m_rowCount = 0;
         _matrix.m_columnCount = 0;
-        _matrix.m_rows.clear();
+        _matrix.m_values.clear();
 
         return *this;
     }
 
     template <typename T>
-    const typename DynamicMatrixBase<T>::RowType& DynamicMatrixBase<T>::operator[](size_t _index) const
+    typename DynamicMatrixBase<T>::ConstColumnView DynamicMatrixBase<T>::operator[](size_t _index) const
     {
-        return getRow(_index);
+        return getColumn(_index);
     }
 
     template <typename T>
-    typename DynamicMatrixBase<T>::RowType& DynamicMatrixBase<T>::operator[](size_t _index)
+    typename DynamicMatrixBase<T>::ColumnView DynamicMatrixBase<T>::operator[](size_t _index)
     {
-        return getRow(_index);
+        return getColumn(_index);
     }
 
     template <typename T>
-    const typename DynamicMatrixBase<T>::RowType& DynamicMatrixBase<T>::getRow(size_t _index) const
+    typename DynamicMatrixBase<T>::ConstColumnView DynamicMatrixBase<T>::getColumn(size_t _index) const
     {
-        EGO_ASSERT(_index < m_rowCount);
-        return m_rows[_index];
+        if (_index >= m_columnCount)
+        {
+            EGO_ASSERT(_index < m_columnCount);
+
+            return ConstColumnView();
+        }
+
+        return ConstColumnView(m_values.data() + _index * m_rowCount, m_rowCount);
     }
 
     template <typename T>
-    typename DynamicMatrixBase<T>::RowType& DynamicMatrixBase<T>::getRow(size_t _index)
+    typename DynamicMatrixBase<T>::ColumnView DynamicMatrixBase<T>::getColumn(size_t _index)
     {
-        EGO_ASSERT(_index < m_rowCount);
-        return m_rows[_index];
+        if (_index >= m_columnCount)
+        {
+            EGO_ASSERT(_index < m_columnCount);
+
+            return ColumnView();
+        }
+
+        return ColumnView(m_values.data() + _index * m_rowCount, m_rowCount);
+    }
+
+    template <typename T>
+    typename DynamicMatrixBase<T>::RowVectorType DynamicMatrixBase<T>::getRow(size_t _index) const
+    {
+        if (_index >= m_rowCount)
+        {
+            EGO_ASSERT(_index < m_rowCount);
+
+            return RowVectorType();
+        }
+
+        RowVectorType row(m_columnCount);
+        for (size_t columnIndex = 0; columnIndex < m_columnCount; ++columnIndex)
+        {
+            row.setElement(columnIndex, getElement(_index, columnIndex));
+        }
+
+        return row;
+    }
+
+    template <typename T>
+    void DynamicMatrixBase<T>::setRow(size_t _index, ConstValueView _values)
+    {
+        if (_index >= m_rowCount || _values.size() != m_columnCount)
+        {
+            EGO_ASSERT(_index < m_rowCount && _values.size() == m_columnCount);
+
+            return;
+        }
+
+        const RowVectorType row(_values);
+        for (size_t columnIndex = 0; columnIndex < m_columnCount; ++columnIndex)
+        {
+            setElement(_index, columnIndex, row.getElement(columnIndex));
+        }
     }
 
     template <typename T>
@@ -164,14 +228,12 @@ namespace ego
     template <typename T>
     uint32_t DynamicMatrixBase<T>::getRowCount() const
     {
-        EGO_ASSERT(m_rowCount <= std::numeric_limits<uint32_t>::max());
         return static_cast<uint32_t>(m_rowCount);
     }
 
     template <typename T>
     uint32_t DynamicMatrixBase<T>::getColumnCount() const
     {
-        EGO_ASSERT(m_columnCount <= std::numeric_limits<uint32_t>::max());
         return static_cast<uint32_t>(m_columnCount);
     }
 

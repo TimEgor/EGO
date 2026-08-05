@@ -17,7 +17,7 @@ bool ego::render::RenderCamera::update(const Transform& _transform, float _verti
 
     const FloatMatrix4x4 projectionMatrix = CreatePerspectiveProjectionMatrix(_verticalFieldOfView, _aspectRatio, _nearPlane, _farPlane);
     const ComputeMatrix4x4 projection(projectionMatrix);
-    const ComputeMatrix4x4 view = InvertComputeMatrix4x4(ComputeMatrix4x4(_transform.m_matrix));
+    const ComputeMatrix4x4 view = InvertComputeMatrix4x4(ComputeMatrix4x4(_transform.getMatrix()));
     const ComputeMatrix4x4 viewProjection = projection * view;
     const ComputeMatrix4x4 inverseViewProjection = InvertComputeMatrix4x4(viewProjection);
 
@@ -70,22 +70,22 @@ ego::FloatMatrix4x4 ego::render::RenderCamera::CreatePerspectiveProjectionMatrix
     float _nearPlane,
     float _farPlane)
 {
-    const ComputeValueType verticalFieldOfView = math::ConvertDegToRad(static_cast<ComputeValueType>(_verticalFieldOfView));
-    const ComputeValueType aspectRatio = static_cast<ComputeValueType>(_aspectRatio);
-    const ComputeValueType nearPlane = static_cast<ComputeValueType>(_nearPlane);
-    const ComputeValueType farPlane = static_cast<ComputeValueType>(_farPlane);
+    const ComputeValue verticalFieldOfView = math::ConvertDegToRad(static_cast<ComputeValue>(_verticalFieldOfView));
+    const ComputeValue aspectRatio = static_cast<ComputeValue>(_aspectRatio);
+    const ComputeValue nearPlane = static_cast<ComputeValue>(_nearPlane);
+    const ComputeValue farPlane = static_cast<ComputeValue>(_farPlane);
 
-    const ComputeValueType verticalScale = ComputeValueType(1.0) / std::tan(verticalFieldOfView * ComputeValueType(0.5));
-    const ComputeValueType horizontalScale = verticalScale / aspectRatio;
-    const ComputeValueType depthScale = farPlane / (farPlane - nearPlane);
-    const ComputeValueType depthOffset = -nearPlane * depthScale;
+    const ComputeValue verticalScale = ComputeValue(1.0) / std::tan(verticalFieldOfView * ComputeValue(0.5));
+    const ComputeValue horizontalScale = verticalScale / aspectRatio;
+    const ComputeValue depthScale = farPlane / (farPlane - nearPlane);
+    const ComputeValue depthOffset = -nearPlane * depthScale;
 
-    ComputeMatrix4x4 projection = ComputeMatrix4x4ZeroBase<ComputeValueType>();
+    ComputeMatrix4x4 projection = ComputeMatrix4x4ZeroBase<ComputeValue>();
     projection.setElement(0, 0, horizontalScale);
     projection.setElement(1, 1, verticalScale);
     projection.setElement(2, 2, depthScale);
     projection.setElement(2, 3, depthOffset);
-    projection.setElement(3, 2, ComputeValueType(1.0));
+    projection.setElement(3, 2, ComputeValue(1.0));
 
     return projection.getMatrix<float>();
 }

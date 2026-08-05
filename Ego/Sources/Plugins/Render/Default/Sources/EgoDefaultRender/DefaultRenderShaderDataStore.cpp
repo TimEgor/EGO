@@ -69,7 +69,7 @@ bool ego::render::DefaultRenderShaderDataStore::prepareCameraShaderData(
     const FloatMatrix4x4& projectionMatrix = _camera.getProjectionMatrix();
     const FloatMatrix4x4& viewMatrix = _camera.getViewMatrix();
     const FloatMatrix4x4& viewProjectionMatrix = _camera.getViewProjectionMatrix();
-    const FloatVector3 cameraPosition = _camera.getTransform().getOrigin();
+    const FloatVector3 cameraPosition(_camera.getTransform().getOrigin());
 
     CameraShaderData shaderData;
     shaderData.m_view = viewMatrix;
@@ -131,7 +131,7 @@ bool ego::render::DefaultRenderShaderDataStore::prepareObjectShaderData(GraphicD
         DefaultRenderItem& item = renderItems[itemIndex];
         item.m_objectIndex = itemIndex;
 
-        shaderData[itemIndex].m_model = item.m_globalTransform.m_matrix;
+        shaderData[itemIndex].m_model = FloatMatrix4x4(item.m_globalTransform.getMatrix());
     }
 
     m_objectShaderDataBuffer->unmap(0, dataSize);

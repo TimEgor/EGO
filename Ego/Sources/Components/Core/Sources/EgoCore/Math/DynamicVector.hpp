@@ -6,105 +6,54 @@ namespace ego
 {
 #pragma region DynamicVectorBase
     template <typename T>
-    bool DynamicVectorBase<T>::isView() const
+    bool DynamicVectorBase<T>::IsValidElementCount(size_t _elementCount)
     {
-        return !m_view.empty();
-    }
-
-    template <typename T>
-    typename DynamicVectorBase<T>::ValueView DynamicVectorBase<T>::getValues()
-    {
-        return isView() ? m_view : ValueView(m_values);
-    }
-
-    template <typename T>
-    typename DynamicVectorBase<T>::ConstValueView DynamicVectorBase<T>::getValues() const
-    {
-        return isView() ? ConstValueView(m_view) : ConstValueView(m_values);
-    }
-
-    template <typename T>
-    void DynamicVectorBase<T>::assignValues(ConstValueView _values)
-    {
-        ValueView values = getValues();
-        EGO_ASSERT(values.size() == _values.size());
-        std::copy(_values.begin(), _values.end(), values.begin());
+        return _elementCount > 0 && _elementCount <= std::numeric_limits<uint32_t>::max();
     }
 
     template <typename T>
     DynamicVectorBase<T>::DynamicVectorBase(size_t _dimension)
-        : m_values(_dimension)
     {
-        EGO_ASSERT(_dimension > 0);
+        if (!IsValidElementCount(_dimension))
+        {
+            EGO_ASSERT(_dimension > 0 && _dimension <= std::numeric_limits<uint32_t>::max());
+
+            return;
+        }
+
+        m_values.resize(_dimension, DefaultValue);
     }
 
     template <typename T>
     DynamicVectorBase<T>::DynamicVectorBase(ValueContainer&& _values)
-        : m_values(std::move(_values))
     {
-        EGO_ASSERT(getElementCount() > 0);
+        if (!IsValidElementCount(_values.size()))
+        {
+            EGO_ASSERT(_values.size() > 0 && _values.size() <= std::numeric_limits<uint32_t>::max());
+
+            return;
+        }
+
+        m_values = std::move(_values);
     }
 
     template <typename T>
     DynamicVectorBase<T>::DynamicVectorBase(ValueView _values)
-        : m_view(_values)
+        : DynamicVectorBase(ConstValueView(_values))
     {
-        EGO_ASSERT(getElementCount() > 0);
     }
 
     template <typename T>
-    DynamicVectorBase<T>::DynamicVectorBase(const DynamicVectorBase& _vector)
+    DynamicVectorBase<T>::DynamicVectorBase(ConstValueView _values)
     {
-        ConstValueView values = _vector.getValues();
-        m_values.assign(values.begin(), values.end());
-    }
+        if (!IsValidElementCount(_values.size()))
+        {
+            EGO_ASSERT(_values.size() > 0 && _values.size() <= std::numeric_limits<uint32_t>::max());
 
-    template <typename T>
-    DynamicVectorBase<T>::DynamicVectorBase(DynamicVectorBase&& _vector)
-        : m_values(std::move(_vector.m_values)),
-          m_view(_vector.m_view)
-    {
-        if (!_vector.isView())
-        {
-            _vector.m_view = ValueView();
-        }
-    }
-
-    template <typename T>
-    DynamicVectorBase<T>& DynamicVectorBase<T>::operator=(const DynamicVectorBase& _vector)
-    {
-        if (isView())
-        {
-            assignValues(_vector.getValues());
-        }
-        else
-        {
-            ConstValueView values = _vector.getValues();
-            m_values.assign(values.begin(), values.end());
+            return;
         }
 
-        return *this;
-    }
-
-    template <typename T>
-    DynamicVectorBase<T>& DynamicVectorBase<T>::operator=(DynamicVectorBase&& _vector)
-    {
-        if (isView())
-        {
-            assignValues(_vector.getValues());
-        }
-        else if (_vector.isView())
-        {
-            ConstValueView values = _vector.getValues();
-            m_values.assign(values.begin(), values.end());
-        }
-        else
-        {
-            m_values = std::move(_vector.m_values);
-            m_view = ValueView();
-        }
-
-        return *this;
+        m_values.assign(_values.begin(), _values.end());
     }
 
     template <typename T>
@@ -120,19 +69,29 @@ namespace ego
     }
 
     template <typename T>
+    typename DynamicVectorBase<T>::ValueView DynamicVectorBase<T>::getValues()
+    {
+        return ValueView(m_values);
+    }
+
+    template <typename T>
+    typename DynamicVectorBase<T>::ConstValueView DynamicVectorBase<T>::getValues() const
+    {
+        return ConstValueView(m_values);
+    }
+
+    template <typename T>
     typename DynamicVectorBase<T>::ValueType DynamicVectorBase<T>::getElement(size_t _index) const
     {
-        ConstValueView values = getValues();
-        EGO_ASSERT(_index < values.size());
-        return values[_index];
+        EGO_ASSERT(_index < m_values.size());
+        return m_values[_index];
     }
 
     template <typename T>
     typename DynamicVectorBase<T>::ValueType& DynamicVectorBase<T>::getElement(size_t _index)
     {
-        ValueView values = getValues();
-        EGO_ASSERT(_index < values.size());
-        return values[_index];
+        EGO_ASSERT(_index < m_values.size());
+        return m_values[_index];
     }
 
     template <typename T>
@@ -145,16 +104,14 @@ namespace ego
     template <typename T>
     void DynamicVectorBase<T>::reset()
     {
-        ValueView values = getValues();
-        std::fill(values.begin(), values.end(), DefaultValue);
+        std::fill(m_values.begin(), m_values.end(), DefaultValue);
     }
 
     template <typename T>
     uint32_t DynamicVectorBase<T>::getElementCount() const
     {
-        const size_t elementCount = getValues().size();
-        EGO_ASSERT(elementCount <= std::numeric_limits<uint32_t>::max());
-        return static_cast<uint32_t>(elementCount);
+        EGO_ASSERT(m_values.size() <= std::numeric_limits<uint32_t>::max());
+        return static_cast<uint32_t>(m_values.size());
     }
 
 #pragma endregion

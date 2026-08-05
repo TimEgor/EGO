@@ -15,7 +15,7 @@ namespace ego
     template <typename T>
     ComputeMatrix4x4Base<T> RotationEulerComputeMatrix4x4(const ComputeVector3Base<T>& _vector);
     template <typename T>
-    ComputeMatrix4x4Base<T> RotationEulerComputeMatrix4x4(T _pitch, T _yaw, T _roll);
+    ComputeMatrix4x4Base<T> RotationEulerComputeMatrix4x4(T _roll, T _pitch, T _yaw);
     template <typename T>
     ComputeMatrix4x4Base<T> ScaleComputeMatrix4x4(const ComputeVector3Base<T>& _scale);
 
@@ -25,22 +25,30 @@ namespace ego
     template <typename T>
     ComputeMatrix4x4Base<T> ComputeMatrix4x4ZeroBase()
     {
-        return ComputeMatrix4x4Base<T>(T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0));
+        return ComputeMatrix4x4Base<T>();
     }
 
     template <typename T>
     ComputeMatrix4x4Base<T> ComputeMatrix4x4IdentityBase()
     {
-        return ComputeMatrix4x4Base<T>(T(1.0), T(0.0), T(0.0), T(0.0), T(0.0), T(1.0), T(0.0), T(0.0), T(0.0), T(0.0), T(1.0), T(0.0), T(0.0), T(0.0), T(0.0), T(1.0));
+        return ComputeMatrix4x4Base<T>(
+            ComputeVector4Base<T>(T(1.0), T(0.0), T(0.0), T(0.0)),
+            ComputeVector4Base<T>(T(0.0), T(1.0), T(0.0), T(0.0)),
+            ComputeVector4Base<T>(T(0.0), T(0.0), T(1.0), T(0.0)),
+            ComputeVector4Base<T>(T(0.0), T(0.0), T(0.0), T(1.0)));
     }
 
     template <typename T>
     ComputeMatrix4x4Base<T> ComputeMatrix4x4ZeroIdentityBase()
     {
-        return ComputeMatrix4x4Base<T>(T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(0.0), T(1.0));
+        return ComputeMatrix4x4Base<T>(
+            ComputeVector4Base<T>(T(0.0)),
+            ComputeVector4Base<T>(T(0.0)),
+            ComputeVector4Base<T>(T(0.0)),
+            ComputeVector4Base<T>(T(0.0), T(0.0), T(0.0), T(1.0)));
     }
 
-    using ComputeMatrix4x4 = ComputeMatrix4x4Base<ComputeValueType>;
+    using ComputeMatrix4x4 = ComputeMatrix4x4Base<ComputeValue>;
     using FloatComputeMatrix4x4 = ComputeMatrix4x4Base<float>;
 } // namespace ego
 

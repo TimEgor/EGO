@@ -238,7 +238,7 @@ ego::gui::Vertex ego::gui::ImGuiRendererAdapter::ConvertVertex(const ImDrawVert&
     Vertex vertex;
     vertex.m_position = FloatVector2(_vertex.pos.x - _displayPositionX, _vertex.pos.y - _displayPositionY);
     vertex.m_uv = FloatVector2(_vertex.uv.x, _vertex.uv.y);
-    vertex.m_color = NormalizedColorRGBA(
+    vertex.m_color = FloatVector4(
         static_cast<float>((_vertex.col >> IM_COL32_R_SHIFT) & 0xFFu) * inverseColorScale,
         static_cast<float>((_vertex.col >> IM_COL32_G_SHIFT) & 0xFFu) * inverseColorScale,
         static_cast<float>((_vertex.col >> IM_COL32_B_SHIFT) & 0xFFu) * inverseColorScale,
