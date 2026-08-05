@@ -8,10 +8,12 @@ ego_add_component(
 )
 
 ego_require_third_party(PugiXML)
+ego_require_third_party(MagicEnum)
 
 target_link_libraries(
     EgoCore
         PUBLIC
+            Ego::ThirdParty::MagicEnum
             Ego::ThirdParty::PugiXML
 )
 

@@ -27,7 +27,6 @@ namespace ego::render
         bool init() override;
         void clearResources() override;
 
-        bool prepare(const RenderPrepareContext& _context) override;
         void render(const gpu::TextureViewPointer& _targetView) override;
         void wait() override;
 
@@ -44,6 +43,9 @@ namespace ego::render
         bool isClearEnabled() const;
 
         EGO_RENDER(DefaultRender, Render);
+
+    protected:
+        bool onPrepare(const RenderPrepareContext& _context) override;
 
     private:
         void release();

@@ -1,6 +1,8 @@
 #include "CameraComponent.h"
 
-ego::render::CameraComponent::CameraComponent(const ComputeMatrix4x4& _projection)
-    : m_projection(_projection)
+ego::render::CameraComponent::CameraComponent(float _verticalFieldOfView, float _nearPlane, float _farPlane)
+    : m_verticalFieldOfView(_verticalFieldOfView),
+      m_nearPlane(_nearPlane),
+      m_farPlane(_farPlane)
 {
 }

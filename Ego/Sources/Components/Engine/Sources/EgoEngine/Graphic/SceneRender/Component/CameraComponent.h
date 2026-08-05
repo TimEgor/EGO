@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoCore/Math/ComputeMatrix44.h"
+#include "EgoCore/RTTI/RTTI.h"
 
 #include "EgoECS/Component.h"
 
@@ -9,8 +9,13 @@ namespace ego::render
     struct CameraComponent final : public ecs::Component
     {
         CameraComponent() = default;
-        explicit CameraComponent(const ComputeMatrix4x4& _projection);
+        explicit CameraComponent(float _verticalFieldOfView, float _nearPlane, float _farPlane);
 
-        ComputeMatrix4x4 m_projection = ComputeMatrix4x4Identity;
+        float m_verticalFieldOfView = 60.0f;
+        float m_nearPlane = 0.1f;
+        float m_farPlane = 1000.0f;
+
+        EGO_RTTI_VIRTUAL(CameraComponent, ecs::Component);
+        EGO_RTTI_PROPERTIES(EGO_RTTI_PROPERTY(m_verticalFieldOfView), EGO_RTTI_PROPERTY(m_nearPlane), EGO_RTTI_PROPERTY(m_farPlane));
     };
 } // namespace ego::render

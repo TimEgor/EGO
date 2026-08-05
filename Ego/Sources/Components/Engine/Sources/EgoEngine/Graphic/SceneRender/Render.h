@@ -8,6 +8,7 @@
 #include "EgoGraphicHardware/GraphicObjects/Texture.h"
 
 #include "EgoEngine/Graphic/SceneRender/DebugDrawData.h"
+#include "EgoEngine/Graphic/SceneRender/RenderCamera.h"
 #include "EgoEngine/Graphic/SceneRender/RenderObject.h"
 
 namespace ego
@@ -37,7 +38,7 @@ namespace ego::render
         virtual bool init() = 0;
         virtual void clearResources() = 0;
 
-        virtual bool prepare(const RenderPrepareContext& _context) = 0;
+        bool prepare(const RenderPrepareContext& _context);
         virtual void render(const gpu::TextureViewPointer& _targetView) = 0;
         virtual void wait() = 0;
 
@@ -55,6 +56,16 @@ namespace ego::render
         virtual RenderType getType() const = 0;
 
         EGO_RTTI_VIRTUAL_BASE(Render);
+
+    protected:
+        const RenderCamera& getCamera() const;
+
+        virtual bool onPrepare(const RenderPrepareContext& _context) = 0;
+
+    private:
+        bool prepareCamera(const RenderPrepareContext& _context);
+
+        RenderCamera m_camera;
     };
 
     EGO_POINTER(Render);

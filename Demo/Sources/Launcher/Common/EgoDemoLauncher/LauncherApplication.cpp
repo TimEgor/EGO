@@ -1,5 +1,6 @@
 #include "EgoDemoLauncher/LauncherApplication.h"
 
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Parsers/ArgParser/Parser.h"
 #include "EgoCore/Platform/Platform.h"
 #include "EgoCore/Platform/PlatformSubsystem.h"
@@ -20,19 +21,10 @@ bool ego::demo::launcher::LauncherApplication::init(void* _nativeInstanceHandle,
     CommandLineOptions commandLineOptions;
     parseCommandLine(_argCount, _argValues, commandLineOptions);
 
-    if (!initApplicationSubsystem(_nativeInstanceHandle, commandLineOptions))
-    {
-        release();
-
-        return false;
-    }
-
-    if (!initEngineSubsystem(commandLineOptions))
-    {
-        release();
-
-        return false;
-    }
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(
+        initApplicationSubsystem(_nativeInstanceHandle, commandLineOptions),
+        "Failed to initialize the application subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEngineSubsystem(commandLineOptions), "Failed to initialize the engine subsystem.");
 
     return true;
 }

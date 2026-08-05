@@ -51,7 +51,15 @@ namespace ego
             requires(Size == 3);
         ComputeVectorBase(ValueType _x, ValueType _y, ValueType _z, ValueType _w)
             requires(Size == 4);
-        ComputeVectorBase(const VectorType& _vector);
+        template <typename SourceValueType>
+        ComputeVectorBase(const Vector2Base<SourceValueType>& _vector)
+            requires(Size == 2);
+        template <typename SourceValueType>
+        ComputeVectorBase(const Vector3Base<SourceValueType>& _vector)
+            requires(Size == 3);
+        template <typename SourceValueType>
+        ComputeVectorBase(const Vector4Base<SourceValueType>& _vector)
+            requires(Size == 4);
         ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector, ValueType _z)
             requires(Size == 3);
         ComputeVectorBase(const ComputeVectorBase<ValueType, 2>& _vector1, const ComputeVectorBase<ValueType, 2>& _vector2)
@@ -88,20 +96,10 @@ namespace ego
         VectorType getVector() const;
         void getVector(VectorType& _out) const;
 
-        FloatVector2 getFloatVector2() const
-            requires(Size == 2);
-        void getFloatVector2(FloatVector2& _out) const
-            requires(Size == 2);
-
-        FloatVector3 getFloatVector3() const
-            requires(Size == 3);
-        void getFloatVector3(FloatVector3& _out) const
-            requires(Size == 3);
-
-        FloatVector4 getFloatVector4() const
-            requires(Size == 4);
-        void getFloatVector4(FloatVector4& _out) const
-            requires(Size == 4);
+        template <typename ResultValueType>
+        typename ComputeVectorStorageTraits<ResultValueType, Size>::StorageType getVector() const;
+        template <typename ResultValueType>
+        void getVector(typename ComputeVectorStorageTraits<ResultValueType, Size>::StorageType& _out) const;
 
         ValueType getX() const;
         ValueType getY() const;

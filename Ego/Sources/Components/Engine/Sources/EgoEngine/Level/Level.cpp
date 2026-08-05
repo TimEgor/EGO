@@ -9,6 +9,8 @@ struct ego::Level::HierarchyComponent final : public ecs::Component
     ecs::Entity m_lastChild;
     ecs::Entity m_previousSibling;
     ecs::Entity m_nextSibling;
+
+    EGO_RTTI_VIRTUAL(HierarchyComponent, ecs::Component);
 };
 
 ego::Level::Level()

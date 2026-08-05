@@ -8,11 +8,13 @@
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/SceneRender/Render.h"
+#include "EgoEngine/Level/Components/TransformComponent.h"
 
 namespace
 {
     constexpr float FullRotation = 6.28318530718f;
 
+    constexpr ego::FloatVector3 CameraPosition(0.0f, 0.0f, -2.0f);
     constexpr ego::NormalizedColorRGB Red(1.0f, 0.1f, 0.1f);
     constexpr ego::NormalizedColorRGB Green(0.1f, 1.0f, 0.1f);
     constexpr ego::NormalizedColorRGB Blue(0.1f, 0.3f, 1.0f);
@@ -44,6 +46,9 @@ bool ego::demo::DebugDrawDemo::init(const engine::EngineSessionWeakPointer& _eng
     EGO_CHECK_INITIALIZATION(m_cameraEntity);
 
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(m_cameraEntity));
+    TransformComponent* cameraTransformComponent = m_level->tryGetComponent<TransformComponent>(m_cameraEntity);
+    EGO_CHECK_INITIALIZATION(cameraTransformComponent);
+    cameraTransformComponent->m_globalTransform.setOrigin(CameraPosition);
     engineSession->setRenderCameraEntity(m_cameraEntity);
 
     return true;

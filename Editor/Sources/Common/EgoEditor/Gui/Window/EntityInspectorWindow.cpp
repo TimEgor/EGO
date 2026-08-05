@@ -1,7 +1,10 @@
 #include "EgoEditor/Gui/Window/EntityInspectorWindow.h"
 
-#include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
-#include "EgoEngine/Graphic/SceneRender/Component/MeshRenderComponent.h"
+#include "EgoCore/RTTI/Property/PropertyMetaInfo.h"
+#include "EgoCore/RTTI/Type/TypeMetaInfo.h"
+
+#include "EgoGui/GuiController.h"
+
 #include "EgoEngine/Level/Level.h"
 
 #include "EgoEditor/EditorController.h"
@@ -58,37 +61,91 @@ void ego::editor::EntityInspectorWindow::drawWindow(bool& _isVisible)
                     ImGui::TextUnformatted("Parent: Root");
                 }
 
-                if (nameComponent)
+                const engine::EngineSessionPointer engineSession = editorSubsystem->getEditorController().getEditorEngineSessionPointer();
+                const gui::GuiControllerPointer guiController = engineSession ? engineSession->getGuiControllerPointer() : nullptr;
+                const gui::PropertyInspectorPointer propertyInspector = guiController ? guiController->getPropertyInspectorPointer() : nullptr;
+                if (!propertyInspector)
                 {
-                    ImGui::SeparatorText("Name Component");
-                    ImGui::TextUnformatted(nameComponent->m_name.c_str());
+                    ImGui::TextDisabled("Property inspector isn't available");
                 }
-
-                const TransformComponent* transformComponent = level->tryGetComponent<TransformComponent>(selectedEntity);
-                if (transformComponent)
+                else
                 {
-                    const FloatVector3 position = transformComponent->m_globalTransform.getOrigin().getFloatVector3();
-
-                    ImGui::SeparatorText("Transform Component");
-                    ImGui::Text("Position: %.3f, %.3f, %.3f", position.m_x, position.m_y, position.m_z);
-                }
-
-                const render::CameraComponent* cameraComponent = level->tryGetComponent<render::CameraComponent>(selectedEntity);
-                if (cameraComponent)
-                {
-                    ImGui::SeparatorText("Camera Component");
-                }
-
-                const render::MeshRenderComponent* meshRenderComponent = level->tryGetComponent<render::MeshRenderComponent>(selectedEntity);
-                if (meshRenderComponent)
-                {
-                    ImGui::SeparatorText("Mesh Render Component");
-                    ImGui::Text("Mesh: %s", meshRenderComponent->m_mesh ? "Assigned" : "None");
-                    ImGui::Text("Material: %s", meshRenderComponent->m_material ? "Assigned" : "None");
+                    level->forEachComponent(
+                        selectedEntity,
+                        [this, &propertyInspector](ecs::Component& _component)
+                        {
+                            drawComponent(_component, *propertyInspector);
+                        });
                 }
             }
         }
     }
 
     ImGui::End();
+}
+
+void ego::editor::EntityInspectorWindow::drawComponent(ecs::Component& _component, const gui::PropertyInspector& _propertyInspector)
+{
+    const rtti::TypeMetaInfo& typeMetaInfo = _component.getObjectTypeMetaInfo();
+    const rtti::TypeMetaInfo::PropertyRange properties = typeMetaInfo.getProperties();
+
+    ImGui::SeparatorText(_component.getObjectTypeInfoName());
+    if (properties.empty())
+    {
+        return;
+    }
+
+    drawProperties(&_component, typeMetaInfo, _propertyInspector);
+}
+
+void ego::editor::EntityInspectorWindow::drawProperties(
+    void* _object,
+    const rtti::TypeMetaInfo& _typeMetaInfo,
+    const gui::PropertyInspector& _propertyInspector)
+{
+    const rtti::TypeMetaInfo::PropertyRange properties = _typeMetaInfo.getProperties();
+    for (rtti::TypeMetaInfo::PropertyIterator iterator = properties.begin(); iterator != properties.end(); ++iterator)
+    {
+        const rtti::PropertyMetaInfo& propertyMetaInfo = *iterator;
+        void* propertyValue = iterator.getValueAddress(_object);
+
+        drawProperty(propertyMetaInfo.m_name, propertyValue, propertyMetaInfo, _propertyInspector);
+    }
+}
+
+void ego::editor::EntityInspectorWindow::drawProperty(
+    const char* _name,
+    void* _value,
+    const rtti::PropertyMetaInfo& _propertyMetaInfo,
+    const gui::PropertyInspector& _propertyInspector)
+{
+    const gui::PropertyGuiDrawerPointer propertyGuiDrawer = _propertyInspector.getPropertyGuiDrawerPointer(_propertyMetaInfo);
+
+    ImGui::PushID(&_propertyMetaInfo);
+    if (propertyGuiDrawer)
+    {
+        const gui::PropertyGuiDrawFunction drawPropertyFunction =
+            [this, &_propertyInspector](const char* _childName, void* _childValue, const rtti::PropertyMetaInfo& _childPropertyMetaInfo)
+        {
+            drawProperty(_childName, _childValue, _childPropertyMetaInfo, _propertyInspector);
+        };
+
+        propertyGuiDrawer->draw(_name, _value, _propertyMetaInfo, drawPropertyFunction);
+    }
+    else if (_propertyMetaInfo.m_valueTypeMetaInfo && ImGui::TreeNode(_name))
+    {
+        const rtti::TypeMetaInfo::PropertyRange childProperties = _propertyMetaInfo.m_valueTypeMetaInfo->getProperties();
+        if (childProperties.empty())
+        {
+            ImGui::TextDisabled("No reflected properties");
+        }
+        else
+        {
+            drawProperties(_value, *_propertyMetaInfo.m_valueTypeMetaInfo, _propertyInspector);
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::PopID();
 }

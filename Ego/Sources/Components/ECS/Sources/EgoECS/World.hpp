@@ -13,7 +13,8 @@ namespace ego::ecs
     namespace detail
     {
         template <typename TComponent>
-        inline constexpr bool IsComponentType = std::is_base_of_v<Component, std::remove_cv_t<TComponent>> && !std::is_same_v<Component, std::remove_cv_t<TComponent>>;
+        inline constexpr bool IsComponentType =
+            std::is_base_of_v<Component, std::remove_cv_t<TComponent>> && !std::is_same_v<Component, std::remove_cv_t<TComponent>>;
     }
 
     template <typename TComponent, typename... Args>
@@ -24,6 +25,8 @@ namespace ego::ecs
         static_assert(detail::IsComponentType<TComponent>, "ECS component must inherit from ego::ecs::Component.");
 
         EGO_ASSERT(isEntityAlive(_entity));
+
+        m_implementation->registerComponent<TComponent>();
 
         return m_implementation->m_registry.emplace<TComponent>(detail::ToNativeEntity(_entity), std::forward<Args>(_args)...);
     }
@@ -36,6 +39,8 @@ namespace ego::ecs
         static_assert(detail::IsComponentType<TComponent>, "ECS component must inherit from ego::ecs::Component.");
 
         EGO_ASSERT(isEntityAlive(_entity));
+
+        m_implementation->registerComponent<TComponent>();
 
         return m_implementation->m_registry.emplace_or_replace<TComponent>(detail::ToNativeEntity(_entity), std::forward<Args>(_args)...);
     }
@@ -116,6 +121,36 @@ namespace ego::ecs
         return m_implementation->m_registry.remove<TComponent>(detail::ToNativeEntity(_entity)) > 0;
     }
 
+    template <typename TFunction>
+    void World::forEachComponent(Entity _entity, TFunction&& _function)
+    {
+        if (!isEntityAlive(_entity))
+        {
+            return;
+        }
+
+        const entt::entity nativeEntity = detail::ToNativeEntity(_entity);
+        auto&& function = _function;
+        for (auto&& [componentTypeID, componentStorage] : m_implementation->m_registry.storage())
+        {
+            if (!componentStorage.contains(nativeEntity))
+            {
+                continue;
+            }
+
+            const auto resolverIterator = m_implementation->m_componentResolvers.find(componentTypeID);
+            if (resolverIterator == m_implementation->m_componentResolvers.end())
+            {
+                EGO_ASSERT_FAIL_MESSAGE("ECS component type isn't registered.");
+
+                continue;
+            }
+
+            Component& component = resolverIterator->second(componentStorage.value(nativeEntity));
+            std::invoke(function, component);
+        }
+    }
+
     template <typename... TComponents, typename TFunction>
     void World::forEach(TFunction&& _function)
     {
@@ -142,9 +177,7 @@ namespace ego::ecs
         const WorldID worldID = m_id;
 
         view.each(
-            [&function, worldID](
-                entt::entity _nativeEntity,
-                const std::remove_const_t<TComponents>&... _components)
+            [&function, worldID](entt::entity _nativeEntity, const std::remove_const_t<TComponents>&... _components)
             {
                 std::invoke(function, detail::ToEntity(worldID, _nativeEntity), _components...);
             });

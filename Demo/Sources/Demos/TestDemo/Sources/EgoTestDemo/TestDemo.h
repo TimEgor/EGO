@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EgoCore/Math/ComputeVector3.h"
+#include "EgoCore/Math/Vector.h"
 
 #include "EgoEngine/Graphic/SceneRender/Resources/MaterialResource.h"
 #include "EgoEngine/Graphic/SceneRender/Resources/MeshResource.h"
@@ -27,8 +27,8 @@ namespace ego::demo
     private:
         void release();
 
-        bool createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const ComputeVector3& _position);
-        bool setTriangleTransform(ecs::Entity _entity, const ComputeVector3& _position, float _rotationAngle);
+        bool createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const FloatVector3& _position);
+        bool setTriangleTransform(ecs::Entity _entity, const FloatVector3& _position, float _rotationAngle);
 
         engine::EngineSessionWeakPointer m_engineSession;
         ResourceControllerPointer m_resourceController = nullptr;

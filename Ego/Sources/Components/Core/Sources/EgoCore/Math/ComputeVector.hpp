@@ -40,12 +40,38 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeVectorBase<T, Size>::ComputeVectorBase(const VectorType& _vector)
+    template <typename SourceValueType>
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector2Base<SourceValueType>& _vector)
+        requires(Size == 2)
         : ComputeVectorBase()
     {
         for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
         {
-            setElement(elementIndex, _vector.m_values[elementIndex]);
+            setElement(elementIndex, static_cast<ValueType>(_vector.m_values[elementIndex]));
+        }
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename SourceValueType>
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector3Base<SourceValueType>& _vector)
+        requires(Size == 3)
+        : ComputeVectorBase()
+    {
+        for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
+        {
+            setElement(elementIndex, static_cast<ValueType>(_vector.m_values[elementIndex]));
+        }
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename SourceValueType>
+    ComputeVectorBase<T, Size>::ComputeVectorBase(const Vector4Base<SourceValueType>& _vector)
+        requires(Size == 4)
+        : ComputeVectorBase()
+    {
+        for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
+        {
+            setElement(elementIndex, static_cast<ValueType>(_vector.m_values[elementIndex]));
         }
     }
 
@@ -168,70 +194,33 @@ namespace ego
     template <typename T, uint32_t Size>
     typename ComputeVectorBase<T, Size>::VectorType ComputeVectorBase<T, Size>::getVector() const
     {
-        VectorType result;
-        getVector(result);
-
-        return result;
+        return getVector<ValueType>();
     }
 
     template <typename T, uint32_t Size>
     void ComputeVectorBase<T, Size>::getVector(VectorType& _out) const
     {
+        getVector<ValueType>(_out);
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename ResultValueType>
+    typename ComputeVectorStorageTraits<ResultValueType, Size>::StorageType ComputeVectorBase<T, Size>::getVector() const
+    {
+        typename ComputeVectorStorageTraits<ResultValueType, Size>::StorageType result;
+        getVector<ResultValueType>(result);
+
+        return result;
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename ResultValueType>
+    void ComputeVectorBase<T, Size>::getVector(typename ComputeVectorStorageTraits<ResultValueType, Size>::StorageType& _out) const
+    {
         for (uint32_t elementIndex = 0; elementIndex < Size; ++elementIndex)
         {
-            _out.setElement(elementIndex, getElement(elementIndex));
+            _out.setElement(elementIndex, static_cast<ResultValueType>(getElement(elementIndex)));
         }
-    }
-
-    template <typename T, uint32_t Size>
-    FloatVector2 ComputeVectorBase<T, Size>::getFloatVector2() const
-        requires(Size == 2)
-    {
-        FloatVector2 result;
-        getFloatVector2(result);
-
-        return result;
-    }
-
-    template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::getFloatVector2(FloatVector2& _out) const
-        requires(Size == 2)
-    {
-        _out = FloatVector2(float(getX()), float(getY()));
-    }
-
-    template <typename T, uint32_t Size>
-    FloatVector3 ComputeVectorBase<T, Size>::getFloatVector3() const
-        requires(Size == 3)
-    {
-        FloatVector3 result;
-        getFloatVector3(result);
-
-        return result;
-    }
-
-    template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::getFloatVector3(FloatVector3& _out) const
-        requires(Size == 3)
-    {
-        _out = FloatVector3(float(getX()), float(getY()), float(getZ()));
-    }
-
-    template <typename T, uint32_t Size>
-    FloatVector4 ComputeVectorBase<T, Size>::getFloatVector4() const
-        requires(Size == 4)
-    {
-        FloatVector4 result;
-        getFloatVector4(result);
-
-        return result;
-    }
-
-    template <typename T, uint32_t Size>
-    void ComputeVectorBase<T, Size>::getFloatVector4(FloatVector4& _out) const
-        requires(Size == 4)
-    {
-        _out = FloatVector4(float(getX()), float(getY()), float(getZ()), float(getW()));
     }
 
     template <typename T, uint32_t Size>

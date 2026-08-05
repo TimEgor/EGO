@@ -11,10 +11,10 @@ ego::engine::EngineSubsystem::~EngineSubsystem()
 
 bool ego::engine::EngineSubsystem::init()
 {
-    EGO_CHECK_INITIALIZATION(!m_engine);
+    EGO_CHECK_INITIALIZATION_ASSERT(!m_engine);
 
     m_engine = MakePointer<Engine>();
-    EGO_CHECK_INITIALIZATION(m_engine && m_engine->init());
+    EGO_CHECK_INITIALIZATION_ASSERT(m_engine && m_engine->init());
 
     return true;
 }

@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Parsers/ArgParser/Parser.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/Subsystem/SubsystemRegistry.h"
@@ -22,14 +23,16 @@ bool ego::editor::EditorApplication::init(void* _nativeInstanceHandle, int _argC
     release();
 
     XmlDocument config;
-    EGO_CHECK_INITIALIZATION(loadConfig(config));
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(loadConfig(config), "Failed to load the editor configuration.");
 
     CommandLineOptions options;
     ParseCommandLine(_argCount, _argValues, options);
 
-    EGO_CHECK_INITIALIZATION(initApplicationSubsystem(_nativeInstanceHandle, options, config));
-    EGO_CHECK_INITIALIZATION(initEngineSubsystem());
-    EGO_CHECK_INITIALIZATION(initEditorSubsystem(config));
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(
+        initApplicationSubsystem(_nativeInstanceHandle, options, config),
+        "Failed to initialize the editor application subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEngineSubsystem(), "Failed to initialize the editor engine subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEditorSubsystem(config), "Failed to initialize the editor subsystem.");
 
     return true;
 }

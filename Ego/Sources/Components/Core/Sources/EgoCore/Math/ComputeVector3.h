@@ -94,32 +94,6 @@ namespace ego
 
     using ComputeVector3 = ComputeVector3Base<ComputeValueType>;
     using FloatComputeVector3 = ComputeVector3Base<float>;
-
-    inline const ComputeVector3 ComputeVector3Zero = ComputeVector3ZeroBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3One = ComputeVector3OneBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3NegativeOne = ComputeVector3NegativeOneBase<ComputeValueType>();
-
-    inline const ComputeVector3 ComputeVector3Epsilon = ComputeVector3EpsilonBase<ComputeValueType>();
-
-    inline const ComputeVector3 ComputeVector3UnitX = ComputeVector3UnitXBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3UnitY = ComputeVector3UnitYBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3UnitZ = ComputeVector3UnitZBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3NegativeUnitX = ComputeVector3NegativeUnitXBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3NegativeUnitY = ComputeVector3NegativeUnitYBase<ComputeValueType>();
-    inline const ComputeVector3 ComputeVector3NegativeUnitZ = ComputeVector3NegativeUnitZBase<ComputeValueType>();
-
-    inline const FloatComputeVector3 FloatComputeVector3Zero = ComputeVector3ZeroBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3One = ComputeVector3OneBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3NegativeOne = ComputeVector3NegativeOneBase<float>();
-
-    inline const FloatComputeVector3 FloatComputeVector3Epsilon = ComputeVector3EpsilonBase<float>();
-
-    inline const FloatComputeVector3 FloatComputeVector3UnitX = ComputeVector3UnitXBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3UnitY = ComputeVector3UnitYBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3UnitZ = ComputeVector3UnitZBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3NegativeUnitX = ComputeVector3NegativeUnitXBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3NegativeUnitY = ComputeVector3NegativeUnitYBase<float>();
-    inline const FloatComputeVector3 FloatComputeVector3NegativeUnitZ = ComputeVector3NegativeUnitZBase<float>();
 } // namespace ego
 
 #include "ComputeVector3.hpp"

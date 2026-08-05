@@ -42,6 +42,7 @@ BreakConstructorInitializers: BeforeColon
 PackConstructorInitializers: Never
 BreakInheritanceList: BeforeColon
 BreakTemplateDeclarations: Yes
+RequiresClausePosition: WithPreceding
 
 DerivePointerAlignment: false
 PointerAlignment: Left

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/UtilsMacros.h"
 
 #include "EgoJob/JobController.h"
@@ -13,10 +14,13 @@ ego::engine::Engine::~Engine()
 
 bool ego::engine::Engine::init()
 {
+    EGO_ASSERT(!m_jobController);
+    EGO_ASSERT(m_sessions.empty());
+
     EGO_CHECK_RETURN_FALSE(!m_jobController);
     EGO_CHECK_RETURN_FALSE(m_sessions.empty());
 
-    EGO_CHECK_INITIALIZATION(initJobController());
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initJobController(), "Failed to initialize the engine job controller.");
 
     return true;
 }

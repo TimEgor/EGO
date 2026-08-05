@@ -182,7 +182,7 @@ bool ego::render::RayTracingRenderPass::prepare(RenderPassPrepareContext& _conte
         const uint32_t instanceIndex = static_cast<uint32_t>(sceneDesc.m_instances.size());
         gpu::InstanceGeometryAccelerationStructureBuildDesc instanceDesc;
         instanceDesc.m_geometry = geometryAccelerationStructure.getObject();
-        instanceDesc.m_transform = item.m_globalTransform.m_matrix.getFloatMatrix4x4();
+        instanceDesc.m_transform = item.m_globalTransform.m_matrix;
         instanceDesc.m_instanceId = instanceIndex;
         instanceDesc.m_instanceMask = 0xff;
         instanceDesc.m_hitGroupIndex = hitGroupIndex;

@@ -73,7 +73,15 @@ namespace ego
             ValueType _m44)
             requires(Size == 4);
 
-        ComputeMatrixBase(const MatrixType& _matrix);
+        template <typename SourceValueType>
+        ComputeMatrixBase(const Matrix2x2Base<SourceValueType>& _matrix)
+            requires(Size == 2);
+        template <typename SourceValueType>
+        ComputeMatrixBase(const Matrix3x3Base<SourceValueType>& _matrix)
+            requires(Size == 3);
+        template <typename SourceValueType>
+        ComputeMatrixBase(const Matrix4x4Base<SourceValueType>& _matrix)
+            requires(Size == 4);
 
         ComputeMatrixBase(const ColumnVectorType& _column1, const ColumnVectorType& _column2)
             requires(Size == 2);
@@ -106,20 +114,10 @@ namespace ego
         MatrixType getMatrix() const;
         void getMatrix(MatrixType& _out) const;
 
-        FloatMatrix2x2 getFloatMatrix2x2() const
-            requires(Size == 2);
-        void getFloatMatrix2x2(FloatMatrix2x2& _out) const
-            requires(Size == 2);
-
-        FloatMatrix3x3 getFloatMatrix3x3() const
-            requires(Size == 3);
-        void getFloatMatrix3x3(FloatMatrix3x3& _out) const
-            requires(Size == 3);
-
-        FloatMatrix4x4 getFloatMatrix4x4() const
-            requires(Size == 4);
-        void getFloatMatrix4x4(FloatMatrix4x4& _out) const
-            requires(Size == 4);
+        template <typename ResultValueType>
+        typename ComputeMatrixStorageTraits<ResultValueType, Size>::StorageType getMatrix() const;
+        template <typename ResultValueType>
+        void getMatrix(typename ComputeMatrixStorageTraits<ResultValueType, Size>::StorageType& _out) const;
 
         ValueType getElement(uint32_t _row, uint32_t _column) const;
         void setElement(uint32_t _row, uint32_t _column, ValueType _value);

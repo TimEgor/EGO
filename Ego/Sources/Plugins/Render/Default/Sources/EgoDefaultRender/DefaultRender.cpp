@@ -37,78 +37,14 @@ bool ego::render::DefaultRender::init()
     return m_isInitialized;
 }
 
-void ego::render::DefaultRender::release()
-{
-    clearResources();
-
-    m_shaderData.release();
-    releasePassGraph();
-    m_pipelineStateCache.clear();
-    m_fileSystems.release();
-    m_renderTarget.release();
-    m_frameExecutor.release();
-    m_isPrepared = false;
-    m_isInitialized = false;
-}
-
 void ego::render::DefaultRender::clearResources()
 {
     wait();
 
     m_scene.clear();
-    m_shaderData.clearResources();
     m_passGraph.clearResources();
     m_pipelineStateCache.releaseUnused();
     m_isPrepared = false;
-}
-
-bool ego::render::DefaultRender::prepare(const RenderPrepareContext& _context)
-{
-    if (!m_isInitialized)
-    {
-        EGO_ASSERT_FAIL();
-        return false;
-    }
-
-    if (!m_frameExecutor.isValid())
-    {
-        EGO_ASSERT_FAIL();
-        return false;
-    }
-
-    wait();
-    m_isPrepared = false;
-
-    if (_context.m_targetSize.m_x == 0 || _context.m_targetSize.m_y == 0)
-    {
-        handlePrepareFailure();
-        return false;
-    }
-
-    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
-    if (!m_renderTarget.prepare(graphicDevice, _context.m_targetSize, DefaultRenderTargetFormat))
-    {
-        handlePrepareFailure();
-        return false;
-    }
-
-    m_scene.collect(_context.m_level);
-
-    if (!m_shaderData.prepare(graphicDevice, _context.m_level, _context.m_cameraEntity, m_scene, _context.m_targetSize))
-    {
-        handlePrepareFailure();
-        return false;
-    }
-
-    RenderPassPrepareContext passContext{graphicDevice, m_scene, m_shaderData, m_settings, _context.m_deltaTime};
-    if (!m_passGraph.prepare(passContext))
-    {
-        handlePrepareFailure();
-        return false;
-    }
-
-    m_isPrepared = true;
-    return true;
 }
 
 void ego::render::DefaultRender::render(const gpu::TextureViewPointer& _targetView)
@@ -208,6 +144,63 @@ bool ego::render::DefaultRender::isClearEnabled() const
     return m_settings.m_clearEnabled;
 }
 
+bool ego::render::DefaultRender::onPrepare(const RenderPrepareContext& _context)
+{
+    if (!m_isInitialized)
+    {
+        EGO_ASSERT_FAIL();
+        return false;
+    }
+
+    if (!m_frameExecutor.isValid())
+    {
+        EGO_ASSERT_FAIL();
+        return false;
+    }
+
+    wait();
+    m_isPrepared = false;
+
+    GraphicDevice& graphicDevice = gpu::GetGraphicDevice();
+    if (!m_renderTarget.prepare(graphicDevice, _context.m_targetSize, DefaultRenderTargetFormat))
+    {
+        handlePrepareFailure();
+        return false;
+    }
+
+    m_scene.collect(_context.m_level);
+
+    if (!m_shaderData.prepare(graphicDevice, getCamera(), m_scene, _context.m_targetSize))
+    {
+        handlePrepareFailure();
+        return false;
+    }
+
+    RenderPassPrepareContext passContext{graphicDevice, m_scene, m_shaderData, m_settings, _context.m_deltaTime};
+    if (!m_passGraph.prepare(passContext))
+    {
+        handlePrepareFailure();
+        return false;
+    }
+
+    m_isPrepared = true;
+    return true;
+}
+
+void ego::render::DefaultRender::release()
+{
+    clearResources();
+
+    m_shaderData.release();
+    releasePassGraph();
+    m_pipelineStateCache.clear();
+    m_fileSystems.release();
+    m_renderTarget.release();
+    m_frameExecutor.release();
+    m_isPrepared = false;
+    m_isInitialized = false;
+}
+
 bool ego::render::DefaultRender::initPassGraph(GraphicDevice& _graphicDevice)
 {
     m_passGraph.clear();
@@ -246,7 +239,8 @@ ego::gpu::Texture2DPointer ego::render::DefaultRender::resolvePresentationTarget
     const gpu::Texture2DDesc& targetDesc = targetTexture->getDesc();
     const gpu::GraphicResourceFormat targetViewFormat = _targetView->getDesc().m_format;
     if (targetDesc.m_size.m_x != resultDesc.m_size.m_x || targetDesc.m_size.m_y != resultDesc.m_size.m_y || targetDesc.m_format != resultDesc.m_format ||
-        (targetViewFormat != gpu::GraphicResourceFormat::Undefined && targetViewFormat != targetDesc.m_format) || !(targetDesc.m_usage & gpu::TextureUsageRenderTarget))
+        (targetViewFormat != gpu::GraphicResourceFormat::Undefined && targetViewFormat != targetDesc.m_format) ||
+        !(targetDesc.m_usage & gpu::TextureUsageRenderTarget))
     {
         return nullptr;
     }

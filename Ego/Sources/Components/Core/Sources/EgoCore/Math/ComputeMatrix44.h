@@ -42,14 +42,6 @@ namespace ego
 
     using ComputeMatrix4x4 = ComputeMatrix4x4Base<ComputeValueType>;
     using FloatComputeMatrix4x4 = ComputeMatrix4x4Base<float>;
-
-    inline const ComputeMatrix4x4 ComputeMatrix4x4Zero = ComputeMatrix4x4ZeroBase<ComputeValueType>();
-    inline const ComputeMatrix4x4 ComputeMatrix4x4Identity = ComputeMatrix4x4IdentityBase<ComputeValueType>();
-    inline const ComputeMatrix4x4 ComputeMatrix4x4ZeroIdentity = ComputeMatrix4x4ZeroIdentityBase<ComputeValueType>();
-
-    inline const FloatComputeMatrix4x4 FloatComputeMatrix4x4Zero = ComputeMatrix4x4ZeroBase<float>();
-    inline const FloatComputeMatrix4x4 FloatComputeMatrix4x4Identity = ComputeMatrix4x4IdentityBase<float>();
-    inline const FloatComputeMatrix4x4 FloatComputeMatrix4x4ZeroIdentity = ComputeMatrix4x4ZeroIdentityBase<float>();
 } // namespace ego
 
 #include "ComputeMatrix44.hpp"

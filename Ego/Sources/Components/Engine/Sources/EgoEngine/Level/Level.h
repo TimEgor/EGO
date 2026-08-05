@@ -72,6 +72,9 @@ namespace ego
         template <typename TComponent>
         const TComponent* tryGetComponent(ecs::Entity _entity) const;
 
+        template <typename TFunction>
+        void forEachComponent(ecs::Entity _entity, TFunction&& _function);
+
         template <typename... TComponents, typename TFunction>
         void forEachComponent(TFunction&& _function);
 

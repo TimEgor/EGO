@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Parsers/XmlParser/XmlNode.h"
 #include "EgoCore/Platform/FileSystem/RootedFileSystem.h"
@@ -27,14 +28,14 @@ bool ego::editor::EditorController::init(const XmlDocument& _config)
     release();
 
     const application::ApplicationSubsystemPointer applicationSubsystem = application::GetApplicationSubsystemPointer();
-    EGO_CHECK_INITIALIZATION(applicationSubsystem && applicationSubsystem->getApplicationPointer());
+    EGO_CHECK_INITIALIZATION_ASSERT(applicationSubsystem && applicationSubsystem->getApplicationPointer());
 
     const engine::EngineSubsystemPointer engineSubsystem = engine::GetEngineSubsystemPointer();
-    EGO_CHECK_INITIALIZATION(engineSubsystem && engineSubsystem->getEnginePointer());
+    EGO_CHECK_INITIALIZATION_ASSERT(engineSubsystem && engineSubsystem->getEnginePointer());
 
-    EGO_CHECK_INITIALIZATION(initEditorAssets(_config));
-    EGO_CHECK_INITIALIZATION(initContext(_config));
-    EGO_CHECK_INITIALIZATION(m_projectController.init(_config));
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEditorAssets(_config), "Failed to initialize editor assets.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initContext(_config), "Failed to initialize the editor context.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(m_projectController.init(_config), "Failed to initialize the editor project controller.");
 
     m_editorContext.m_mainSurface->show();
 
@@ -155,6 +156,7 @@ bool ego::editor::EditorController::initContext(const XmlDocument& _config)
     const application::Presentation presentation = presenterProvider->createPresentation(presentationDesc);
     if (!presentation.m_surface || !presentation.m_graphicPresenter || !presentation.m_surface->isValid())
     {
+        EGO_ASSERT_FAIL_MESSAGE("Failed to create the editor presentation.");
         if (presentation.m_surface)
         {
             presenterProvider->destroyPresentation(presentation.m_surface);
@@ -172,6 +174,7 @@ bool ego::editor::EditorController::initContext(const XmlDocument& _config)
     const engine::EngineSessionPointer engineSession = engine->createSession(sessionInitData);
     if (!engineSession)
     {
+        EGO_ASSERT_FAIL_MESSAGE("Failed to create the editor engine session.");
         presenterProvider->destroyPresentation(presentation.m_surface);
 
         return false;
@@ -180,7 +183,14 @@ bool ego::editor::EditorController::initContext(const XmlDocument& _config)
     m_editorContext.m_engineSession = engineSession;
     m_editorContext.m_mainSurface = presentation.m_surface;
 
-    return m_guiController.init(_config);
+    if (!m_guiController.init(_config))
+    {
+        EGO_ASSERT_FAIL_MESSAGE("Failed to initialize the editor GUI controller.");
+
+        return false;
+    }
+
+    return true;
 }
 
 void ego::editor::EditorController::releaseContext()

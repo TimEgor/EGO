@@ -36,12 +36,6 @@ namespace ego
 
     using ComputeVector2 = ComputeVector2Base<ComputeValueType>;
     using FloatComputeVector2 = ComputeVector2Base<float>;
-
-    inline const ComputeVector2 ComputeVector2Zero = ComputeVector2ZeroBase<ComputeValueType>();
-    inline const ComputeVector2 ComputeVector2One = ComputeVector2OneBase<ComputeValueType>();
-    inline const ComputeVector2 ComputeVector2NegativeOne = ComputeVector2NegativeOneBase<ComputeValueType>();
-
-    inline const ComputeVector2 ComputeVector2Epsilon = ComputeVector2EpsilonBase<ComputeValueType>();
 } // namespace ego
 
 #include "ComputeVector2.hpp"

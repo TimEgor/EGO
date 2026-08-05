@@ -34,31 +34,27 @@ ego::application::Application::~Application()
 
 bool ego::application::Application::init(const InitData& _initData, const ApplicationSubsystemPointer& _applicationSubsystem)
 {
+    EGO_ASSERT(!m_subsystemRegistry);
+    EGO_ASSERT(_applicationSubsystem);
+
     EGO_CHECK_RETURN_FALSE(!m_subsystemRegistry);
     EGO_CHECK_RETURN_FALSE(_applicationSubsystem);
 
     m_isExitRequested = false;
 
-    EGO_CHECK_INITIALIZATION(initSubsystemRegistry());
-    EGO_CHECK_INITIALIZATION(initDiagnosticSubsystem());
-    EGO_CHECK_INITIALIZATION(initEventSubsystem());
-    EGO_CHECK_INITIALIZATION(initPlatformSubsystem(_initData.m_nativeInstanceHandle));
-    EGO_CHECK_INITIALIZATION(initPluginSubsystem(_initData.m_pluginDirectory));
-    EGO_CHECK_INITIALIZATION(initApplicationProfiler(_initData.m_profilerPluginModuleName));
-    EGO_CHECK_INITIALIZATION(registerSubsystem(_applicationSubsystem));
-
-    if (_initData.m_enableGraphicHardware)
-    {
-        EGO_CHECK_INITIALIZATION(initGraphicHardwareSubsystem(_initData.m_graphicHardwarePluginModuleName));
-    }
-
-    EGO_CHECK_INITIALIZATION(initResourceSubsystem());
-    EGO_CHECK_INITIALIZATION(initInputController());
-
-    if (_initData.m_enableWindowing)
-    {
-        EGO_CHECK_INITIALIZATION(initWindowing());
-    }
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initSubsystemRegistry(), "Failed to initialize the application subsystem registry.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initDiagnosticSubsystem(), "Failed to initialize the diagnostic subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEventSubsystem(), "Failed to initialize the event subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initPlatformSubsystem(_initData.m_nativeInstanceHandle), "Failed to initialize the platform subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initPluginSubsystem(_initData.m_pluginDirectory), "Failed to initialize the plugin subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initApplicationProfiler(_initData.m_profilerPluginModuleName), "Failed to initialize the application profiler.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(registerSubsystem(_applicationSubsystem), "Failed to register the application subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(
+        !_initData.m_enableGraphicHardware || initGraphicHardwareSubsystem(_initData.m_graphicHardwarePluginModuleName),
+        "Failed to initialize the graphic hardware subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initResourceSubsystem(), "Failed to initialize the resource subsystem.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initInputController(), "Failed to initialize the input controller.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(!_initData.m_enableWindowing || initWindowing(), "Failed to initialize application windowing.");
 
     return true;
 }
@@ -120,8 +116,9 @@ bool ego::application::Application::initDiagnosticSubsystem()
     m_diagnosticSubsystem = MakePointer<DiagnosticSubsystem>();
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem);
     EGO_CHECK_RETURN_FALSE(m_diagnosticSubsystem->init());
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_diagnosticSubsystem));
 
-    return registerSubsystem(m_diagnosticSubsystem);
+    return true;
 }
 
 bool ego::application::Application::initEventSubsystem()
@@ -138,8 +135,9 @@ bool ego::application::Application::initEventSubsystem()
     EGO_CHECK_RETURN_CALL_FALSE(
         m_applicationQuitRequestedEventCallbackID != InvalidEventCallbackID,
         eventController->unregisterEvent<ApplicationQuitRequestedEvent>());
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_eventSubsystem));
 
-    return registerSubsystem(m_eventSubsystem);
+    return true;
 }
 
 bool ego::application::Application::initPlatformSubsystem(void* _nativeInstanceHandle)
@@ -150,8 +148,9 @@ bool ego::application::Application::initPlatformSubsystem(void* _nativeInstanceH
     PlatformSubsystem::InitData platformSubsystemInitData;
     platformSubsystemInitData.m_nativeInstanceHandle = _nativeInstanceHandle;
     EGO_CHECK_RETURN_FALSE(m_platformSubsystem->init(platformSubsystemInitData));
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_platformSubsystem));
 
-    return registerSubsystem(m_platformSubsystem);
+    return true;
 }
 
 bool ego::application::Application::initPluginSubsystem(const FileName& _pluginDirectory)
@@ -160,8 +159,9 @@ bool ego::application::Application::initPluginSubsystem(const FileName& _pluginD
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem);
     EGO_CHECK_RETURN_FALSE(m_pluginSubsystem->init());
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_pluginSubsystem));
+    EGO_CHECK_RETURN_FALSE(registerPluginDirectory(_pluginDirectory));
 
-    return registerPluginDirectory(_pluginDirectory);
+    return true;
 }
 
 bool ego::application::Application::initApplicationProfiler(const FileName& _pluginModuleName)
@@ -169,8 +169,9 @@ bool ego::application::Application::initApplicationProfiler(const FileName& _plu
     // TODO: remove it with explicit profile handler
     m_applicationProfiler = MakePointer<ApplicationProfiler>();
     EGO_CHECK_RETURN_FALSE(m_applicationProfiler);
+    EGO_CHECK_RETURN_FALSE(m_applicationProfiler->init(_pluginModuleName));
 
-    return m_applicationProfiler->init(_pluginModuleName);
+    return true;
 }
 
 bool ego::application::Application::initGraphicHardwareSubsystem(const FileName& _pluginModuleName)
@@ -181,8 +182,9 @@ bool ego::application::Application::initGraphicHardwareSubsystem(const FileName&
     gpu::GraphicHardwareSubsystem::InitData graphicHardwareSubsystemInitData;
     graphicHardwareSubsystemInitData.m_pluginModuleName = _pluginModuleName;
     EGO_CHECK_RETURN_FALSE(m_graphicHardwareSubsystem->init(graphicHardwareSubsystemInitData));
+    EGO_CHECK_RETURN_FALSE(registerSubsystem(m_graphicHardwareSubsystem));
 
-    return registerSubsystem(m_graphicHardwareSubsystem);
+    return true;
 }
 
 bool ego::application::Application::initResourceSubsystem()
@@ -198,8 +200,9 @@ bool ego::application::Application::initResourceSubsystem()
     resourceSubsystemInitData.m_resourceFileSystem = resourceFileSystem;
     EGO_CHECK_RETURN_FALSE(m_resourceSubsystem->init(resourceSubsystemInitData));
     EGO_CHECK_RETURN_FALSE(registerSubsystem(m_resourceSubsystem));
+    EGO_CHECK_RETURN_FALSE(registerGraphicResourceProvider());
 
-    return registerGraphicResourceProvider();
+    return true;
 }
 
 void ego::application::Application::releaseResourceSubsystem()
@@ -271,8 +274,9 @@ bool ego::application::Application::initInputController()
 
     m_platformInputKeyProvider = MakePointer<ApplicationInputKeyProvider>(platformInputDeviceController);
     EGO_CHECK_RETURN_FALSE(m_platformInputKeyProvider);
+    EGO_CHECK_RETURN_FALSE(m_inputController->registerKeyProvider(m_platformInputKeyProvider));
 
-    return m_inputController->registerKeyProvider(m_platformInputKeyProvider);
+    return true;
 }
 
 void ego::application::Application::releaseInputController()

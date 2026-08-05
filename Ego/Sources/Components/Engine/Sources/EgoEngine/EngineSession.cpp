@@ -30,12 +30,19 @@ ego::engine::EngineSession::~EngineSession()
 
 bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController, EngineSessionID _id, const InitData& _initData)
 {
-    EGO_CHECK_RETURN_FALSE(_jobController);
-    EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
-
     const application::Presentation& mainPresentation = _initData.m_mainPresentation;
     const bool hasMainSurface = static_cast<bool>(mainPresentation.m_surface);
     const bool hasMainGraphicPresenter = static_cast<bool>(mainPresentation.m_graphicPresenter);
+
+    EGO_ASSERT(_jobController);
+    EGO_ASSERT(_id != InvalidEngineSessionID);
+    EGO_ASSERT(!hasMainSurface || hasMainGraphicPresenter);
+    EGO_ASSERT(!_initData.m_gui.m_isEnabled || hasMainSurface);
+    EGO_ASSERT(!_initData.m_sceneRender.m_isEnabled || hasMainGraphicPresenter);
+    EGO_ASSERT(!m_jobController && !m_engineLogic && !m_activeLevel && !m_scenePresenter && !m_guiViewportProvider && m_id == InvalidEngineSessionID);
+
+    EGO_CHECK_RETURN_FALSE(_jobController);
+    EGO_CHECK_RETURN_FALSE(_id != InvalidEngineSessionID);
     EGO_CHECK_RETURN_FALSE(!hasMainSurface || hasMainGraphicPresenter);
     EGO_CHECK_RETURN_FALSE(!_initData.m_gui.m_isEnabled || hasMainSurface);
     EGO_CHECK_RETURN_FALSE(!_initData.m_sceneRender.m_isEnabled || hasMainGraphicPresenter);
@@ -54,16 +61,11 @@ bool ego::engine::EngineSession::init(const JobControllerPointer& _jobController
     m_currentFrameTime = Clock::GetCurrentTimePoint();
     m_prevFrameStartTime = m_currentFrameTime;
 
-    EGO_CHECK_INITIALIZATION(m_projectRuntime.init(_initData.m_project));
-
-    if (_initData.m_gui.m_isEnabled)
-    {
-        EGO_CHECK_INITIALIZATION(initGuiController(mainPresentation));
-    }
-    EGO_CHECK_INITIALIZATION(initGraphicFrameController(_initData));
-
-    EGO_CHECK_INITIALIZATION(initFrameLogic());
-    EGO_CHECK_INITIALIZATION(initEngineLogic());
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(m_projectRuntime.init(_initData.m_project), "Failed to initialize the project runtime.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(!_initData.m_gui.m_isEnabled || initGuiController(mainPresentation), "Failed to initialize the GUI controller.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initGraphicFrameController(_initData), "Failed to initialize the graphic frame controller.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initFrameLogic(), "Failed to initialize frame logic.");
+    EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(initEngineLogic(), "Failed to initialize engine logic.");
 
     return true;
 }

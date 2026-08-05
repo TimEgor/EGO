@@ -9,6 +9,7 @@
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/SceneRender/Component/MeshRenderComponent.h"
+#include "EgoEngine/Level/Components/TransformComponent.h"
 
 namespace
 {
@@ -16,8 +17,9 @@ namespace
     constexpr float FullRotation = 6.28318530718f;
     constexpr float TriangleScale = 0.65f;
 
-    const ego::ComputeVector3 FirstTrianglePosition(-0.60f, 0.0f, 0.0f);
-    const ego::ComputeVector3 SecondTrianglePosition(0.60f, 0.0f, 0.0f);
+    constexpr ego::FloatVector3 CameraPosition(0.0f, 0.0f, -2.0f);
+    constexpr ego::FloatVector3 FirstTrianglePosition(-0.60f, 0.0f, 0.0f);
+    constexpr ego::FloatVector3 SecondTrianglePosition(0.60f, 0.0f, 0.0f);
 } // namespace
 
 ego::demo::TestDemo::~TestDemo()
@@ -59,6 +61,9 @@ bool ego::demo::TestDemo::init(const engine::EngineSessionWeakPointer& _engineSe
     EGO_CHECK_INITIALIZATION(cameraNode);
 
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(cameraNode));
+    TransformComponent* cameraTransformComponent = m_level->tryGetComponent<TransformComponent>(cameraNode);
+    EGO_CHECK_INITIALIZATION(cameraTransformComponent);
+    cameraTransformComponent->m_globalTransform.setOrigin(CameraPosition);
     engineSession->setRenderCameraEntity(cameraNode);
 
     EGO_CHECK_INITIALIZATION(createTriangleEntity(m_firstTriangleEntity, m_firstTriangleMaterial, FirstTrianglePosition));
@@ -109,7 +114,7 @@ void ego::demo::TestDemo::release()
     m_engineSession.reset();
 }
 
-bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const ComputeVector3& _position)
+bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const FloatVector3& _position)
 {
     _entity = m_level->createNode();
     EGO_CHECK_RETURN_FALSE(_entity);
@@ -124,19 +129,20 @@ bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const rende
     return true;
 }
 
-bool ego::demo::TestDemo::setTriangleTransform(ecs::Entity _entity, const ComputeVector3& _position, float _rotationAngle)
+bool ego::demo::TestDemo::setTriangleTransform(ecs::Entity _entity, const FloatVector3& _position, float _rotationAngle)
 {
     TransformComponent* transformComponent = m_level->tryGetComponent<TransformComponent>(_entity);
     EGO_CHECK_RETURN_FALSE(transformComponent);
 
     Transform transform;
-    transform.setRotationQuaternion(ComputeQuaternion(ComputeVector3UnitZ, _rotationAngle));
-    const ComputeVector3 axisX = transform.getAxisX() * TriangleScale;
-    const ComputeVector3 axisY = transform.getAxisY() * TriangleScale;
-    const ComputeVector3 axisZ = transform.getAxisZ() * TriangleScale;
-    transform.setAxisX(axisX);
-    transform.setAxisY(axisY);
-    transform.setAxisZ(axisZ);
+    transform.setRotationQuaternion(ComputeQuaternion(ComputeVector3UnitZBase<ComputeValueType>(), _rotationAngle));
+    const ComputeValueType triangleScale = static_cast<ComputeValueType>(TriangleScale);
+    const ComputeVector3 axisX = ComputeVector3(transform.getAxisX()) * triangleScale;
+    const ComputeVector3 axisY = ComputeVector3(transform.getAxisY()) * triangleScale;
+    const ComputeVector3 axisZ = ComputeVector3(transform.getAxisZ()) * triangleScale;
+    transform.setAxisX(axisX.getVector<float>());
+    transform.setAxisY(axisY.getVector<float>());
+    transform.setAxisZ(axisZ.getVector<float>());
     transform.setOrigin(_position);
     transformComponent->m_globalTransform = transform;
 

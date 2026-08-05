@@ -10,6 +10,7 @@
 
 #include "EgoGui/GuiLayer.h"
 #include "EgoGui/GuiStyle.h"
+#include "EgoGui/Inspector/PropertyInspector.h"
 #include "EgoGui/Rendering/GuiRenderData.h"
 
 namespace ego::gui
@@ -35,6 +36,9 @@ namespace ego::gui
         bool setFont(const FileName& _path, float _size);
         bool setStyle(const GuiStyle& _style);
 
+        PropertyInspectorPointer getPropertyInspectorPointer() const;
+        PropertyInspector& getPropertyInspector() const;
+
         void update(float _deltaTime);
         GuiRenderData takeRenderData();
 
@@ -59,6 +63,7 @@ namespace ego::gui
         LayerIterator findLayer(GuiLayer& _layer);
 
         std::unique_ptr<GuiBackend> m_backend;
+        PropertyInspectorPointer m_propertyInspector = nullptr;
 
         LayerCollection m_layers;
         GuiRenderData m_pendingFrame;

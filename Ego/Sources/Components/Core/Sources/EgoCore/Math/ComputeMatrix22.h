@@ -26,12 +26,6 @@ namespace ego
 
     using ComputeMatrix2x2 = ComputeMatrix2x2Base<ComputeValueType>;
     using FloatComputeMatrix2x2 = ComputeMatrix2x2Base<float>;
-
-    inline const ComputeMatrix2x2 ComputeMatrix2x2Zero = ComputeMatrix2x2ZeroBase<ComputeValueType>();
-    inline const ComputeMatrix2x2 ComputeMatrix2x2Identity = ComputeMatrix2x2IdentityBase<ComputeValueType>();
-
-    inline const FloatComputeMatrix2x2 FloatComputeMatrix2x2Zero = ComputeMatrix2x2ZeroBase<float>();
-    inline const FloatComputeMatrix2x2 FloatComputeMatrix2x2Identity = ComputeMatrix2x2IdentityBase<float>();
 } // namespace ego
 
 #include "ComputeMatrix22.hpp"

@@ -25,9 +25,19 @@ ego::gui::GuiController::~GuiController()
 
 bool ego::gui::GuiController::init(const InitData& _initData)
 {
-    EGO_CHECK_RETURN_FALSE(m_backend && !m_backend->isInitialized());
+    EGO_CHECK_RETURN_FALSE(m_backend && !m_backend->isInitialized() && !m_propertyInspector);
 
-    return m_backend->init(_initData.m_viewportProvider, _initData.m_enableMultiViewport);
+    m_propertyInspector = MakePointer<PropertyInspector>();
+    EGO_CHECK_RETURN_FALSE(m_propertyInspector);
+
+    if (!m_backend->init(_initData.m_viewportProvider, _initData.m_enableMultiViewport))
+    {
+        m_propertyInspector = nullptr;
+
+        return false;
+    }
+
+    return true;
 }
 
 void ego::gui::GuiController::release()
@@ -41,6 +51,7 @@ void ego::gui::GuiController::release()
     EGO_ASSERT(m_layers.empty());
     m_layers.clear();
     m_pendingFrame = GuiRenderData();
+    m_propertyInspector = nullptr;
 }
 
 bool ego::gui::GuiController::setFont(const FileName& _path, float _size)
@@ -62,6 +73,18 @@ bool ego::gui::GuiController::setStyle(const GuiStyle& _style)
     EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive);
 
     return m_backend->setStyle(_style);
+}
+
+ego::gui::PropertyInspectorPointer ego::gui::GuiController::getPropertyInspectorPointer() const
+{
+    return m_propertyInspector;
+}
+
+ego::gui::PropertyInspector& ego::gui::GuiController::getPropertyInspector() const
+{
+    EGO_ASSERT(m_propertyInspector);
+
+    return *m_propertyInspector;
 }
 
 void ego::gui::GuiController::update(float _deltaTime)
@@ -125,7 +148,7 @@ bool ego::gui::GuiController::unregisterLayer(GuiLayer& _layer)
 
 bool ego::gui::GuiController::isInitialized() const
 {
-    return m_backend && m_backend->isInitialized();
+    return m_backend && m_backend->isInitialized() && m_propertyInspector;
 }
 
 bool ego::gui::GuiController::drawLayers()

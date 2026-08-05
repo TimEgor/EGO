@@ -11,10 +11,10 @@ ego::application::ApplicationSubsystem::~ApplicationSubsystem()
 
 bool ego::application::ApplicationSubsystem::init(const Application::InitData& _initData)
 {
-    EGO_CHECK_INITIALIZATION(!m_application);
+    EGO_CHECK_INITIALIZATION_ASSERT(!m_application);
 
     m_application = MakePointer<Application>();
-    EGO_CHECK_INITIALIZATION(m_application && m_application->init(_initData, sharedFromThis()));
+    EGO_CHECK_INITIALIZATION_ASSERT(m_application && m_application->init(_initData, sharedFromThis()));
 
     return true;
 }

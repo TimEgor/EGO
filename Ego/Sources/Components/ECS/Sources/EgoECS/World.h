@@ -53,6 +53,9 @@ namespace ego::ecs
         template <typename TComponent>
         bool removeComponent(Entity _entity);
 
+        template <typename TFunction>
+        void forEachComponent(Entity _entity, TFunction&& _function);
+
         template <typename... TComponents, typename TFunction>
         void forEach(TFunction&& _function);
 

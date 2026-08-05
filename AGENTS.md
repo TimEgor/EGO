@@ -26,7 +26,10 @@
 - Naming: class/struct fields and union members use `m_lowerCamelCase`.
 - Naming: static class/struct fields use `UpperCamelCase`.
 - Naming: function and lambda parameters use `_lowerCamelCase`.
+- Naming: macros use `UPPER_SNAKE_CASE`.
+- Naming: function-like macro parameters use `_UPPER_SNAKE_CASE`.
 - Avoid `auto` for simple or obvious types; use it only for complex composite types, such as collection iterators, or when the language/API requires it.
+- Use `ComputeVector*` and `ComputeMatrix*` only for short-lived intermediate values during computations. Do not use them for persistent value storage, including class/struct fields; use the corresponding `Vector*` and `Matrix*` types and convert at computation boundaries.
 - Structure functions and classes into clear logical blocks. Prefer separating independent steps, responsibilities, and declaration groups instead of keeping large uninterrupted blocks of code.
 - Formatting: keep at most one consecutive blank line in code and declarations.
 - Formatting: after a scope's closing brace, always insert a blank line before a following statement; omit it only when the next line closes the parent scope.
@@ -51,6 +54,7 @@
 
 ## Includes
 - In source files that have a corresponding header, include that header first, in its own include group, before all other includes.
+- Do not use relative include paths that climb above the including file's directory with `..`. A file name from the same directory or a path beginning with a subdirectory of the including file's directory is allowed.
 - When adding or changing `#include` directives, keep them grouped with one blank line between groups and between component/module subgroups.
 - Include groups are ordered as follows:
   1. Standard library headers.

@@ -33,7 +33,7 @@ void EGO_RT_RAY_GENERATION_ENTRY_POINT()
     float2 clipPosition = ((float2(pixelIndex) + 0.5) / screenSize) * 2.0 - 1.0;
     clipPosition.y = -clipPosition.y;
 
-    const float3 rayOrigin = UnprojectClipPosition(cameraData.InverseViewProjection, clipPosition, -1.0);
+    const float3 rayOrigin = UnprojectClipPosition(cameraData.InverseViewProjection, clipPosition, 0.0);
     const float3 rayTarget = UnprojectClipPosition(cameraData.InverseViewProjection, clipPosition, 1.0);
 
     RayDesc rayDesc;

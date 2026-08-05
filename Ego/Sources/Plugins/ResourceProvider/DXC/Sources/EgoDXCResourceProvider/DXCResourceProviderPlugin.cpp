@@ -26,6 +26,7 @@ namespace ego::resources::dxc
 
         _registrations.push_back({".shader", shaderProvider});
         _registrations.push_back({".hlsl", shaderProvider});
+
         return true;
     }
 } // namespace ego::resources::dxc

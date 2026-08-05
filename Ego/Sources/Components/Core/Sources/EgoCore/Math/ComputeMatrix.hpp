@@ -53,14 +53,46 @@ namespace ego
     }
 
     template <typename T, uint32_t Size>
-    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const MatrixType& _matrix)
+    template <typename SourceValueType>
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix2x2Base<SourceValueType>& _matrix)
+        requires(Size == 2)
         : m_columns{}
     {
         for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
         {
             for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
             {
-                m_columns[columnIndex].setElement(rowIndex, _matrix.m_values[columnIndex][rowIndex]);
+                m_columns[columnIndex].setElement(rowIndex, static_cast<ValueType>(_matrix.m_values[columnIndex][rowIndex]));
+            }
+        }
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename SourceValueType>
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix3x3Base<SourceValueType>& _matrix)
+        requires(Size == 3)
+        : m_columns{}
+    {
+        for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
+        {
+            for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
+            {
+                m_columns[columnIndex].setElement(rowIndex, static_cast<ValueType>(_matrix.m_values[columnIndex][rowIndex]));
+            }
+        }
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename SourceValueType>
+    ComputeMatrixBase<T, Size>::ComputeMatrixBase(const Matrix4x4Base<SourceValueType>& _matrix)
+        requires(Size == 4)
+        : m_columns{}
+    {
+        for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
+        {
+            for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
+            {
+                m_columns[columnIndex].setElement(rowIndex, static_cast<ValueType>(_matrix.m_values[columnIndex][rowIndex]));
             }
         }
     }
@@ -156,102 +188,36 @@ namespace ego
     template <typename T, uint32_t Size>
     typename ComputeMatrixBase<T, Size>::MatrixType ComputeMatrixBase<T, Size>::getMatrix() const
     {
-        MatrixType result;
-        getMatrix(result);
-
-        return result;
+        return getMatrix<ValueType>();
     }
 
     template <typename T, uint32_t Size>
     void ComputeMatrixBase<T, Size>::getMatrix(MatrixType& _out) const
     {
+        getMatrix<ValueType>(_out);
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename ResultValueType>
+    typename ComputeMatrixStorageTraits<ResultValueType, Size>::StorageType ComputeMatrixBase<T, Size>::getMatrix() const
+    {
+        typename ComputeMatrixStorageTraits<ResultValueType, Size>::StorageType result;
+        getMatrix<ResultValueType>(result);
+
+        return result;
+    }
+
+    template <typename T, uint32_t Size>
+    template <typename ResultValueType>
+    void ComputeMatrixBase<T, Size>::getMatrix(typename ComputeMatrixStorageTraits<ResultValueType, Size>::StorageType& _out) const
+    {
         for (uint32_t columnIndex = 0; columnIndex < Size; ++columnIndex)
         {
             for (uint32_t rowIndex = 0; rowIndex < Size; ++rowIndex)
             {
-                _out.setElement(columnIndex, rowIndex, getStoredElement(columnIndex, rowIndex));
+                _out.setElement(columnIndex, rowIndex, static_cast<ResultValueType>(getStoredElement(columnIndex, rowIndex)));
             }
         }
-    }
-
-    template <typename T, uint32_t Size>
-    FloatMatrix2x2 ComputeMatrixBase<T, Size>::getFloatMatrix2x2() const
-        requires(Size == 2)
-    {
-        FloatMatrix2x2 result;
-        getFloatMatrix2x2(result);
-
-        return result;
-    }
-
-    template <typename T, uint32_t Size>
-    void ComputeMatrixBase<T, Size>::getFloatMatrix2x2(FloatMatrix2x2& _out) const
-        requires(Size == 2)
-    {
-        _out = FloatMatrix2x2(
-            float(getStoredElement(0, 0)),
-            float(getStoredElement(0, 1)),
-            float(getStoredElement(1, 0)),
-            float(getStoredElement(1, 1)));
-    }
-
-    template <typename T, uint32_t Size>
-    FloatMatrix3x3 ComputeMatrixBase<T, Size>::getFloatMatrix3x3() const
-        requires(Size == 3)
-    {
-        FloatMatrix3x3 result;
-        getFloatMatrix3x3(result);
-
-        return result;
-    }
-
-    template <typename T, uint32_t Size>
-    void ComputeMatrixBase<T, Size>::getFloatMatrix3x3(FloatMatrix3x3& _out) const
-        requires(Size == 3)
-    {
-        _out = FloatMatrix3x3(
-            float(getStoredElement(0, 0)),
-            float(getStoredElement(0, 1)),
-            float(getStoredElement(0, 2)),
-            float(getStoredElement(1, 0)),
-            float(getStoredElement(1, 1)),
-            float(getStoredElement(1, 2)),
-            float(getStoredElement(2, 0)),
-            float(getStoredElement(2, 1)),
-            float(getStoredElement(2, 2)));
-    }
-
-    template <typename T, uint32_t Size>
-    FloatMatrix4x4 ComputeMatrixBase<T, Size>::getFloatMatrix4x4() const
-        requires(Size == 4)
-    {
-        FloatMatrix4x4 result;
-        getFloatMatrix4x4(result);
-
-        return result;
-    }
-
-    template <typename T, uint32_t Size>
-    void ComputeMatrixBase<T, Size>::getFloatMatrix4x4(FloatMatrix4x4& _out) const
-        requires(Size == 4)
-    {
-        _out = FloatMatrix4x4(
-            float(getStoredElement(0, 0)),
-            float(getStoredElement(0, 1)),
-            float(getStoredElement(0, 2)),
-            float(getStoredElement(0, 3)),
-            float(getStoredElement(1, 0)),
-            float(getStoredElement(1, 1)),
-            float(getStoredElement(1, 2)),
-            float(getStoredElement(1, 3)),
-            float(getStoredElement(2, 0)),
-            float(getStoredElement(2, 1)),
-            float(getStoredElement(2, 2)),
-            float(getStoredElement(2, 3)),
-            float(getStoredElement(3, 0)),
-            float(getStoredElement(3, 1)),
-            float(getStoredElement(3, 2)),
-            float(getStoredElement(3, 3)));
     }
 
     template <typename T, uint32_t Size>

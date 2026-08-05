@@ -38,12 +38,6 @@ namespace ego
 
     using ComputeMatrix3x3 = ComputeMatrix3x3Base<ComputeValueType>;
     using FloatComputeMatrix3x3 = ComputeMatrix3x3Base<float>;
-
-    inline const ComputeMatrix3x3 ComputeMatrix3x3Zero = ComputeMatrix3x3ZeroBase<ComputeValueType>();
-    inline const ComputeMatrix3x3 ComputeMatrix3x3Identity = ComputeMatrix3x3IdentityBase<ComputeValueType>();
-
-    inline const FloatComputeMatrix3x3 FloatComputeMatrix3x3Zero = ComputeMatrix3x3ZeroBase<float>();
-    inline const FloatComputeMatrix3x3 FloatComputeMatrix3x3Identity = ComputeMatrix3x3IdentityBase<float>();
 } // namespace ego
 
 #include "ComputeMatrix33.hpp"

@@ -6,9 +6,11 @@
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/SceneRender/Render.h"
+#include "EgoEngine/Level/Components/TransformComponent.h"
 
 namespace
 {
+    constexpr ego::FloatVector3 CameraPosition(0.0f, 0.0f, -2.0f);
     constexpr ego::NormalizedColorRGB TriangleColor(0.1f, 0.8f, 1.0f);
     constexpr auto TriangleTop = ego::FloatVector3(0.0f, 0.6f, 0.0f);
     constexpr auto TriangleBottomLeft = ego::FloatVector3(-0.6f, -0.5f, 0.0f);
@@ -42,6 +44,9 @@ bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSes
     m_cameraEntity = m_level->createNode();
     EGO_CHECK_INITIALIZATION(m_cameraEntity);
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(m_cameraEntity));
+    TransformComponent* cameraTransformComponent = m_level->tryGetComponent<TransformComponent>(m_cameraEntity);
+    EGO_CHECK_INITIALIZATION(cameraTransformComponent);
+    cameraTransformComponent->m_globalTransform.setOrigin(CameraPosition);
     engineSession->setRenderCameraEntity(m_cameraEntity);
 
     return true;

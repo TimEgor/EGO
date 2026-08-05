@@ -35,6 +35,17 @@ const TComponent* ego::Level::tryGetComponent(ecs::Entity _entity) const
     return m_world->tryGetComponent<TComponent>(_entity);
 }
 
+template <typename TFunction>
+void ego::Level::forEachComponent(ecs::Entity _entity, TFunction&& _function)
+{
+    if (!m_world || !ownsEntity(_entity))
+    {
+        return;
+    }
+
+    m_world->forEachComponent(_entity, std::forward<TFunction>(_function));
+}
+
 template <typename... TComponents, typename TFunction>
 void ego::Level::forEachComponent(TFunction&& _function)
 {
