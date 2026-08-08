@@ -4,11 +4,14 @@
 
 namespace ego::rtti
 {
-    template <typename PropertyType>
-    PropertyType* CastPropertyMetaInfo(PropertyMetaInfo* _propertyMetaInfo);
+    PropertyMetaInfo& CastPropertyMetaInfo(PropertyMetaInfo& _propertyMetaInfo, const TypeMetaInfo& _targetTypeMetaInfo);
+    const PropertyMetaInfo& CastPropertyMetaInfo(const PropertyMetaInfo& _propertyMetaInfo, const TypeMetaInfo& _targetTypeMetaInfo);
 
     template <typename PropertyType>
-    const PropertyType* CastPropertyMetaInfo(const PropertyMetaInfo* _propertyMetaInfo);
+    PropertyType& CastPropertyMetaInfo(PropertyMetaInfo& _propertyMetaInfo);
+
+    template <typename PropertyType>
+    const PropertyType& CastPropertyMetaInfo(const PropertyMetaInfo& _propertyMetaInfo);
 } // namespace ego::rtti
 
 #include "EgoCore/RTTI/Property/PropertyMetaInfoCast.hpp"

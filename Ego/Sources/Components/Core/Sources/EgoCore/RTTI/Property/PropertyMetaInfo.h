@@ -7,18 +7,24 @@
 
 namespace ego::rtti
 {
-    class TypeMetaInfo;
-
     class PropertyMetaInfo : public NonCopyable
     {
     public:
-        PropertyMetaInfo(const char* _name, size_t _offset, const TypeMetaInfo* _valueTypeMetaInfo = nullptr);
-        virtual ~PropertyMetaInfo();
+        PropertyMetaInfo(const char* _name, size_t _offset, bool _isConst);
+        ~PropertyMetaInfo() override;
 
         EGO_RTTI_VIRTUAL_BASE(PropertyMetaInfo);
 
+        virtual PropertyValuePointer makePropertyValue(void* _object) const = 0;
+        virtual PropertyValuePointer makePropertyValue(const void* _object) const = 0;
+
+        const char* getName() const;
+        size_t getOffset() const;
+        bool isConst() const;
+
+    private:
         const char* const m_name;
         const size_t m_offset;
-        const TypeMetaInfo* const m_valueTypeMetaInfo;
+        const bool m_isConst;
     };
 } // namespace ego::rtti

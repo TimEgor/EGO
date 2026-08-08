@@ -5,19 +5,18 @@
 namespace ego::rtti
 {
     template <typename Array>
+    class ArrayPropertyValue;
+
+    template <typename Array>
     class ArrayPropertyMetaInfo final : public PositionalCollectionPropertyMetaInfo
     {
     public:
-        ArrayPropertyMetaInfo(const char* _name, size_t _offset, const PropertyMetaInfo* _elementMetaInfo);
-
-        size_t getSize(const void* _value) const override;
-        void* getElementAddress(void* _value, size_t _index) const override;
-        bool canAddElement() const override;
-        bool canRemoveElement() const override;
-        bool addElement(void* _value) const override;
-        bool removeElement(void* _value, size_t _index) const override;
+        ArrayPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst, const PropertyMetaInfo& _elementMetaInfo);
 
         EGO_RTTI_VIRTUAL(ArrayPropertyMetaInfo, PositionalCollectionPropertyMetaInfo);
+
+        PropertyValuePointer makePropertyValue(void* _object) const override;
+        PropertyValuePointer makePropertyValue(const void* _object) const override;
     };
 } // namespace ego::rtti
 

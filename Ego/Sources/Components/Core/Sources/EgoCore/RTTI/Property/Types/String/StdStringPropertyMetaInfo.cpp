@@ -1,18 +1,18 @@
 #include "EgoCore/RTTI/Property/Types/String/StdStringPropertyMetaInfo.h"
 
-#include <string>
+#include "EgoCore/RTTI/Property/Types/String/StdStringPropertyValue.h"
 
-ego::rtti::StdStringPropertyMetaInfo::StdStringPropertyMetaInfo(const char* _name, size_t _offset)
-    : StringPropertyMetaInfo(_name, _offset)
+ego::rtti::StdStringPropertyMetaInfo::StdStringPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst)
+    : StringPropertyMetaInfo(_name, _offset, _isConst)
 {
 }
 
-const char* ego::rtti::StdStringPropertyMetaInfo::getValue(const void* _value) const
+ego::rtti::PropertyValuePointer ego::rtti::StdStringPropertyMetaInfo::makePropertyValue(void* _object) const
 {
-    return static_cast<const std::string*>(_value)->c_str();
+    return MakeIntrusive<StdStringPropertyValue>(_object, *this);
 }
 
-void ego::rtti::StdStringPropertyMetaInfo::setValue(void* _value, const char* _string) const
+ego::rtti::PropertyValuePointer ego::rtti::StdStringPropertyMetaInfo::makePropertyValue(const void* _object) const
 {
-    *static_cast<std::string*>(_value) = _string;
+    return MakeIntrusive<StdStringPropertyValue>(_object, *this);
 }

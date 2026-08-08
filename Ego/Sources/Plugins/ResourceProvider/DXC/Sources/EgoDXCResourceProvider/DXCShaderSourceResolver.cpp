@@ -20,7 +20,11 @@ namespace ego::resources::dxc
         return getLowerExtension(_path) == ".hlsl";
     }
 
-    bool DXCShaderSourceResolver::resolveShaderSourceContent(const FileName& _path, FileName& _sourcePath, FileContent& _sourceContent, std::string& _loadingError) const
+    bool DXCShaderSourceResolver::resolveShaderSourceContent(
+        const FileName& _path,
+        FileName& _sourcePath,
+        FileContent& _sourceContent,
+        std::string& _loadingError) const
     {
         _sourcePath = _path;
         _sourceContent.clear();
@@ -48,7 +52,7 @@ namespace ego::resources::dxc
 
     std::string DXCShaderSourceResolver::getLowerExtension(const FileName& _path) const
     {
-        std::string extension = file_name_utils::GetFileExtension(_path).c_str();
+        std::string extension(file_name_utils::GetFileExtension(_path).getView());
         std::transform(
             extension.begin(),
             extension.end(),
@@ -84,7 +88,7 @@ namespace ego::resources::dxc
 
     FileName DXCShaderSourceResolver::resolveReferencedPath(const FileName& _shaderPath, const FileName& _referencedPath) const
     {
-        const std::string referencedPath = _referencedPath.c_str();
+        const std::string referencedPath(_referencedPath.getView());
         if (referencedPath.empty() || isRootedPath(referencedPath))
         {
             return _referencedPath;
@@ -106,7 +110,11 @@ namespace ego::resources::dxc
         return resolveReferencedPath(_shaderPath, FileName(trim(descriptorText)));
     }
 
-    bool DXCShaderSourceResolver::resolveShaderDescriptorContent(const FileName& _path, FileName& _sourcePath, FileContent& _sourceContent, std::string& _loadingError) const
+    bool DXCShaderSourceResolver::resolveShaderDescriptorContent(
+        const FileName& _path,
+        FileName& _sourcePath,
+        FileContent& _sourceContent,
+        std::string& _loadingError) const
     {
         FileContent descriptorContent;
         if (loadContent(_path, descriptorContent))

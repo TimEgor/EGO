@@ -5,6 +5,22 @@
 
 #include "EgoCore/Assert/Assert.h"
 #include "EgoCore/RTTI/Property/PropertyMetaInfo.h"
+#include "EgoCore/RTTI/Property/PropertyValue.h"
+
+ego::rtti::PropertyMetaInfoCollection::~PropertyMetaInfoCollection() = default;
+
+size_t ego::rtti::PropertyMetaInfoCollection::getSize() const
+{
+    return m_metaInfos.size();
+}
+
+const ego::rtti::PropertyMetaInfo& ego::rtti::PropertyMetaInfoCollection::getMetaInfo(size_t _index) const
+{
+    EGO_ASSERT(_index < m_metaInfos.size());
+    EGO_ASSERT(m_metaInfos[_index]);
+
+    return *m_metaInfos[_index];
+}
 
 ego::rtti::TypeMetaInfo::ParentTypeMetaInfoContext::ParentTypeMetaInfoContext() = default;
 
@@ -22,21 +38,9 @@ ego::rtti::TypeMetaInfo::PropertyIterator::PropertyIterator(const TypeMetaInfo* 
 
 const ego::rtti::PropertyMetaInfo& ego::rtti::TypeMetaInfo::PropertyIterator::operator*() const
 {
-    EGO_ASSERT(m_typeMetaInfo);
+    const PropertyMetaInfoCollection& propertyMetaInfos = getPropertyMetaInfoCollection();
 
-    const TypeMetaInfo* typeMetaInfo = m_typeMetaInfo;
-    if (m_typeIndex > 0)
-    {
-        typeMetaInfo = m_typeMetaInfo->m_parentTypeMetaInfos[m_typeIndex - 1].m_info;
-    }
-
-    EGO_ASSERT(typeMetaInfo);
-    EGO_ASSERT(m_propertyIndex < typeMetaInfo->m_properties.size());
-
-    const PropertyMetaInfoPointer& propertyMetaInfo = typeMetaInfo->m_properties[m_propertyIndex];
-    EGO_ASSERT(propertyMetaInfo);
-
-    return *propertyMetaInfo;
+    return propertyMetaInfos.getMetaInfo(m_propertyIndex);
 }
 
 ego::rtti::TypeMetaInfo::PropertyIterator& ego::rtti::TypeMetaInfo::PropertyIterator::operator++()
@@ -67,18 +71,24 @@ bool ego::rtti::TypeMetaInfo::PropertyIterator::operator!=(const PropertyIterato
     return !(*this == _iterator);
 }
 
-void* ego::rtti::TypeMetaInfo::PropertyIterator::getValueAddress(void* _object) const
+ego::rtti::PropertyValuePointer ego::rtti::TypeMetaInfo::PropertyIterator::makePropertyValue(void* _object) const
 {
     EGO_ASSERT(_object);
 
-    return static_cast<uint8_t*>(_object) + getValueOffset();
+    const PropertyMetaInfo& propertyMetaInfo = operator*();
+    void* propertyOwner = static_cast<uint8_t*>(_object) + getObjectOffset();
+
+    return propertyMetaInfo.makePropertyValue(propertyOwner);
 }
 
-const void* ego::rtti::TypeMetaInfo::PropertyIterator::getValueAddress(const void* _object) const
+ego::rtti::PropertyValuePointer ego::rtti::TypeMetaInfo::PropertyIterator::makePropertyValue(const void* _object) const
 {
     EGO_ASSERT(_object);
 
-    return static_cast<const uint8_t*>(_object) + getValueOffset();
+    const PropertyMetaInfo& propertyMetaInfo = operator*();
+    const void* propertyOwner = static_cast<const uint8_t*>(_object) + getObjectOffset();
+
+    return propertyMetaInfo.makePropertyValue(propertyOwner);
 }
 
 void ego::rtti::TypeMetaInfo::PropertyIterator::advanceToProperty()
@@ -92,7 +102,7 @@ void ego::rtti::TypeMetaInfo::PropertyIterator::advanceToProperty()
         }
 
         EGO_ASSERT(typeMetaInfo);
-        if (m_propertyIndex < typeMetaInfo->m_properties.size())
+        if (m_propertyIndex < typeMetaInfo->m_properties.getSize())
         {
             return;
         }
@@ -109,13 +119,27 @@ void ego::rtti::TypeMetaInfo::PropertyIterator::advanceToProperty()
     }
 }
 
-size_t ego::rtti::TypeMetaInfo::PropertyIterator::getValueOffset() const
+size_t ego::rtti::TypeMetaInfo::PropertyIterator::getObjectOffset() const
 {
     EGO_ASSERT(m_typeMetaInfo);
 
-    const size_t baseOffset = m_typeIndex > 0 ? m_typeMetaInfo->m_parentTypeMetaInfos[m_typeIndex - 1].m_offset : 0;
+    return m_typeIndex > 0 ? m_typeMetaInfo->m_parentTypeMetaInfos[m_typeIndex - 1].m_offset : 0;
+}
 
-    return baseOffset + operator*().m_offset;
+const ego::rtti::PropertyMetaInfoCollection& ego::rtti::TypeMetaInfo::PropertyIterator::getPropertyMetaInfoCollection() const
+{
+    EGO_ASSERT(m_typeMetaInfo);
+
+    const TypeMetaInfo* typeMetaInfo = m_typeMetaInfo;
+    if (m_typeIndex > 0)
+    {
+        typeMetaInfo = m_typeMetaInfo->m_parentTypeMetaInfos[m_typeIndex - 1].m_info;
+    }
+
+    EGO_ASSERT(typeMetaInfo);
+    EGO_ASSERT(m_propertyIndex < typeMetaInfo->m_properties.getSize());
+
+    return typeMetaInfo->m_properties;
 }
 
 ego::rtti::TypeMetaInfo::PropertyRange::PropertyRange(const TypeMetaInfo* _typeMetaInfo)
@@ -153,11 +177,6 @@ ego::rtti::TypeMetaInfo::TypeMetaInfo(TypeMetaInfoID _id, ParentTypeMetaInfoColl
         {
             m_parentTypeMetaInfos.emplace_back(ancestorTypeMetaInfo.m_info, parentTypeMetaInfo.m_offset + ancestorTypeMetaInfo.m_offset);
         }
-    }
-
-    for (const PropertyMetaInfoPointer& propertyMetaInfo : m_properties)
-    {
-        EGO_ASSERT(propertyMetaInfo);
     }
 }
 

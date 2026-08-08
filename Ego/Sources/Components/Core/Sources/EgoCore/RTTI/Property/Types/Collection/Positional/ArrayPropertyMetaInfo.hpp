@@ -1,48 +1,24 @@
 #pragma once
 
+#include "EgoCore/RTTI/Property/Types/Collection/Positional/ArrayPropertyValue.h"
+
 namespace ego::rtti
 {
     template <typename Array>
-    ArrayPropertyMetaInfo<Array>::ArrayPropertyMetaInfo(const char* _name, size_t _offset, const PropertyMetaInfo* _elementMetaInfo)
-        : PositionalCollectionPropertyMetaInfo(_name, _offset, _elementMetaInfo)
+    ArrayPropertyMetaInfo<Array>::ArrayPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst, const PropertyMetaInfo& _elementMetaInfo)
+        : PositionalCollectionPropertyMetaInfo(_name, _offset, _isConst, _elementMetaInfo)
     {
     }
 
     template <typename Array>
-    size_t ArrayPropertyMetaInfo<Array>::getSize(const void* _value) const
+    PropertyValuePointer ArrayPropertyMetaInfo<Array>::makePropertyValue(void* _object) const
     {
-        return static_cast<const Array*>(_value)->size();
+        return MakeIntrusive<ArrayPropertyValue<Array>>(_object, *this);
     }
 
     template <typename Array>
-    void* ArrayPropertyMetaInfo<Array>::getElementAddress(void* _value, size_t _index) const
+    PropertyValuePointer ArrayPropertyMetaInfo<Array>::makePropertyValue(const void* _object) const
     {
-        Array& array = *static_cast<Array*>(_value);
-
-        return &array[_index];
-    }
-
-    template <typename Array>
-    bool ArrayPropertyMetaInfo<Array>::canAddElement() const
-    {
-        return false;
-    }
-
-    template <typename Array>
-    bool ArrayPropertyMetaInfo<Array>::canRemoveElement() const
-    {
-        return false;
-    }
-
-    template <typename Array>
-    bool ArrayPropertyMetaInfo<Array>::addElement(void*) const
-    {
-        return false;
-    }
-
-    template <typename Array>
-    bool ArrayPropertyMetaInfo<Array>::removeElement(void*, size_t) const
-    {
-        return false;
+        return MakeIntrusive<ArrayPropertyValue<Array>>(_object, *this);
     }
 } // namespace ego::rtti

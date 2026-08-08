@@ -29,12 +29,13 @@
 - Naming: macros use `UPPER_SNAKE_CASE`.
 - Naming: function-like macro parameters use `_UPPER_SNAKE_CASE`.
 - Avoid `auto` for simple or obvious types; use it only for complex composite types, such as collection iterators, or when the language/API requires it.
+- Do not use raw character pointers or character arrays for named string constants; use `std::string_view` or an explicit string type.
 - Use `ComputeVector*` and `ComputeMatrix*` only for short-lived intermediate values during computations. Do not use them for persistent value storage, including class/struct fields; use the corresponding `Vector*` and `Matrix*` types and convert at computation boundaries.
 - Structure functions and classes into clear logical blocks. Prefer separating independent steps, responsibilities, and declaration groups instead of keeping large uninterrupted blocks of code.
 - Formatting: keep at most one consecutive blank line in code and declarations.
 - Formatting: after a scope's closing brace, always insert a blank line before a following statement; omit it only when the next line closes the parent scope.
 - Formatting: always insert a blank line before `return`, `continue`, and `break` unless the control-flow statement is the only statement in its scope.
-- Formatting: preprocessor directives use normal indentation; keep empty blocks compact.
+- Formatting: preprocessor directives follow the same indentation rules as regular code; keep empty blocks compact.
 - Formatting: simple `case` statements and embedded statements use line breaks instead of staying on one line.
 - Formatting: in multiline declarations and calls, wrap after the opening parenthesis and before the closing parenthesis; wrap parameters, arguments, and braced init lists with `chop if long` behavior.
 - Formatting: always wrap base clauses; wrap constructor/member initializer lists when long, with a line break after each comma.

@@ -24,14 +24,16 @@ namespace
 
     constexpr size_t MaxHuffmanBits = 15;
 
-    constexpr std::array<uint16_t, 29> DeflateLengthBases = {3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258};
+    constexpr std::array<uint16_t, 29> DeflateLengthBases =
+        {3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258};
 
     constexpr std::array<uint8_t, 29> DeflateLengthExtraBits = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0};
 
     constexpr std::array<uint16_t, 30> DeflateDistanceBases =
         {1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577};
 
-    constexpr std::array<uint8_t, 30> DeflateDistanceExtraBits = {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
+    constexpr std::array<uint8_t, 30> DeflateDistanceExtraBits =
+        {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
 
     bool CanRead(const ego::FileContent& _content, size_t _offset, size_t _size)
     {
@@ -45,7 +47,8 @@ namespace
 
     uint32_t ReadUInt32LE(const uint8_t* _data)
     {
-        return static_cast<uint32_t>(_data[0]) | (static_cast<uint32_t>(_data[1]) << 8) | (static_cast<uint32_t>(_data[2]) << 16) | (static_cast<uint32_t>(_data[3]) << 24);
+        return static_cast<uint32_t>(_data[0]) | (static_cast<uint32_t>(_data[1]) << 8) | (static_cast<uint32_t>(_data[2]) << 16) |
+               (static_cast<uint32_t>(_data[3]) << 24);
     }
 
     uint16_t ReadUInt16LE(const ego::FileContent& _content, size_t _offset)
@@ -88,7 +91,8 @@ namespace
         }
 
         const size_t lastOffset = _content.size() - EndOfCentralDirectorySize;
-        const size_t firstOffset = _content.size() > EndOfCentralDirectorySize + MaxZipCommentSize ? _content.size() - EndOfCentralDirectorySize - MaxZipCommentSize : 0;
+        const size_t firstOffset =
+            _content.size() > EndOfCentralDirectorySize + MaxZipCommentSize ? _content.size() - EndOfCentralDirectorySize - MaxZipCommentSize : 0;
 
         for (size_t offset = lastOffset;; --offset)
         {
@@ -1100,7 +1104,8 @@ bool ego::ZipResourcePackFileSystem::loadArchive(FileContent&& _content, const F
         return false;
     }
 
-    if (diskEntryCount == 0xFFFF || centralDirectorySize == std::numeric_limits<uint32_t>::max() || centralDirectoryOffset == std::numeric_limits<uint32_t>::max())
+    if (diskEntryCount == 0xFFFF || centralDirectorySize == std::numeric_limits<uint32_t>::max() ||
+        centralDirectoryOffset == std::numeric_limits<uint32_t>::max())
     {
         return false;
     }
@@ -1137,8 +1142,9 @@ bool ego::ZipResourcePackFileSystem::loadArchive(FileContent&& _content, const F
         const uint32_t localHeaderOffset = ReadUInt32LE(m_archiveData, currentOffset + 42);
 
         const size_t variableSize = static_cast<size_t>(fileNameLength) + extraFieldLength + fileCommentLength;
-        if (!CanRead(m_archiveData, currentOffset + CentralDirectoryHeaderSize, variableSize) || fileDiskNumber != 0 || compressedSize == std::numeric_limits<uint32_t>::max() ||
-            uncompressedSize == std::numeric_limits<uint32_t>::max() || localHeaderOffset == std::numeric_limits<uint32_t>::max())
+        if (!CanRead(m_archiveData, currentOffset + CentralDirectoryHeaderSize, variableSize) || fileDiskNumber != 0 ||
+            compressedSize == std::numeric_limits<uint32_t>::max() || uncompressedSize == std::numeric_limits<uint32_t>::max() ||
+            localHeaderOffset == std::numeric_limits<uint32_t>::max())
         {
             clear();
             return false;
@@ -1260,7 +1266,7 @@ bool ego::ZipResourcePackFileSystem::resolvePath(const FileName& _path, std::str
 {
     _normalizedPath.clear();
 
-    const std::string path(_path.c_str());
+    const std::string path(_path.getView());
     const bool isAbsolute = !path.empty() && IsPathSeparator(path.front());
 
     std::vector<std::string> parts;

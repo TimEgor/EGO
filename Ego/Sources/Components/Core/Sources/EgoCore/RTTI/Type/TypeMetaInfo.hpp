@@ -4,16 +4,17 @@
 
 namespace ego::rtti
 {
-    template <typename Value>
-    Value& TypeMetaInfo::PropertyIterator::getValue(void* _object) const
+    template <typename MetaInfo, typename... Arguments>
+    const PropertyMetaInfo& PropertyMetaInfoCollection::add(Arguments&&... _arguments)
     {
-        return *static_cast<Value*>(getValueAddress(_object));
-    }
+        static_assert(std::is_base_of_v<PropertyMetaInfo, MetaInfo>);
 
-    template <typename Value>
-    const Value& TypeMetaInfo::PropertyIterator::getValue(const void* _object) const
-    {
-        return *static_cast<const Value*>(getValueAddress(_object));
+        std::unique_ptr<MetaInfo> metaInfo = std::make_unique<MetaInfo>(std::forward<Arguments>(_arguments)...);
+        const PropertyMetaInfo& result = *metaInfo;
+
+        m_metaInfos.emplace_back(std::move(metaInfo));
+
+        return result;
     }
 
     template <typename T>

@@ -264,7 +264,7 @@ size_t ego::RootedFileSystem::GetPathRootLength(const std::string& _path)
 
 std::string ego::RootedFileSystem::NormalizeRootPath(const FileName& _path)
 {
-    std::string result(_path.c_str());
+    std::string result(_path.getView());
     std::replace(result.begin(), result.end(), '\\', '/');
 
     const size_t rootLength = GetPathRootLength(result);
@@ -285,7 +285,7 @@ bool ego::RootedFileSystem::resolveVirtualPath(const FileName& _path, std::strin
 {
     _virtualPath.clear();
 
-    const std::string path(_path.c_str());
+    const std::string path(_path.getView());
     const bool isAbsolute = !path.empty() && IsPathSeparator(path.front());
 
     std::vector<std::string> parts;
@@ -385,7 +385,7 @@ ego::FileName ego::RootedFileSystem::buildSourcePath(const std::string& _virtual
         return m_rootPath;
     }
 
-    std::string sourcePath(m_rootPath.c_str());
+    std::string sourcePath(m_rootPath.getView());
     if (!sourcePath.empty() && !IsPathSeparator(sourcePath.back()))
     {
         sourcePath += '/';

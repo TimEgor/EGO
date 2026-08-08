@@ -8,14 +8,13 @@
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Pointer/Pointer.h"
 
-#include "EgoGui/GuiLayer.h"
 #include "EgoGui/GuiStyle.h"
-#include "EgoGui/Inspector/PropertyInspector.h"
+#include "EgoGui/Layer.h"
 #include "EgoGui/Rendering/GuiRenderData.h"
 
 namespace ego::gui
 {
-    class GuiBackend;
+    class Backend;
     class ViewportProvider;
     EGO_POINTER(ViewportProvider);
 
@@ -36,14 +35,11 @@ namespace ego::gui
         bool setFont(const FileName& _path, float _size);
         bool setStyle(const GuiStyle& _style);
 
-        PropertyInspectorPointer getPropertyInspectorPointer() const;
-        PropertyInspector& getPropertyInspector() const;
-
         void update(float _deltaTime);
         GuiRenderData takeRenderData();
 
-        bool registerLayer(GuiLayer& _layer);
-        bool unregisterLayer(GuiLayer& _layer);
+        bool registerLayer(Layer& _layer);
+        bool unregisterLayer(Layer& _layer);
 
         bool isInitialized() const;
 
@@ -52,7 +48,7 @@ namespace ego::gui
 
         struct LayerRecord final
         {
-            std::reference_wrapper<GuiLayer> m_layer;
+            std::reference_wrapper<Layer> m_layer;
         };
 
         using LayerCollection = std::vector<LayerRecord>;
@@ -60,10 +56,9 @@ namespace ego::gui
 
         bool drawLayers();
 
-        LayerIterator findLayer(GuiLayer& _layer);
+        LayerIterator findLayer(Layer& _layer);
 
-        std::unique_ptr<GuiBackend> m_backend;
-        PropertyInspectorPointer m_propertyInspector = nullptr;
+        std::unique_ptr<Backend> m_backend;
 
         LayerCollection m_layers;
         GuiRenderData m_pendingFrame;

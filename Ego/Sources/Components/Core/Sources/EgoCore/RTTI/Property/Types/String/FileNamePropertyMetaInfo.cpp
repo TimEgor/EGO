@@ -1,18 +1,18 @@
 #include "EgoCore/RTTI/Property/Types/String/FileNamePropertyMetaInfo.h"
 
-#include "EgoCore/FileName/FileName.h"
+#include "EgoCore/RTTI/Property/Types/String/FileNamePropertyValue.h"
 
-ego::rtti::FileNamePropertyMetaInfo::FileNamePropertyMetaInfo(const char* _name, size_t _offset)
-    : StringPropertyMetaInfo(_name, _offset)
+ego::rtti::FileNamePropertyMetaInfo::FileNamePropertyMetaInfo(const char* _name, size_t _offset, bool _isConst)
+    : StringPropertyMetaInfo(_name, _offset, _isConst)
 {
 }
 
-const char* ego::rtti::FileNamePropertyMetaInfo::getValue(const void* _value) const
+ego::rtti::PropertyValuePointer ego::rtti::FileNamePropertyMetaInfo::makePropertyValue(void* _object) const
 {
-    return static_cast<const FileName*>(_value)->c_str();
+    return MakeIntrusive<FileNamePropertyValue>(_object, *this);
 }
 
-void ego::rtti::FileNamePropertyMetaInfo::setValue(void* _value, const char* _string) const
+ego::rtti::PropertyValuePointer ego::rtti::FileNamePropertyMetaInfo::makePropertyValue(const void* _object) const
 {
-    *static_cast<FileName*>(_value) = _string;
+    return MakeIntrusive<FileNamePropertyValue>(_object, *this);
 }

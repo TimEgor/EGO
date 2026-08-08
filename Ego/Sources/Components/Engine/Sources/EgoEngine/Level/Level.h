@@ -4,6 +4,7 @@
 
 #include "EgoCore/Patterns/NonCopyable.h"
 #include "EgoCore/Pointer/Pointer.h"
+#include "EgoCore/RTTI/Type/TypeMetaInfoID.h"
 
 #include "EgoECS/Entity.h"
 #include "EgoECS/World.h"
@@ -66,6 +67,8 @@ namespace ego
         template <typename TComponent, typename... Args>
         TComponent* addOrReplaceComponent(ecs::Entity _entity, Args&&... _args);
 
+        bool removeComponent(ecs::Entity _entity, ecs::ComponentTypeID _componentTypeID);
+
         template <typename TComponent>
         TComponent* tryGetComponent(ecs::Entity _entity);
 
@@ -84,6 +87,7 @@ namespace ego
         size_t getEntityCount() const;
 
         bool isNode(ecs::Entity _entity) const;
+        static rtti::TypeMetaInfoID GetHierarchyComponentTypeMetaInfoID();
 
         ecs::Entity createNode();
         ecs::Entity createNode(ecs::Entity _parent);

@@ -24,7 +24,7 @@
 
 namespace ego::render
 {
-    constexpr auto RayTracingRenderPassConfigPath = "Configs/RayTracingRenderPass.xml";
+    const FileName RayTracingRenderPassConfigPath("Configs/RayTracingRenderPass.xml");
     constexpr auto RayTracingMaterialPassName = "RayTracing";
 
     struct RayTracingRenderPassShaderConfig final

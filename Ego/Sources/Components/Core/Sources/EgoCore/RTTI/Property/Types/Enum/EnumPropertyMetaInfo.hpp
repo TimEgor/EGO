@@ -1,44 +1,38 @@
 #pragma once
 
-#include <optional>
+#include "EgoCore/RTTI/Property/Types/Enum/EnumPropertyValue.h"
 
 #include <magic_enum/magic_enum.hpp>
 
 namespace ego::rtti
 {
     template <typename Enum>
-        requires std::is_enum_v<Enum>
-    EnumPropertyMetaInfo<Enum>::EnumPropertyMetaInfo(const char* _name, size_t _offset)
-        : EnumPropertyMetaInfoBase(_name, _offset)
+    requires std::is_enum_v<Enum>
+    TypedEnumPropertyMetaInfo<Enum>::TypedEnumPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst)
+        : EnumPropertyMetaInfo(_name, _offset, _isConst)
     {
     }
 
     template <typename Enum>
-        requires std::is_enum_v<Enum>
-    EnumPropertyMetaInfoBase::NameCollection EnumPropertyMetaInfo<Enum>::getNames() const
+    requires std::is_enum_v<Enum>
+    PropertyValuePointer TypedEnumPropertyMetaInfo<Enum>::makePropertyValue(void* _object) const
+    {
+        return MakeIntrusive<TypedEnumPropertyValue<Enum>>(_object, *this);
+    }
+
+    template <typename Enum>
+    requires std::is_enum_v<Enum>
+    PropertyValuePointer TypedEnumPropertyMetaInfo<Enum>::makePropertyValue(const void* _object) const
+    {
+        return MakeIntrusive<TypedEnumPropertyValue<Enum>>(_object, *this);
+    }
+
+    template <typename Enum>
+    requires std::is_enum_v<Enum>
+    EnumPropertyMetaInfo::NameCollection TypedEnumPropertyMetaInfo<Enum>::getNames() const
     {
         static constexpr auto Names = magic_enum::enum_names<Enum>();
 
         return Names;
-    }
-
-    template <typename Enum>
-        requires std::is_enum_v<Enum>
-    size_t EnumPropertyMetaInfo<Enum>::getValueIndex(const void* _value) const
-    {
-        const std::optional<size_t> valueIndex = magic_enum::enum_index(*static_cast<const Enum*>(_value));
-
-        return valueIndex.value_or(InvalidEnumValueIndex);
-    }
-
-    template <typename Enum>
-        requires std::is_enum_v<Enum>
-    void EnumPropertyMetaInfo<Enum>::setValueIndex(void* _value, size_t _index) const
-    {
-        static constexpr auto Values = magic_enum::enum_values<Enum>();
-        if (_index < Values.size())
-        {
-            *static_cast<Enum*>(_value) = Values[_index];
-        }
     }
 } // namespace ego::rtti

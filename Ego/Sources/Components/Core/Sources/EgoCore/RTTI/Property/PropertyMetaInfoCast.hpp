@@ -2,33 +2,21 @@
 
 #include <type_traits>
 
-#include "EgoCore/RTTI/Type/TypeMetaInfo.h"
-
 namespace ego::rtti
 {
     template <typename PropertyType>
-    PropertyType* CastPropertyMetaInfo(PropertyMetaInfo* _propertyMetaInfo)
+    PropertyType& CastPropertyMetaInfo(PropertyMetaInfo& _propertyMetaInfo)
     {
         static_assert(std::is_base_of_v<PropertyMetaInfo, PropertyType>);
 
-        if (!_propertyMetaInfo || !IsObjectBasedOn<PropertyType>(*_propertyMetaInfo))
-        {
-            return nullptr;
-        }
-
-        return static_cast<PropertyType*>(_propertyMetaInfo);
+        return static_cast<PropertyType&>(CastPropertyMetaInfo(_propertyMetaInfo, GetTypeMetaInfo<PropertyType>()));
     }
 
     template <typename PropertyType>
-    const PropertyType* CastPropertyMetaInfo(const PropertyMetaInfo* _propertyMetaInfo)
+    const PropertyType& CastPropertyMetaInfo(const PropertyMetaInfo& _propertyMetaInfo)
     {
         static_assert(std::is_base_of_v<PropertyMetaInfo, PropertyType>);
 
-        if (!_propertyMetaInfo || !IsObjectBasedOn<PropertyType>(*_propertyMetaInfo))
-        {
-            return nullptr;
-        }
-
-        return static_cast<const PropertyType*>(_propertyMetaInfo);
+        return static_cast<const PropertyType&>(CastPropertyMetaInfo(_propertyMetaInfo, GetTypeMetaInfo<PropertyType>()));
     }
 } // namespace ego::rtti

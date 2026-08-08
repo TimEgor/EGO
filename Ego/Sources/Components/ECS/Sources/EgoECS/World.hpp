@@ -130,24 +130,15 @@ namespace ego::ecs
         }
 
         const entt::entity nativeEntity = detail::ToNativeEntity(_entity);
-        auto&& function = _function;
-        for (auto&& [componentTypeID, componentStorage] : m_implementation->m_registry.storage())
+        for (const auto& [componentTypeID, componentResolver] : m_implementation->m_componentResolvers)
         {
-            if (!componentStorage.contains(nativeEntity))
+            Component* component = componentResolver(m_implementation->m_registry, nativeEntity);
+            if (!component)
             {
                 continue;
             }
 
-            const auto resolverIterator = m_implementation->m_componentResolvers.find(componentTypeID);
-            if (resolverIterator == m_implementation->m_componentResolvers.end())
-            {
-                EGO_ASSERT_FAIL_MESSAGE("ECS component type isn't registered.");
-
-                continue;
-            }
-
-            Component& component = resolverIterator->second(componentStorage.value(nativeEntity));
-            std::invoke(function, component);
+            std::invoke(_function, componentTypeID, *component);
         }
     }
 

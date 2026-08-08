@@ -1,118 +1,53 @@
 #include "FileName.h"
 
+#include <cctype>
+
+#include "EgoCore/Assert/Assert.h"
 #include "EgoCore/Hash/CRC32.h"
 
-#define EGO_FILE_NAME_LOWERCASE FALSE
+#define EGO_FILE_NAME_LOWERCASE 0
 
-void ego::FileName::assign(const ResourceNameCharType* _name)
-{
-    m_name = _name;
-
-#if EGO_FILE_NAME_LOWERCASE
-    size_t newSize = m_name.size();
-    for (size_t i = 0; i < newSize; ++i)
-    {
-        m_name[i] = std::tolower(m_name[i]);
-    }
-#endif
-}
-
-ego::FileName::FileName(const ResourceNameCharType* _newName)
-{
-    assign(_newName);
-}
-
-ego::FileName::FileName(ResourceNameCharType _ch)
-{
-#if EGO_FILE_NAME_LOWERCASE
-    _ch = std::tolower(_ch);
-#endif
-
-    m_name = _ch;
-}
-
-ego::FileName::FileName(const std::string& _str)
-    : FileName(_str.c_str())
-{
-}
-
-ego::FileName::FileName(const FileName& _newName)
-    : FileName(_newName.m_name)
-{
-}
-
-ego::FileName& ego::FileName::operator=(const ResourceNameCharType* _name)
+ego::FileName::FileName(StringView _name)
 {
     assign(_name);
-    return *this;
 }
 
-ego::FileName& ego::FileName::operator=(ResourceNameCharType _ch)
+ego::FileName::FileName(CharType _character)
 {
-#if EGO_FILE_NAME_LOWERCASE
-    m_name[0] = tolower(_ch);
-#else
-    m_name[0] = _ch;
-#endif
-    m_name[1] = '\0';
-
-    return *this;
+    operator=(_character);
 }
 
-ego::FileName& ego::FileName::operator=(const std::string& _str)
+ego::FileName& ego::FileName::operator=(StringView _name)
 {
-    return operator=(_str.c_str());
-}
-
-ego::FileName& ego::FileName::operator=(const FileName& _newName)
-{
-    return operator=(_newName.m_name.c_str());
-}
-
-ego::FileName& ego::FileName::operator+=(const ResourceNameCharType* _name)
-{
-#if EGO_FILE_NAME_LOWERCASE
-    size_t baseIndex = m_name.size();
-
-    m_name += _name;
-
-    size_t newSize = m_name.size();
-    for (size_t i = baseIndex; i < newSize; ++i)
-    {
-        m_name[i] = std::tolower(newName[i]);
-    }
-
-#else
-    m_name += _name;
-#endif
+    assign(_name);
 
     return *this;
 }
 
-ego::FileName& ego::FileName::operator+=(ResourceNameCharType _ch)
+ego::FileName& ego::FileName::operator=(CharType _character)
 {
-    m_name += _ch;
+    assign(StringView(&_character, 1));
+
     return *this;
 }
 
-ego::FileName& ego::FileName::operator+=(const std::string& _str)
+ego::FileName& ego::FileName::operator+=(StringView _name)
 {
-    return operator+=(_str.c_str());
+    append(_name);
+
+    return *this;
+}
+
+ego::FileName& ego::FileName::operator+=(CharType _character)
+{
+    append(StringView(&_character, 1));
+
+    return *this;
 }
 
 ego::FileName& ego::FileName::operator+=(const FileName& _name)
 {
-    return operator+=(_name.m_name);
-}
-
-bool ego::FileName::operator==(const ResourceNameCharType* _name) const
-{
-    return m_name == _name;
-}
-
-bool ego::FileName::operator==(const std::string& _str) const
-{
-    return m_name == _str;
+    return operator+=(_name.getView());
 }
 
 bool ego::FileName::operator==(const FileName& _name) const
@@ -120,39 +55,29 @@ bool ego::FileName::operator==(const FileName& _name) const
     return m_name == _name.m_name;
 }
 
-bool ego::FileName::operator!=(const ResourceNameCharType* _name) const
+ego::FileName::operator bool() const
 {
-    return m_name != _name;
+    return !empty();
 }
 
-bool ego::FileName::operator!=(const std::string& _str) const
-{
-    return m_name != _str;
-}
-
-bool ego::FileName::operator!=(const FileName& _name) const
-{
-    return m_name != _name.m_name;
-}
-
-const ego::FileName::ResourceNameCharType& ego::FileName::operator[](size_t _index) const
+const ego::FileName::CharType& ego::FileName::operator[](size_t _index) const
 {
     return m_name[_index];
 }
 
-ego::FileName::ResourceNameCharType& ego::FileName::operator[](size_t _index)
+ego::FileName::CharType& ego::FileName::operator[](size_t _index)
 {
     return m_name[_index];
 }
 
-const ego::FileName::ResourceNameCharType* ego::FileName::c_str() const
+ego::FileName::StringView ego::FileName::getView() const
+{
+    return StringView(m_name.data(), m_name.size());
+}
+
+const ego::FileName::CharType* ego::FileName::c_str() const
 {
     return m_name.c_str();
-}
-
-bool ego::FileName::empty() const
-{
-    return m_name.empty();
 }
 
 size_t ego::FileName::length() const
@@ -160,9 +85,9 @@ size_t ego::FileName::length() const
     return m_name.size();
 }
 
-ego::FileNameID ego::FileName::hash() const
+bool ego::FileName::empty() const
 {
-    return Crc32(m_name.c_str());
+    return m_name.empty();
 }
 
 void ego::FileName::clear()
@@ -172,59 +97,99 @@ void ego::FileName::clear()
 
 void ego::FileName::release()
 {
-    m_name = ResourceNameContainerType();
+    m_name = StringType();
 }
 
-ego::FileName ego::operator+(const FileName& _resName, const FileName::ResourceNameCharType* _name)
+ego::FileNameID ego::FileName::hash() const
 {
-    FileName newName(_resName);
-    newName += _name;
-    return newName;
+    const StringView view = getView();
+
+    return Crc32(view.data(), view.size());
 }
 
-ego::FileName ego::operator+(const FileName::ResourceNameCharType* _name, const FileName& _resName)
+bool ego::FileName::IsValid(StringView _name)
 {
-    FileName newName(_name);
-    newName += _resName;
-    return newName;
+    return _name.find('\0') == StringView::npos;
 }
 
-ego::FileName ego::operator+(const FileName& _resName, FileName::ResourceNameCharType _ch)
+void ego::FileName::assign(StringView _name)
 {
-    FileName newName(_resName);
-    newName += _ch;
-    return newName;
+    const bool isValid = IsValid(_name);
+    EGO_ASSERT(isValid);
+    if (!isValid)
+    {
+        return;
+    }
+
+    if (_name.empty())
+    {
+        m_name.clear();
+
+        return;
+    }
+
+    m_name.assign(_name.data(), _name.size());
+    normalize(0);
 }
 
-ego::FileName ego::operator+(FileName::ResourceNameCharType _ch, const FileName& _resName)
+void ego::FileName::append(StringView _name)
 {
-    FileName newName(_ch);
-    newName += _resName;
-    return newName;
+    const bool isValid = IsValid(_name);
+    EGO_ASSERT(isValid);
+    if (!isValid || _name.empty())
+    {
+        return;
+    }
+
+    const size_t beginIndex = m_name.size();
+    m_name.append(_name.data(), _name.size());
+    normalize(beginIndex);
 }
 
-ego::FileName ego::operator+(const FileName& _resName, const std::string& _str)
+void ego::FileName::normalize(size_t _beginIndex)
 {
-    FileName newName(_resName);
-    newName += _str;
-    return newName;
+#if EGO_FILE_NAME_LOWERCASE
+    const size_t size = m_name.size();
+    for (size_t index = _beginIndex; index < size; ++index)
+    {
+        m_name[index] = static_cast<CharType>(std::tolower(static_cast<unsigned char>(m_name[index])));
+    }
+#endif
 }
 
-ego::FileName ego::operator+(const std::string& _str, const FileName& _resName)
+ego::FileName ego::operator+(FileName _name, FileName::StringView _suffix)
 {
-    FileName newName(_str);
-    newName += _resName;
-    return newName;
+    _name += _suffix;
+
+    return _name;
 }
 
-ego::FileName ego::operator+(const FileName& _resName1, const FileName& _resName2)
+ego::FileName ego::operator+(FileName::StringView _prefix, const FileName& _name)
 {
-    FileName newName(_resName1);
-    newName += _resName2;
-    return newName;
+    FileName result(_prefix);
+    result += _name;
+
+    return result;
 }
 
-void parseValue(const char* _strVal, ego::FileName& _value)
+ego::FileName ego::operator+(FileName _name, FileName::CharType _character)
 {
-    _value = _strVal;
+    _name += _character;
+
+    return _name;
+}
+
+ego::FileName ego::operator+(FileName::CharType _character, const FileName& _name)
+{
+    FileName result(_character);
+    result += _name;
+
+    return result;
+}
+
+ego::FileName ego::operator+(FileName _left, const FileName& _right)
+{
+    _left += _right;
+
+    return _left;
 }

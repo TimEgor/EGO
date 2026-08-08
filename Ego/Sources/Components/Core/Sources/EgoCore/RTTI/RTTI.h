@@ -13,7 +13,6 @@
 #include "EgoCore/RTTI/Property/Types/Collection/Positional/PositionalCollectionPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Collection/Positional/VectorPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Enum/EnumPropertyMetaInfo.h"
-#include "EgoCore/RTTI/Property/Types/Object/ObjectPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Scalar/ScalarPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/String/FileNamePropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/String/StdStringPropertyMetaInfo.h"

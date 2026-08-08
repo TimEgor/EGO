@@ -33,9 +33,7 @@ void ego::ecs::World::destroyEntity(Entity _entity)
 
 bool ego::ecs::World::isEntityAlive(Entity _entity) const
 {
-    return _entity.getWorldID() == m_id &&
-           _entity.isValid() &&
-           m_implementation->m_registry.valid(detail::ToNativeEntity(_entity));
+    return _entity.getWorldID() == m_id && _entity.isValid() && m_implementation->m_registry.valid(detail::ToNativeEntity(_entity));
 }
 
 void ego::ecs::World::clear()
@@ -47,6 +45,19 @@ void ego::ecs::World::clear()
 size_t ego::ecs::World::getEntityCount() const
 {
     return m_implementation->m_entityCount;
+}
+
+bool ego::ecs::World::removeComponent(Entity _entity, ComponentTypeID _componentTypeID)
+{
+    if (!isEntityAlive(_entity) || _componentTypeID == InvalidComponentTypeID)
+    {
+        return false;
+    }
+
+    const entt::entity nativeEntity = detail::ToNativeEntity(_entity);
+    auto* componentStorage = m_implementation->m_registry.storage(_componentTypeID);
+
+    return componentStorage && componentStorage->remove(nativeEntity);
 }
 
 ego::ecs::WorldID ego::ecs::World::AllocateWorldID()

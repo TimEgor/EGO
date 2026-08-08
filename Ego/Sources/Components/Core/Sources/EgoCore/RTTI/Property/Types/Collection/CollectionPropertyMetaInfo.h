@@ -9,9 +9,7 @@ namespace ego::rtti
     class CollectionPropertyMetaInfo : public PropertyMetaInfo
     {
     public:
-        CollectionPropertyMetaInfo(const char* _name, size_t _offset);
-
-        virtual size_t getSize(const void* _value) const = 0;
+        CollectionPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst);
 
         EGO_RTTI_VIRTUAL(CollectionPropertyMetaInfo, PropertyMetaInfo);
     };

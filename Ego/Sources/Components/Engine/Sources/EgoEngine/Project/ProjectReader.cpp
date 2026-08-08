@@ -54,7 +54,7 @@ bool ego::engine::ProjectReader::ReadAssetDirectories(const XmlNode& _rootNode, 
         const std::string path = assetDirectoryNode.getAttributeOr<std::string>("Path", "");
         if (!path.empty())
         {
-            EGO_CHECK_RETURN_FALSE(_project.addAssetDirectory(path));
+            EGO_CHECK_RETURN_FALSE(_project.addAssetDirectory(FileName(path)));
         }
     }
 
@@ -74,7 +74,7 @@ bool ego::engine::ProjectReader::ReadPluginDirectories(const XmlNode& _rootNode,
         const std::string path = pluginDirectoryNode.getAttributeOr<std::string>("Path", "");
         if (!path.empty())
         {
-            EGO_CHECK_RETURN_FALSE(_project.addPluginDirectory(path));
+            EGO_CHECK_RETURN_FALSE(_project.addPluginDirectory(FileName(path)));
         }
     }
 

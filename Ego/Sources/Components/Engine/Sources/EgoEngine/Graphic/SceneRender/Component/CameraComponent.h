@@ -16,6 +16,9 @@ namespace ego::render
         float m_farPlane = 1000.0f;
 
         EGO_RTTI_VIRTUAL(CameraComponent, ecs::Component);
-        EGO_RTTI_PROPERTIES(EGO_RTTI_PROPERTY(m_verticalFieldOfView), EGO_RTTI_PROPERTY(m_nearPlane), EGO_RTTI_PROPERTY(m_farPlane));
+        EGO_RTTI_PROPERTIES(
+            EGO_RTTI_PROPERTY_OPTIONS(m_verticalFieldOfView, 0.1f, 0.1f, 179.9f),
+            EGO_RTTI_PROPERTY_OPTIONS(m_nearPlane, 0.01f, 0.001f),
+            EGO_RTTI_PROPERTY_OPTIONS(m_farPlane, 1.0f, 0.001f));
     };
 } // namespace ego::render

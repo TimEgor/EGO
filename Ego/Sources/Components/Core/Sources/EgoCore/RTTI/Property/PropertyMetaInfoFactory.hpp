@@ -1,27 +1,24 @@
+#pragma once
+
 #include <array>
 #include <concepts>
 #include <map>
-#include <memory>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 #include "EgoCore/FileName/FileName.h"
-#include "EgoCore/Pointer/IntrusivePointer.h"
-#include "EgoCore/Pointer/Pointer.h"
 
 #include "EgoCore/RTTI/Property/Types/Collection/Associative/MapPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Collection/Associative/UnorderedMapPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Collection/Positional/ArrayPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Collection/Positional/VectorPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Enum/EnumPropertyMetaInfo.h"
-#include "EgoCore/RTTI/Property/Types/Object/ObjectPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Scalar/ScalarPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/String/FileNamePropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/String/StdStringPropertyMetaInfo.h"
 #include "EgoCore/RTTI/Property/Types/Struct/StructPropertyMetaInfo.h"
-#include "EgoCore/RTTI/Type/TypeMetaInfo.h"
 
 namespace ego::rtti
 {
@@ -68,104 +65,140 @@ namespace ego::rtti
         };
 
         template <typename T>
-        struct IsObjectPointer final : std::false_type
-        {
-        };
-
-        template <typename T>
-        struct IsObjectPointer<SharedPointer<T>> final : std::true_type
-        {
-        };
-
-        template <typename T>
-        struct IsObjectPointer<IntrusivePointer<T>> final : std::true_type
-        {
-        };
-
-        template <typename T>
         concept ReflectedType = requires {
             { T::GetMetaInfo() } -> std::same_as<const TypeMetaInfo&>;
         };
     } // namespace detail
 
-    template <typename Value>
-    PropertyMetaInfoPointer MakePropertyMetaInfo(const char* _name, size_t _offset)
+    template <typename Value, typename... PropertyArguments>
+    const PropertyMetaInfo& AddPropertyMetaInfo(
+        PropertyMetaInfoCollection& _propertyMetaInfos,
+        const char* _name,
+        size_t _offset,
+        PropertyArguments&&... _propertyArguments)
     {
-        using Type = std::remove_cvref_t<Value>;
+        using DeclaredType = std::remove_reference_t<Value>;
+        using Type = std::remove_cv_t<DeclaredType>;
+        constexpr bool IsConst = std::is_const_v<DeclaredType>;
 
         if constexpr (std::is_arithmetic_v<Type>)
         {
-            return std::make_unique<ScalarPropertyMetaInfo<Type>>(_name, _offset);
+            return _propertyMetaInfos.add<TypedScalarPropertyMetaInfo<Type>>(_name, _offset, IsConst, std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (std::is_same_v<Type, std::string>)
         {
-            return std::make_unique<StdStringPropertyMetaInfo>(_name, _offset);
+            return _propertyMetaInfos.add<StdStringPropertyMetaInfo>(_name, _offset, IsConst, std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (std::is_same_v<Type, FileName>)
         {
-            return std::make_unique<FileNamePropertyMetaInfo>(_name, _offset);
+            return _propertyMetaInfos.add<FileNamePropertyMetaInfo>(_name, _offset, IsConst, std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (std::is_enum_v<Type>)
         {
-            return std::make_unique<EnumPropertyMetaInfo<Type>>(_name, _offset);
+            return _propertyMetaInfos.add<TypedEnumPropertyMetaInfo<Type>>(_name, _offset, IsConst, std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (detail::IsArray<Type>::value)
         {
             using Element = typename Type::value_type;
-            static const PropertyMetaInfoPointer ElementMetaInfo = MakePropertyMetaInfo<Element>("Element", 0);
+            static const PropertyMetaInfoCollection ElementMetaInfos = []()
+            {
+                PropertyMetaInfoCollection result;
+                AddPropertyMetaInfo<Element>(result, "Element", 0);
 
-            return std::make_unique<ArrayPropertyMetaInfo<Type>>(_name, _offset, ElementMetaInfo.get());
+                return result;
+            }();
+
+            return _propertyMetaInfos.add<ArrayPropertyMetaInfo<Type>>(
+                _name,
+                _offset,
+                IsConst,
+                ElementMetaInfos.getMetaInfo(0),
+                std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (detail::IsVector<Type>::value)
         {
             using Element = typename Type::value_type;
-            static_assert(!std::is_same_v<Element, bool>, "std::vector<bool> properties are not supported.");
+            static const PropertyMetaInfoCollection ElementMetaInfos = []()
+            {
+                PropertyMetaInfoCollection result;
+                AddPropertyMetaInfo<Element>(result, "Element", 0);
 
-            static const PropertyMetaInfoPointer ElementMetaInfo = MakePropertyMetaInfo<Element>("Element", 0);
+                return result;
+            }();
 
-            return std::make_unique<VectorPropertyMetaInfo<Type>>(_name, _offset, ElementMetaInfo.get());
+            return _propertyMetaInfos.add<VectorPropertyMetaInfo<Type>>(
+                _name,
+                _offset,
+                IsConst,
+                ElementMetaInfos.getMetaInfo(0),
+                std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (detail::IsMap<Type>::value)
         {
             using Key = typename Type::key_type;
             using Mapped = typename Type::mapped_type;
-            static const PropertyMetaInfoPointer KeyMetaInfo = MakePropertyMetaInfo<Key>("Key", 0);
-            static const PropertyMetaInfoPointer MappedMetaInfo = MakePropertyMetaInfo<Mapped>("Value", 0);
+            static const PropertyMetaInfoCollection KeyMetaInfos = []()
+            {
+                PropertyMetaInfoCollection result;
+                AddPropertyMetaInfo<Key>(result, "Key", 0);
 
-            return std::make_unique<MapPropertyMetaInfo<Type>>(_name, _offset, KeyMetaInfo.get(), MappedMetaInfo.get());
+                return result;
+            }();
+            static const PropertyMetaInfoCollection MappedMetaInfos = []()
+            {
+                PropertyMetaInfoCollection result;
+                AddPropertyMetaInfo<Mapped>(result, "Value", 0);
+
+                return result;
+            }();
+
+            return _propertyMetaInfos.add<MapPropertyMetaInfo<Type>>(
+                _name,
+                _offset,
+                IsConst,
+                KeyMetaInfos.getMetaInfo(0),
+                MappedMetaInfos.getMetaInfo(0),
+                std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (detail::IsUnorderedMap<Type>::value)
         {
             using Key = typename Type::key_type;
             using Mapped = typename Type::mapped_type;
-            static const PropertyMetaInfoPointer KeyMetaInfo = MakePropertyMetaInfo<Key>("Key", 0);
-            static const PropertyMetaInfoPointer MappedMetaInfo = MakePropertyMetaInfo<Mapped>("Value", 0);
+            static const PropertyMetaInfoCollection KeyMetaInfos = []()
+            {
+                PropertyMetaInfoCollection result;
+                AddPropertyMetaInfo<Key>(result, "Key", 0);
 
-            return std::make_unique<UnorderedMapPropertyMetaInfo<Type>>(_name, _offset, KeyMetaInfo.get(), MappedMetaInfo.get());
-        }
-        else if constexpr (detail::IsObjectPointer<Type>::value)
-        {
-            return std::make_unique<ObjectPropertyMetaInfo<Type>>(_name, _offset);
+                return result;
+            }();
+            static const PropertyMetaInfoCollection MappedMetaInfos = []()
+            {
+                PropertyMetaInfoCollection result;
+                AddPropertyMetaInfo<Mapped>(result, "Value", 0);
+
+                return result;
+            }();
+
+            return _propertyMetaInfos.add<UnorderedMapPropertyMetaInfo<Type>>(
+                _name,
+                _offset,
+                IsConst,
+                KeyMetaInfos.getMetaInfo(0),
+                MappedMetaInfos.getMetaInfo(0),
+                std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else if constexpr (detail::ReflectedType<Type>)
         {
-            return std::make_unique<StructPropertyMetaInfo<Type>>(_name, _offset, &GetTypeMetaInfo<Type>());
+            return _propertyMetaInfos.add<TypedStructPropertyMetaInfo<Type>>(
+                _name,
+                _offset,
+                IsConst,
+                GetTypeMetaInfo<Type>(),
+                std::forward<PropertyArguments>(_propertyArguments)...);
         }
         else
         {
             static_assert(false, "The property type is not supported by Ego RTTI.");
         }
-    }
-
-    template <typename... Properties>
-    PropertyMetaInfoCollection MakePropertyMetaInfoCollection(Properties&&... _properties)
-    {
-        static_assert((std::is_same_v<std::remove_cvref_t<Properties>, PropertyMetaInfoPointer> && ...));
-
-        PropertyMetaInfoCollection result;
-        result.reserve(sizeof...(Properties));
-        (result.emplace_back(std::forward<Properties>(_properties)), ...);
-
-        return result;
     }
 } // namespace ego::rtti

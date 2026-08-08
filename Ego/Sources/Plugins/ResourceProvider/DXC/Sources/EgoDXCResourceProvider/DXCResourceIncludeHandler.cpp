@@ -49,7 +49,7 @@ namespace ego::resources::dxc
 
     std::string DXCResourceIncludeHandler::normalizeIncludePath(const FileName& _path) const
     {
-        std::string path = _path.c_str();
+        std::string path(_path.getView());
         std::replace(path.begin(), path.end(), '\\', '/');
 
         while (path.size() >= 2 && path[0] == '.' && path[1] == '/')

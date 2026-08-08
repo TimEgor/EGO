@@ -7,10 +7,7 @@ namespace ego::rtti
     class StringPropertyMetaInfo : public PropertyMetaInfo
     {
     public:
-        StringPropertyMetaInfo(const char* _name, size_t _offset);
-
-        virtual const char* getValue(const void* _value) const = 0;
-        virtual void setValue(void* _value, const char* _string) const = 0;
+        StringPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst);
 
         EGO_RTTI_VIRTUAL(StringPropertyMetaInfo, PropertyMetaInfo);
     };

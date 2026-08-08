@@ -35,7 +35,7 @@ bool ego::demo::GuiDemo::init(const engine::EngineSessionWeakPointer& _engineSes
     const gui::GuiControllerPointer guiController = engineSession->getGuiControllerPointer();
     EGO_CHECK_INITIALIZATION(guiController);
 
-    EGO_CHECK_INITIALIZATION(guiController->registerLayer(m_guiLayer));
+    EGO_CHECK_INITIALIZATION(guiController->registerLayer(m_layer));
 
     m_level = MakePointer<Level>();
     EGO_CHECK_INITIALIZATION(m_level);
@@ -73,7 +73,7 @@ void ego::demo::GuiDemo::release()
 
     if (guiController)
     {
-        guiController->unregisterLayer(m_guiLayer);
+        guiController->unregisterLayer(m_layer);
     }
 
     if (engineSession && m_level)
@@ -91,5 +91,5 @@ void ego::demo::GuiDemo::release()
     m_cameraEntity = ecs::Entity();
     m_engineSession.reset();
 
-    m_guiLayer.reset();
+    m_layer.reset();
 }

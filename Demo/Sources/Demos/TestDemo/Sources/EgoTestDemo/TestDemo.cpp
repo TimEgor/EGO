@@ -1,5 +1,6 @@
 #include "TestDemo.h"
 
+#include "EgoCore/FileName/FileName.h"
 #include "EgoCore/Math/ComputeQuaternion.h"
 #include "EgoCore/UtilsMacros.h"
 
@@ -9,6 +10,7 @@
 #include "EgoEngine/EngineSession.h"
 #include "EgoEngine/Graphic/SceneRender/Component/CameraComponent.h"
 #include "EgoEngine/Graphic/SceneRender/Component/MeshRenderComponent.h"
+#include "EgoEngine/Level/Components/NameComponent.h"
 #include "EgoEngine/Level/Components/TransformComponent.h"
 
 namespace
@@ -16,6 +18,9 @@ namespace
     constexpr float MeshRotationSpeed = 1.0f;
     constexpr float FullRotation = 6.28318530718f;
     constexpr float TriangleScale = 0.65f;
+    constexpr const char* CameraName = "Camera";
+    constexpr const char* FirstTriangleName = "First Triangle";
+    constexpr const char* SecondTriangleName = "Second Triangle";
 
     constexpr ego::TransformVector CameraPosition(ego::TransformValue(0.0), ego::TransformValue(0.0), ego::TransformValue(-2.0));
     constexpr ego::TransformVector FirstTrianglePosition(ego::TransformValue(-0.60), ego::TransformValue(0.0), ego::TransformValue(0.0));
@@ -44,13 +49,13 @@ bool ego::demo::TestDemo::init(const engine::EngineSessionWeakPointer& _engineSe
     m_resourceController = resourceSubsystem->getResourceControllerPointer();
     EGO_CHECK_INITIALIZATION(m_resourceController);
 
-    m_triangleMesh = m_resourceController->load<render::MeshResource>("TestTriangle.mesh.xml");
+    m_triangleMesh = m_resourceController->load<render::MeshResource>(FileName("TestTriangle.mesh.xml"));
     EGO_CHECK_INITIALIZATION(m_triangleMesh && m_triangleMesh->isLoaded());
 
-    m_firstTriangleMaterial = m_resourceController->load<render::MaterialResource>("TestTriangle.material.xml");
+    m_firstTriangleMaterial = m_resourceController->load<render::MaterialResource>(FileName("TestTriangle.material.xml"));
     EGO_CHECK_INITIALIZATION(m_firstTriangleMaterial && m_firstTriangleMaterial->isLoaded());
 
-    m_secondTriangleMaterial = m_resourceController->load<render::MaterialResource>("TestTriangleSecond.material.xml");
+    m_secondTriangleMaterial = m_resourceController->load<render::MaterialResource>(FileName("TestTriangleSecond.material.xml"));
     EGO_CHECK_INITIALIZATION(m_secondTriangleMaterial && m_secondTriangleMaterial->isLoaded());
 
     m_level = MakePointer<Level>();
@@ -60,14 +65,15 @@ bool ego::demo::TestDemo::init(const engine::EngineSessionWeakPointer& _engineSe
     const ecs::Entity cameraNode = m_level->createNode();
     EGO_CHECK_INITIALIZATION(cameraNode);
 
+    EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<NameComponent>(cameraNode, NameComponent{CameraName}));
     EGO_CHECK_INITIALIZATION(m_level->addOrReplaceComponent<render::CameraComponent>(cameraNode));
     TransformComponent* cameraTransformComponent = m_level->tryGetComponent<TransformComponent>(cameraNode);
     EGO_CHECK_INITIALIZATION(cameraTransformComponent);
     cameraTransformComponent->m_globalTransform.setOrigin(CameraPosition);
     engineSession->setRenderCameraEntity(cameraNode);
 
-    EGO_CHECK_INITIALIZATION(createTriangleEntity(m_firstTriangleEntity, m_firstTriangleMaterial, FirstTrianglePosition));
-    EGO_CHECK_INITIALIZATION(createTriangleEntity(m_secondTriangleEntity, m_secondTriangleMaterial, SecondTrianglePosition));
+    EGO_CHECK_INITIALIZATION(createTriangleEntity(m_firstTriangleEntity, FirstTriangleName, m_firstTriangleMaterial, FirstTrianglePosition));
+    EGO_CHECK_INITIALIZATION(createTriangleEntity(m_secondTriangleEntity, SecondTriangleName, m_secondTriangleMaterial, SecondTrianglePosition));
 
     return true;
 }
@@ -114,10 +120,16 @@ void ego::demo::TestDemo::release()
     m_engineSession.reset();
 }
 
-bool ego::demo::TestDemo::createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const TransformVector& _position)
+bool ego::demo::TestDemo::createTriangleEntity(
+    ecs::Entity& _entity,
+    const char* _name,
+    const render::MaterialResourcePointer& _materialResource,
+    const TransformVector& _position)
 {
     _entity = m_level->createNode();
     EGO_CHECK_RETURN_FALSE(_entity);
+
+    EGO_CHECK_RETURN_FALSE(m_level->addOrReplaceComponent<NameComponent>(_entity, NameComponent{_name}));
 
     const render::RenderMesh triangleMesh = render::CreateMeshHandler(m_triangleMesh);
     const render::RenderMaterial triangleMaterial = render::CreateMaterialHandler(_materialResource);

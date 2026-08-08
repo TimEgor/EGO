@@ -1,6 +1,5 @@
 #pragma once
 
-#include <limits>
 #include <span>
 #include <string_view>
 #include <type_traits>
@@ -9,34 +8,34 @@
 
 namespace ego::rtti
 {
-    inline constexpr size_t InvalidEnumValueIndex = std::numeric_limits<size_t>::max();
+    template <typename Enum>
+    requires std::is_enum_v<Enum>
+    class TypedEnumPropertyValue;
 
-    class EnumPropertyMetaInfoBase : public PropertyMetaInfo
+    class EnumPropertyMetaInfo : public PropertyMetaInfo
     {
     public:
         using NameCollection = std::span<const std::string_view>;
 
-        EnumPropertyMetaInfoBase(const char* _name, size_t _offset);
+        EnumPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst);
 
         virtual NameCollection getNames() const = 0;
-        virtual size_t getValueIndex(const void* _value) const = 0;
-        virtual void setValueIndex(void* _value, size_t _index) const = 0;
 
-        EGO_RTTI_VIRTUAL(EnumPropertyMetaInfoBase, PropertyMetaInfo);
+        EGO_RTTI_VIRTUAL(EnumPropertyMetaInfo, PropertyMetaInfo);
     };
 
     template <typename Enum>
-        requires std::is_enum_v<Enum>
-    class EnumPropertyMetaInfo final : public EnumPropertyMetaInfoBase
+    requires std::is_enum_v<Enum>
+    class TypedEnumPropertyMetaInfo final : public EnumPropertyMetaInfo
     {
     public:
-        EnumPropertyMetaInfo(const char* _name, size_t _offset);
+        TypedEnumPropertyMetaInfo(const char* _name, size_t _offset, bool _isConst);
 
+        EGO_RTTI_VIRTUAL(TypedEnumPropertyMetaInfo, EnumPropertyMetaInfo);
+
+        PropertyValuePointer makePropertyValue(void* _object) const override;
+        PropertyValuePointer makePropertyValue(const void* _object) const override;
         NameCollection getNames() const override;
-        size_t getValueIndex(const void* _value) const override;
-        void setValueIndex(void* _value, size_t _index) const override;
-
-        EGO_RTTI_VIRTUAL(EnumPropertyMetaInfo, EnumPropertyMetaInfoBase);
     };
 } // namespace ego::rtti
 

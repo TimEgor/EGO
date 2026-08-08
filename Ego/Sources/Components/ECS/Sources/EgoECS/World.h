@@ -50,6 +50,8 @@ namespace ego::ecs
         template <typename TComponent>
         const TComponent& getComponent(Entity _entity) const;
 
+        bool removeComponent(Entity _entity, ComponentTypeID _componentTypeID);
+
         template <typename TComponent>
         bool removeComponent(Entity _entity);
 

@@ -1,10 +1,14 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 
-#include "AssertController.h"
-#include "EgoCore/Diagnostic/DiagnosticSubsystem.h"
 #include "EgoCore/UtilsMacros.h"
+
+namespace ego
+{
+    bool TryGenerateAssertError(const char* _message, const char* _file, uint32_t _line);
+} // namespace ego
 
 #ifndef EGO_ENABLE_ASSERTS
     #if defined(EGO_CONFIG_DEBUG) || defined(EGO_CONFIG_RELEASE)
@@ -18,8 +22,7 @@
     #define EGO_ASSERT(_CONDITION)                                                                                                                             \
         if (!(_CONDITION))                                                                                                                                     \
         {                                                                                                                                                      \
-            ego::AssertControllerPointer controller = ego::GetAssertController();                                                                              \
-            if (!controller || !controller->generateError(EGO_TO_STRING(_CONDITION), EGO_FILE, EGO_LINE))                                                      \
+            if (!ego::TryGenerateAssertError(EGO_TO_STRING(_CONDITION), EGO_FILE, EGO_LINE))                                                                   \
             {                                                                                                                                                  \
                 assert(_CONDITION);                                                                                                                            \
             }                                                                                                                                                  \
@@ -28,23 +31,20 @@
     #define EGO_ASSERT_MESSAGE(_CONDITION, _MESSAGE)                                                                                                           \
         if (!(_CONDITION))                                                                                                                                     \
         {                                                                                                                                                      \
-            ego::AssertControllerPointer controller = ego::GetAssertController();                                                                              \
-            if (!controller || !controller->generateError(_MESSAGE, EGO_FILE, EGO_LINE))                                                                       \
+            if (!ego::TryGenerateAssertError(_MESSAGE, EGO_FILE, EGO_LINE))                                                                                    \
             {                                                                                                                                                  \
                 assert((_CONDITION) && (_MESSAGE));                                                                                                            \
             }                                                                                                                                                  \
         }
 
     #define EGO_ASSERT_FAIL()                                                                                                                                  \
-        ego::AssertControllerPointer controller = ego::GetAssertController();                                                                                  \
-        if (!controller || !controller->generateError("FAIL", EGO_FILE, EGO_LINE))                                                                             \
+        if (!ego::TryGenerateAssertError("FAIL", EGO_FILE, EGO_LINE))                                                                                          \
         {                                                                                                                                                      \
             assert(false);                                                                                                                                     \
         }
 
     #define EGO_ASSERT_FAIL_MESSAGE(_MESSAGE)                                                                                                                  \
-        ego::AssertControllerPointer controller = ego::GetAssertController();                                                                                  \
-        if (!controller || !controller->generateError(_MESSAGE, EGO_FILE, EGO_LINE))                                                                           \
+        if (!ego::TryGenerateAssertError(_MESSAGE, EGO_FILE, EGO_LINE))                                                                                        \
         {                                                                                                                                                      \
             assert(false && (_MESSAGE));                                                                                                                       \
         }
@@ -58,4 +58,5 @@
 
 #define EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(_CHECK_VAL, _MESSAGE)                                                                                          \
     EGO_CHECK_RETURN_CALL_VALUE(_CHECK_VAL, EGO_ASSERT_FAIL_MESSAGE(_MESSAGE); release(), false)
+
 #define EGO_CHECK_INITIALIZATION_ASSERT(_CHECK_VAL) EGO_CHECK_INITIALIZATION_ASSERT_MESSAGE(_CHECK_VAL, EGO_TO_STRING(_CHECK_VAL))

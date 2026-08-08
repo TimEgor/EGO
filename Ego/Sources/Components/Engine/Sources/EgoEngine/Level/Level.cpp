@@ -2,6 +2,9 @@
 
 #include "EgoCore/Assert/Assert.h"
 
+#include "Components/NameComponent.h"
+#include "Components/TransformComponent.h"
+
 struct ego::Level::HierarchyComponent final : public ecs::Component
 {
     ecs::Entity m_parent;
@@ -137,6 +140,23 @@ bool ego::Level::ownsEntity(ecs::Entity _entity) const
     return m_world && m_world->isEntityAlive(_entity);
 }
 
+bool ego::Level::removeComponent(ecs::Entity _entity, ecs::ComponentTypeID _componentTypeID)
+{
+    if (!m_world || !ownsEntity(_entity))
+    {
+        return false;
+    }
+
+    const bool isHierarchyComponent = _componentTypeID == ecs::GetComponentTypeID<HierarchyComponent>();
+    const bool isNodeTransformComponent = _componentTypeID == ecs::GetComponentTypeID<TransformComponent>() && isNode(_entity);
+    if (isHierarchyComponent || isNodeTransformComponent)
+    {
+        return false;
+    }
+
+    return m_world->removeComponent(_entity, _componentTypeID);
+}
+
 size_t ego::Level::getEntityCount() const
 {
     return m_world ? m_world->getEntityCount() : 0;
@@ -145,6 +165,11 @@ size_t ego::Level::getEntityCount() const
 bool ego::Level::isNode(ecs::Entity _entity) const
 {
     return m_world && ownsEntity(_entity) && m_world->hasComponent<HierarchyComponent>(_entity) && m_world->hasComponent<TransformComponent>(_entity);
+}
+
+ego::rtti::TypeMetaInfoID ego::Level::GetHierarchyComponentTypeMetaInfoID()
+{
+    return HierarchyComponent::GetMetaInfoID();
 }
 
 ego::ecs::Entity ego::Level::createNode()

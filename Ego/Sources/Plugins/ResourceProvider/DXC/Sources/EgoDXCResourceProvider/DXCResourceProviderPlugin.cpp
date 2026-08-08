@@ -17,15 +17,14 @@ namespace ego::resources::dxc
 
     bool DXCResourceProviderPlugin::createRegistrations(RegistrationCollection& _registrations)
     {
-        const DXCShaderResourceProviderPointer shaderProvider =
-            MakePointer<DXCShaderResourceProvider>();
+        const DXCShaderResourceProviderPointer shaderProvider = MakePointer<DXCShaderResourceProvider>();
         if (!shaderProvider)
         {
             return false;
         }
 
-        _registrations.push_back({".shader", shaderProvider});
-        _registrations.push_back({".hlsl", shaderProvider});
+        _registrations.push_back({FileName(".shader"), shaderProvider});
+        _registrations.push_back({FileName(".hlsl"), shaderProvider});
 
         return true;
     }

@@ -27,7 +27,11 @@ namespace ego::demo
     private:
         void release();
 
-        bool createTriangleEntity(ecs::Entity& _entity, const render::MaterialResourcePointer& _materialResource, const TransformVector& _position);
+        bool createTriangleEntity(
+            ecs::Entity& _entity,
+            const char* _name,
+            const render::MaterialResourcePointer& _materialResource,
+            const TransformVector& _position);
         bool setTriangleTransform(ecs::Entity _entity, const TransformVector& _position, float _rotationAngle);
 
         engine::EngineSessionWeakPointer m_engineSession;

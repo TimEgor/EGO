@@ -5,17 +5,23 @@
 namespace ego::rtti
 {
     template <typename UnorderedMap>
+    class UnorderedMapPropertyValue;
+
+    template <typename UnorderedMap>
     class UnorderedMapPropertyMetaInfo final : public AssociativeCollectionPropertyMetaInfo
     {
     public:
-        UnorderedMapPropertyMetaInfo(const char* _name, size_t _offset, const PropertyMetaInfo* _keyMetaInfo, const PropertyMetaInfo* _mappedMetaInfo);
-
-        size_t getSize(const void* _value) const override;
-        void visitElements(void* _value, const ElementVisitor& _visitor) const override;
-        bool canAddElement() const override;
-        bool addElement(void* _value) const override;
+        UnorderedMapPropertyMetaInfo(
+            const char* _name,
+            size_t _offset,
+            bool _isConst,
+            const PropertyMetaInfo& _keyMetaInfo,
+            const PropertyMetaInfo& _mappedMetaInfo);
 
         EGO_RTTI_VIRTUAL(UnorderedMapPropertyMetaInfo, AssociativeCollectionPropertyMetaInfo);
+
+        PropertyValuePointer makePropertyValue(void* _object) const override;
+        PropertyValuePointer makePropertyValue(const void* _object) const override;
     };
 } // namespace ego::rtti
 

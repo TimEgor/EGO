@@ -19,7 +19,7 @@
 
 namespace ego::render
 {
-    constexpr auto DebugRenderPassConfigPath = "Configs/DebugRenderPass.xml";
+    const FileName DebugRenderPassConfigPath("Configs/DebugRenderPass.xml");
 
     static bool ReadDebugRenderPassRequiredFileName(const XmlNode& _node, const char* _childName, FileName& _fileName)
     {
@@ -57,7 +57,8 @@ namespace ego::render
     {
         EGO_CHECK_RETURN_FALSE(_configNode && _configNode.getNameView() == "DebugRenderPass");
 
-        return LoadDebugRenderPassGraphicShaders(_configNode, "Point", _initData.m_point) && LoadDebugRenderPassGraphicShaders(_configNode, "Line", _initData.m_line);
+        return LoadDebugRenderPassGraphicShaders(_configNode, "Point", _initData.m_point) &&
+               LoadDebugRenderPassGraphicShaders(_configNode, "Line", _initData.m_line);
     }
 } // namespace ego::render
 

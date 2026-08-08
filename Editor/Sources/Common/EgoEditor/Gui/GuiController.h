@@ -13,7 +13,7 @@
 
 namespace ego::editor
 {
-    class GuiController final : public gui::GuiLayer, public NonCopyable
+    class GuiController final : public gui::Layer, public NonCopyable
     {
     public:
         GuiController() = default;

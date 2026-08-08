@@ -5,14 +5,36 @@
 #include <vector>
 
 #include "EgoCore/Patterns/NonCopyable.h"
+#include "EgoCore/Pointer/IntrusivePointer.h"
 #include "EgoCore/RTTI/Type/TypeMetaInfoID.h"
 
 namespace ego::rtti
 {
     class PropertyMetaInfo;
+    class PropertyValue;
 
-    using PropertyMetaInfoPointer = std::unique_ptr<PropertyMetaInfo>;
-    using PropertyMetaInfoCollection = std::vector<PropertyMetaInfoPointer>;
+    using PropertyValuePointer = IntrusivePointer<PropertyValue>;
+
+    class PropertyMetaInfoCollection final
+    {
+    public:
+        PropertyMetaInfoCollection() = default;
+        PropertyMetaInfoCollection(const PropertyMetaInfoCollection&) = delete;
+        PropertyMetaInfoCollection(PropertyMetaInfoCollection&&) noexcept = default;
+        ~PropertyMetaInfoCollection();
+
+        PropertyMetaInfoCollection& operator=(const PropertyMetaInfoCollection&) = delete;
+        PropertyMetaInfoCollection& operator=(PropertyMetaInfoCollection&&) noexcept = default;
+
+        template <typename MetaInfo, typename... Arguments>
+        const PropertyMetaInfo& add(Arguments&&... _arguments);
+
+        size_t getSize() const;
+        const PropertyMetaInfo& getMetaInfo(size_t _index) const;
+
+    private:
+        std::vector<std::unique_ptr<PropertyMetaInfo>> m_metaInfos;
+    };
 
     class TypeMetaInfo final : public NonCopyable
     {
@@ -41,18 +63,13 @@ namespace ego::rtti
             bool operator==(const PropertyIterator& _iterator) const;
             bool operator!=(const PropertyIterator& _iterator) const;
 
-            void* getValueAddress(void* _object) const;
-            const void* getValueAddress(const void* _object) const;
-
-            template <typename Value>
-            Value& getValue(void* _object) const;
-
-            template <typename Value>
-            const Value& getValue(const void* _object) const;
+            PropertyValuePointer makePropertyValue(void* _object) const;
+            PropertyValuePointer makePropertyValue(const void* _object) const;
 
         private:
             void advanceToProperty();
-            size_t getValueOffset() const;
+            size_t getObjectOffset() const;
+            const PropertyMetaInfoCollection& getPropertyMetaInfoCollection() const;
 
             const TypeMetaInfo* m_typeMetaInfo = nullptr;
             size_t m_typeIndex = 0;

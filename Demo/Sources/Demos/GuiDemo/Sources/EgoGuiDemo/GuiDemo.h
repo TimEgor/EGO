@@ -5,7 +5,7 @@
 #include "EgoEngine/Level/Level.h"
 #include "EgoEngine/Project/EngineLogic.h"
 
-#include "GuiLayer.h"
+#include "Layer.h"
 
 namespace ego::demo
 {
@@ -23,7 +23,7 @@ namespace ego::demo
         engine::EngineSessionWeakPointer m_engineSession;
         LevelPointer m_level = nullptr;
         ecs::Entity m_cameraEntity;
-        GuiLayer m_guiLayer;
+        Layer m_layer;
     };
 
     EGO_POINTER(GuiDemo);

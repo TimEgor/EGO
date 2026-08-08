@@ -11,7 +11,7 @@ namespace
 {
     std::string NormalizeProviderExtension(const ego::FileName& _extension)
     {
-        std::string extension = _extension.c_str();
+        std::string extension(_extension.getView());
         if (extension.empty())
         {
             return extension;

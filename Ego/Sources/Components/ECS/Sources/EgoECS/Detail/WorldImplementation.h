@@ -23,17 +23,17 @@ namespace ego::ecs::detail
     class WorldImplementation final
     {
     public:
-        using ComponentResolver = Component& (*)(void* _component);
-        using ComponentResolverCollection = std::unordered_map<entt::id_type, ComponentResolver>;
+        using ComponentResolver = Component* (*)(entt::registry & _registry, entt::entity _entity);
+        using ComponentResolverCollection = std::unordered_map<ComponentTypeID, ComponentResolver>;
 
         template <typename TComponent>
         void registerComponent()
         {
             m_componentResolvers.try_emplace(
-                entt::type_hash<TComponent>::value(),
-                [](void* _component) -> Component&
+                GetComponentTypeID<TComponent>(),
+                [](entt::registry& _registry, entt::entity _entity) -> Component*
                 {
-                    return *static_cast<TComponent*>(_component);
+                    return _registry.try_get<TComponent>(_entity);
                 });
         }
 

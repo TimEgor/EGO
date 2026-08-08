@@ -47,7 +47,11 @@ void ego::PluginCatalogBuilder::LogIssues(const Report& _report)
     }
 }
 
-ego::PluginCatalog::RegistrationID ego::PluginCatalogBuilder::AddPluginsFromPath(PluginCatalog& _catalog, const FileSystem& _fileSystem, const FileName& _path, bool _recursive)
+ego::PluginCatalog::RegistrationID ego::PluginCatalogBuilder::AddPluginsFromPath(
+    PluginCatalog& _catalog,
+    const FileSystem& _fileSystem,
+    const FileName& _path,
+    bool _recursive)
 {
     Options options;
     options.m_recursive = _recursive;
@@ -73,7 +77,10 @@ ego::PluginCatalog::RegistrationID ego::PluginCatalogBuilder::AddPluginsFromPath
     return registrationID;
 }
 
-ego::PluginCatalog::RegistrationID ego::PluginCatalogBuilder::AddPluginsFromManifest(PluginCatalog& _catalog, const FileSystem& _fileSystem, const FileName& _manifestPath)
+ego::PluginCatalog::RegistrationID ego::PluginCatalogBuilder::AddPluginsFromManifest(
+    PluginCatalog& _catalog,
+    const FileSystem& _fileSystem,
+    const FileName& _manifestPath)
 {
     return AddPluginsFromManifest(_catalog, _fileSystem, _manifestPath, Options());
 }
@@ -133,7 +140,7 @@ ego::PluginCatalogBuilder::Report ego::PluginCatalogBuilder::ReadPluginsFromPath
         entries.end(),
         [](const FileSystemEntryDesc& _left, const FileSystemEntryDesc& _right)
         {
-            return std::string_view(_left.m_path.c_str()) < std::string_view(_right.m_path.c_str());
+            return _left.m_path.getView() < _right.m_path.getView();
         });
 
     for (const FileSystemEntryDesc& entry : entries)
@@ -305,7 +312,13 @@ ego::PluginManifestReader::Context ego::PluginCatalogBuilder::CreateManifestRead
     return context;
 }
 
-void ego::PluginCatalogBuilder::AddIssue(Report& _report, const Options& _options, IssueCode _code, const FileName& _path, const std::string& _message, bool _recoverable)
+void ego::PluginCatalogBuilder::AddIssue(
+    Report& _report,
+    const Options& _options,
+    IssueCode _code,
+    const FileName& _path,
+    const std::string& _message,
+    bool _recoverable)
 {
     Issue issue;
     issue.m_severity = _recoverable && _options.m_mode == Mode::BestEffort ? IssueSeverity::Warning : IssueSeverity::Error;

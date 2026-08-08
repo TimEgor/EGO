@@ -11,10 +11,10 @@
 #include "EgoResource/ResourceController.h"
 #include "EgoResource/ResourceSubsystem.h"
 
-#include "EgoGui/Implementation/GuiBackendFactory.h"
+#include "EgoGui/Backend.h"
 
 ego::gui::GuiController::GuiController()
-    : m_backend(CreateGuiBackend())
+    : m_backend(std::make_unique<Backend>())
 {
 }
 
@@ -25,19 +25,9 @@ ego::gui::GuiController::~GuiController()
 
 bool ego::gui::GuiController::init(const InitData& _initData)
 {
-    EGO_CHECK_RETURN_FALSE(m_backend && !m_backend->isInitialized() && !m_propertyInspector);
+    EGO_CHECK_RETURN_FALSE(!m_backend->isInitialized());
 
-    m_propertyInspector = MakePointer<PropertyInspector>();
-    EGO_CHECK_RETURN_FALSE(m_propertyInspector);
-
-    if (!m_backend->init(_initData.m_viewportProvider, _initData.m_enableMultiViewport))
-    {
-        m_propertyInspector = nullptr;
-
-        return false;
-    }
-
-    return true;
+    return m_backend->init(_initData.m_viewportProvider, _initData.m_enableMultiViewport);
 }
 
 void ego::gui::GuiController::release()
@@ -51,7 +41,6 @@ void ego::gui::GuiController::release()
     EGO_ASSERT(m_layers.empty());
     m_layers.clear();
     m_pendingFrame = GuiRenderData();
-    m_propertyInspector = nullptr;
 }
 
 bool ego::gui::GuiController::setFont(const FileName& _path, float _size)
@@ -75,33 +64,28 @@ bool ego::gui::GuiController::setStyle(const GuiStyle& _style)
     return m_backend->setStyle(_style);
 }
 
-ego::gui::PropertyInspectorPointer ego::gui::GuiController::getPropertyInspectorPointer() const
-{
-    return m_propertyInspector;
-}
-
-ego::gui::PropertyInspector& ego::gui::GuiController::getPropertyInspector() const
-{
-    EGO_ASSERT(m_propertyInspector);
-
-    return *m_propertyInspector;
-}
-
 void ego::gui::GuiController::update(float _deltaTime)
 {
     EGO_CHECK_RETURN(isInitialized() && !m_isFrameActive);
 
     m_isFrameActive = true;
+    if (!m_backend->beginFrame(_deltaTime))
+    {
+        m_isFrameActive = false;
+
+        return;
+    }
+
+    if (!drawLayers())
+    {
+        m_backend->cancelFrame();
+        m_isFrameActive = false;
+
+        return;
+    }
 
     GuiRenderData frame;
-    const bool isFrameBuilt = m_backend->update(
-        _deltaTime,
-        [this]()
-        {
-            return drawLayers();
-        },
-        frame);
-    if (isFrameBuilt)
+    if (m_backend->endFrame(frame))
     {
         m_pendingFrame = std::move(frame);
     }
@@ -119,7 +103,7 @@ ego::gui::GuiRenderData ego::gui::GuiController::takeRenderData()
     return renderData;
 }
 
-bool ego::gui::GuiController::registerLayer(GuiLayer& _layer)
+bool ego::gui::GuiController::registerLayer(Layer& _layer)
 {
     EGO_CHECK_RETURN_FALSE(isInitialized() && !m_isFrameActive);
 
@@ -134,7 +118,7 @@ bool ego::gui::GuiController::registerLayer(GuiLayer& _layer)
     return true;
 }
 
-bool ego::gui::GuiController::unregisterLayer(GuiLayer& _layer)
+bool ego::gui::GuiController::unregisterLayer(Layer& _layer)
 {
     EGO_CHECK_RETURN_FALSE(!m_isFrameActive);
 
@@ -148,7 +132,7 @@ bool ego::gui::GuiController::unregisterLayer(GuiLayer& _layer)
 
 bool ego::gui::GuiController::isInitialized() const
 {
-    return m_backend && m_backend->isInitialized() && m_propertyInspector;
+    return m_backend->isInitialized();
 }
 
 bool ego::gui::GuiController::drawLayers()
@@ -164,7 +148,7 @@ bool ego::gui::GuiController::drawLayers()
     return true;
 }
 
-ego::gui::GuiController::LayerIterator ego::gui::GuiController::findLayer(GuiLayer& _layer)
+ego::gui::GuiController::LayerIterator ego::gui::GuiController::findLayer(Layer& _layer)
 {
     return std::ranges::find_if(
         m_layers,
